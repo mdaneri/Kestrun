@@ -19,7 +19,7 @@ catch { throw }
 
 $server = New-KrServer -Name "MyKestrunServer" 
 # Example usage:
-Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -AllowResponseHeaderCompression  -AddServerHeader
+Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
  
 # Configure the listener (adjust port, cert path, and password)
  Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -CertPath "cert.pfx" -CertPassword "yourpassword" -Protocols Http1AndHttp2AndHttp3
