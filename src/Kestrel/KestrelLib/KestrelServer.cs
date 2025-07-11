@@ -121,7 +121,7 @@ namespace KestrelLib
                     var inputJson = JsonSerializer.Serialize(request);
 
                     using PowerShell ps = PowerShell.Create();
-                    var rs = RunspaceFactory.CreateRunspace();
+                    using var rs = RunspaceFactory.CreateRunspace();
                     rs.Open();
                     // rs.SessionStateProxy.SetVariable("RequestJson", inputJson);
                     rs.SessionStateProxy.SetVariable("Request", request);
@@ -143,7 +143,7 @@ namespace KestrelLib
             }
         }
 
-        public void AddRoute(string pattern)
+    /*    public void AddRoute(string pattern)
         {
             WebApplication.Map(pattern, async (HttpContext context) =>
             {
@@ -186,7 +186,7 @@ $SharedHash[$key] = $data.Body
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync(output);
             });
-        }
+        }*/
 
 
         public void ApplyConfiguration()
