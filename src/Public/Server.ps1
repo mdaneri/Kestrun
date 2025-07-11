@@ -1,60 +1,98 @@
-
+ 
 <#
 .SYNOPSIS
-Configures advanced Kestrun server options for a given KestrunHost instance.
+    Configures advanced options and operational limits for a Kestrun server instance.
 
 .DESCRIPTION
-The Set-KrServerOptions function allows fine-grained configuration of a KestrunHost server instance by setting limits and feature flags. 
-It supports tuning performance and security by controlling request body size, concurrent connections, header count, and keep-alive timeouts. 
-Feature switches enable or disable synchronous IO, response header compression, and the inclusion of a server header in HTTP responses.
-
-This function is typically used before starting the server to ensure all options are applied. 
-It creates a KestrunOptions object, sets properties based on provided parameters, and applies them to the server via ConfigureKestrel.
+    The Set-KrServerOptions function allows fine-grained configuration of a Kestrun server instance. 
+    It enables administrators to control server behavior, resource usage, and protocol compliance by 
+    setting limits on request sizes, connection counts, timeouts, and other operational parameters. 
+    Each parameter is optional and, if not specified, the server will use its built-in default value.
 
 .PARAMETER Server
-The KestrelLib.KestrunHost server instance to configure. This parameter is mandatory and accepts input from the pipeline.
+    The Kestrun server instance to configure. This parameter is mandatory and must be a valid server object.
 
 .PARAMETER MaxRequestBodySize
-Specifies the maximum allowed size (in bytes) for the request body. Only applied if greater than 0.
-Use this to prevent clients from sending excessively large payloads.
+    Specifies the maximum allowed size of the HTTP request body in bytes. 
+    Requests exceeding this size will be rejected. 
+    Default: 30,000,000 bytes (28.6 MB).
 
 .PARAMETER MaxConcurrentConnections
-Specifies the maximum number of concurrent connections allowed. Only applied if greater than 0.
-Helps control resource usage and prevent overload.
+    Sets the maximum number of concurrent client connections allowed to the server. 
+    Additional connection attempts will be queued or rejected. 
+    Default: Unlimited (no explicit limit).
 
 .PARAMETER MaxRequestHeaderCount
-Specifies the maximum number of request headers allowed. Only applied if greater than 0.
-Can be used to mitigate certain types of HTTP attacks.
+    Defines the maximum number of HTTP headers permitted in a single request. 
+    Requests with more headers will be rejected. 
+    Default: 100.
 
 .PARAMETER KeepAliveTimeoutSeconds
-Specifies the keep-alive timeout in seconds. Only applied if greater than 0.
-Controls how long idle connections are kept open.
+    Specifies the duration, in seconds, that a connection is kept alive when idle before being closed. 
+    Default: 120 seconds.
+
+.PARAMETER MaxRequestBufferSize
+    Sets the maximum size, in bytes, of the buffer used for reading HTTP requests. 
+    Default: 1048576 bytes (1 MB).
+
+.PARAMETER MaxRequestHeadersTotalSize
+    Specifies the maximum combined size, in bytes, of all HTTP request headers. 
+    Requests exceeding this size will be rejected. 
+    Default: 32768 bytes (32 KB).
+
+.PARAMETER MaxRequestLineSize
+    Sets the maximum allowed length, in bytes, of the HTTP request line (method, URI, and version). 
+    Default: 8192 bytes (8 KB).
+
+.PARAMETER MaxResponseBufferSize
+    Specifies the maximum size, in bytes, of the buffer used for sending HTTP responses. 
+    Default: 65536 bytes (64 KB).
+
+.PARAMETER MinRequestBodyDataRate
+    Defines the minimum data rate, in bytes per second, required for receiving the request body. 
+    If the rate falls below this threshold, the connection may be closed. 
+    Default: 240 bytes/second.
+
+.PARAMETER MinResponseDataRate
+    Sets the minimum data rate, in bytes per second, required for sending the response. 
+    Default: 240 bytes/second.
+
+.PARAMETER RequestHeadersTimeoutSeconds
+    Specifies the maximum time, in seconds, allowed to receive the complete set of request headers. 
+    Default: 30 seconds.
 
 .PARAMETER AllowSynchronousIO
-Enables or disables synchronous IO operations. Set this switch to allow synchronous IO.
-Synchronous IO can be useful for legacy code but may reduce scalability.
+    If set to $true, allows synchronous IO operations on the server. 
+    Synchronous IO can impact scalability and is generally discouraged. 
+    Default: $false.
 
-.PARAMETER AllowResponseHeaderCompression
-Enables or disables response header compression. Set this switch to allow response header compression.
-Header compression can improve performance but may have security implications.
+.PARAMETER DisableResponseHeaderCompression
+    If set to $true, disables compression of HTTP response headers. 
+    Default: $false.
 
-.PARAMETER AddServerHeader
-Enables or disables the addition of the server header in responses. Set this switch to add the server header.
-Disabling the server header can help obscure server details for security.
+.PARAMETER DenyServerHeader
+    If set to $true, removes the 'Server' HTTP header from responses for improved privacy and security. 
+    Default: $false.
+
+.PARAMETER AllowAlternateSchemes
+    If set to $true, allows alternate URI schemes (other than HTTP/HTTPS) in requests. 
+    Default: $false.
+
+.PARAMETER AllowHostHeaderOverride
+    If set to $true, permits overriding the Host header in incoming requests. 
+    Default: $false.
+
+.PARAMETER DisableStringReuse
+    If set to $true, disables internal string reuse optimizations, which may increase memory usage but can help with certain debugging scenarios. 
+    Default: $false.
 
 .EXAMPLE
-Set-KrServerOptions -Server $server -MaxRequestBodySize 1048576 -MaxConcurrentConnections 100 -AddServerHeader
-
-Configures the server with a 1 MB max request body size, allows up to 100 concurrent connections, and adds the server header to responses.
-
-.EXAMPLE
-$server | Set-KrServerOptions -KeepAliveTimeoutSeconds 30 -AllowSynchronousIO
-
-Configures the server to use a 30-second keep-alive timeout and enables synchronous IO.
+    Set-KrServerOptions -Server $srv -MaxRequestBodySize 1000000
+    Configures the server instance $srv to limit request body size to 1,000,000 bytes.
 
 .NOTES
-Requires the KestrelLib.KestrunHost and KestrelLib.KestrunOptions types to be available.
-Call this function before starting the server to ensure all options are applied.
+    All parameters are optional except for -Server. 
+    Defaults are based on typical Kestrun server settings as of the latest release.
 #>
 function Set-KrServerOptions {
     param(
