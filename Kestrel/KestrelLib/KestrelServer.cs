@@ -116,7 +116,7 @@ namespace KestrelLib
                     var inputJson = JsonSerializer.Serialize(request);
 
                     using PowerShell ps = PowerShell.Create();
-                    var rs = RunspaceFactory.CreateRunspace();
+                    using var rs = RunspaceFactory.CreateRunspace();
                     rs.Open();
                     // rs.SessionStateProxy.SetVariable("RequestJson", inputJson);
                     rs.SessionStateProxy.SetVariable("Request", request);
@@ -157,7 +157,7 @@ namespace KestrelLib
                 var inputJson = JsonSerializer.Serialize(request);
 
                 using PowerShell ps = PowerShell.Create();
-                var rs = RunspaceFactory.CreateRunspace();
+                using var rs = RunspaceFactory.CreateRunspace();
                 rs.Open();
                 rs.SessionStateProxy.SetVariable("RequestJson", inputJson);
                 rs.SessionStateProxy.SetVariable("SharedHash", sharedState);
