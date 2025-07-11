@@ -54,60 +54,18 @@ Add-AspNetCoreType -Version "net8"
 # root path
 $root = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
 # Assert that the assembly is loaded
-Assert-AssemblyLoaded "$root\Kestrel\bin\Debug\net8.0\Kestrel.dll"
+Assert-AssemblyLoaded "$root\src\Kestrel\bin\Debug\net8.0\Kestrel.dll"
  
 # Create an instance of the KestrelServer class
-$server = [KestrelLib.KestrelServer]::new()
 
-function Set-KRServerOptions {
-    param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrelServer]$Server,
-        [int]$MaxRequestBodySize = 10485760,
-        [int]$MaxConcurrentConnections = 100,
-        [int]$MaxRequestHeaderCount = 100,
-        [int]$KeepAliveTimeoutSeconds = 120,
-        [switch]$AllowSynchronousIO,
-        [switch]$AllowResponseHeaderCompression,
-        [switch]$AddServerHeader
-    )
-    $options = @{
-        Limits                           = @{
-            "MaxRequestBodySize"       = $MaxRequestBodySize
-            "MaxConcurrentConnections" = $MaxConcurrentConnections
-            "MaxRequestHeaderCount"    = $MaxRequestHeaderCount
-            "KeepAliveTimeout"         = [TimeSpan]::FromSeconds($KeepAliveTimeoutSeconds)
-        } 
-        "AllowSynchronousIO"             = $AllowSynchronousIO.IsPresent
-        "AllowResponseHeaderCompression" = $AllowResponseHeaderCompression.IsPresent
-        "AddServerHeader"                = $AddServerHeader.IsPresent
-    } 
-    $Server.ConfigureKestrel($options)
-}
+ $server=New-KRServer -Name "MyKestrelServer"
 
 # Example usage:
 Set-KRServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -AllowResponseHeaderCompression  -AddServerHeader
-
-function Add-KRListener {
-    param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrelServer]$Server,
-        [Parameter(Mandatory = $true)]
-        [int]$Port,
-        [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Any,
-        [string]$CertPath = $null,
-        [string]$CertPassword = $null,
-        [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]$Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1AndHttp2, 
-        [switch]$UseConnectionLogging 
-    )
-    $Server.ConfigureListener($Port, $IPAddress, $CertPath, $CertPassword, $Protocols, $UseConnectionLogging.IsPresent)
-}
-
+ 
+# Configure the listener (adjust port, cert path, and password)
 #Add-KRListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -CertPath "cert.pfx" -CertPassword "yourpassword" -Protocols Http1AndHttp2AndHttp3
 Add-KRListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any)  -Protocols Http1
-# Configure the listener (adjust port, cert path, and password)
-#$server.ConfigureListener(  5001,[IPAddress]::Any, "cert.pfx", "yourpassword", [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1AndHttp2AndHttp3, $false)
-#$server.ConfigureListener(  5002,[IPAddress]::Any, "cert.pfx", "yourpassword", [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1AndHttp2AndHttp3, $false)
 
 $server.ApplyConfiguration()
         
