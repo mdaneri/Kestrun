@@ -18,38 +18,59 @@ namespace KestrelLib
     {
         private readonly ConcurrentDictionary<string, string> sharedState = new();
         private readonly WebApplicationBuilder builder;
-        private WebApplication? _webApplication;
+        private WebApplication? App;
 
         private readonly Dictionary<string, object> _kestrelOptions;
+        private readonly List<string> _modulePaths = new();
 
         private bool _isConfigured = false;
 
-        /// <summary>
-        public WebApplication WebApplication
-        {
-            get
-            {
-                if (_webApplication != null)
-                    return _webApplication;
-                if (builder is null)
-                    throw new InvalidOperationException("WebApplicationBuilder is not initialized. Call ConfigureListener first.");
-                _webApplication = builder.Build();
-                return _webApplication;
-            }
-        }
 
-        public KestrelServer(string? appName = null)
+
+        // Accepts optional module paths (from PowerShell)
+        public KestrelServer(string? appName = null, object? modulePathsObj = null)
         {
             builder = WebApplication.CreateBuilder();
             _kestrelOptions = [];
-            // Set the application name if provided
             if (!string.IsNullOrEmpty(appName))
             {
                 _kestrelOptions["ApplicationName"] = appName;
             }
+            // Store module paths if provided
+            if (modulePathsObj is IEnumerable<object> modulePathsEnum)
+            {
+                foreach (var modPathObj in modulePathsEnum)
+                {
+                    if (modPathObj is string modPath && !string.IsNullOrWhiteSpace(modPath))
+                    {
+                        _modulePaths.Add(modPath);
+                    }
+                }
+            }
+            /*   builder.Services.AddResponseCompression(options =>
+               {
+                   options.EnableForHttps = true;
+               });*/
+        }
+
+
+        private void KestrelServices(WebApplicationBuilder builder)
+        {
+            builder = builder ?? throw new ArgumentNullException(nameof(builder));
 
             // Disable Kestrel's built-in console lifetime management
             builder.Services.AddSingleton<IHostLifetime, NoopHostLifetime>();
+            try
+            {
+                builder.Services.AddResponseCompression(options =>
+                {
+                    options.EnableForHttps = true;
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to configure response compression.", ex);
+            }
         }
 
 
@@ -69,6 +90,7 @@ namespace KestrelLib
                     }
                 }
             }
+
             // You can also copy endpoints, pipes, sockets, etc. if set on the options object
             // Or use options.ConfigurationLoader, etc.
         }
@@ -77,7 +99,7 @@ namespace KestrelLib
 
         private List<ListenerOptions>? _listenerOptions;
 
-        public void ConfigureListener(int port, IPAddress? iPAddress = null, string? certPath = null, string? certPassword = null, HttpProtocols protocols = HttpProtocols.Http1AndHttp2, bool useConnectionLogging = false)
+        public void ConfigureListener(int port, IPAddress? iPAddress = null, string? certPath = null, string? certPassword = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
         {
             if (_listenerOptions == null)
             {
@@ -100,15 +122,16 @@ namespace KestrelLib
         {
             try
             {
-                var app = WebApplication;
+                if (App == null)
+                {
+                    throw new InvalidOperationException("WebApplication is not initialized. Call ApplyConfiguration first.");
+                }
 
-                // ApplyConfiguration();
-
-                app.MapMethods(pattern, [httpMethod.ToUpperInvariant()], async (HttpContext context) =>
+                _ = App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], async (HttpContext context) =>
                 {
                     using var reader = new StreamReader(context.Request.Body);
                     var body = await reader.ReadToEndAsync();
-
+                   // context.Request.Headers.Remove("Accept-Encoding");
                     var request = new
                     {
                         context.Request.Method,
@@ -120,21 +143,60 @@ namespace KestrelLib
 
                     var inputJson = JsonSerializer.Serialize(request);
 
+                    var KrResponse = new KestrunResponse();
+
                     using PowerShell ps = PowerShell.Create();
                     using var rs = RunspaceFactory.CreateRunspace();
                     rs.Open();
-                    // rs.SessionStateProxy.SetVariable("RequestJson", inputJson);
                     rs.SessionStateProxy.SetVariable("Request", request);
+                    rs.SessionStateProxy.SetVariable("Response", KrResponse); 
                     ps.Runspace = rs;
+
+                    // Always import stored modules
+                    foreach (var modPath in _modulePaths)
+                    {
+                        if (!string.IsNullOrWhiteSpace(modPath))
+                        {
+                            ps.AddScript($"Import-Module -Name '{modPath.Replace("'", "''")}' -ErrorAction SilentlyContinue").Invoke();
+                            ps.Commands.Clear();
+                        }
+                    }
+
                     ps.AddScript(scriptBlock);
 
                     var results = await Task.Run(() => ps.Invoke());
-                    if (ps.HadErrors)
+                    
+                     // Capture errors and output from the runspace
+                    var errorOutput = ps.Streams.Error.Select(e => e.ToString()).ToList();
+                    var verboseOutput = ps.Streams.Verbose.Select(v => v.ToString()).ToList();
+                    var warningOutput = ps.Streams.Warning.Select(w => w.ToString()).ToList();
+                    var debugOutput = ps.Streams.Debug.Select(d => d.ToString()).ToList();
+                    var infoOutput = ps.Streams.Information.Select(i => i.ToString()).ToList();
+
+                    if (ps.HadErrors || errorOutput.Count > 0)
                     {
                         context.Response.StatusCode = 500;
-                        return "❌ PowerShell error";
+                        var errorMsg = $"❌[Error]\n\t" + string.Join("\n\t", errorOutput); 
+                        if (verboseOutput.Count > 0)
+                            errorMsg += "\n💬[Verbose]\n\t" + string.Join("\n\t", verboseOutput);
+                        if (warningOutput.Count > 0)
+                            errorMsg += "\n⚠️[Warning]\n\t" + string.Join("\n\t", warningOutput);
+                        if (debugOutput.Count > 0)
+                            errorMsg += "\n🐞[Debug]\n\t" + string.Join("\n\t", debugOutput);
+                        if (infoOutput.Count > 0)
+                            errorMsg += "\nℹ️[Info]\n\t" + string.Join("\n\t", infoOutput);
+                        Console.WriteLine(errorMsg);
+                        return errorMsg;
                     }
-                    return string.Join("\n", results.Select(r => r.ToString()));
+
+
+                    // If redirect, nothing to return
+                    if (!string.IsNullOrEmpty(KrResponse.RedirectUrl))
+                        return string.Empty;
+                    await KrResponse.ApplyTo(context.Response);
+                    // Optionally, you could return output/verbose/debug info here for diagnostics
+                    // return string.Join("\n", results.Select(r => r.ToString()));
+                      return string.Empty;
                 });
             }
             catch (Exception ex)
@@ -143,50 +205,6 @@ namespace KestrelLib
             }
         }
 
-    /*    public void AddRoute(string pattern)
-        {
-            WebApplication.Map(pattern, async (HttpContext context) =>
-            {
-                using var reader = new StreamReader(context.Request.Body);
-                var body = await reader.ReadToEndAsync();
-
-                var request = new
-                {
-                    Method = context.Request.Method,
-                    Path = context.Request.Path.ToString(),
-                    Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                    Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                    Body = body
-                };
-
-                var inputJson = JsonSerializer.Serialize(request);
-
-                using PowerShell ps = PowerShell.Create();
-                var rs = RunspaceFactory.CreateRunspace();
-                rs.Open();
-                rs.SessionStateProxy.SetVariable("RequestJson", inputJson);
-                rs.SessionStateProxy.SetVariable("SharedHash", sharedState);
-                ps.Runspace = rs;
-
-                ps.AddScript(@"$data = $RequestJson | ConvertFrom-Json
-$key = $data.Path.Trim('/')
-$SharedHash[$key] = $data.Body
-""Stored '$($data.Body)' under key '$key'""");
-
-                var results = await Task.Run(() => ps.Invoke());
-
-                if (ps.HadErrors)
-                {
-                    context.Response.StatusCode = 500;
-                    await context.Response.WriteAsync("❌ PowerShell error");
-                    return;
-                }
-
-                var output = string.Join("\n", results.Select(r => r.ToString()));
-                context.Response.StatusCode = 200;
-                await context.Response.WriteAsync(output);
-            });
-        }*/
 
 
         public void ApplyConfiguration()
@@ -195,15 +213,16 @@ $SharedHash[$key] = $data.Body
             {
                 return; // Already configured
             }
-            if (_kestrelOptions.Count == 0)
-            {
-                throw new InvalidOperationException("No Kestrel options configured. Call ConfigureKestrel first.");
-            }
-
-
-
+            /*    if (_kestrelOptions.Count == 0)
+                {
+                    throw new InvalidOperationException("No Kestrel options configured. Call ConfigureKestrel first.");
+                }
+    */
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
+
+
+            KestrelServices(builder);
 
             builder.WebHost.ConfigureKestrel(options =>
          {
@@ -298,35 +317,38 @@ $SharedHash[$key] = $data.Body
              }
 
          });
+            App = builder.Build();
+            App.UseResponseCompression();
+
             _isConfigured = true;
         }
         public void Run()
         {
             ApplyConfiguration();
-            WebApplication.Run();
+            App?.Run();
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
             ApplyConfiguration();
-            await WebApplication.StartAsync(cancellationToken);
+            if (App != null)
+            {
+                await App.StartAsync(cancellationToken);
+            }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            if (_webApplication != null)
+            if (App != null)
             {
-                await _webApplication.StopAsync(cancellationToken);
+                await App.StopAsync(cancellationToken);
             }
         }
 
         public void Stop()
         {
-            if (_webApplication != null)
-            {
-                // This initiates a graceful shutdown.
-                _webApplication.Lifetime.StopApplication();
-            }
+            // This initiates a graceful shutdown.
+            App?.Lifetime.StopApplication();
         }
     }
 }

@@ -27,8 +27,14 @@ function Add-AspNetCoreType {
             $assemblyPath = Join-Path -Path $verDir.FullName -ChildPath "Microsoft.AspNetCore.dll"
             if (Test-Path -Path $assemblyPath) {
                 Assert-AssemblyLoaded -AssemblyPath $assemblyPath
-                return
+               
             }
+            $responseCompressionPath = Join-Path -Path $verDir.FullName -ChildPath "Microsoft.AspNetCore.ResponseCompression.dll"
+            if (Test-Path -Path $responseCompressionPath) {
+                Assert-AssemblyLoaded -AssemblyPath $responseCompressionPath
+            }
+
+            return 
         }
        
     }
@@ -44,7 +50,7 @@ Add-AspNetCoreType -Version "net8"
 # root path
 $root = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
 # Assert that the assembly is loaded
-Assert-AssemblyLoaded "$root\src\Kestrel\bin\Debug\net8.0\Kestrel.dll"
+Assert-AssemblyLoaded "$root\Kestrel\bin\Debug\net8.0\Kestrel.dll"
 
 
 # load private functions

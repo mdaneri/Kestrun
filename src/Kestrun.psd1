@@ -9,7 +9,7 @@
 @{
 
     # Script module or binary module file associated with this manifest.
-    RootModule = 'Kestrel.psm1'
+    RootModule = 'Kestrun.psm1'
 
     # Version number of this module.
     ModuleVersion          = '0.0.1'
@@ -24,13 +24,13 @@
     Author                 = 'Max Daneri'
 
     # Company or vendor of this module
-    CompanyName            = 'Unknown'
+    CompanyName            = 'Kestrun'
 
     # Copyright statement for this module
-    Copyright              = '(c) m_dan. All rights reserved.'
+    Copyright              = '(c) Kestrun. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description            = 'Kestrel is a cross-platform web server for ASP.NET Core. It is designed to be fast and lightweight, making it suitable for serving dynamic web applications and APIs.'
+    Description            = 'Kestrun is a cross-platform web server for ASP.NET Core. It is designed to be fast and lightweight, making it suitable for serving dynamic web applications and APIs.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion      = '7.0'
@@ -76,7 +76,14 @@
     FunctionsToExport      = @()
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    CmdletsToExport        = @()
+    CmdletsToExport        = @(
+        'New-KrServer',
+        'Set-KrServerOptions',
+        'Add-KrListener',
+        'Add-KrRoute',
+        'Start-KrServer',
+        'Write-KrJsonResponse'
+    )
 
     # Variables to export from this module
     VariablesToExport      = '*'
