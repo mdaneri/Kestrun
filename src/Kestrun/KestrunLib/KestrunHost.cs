@@ -327,57 +327,49 @@ namespace KestrelLib
 
                     var inputJson = JsonSerializer.Serialize(request);
 
-                    var KrResponse = new KestrunResponse();
+                    var krResponse = new KestrunResponse();
 
                     using PowerShell ps = PowerShell.Create();
-                    ps.RunspacePool = _runspacePool; 
+                    ps.RunspacePool = _runspacePool;
 
-                    // Always import stored modules
-                    foreach (var modPath in _modulePaths)
-                    {
-                        if (!string.IsNullOrWhiteSpace(modPath))
-                        {
-                            ps.AddScript($"Import-Module -Name '{modPath.Replace("'", "''")}' -ErrorAction SilentlyContinue").Invoke();
-                            ps.Commands.Clear();
-                        }
-                    }
-                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement();
-                    ps.AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", KrResponse).AddParameter("Scope", "Script").AddStatement();
-                    ps.AddScript(scriptBlock);
 
+                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement().
+                     AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
+                     AddScript(scriptBlock);
+                    // Execute the PowerShell script block
+                    // Using Task.Run to avoid blocking the thread
+                    //  var results = await Task.Run(() => ps.Invoke());
+                    // var results = await ps.InvokeAsync();
                     var results = await Task.Run(() => ps.Invoke());
-
                     // Capture errors and output from the runspace
-                    var errorOutput = ps.Streams.Error.Select(e => e.ToString()).ToList();
-                    var verboseOutput = ps.Streams.Verbose.Select(v => v.ToString()).ToList();
-                    var warningOutput = ps.Streams.Warning.Select(w => w.ToString()).ToList();
-                    var debugOutput = ps.Streams.Debug.Select(d => d.ToString()).ToList();
-                    var infoOutput = ps.Streams.Information.Select(i => i.ToString()).ToList();
-
-                    if (ps.HadErrors || errorOutput.Count > 0)
+                    var hadErrors = ps.HadErrors || ps.Streams.Error.Any();
+                    if (hadErrors)
                     {
+                        var errorResult = BuildErrorText(
+                            ps.Streams.Error.Select(e => e.ToString()),
+                            ps.Streams.Verbose.Select(v => v.ToString()),
+                            ps.Streams.Warning.Select(w => w.ToString()),
+                            ps.Streams.Debug.Select(d => d.ToString()),
+                            ps.Streams.Information.Select(i => i.ToString()));
                         context.Response.StatusCode = 500;
-                        var errorMsg = $"❌[Error]\n\t" + string.Join("\n\t", errorOutput);
-                        if (verboseOutput.Count > 0)
-                            errorMsg += "\n💬[Verbose]\n\t" + string.Join("\n\t", verboseOutput);
-                        if (warningOutput.Count > 0)
-                            errorMsg += "\n⚠️[Warning]\n\t" + string.Join("\n\t", warningOutput);
-                        if (debugOutput.Count > 0)
-                            errorMsg += "\n🐞[Debug]\n\t" + string.Join("\n\t", debugOutput);
-                        if (infoOutput.Count > 0)
-                            errorMsg += "\nℹ️[Info]\n\t" + string.Join("\n\t", infoOutput);
-                        Console.WriteLine(errorMsg);
-                        return errorMsg;
+                        context.Response.ContentType = "text/plain; charset=utf-8";
+                        //  Console.WriteLine(errorResult);
+                        // return errorResult;
+                        await context.Response.WriteAsync(errorResult?.ToString() ?? string.Empty);
+                        return;
                     }
 
 
                     // If redirect, nothing to return
-                    if (!string.IsNullOrEmpty(KrResponse.RedirectUrl))
-                        return string.Empty;
-                    await KrResponse.ApplyTo(context.Response);
+                    if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                    {
+                        context.Response.Redirect(krResponse.RedirectUrl);
+                        return;
+                    }
+                    await krResponse.ApplyTo(context.Response);
                     // Optionally, you could return output/verbose/debug info here for diagnostics
                     // return string.Join("\n", results.Select(r => r.ToString()));
-                    return string.Empty;
+                    return;
                 });
             }
             catch (Exception ex)
@@ -410,8 +402,13 @@ namespace KestrelLib
     */
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
+            var iss = InitialSessionState.CreateDefault(); foreach (var p in _modulePaths) { iss.ImportPSModule([p]); }
 
-            _runspacePool = RunspaceFactory.CreateRunspacePool(1, options.MaxRunspaces ?? Environment.ProcessorCount);
+            _runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss);
+            _runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
+            _runspacePool.SetMinRunspaces(1);
+            _runspacePool.SetMaxRunspaces(options.MaxRunspaces ?? Environment.ProcessorCount * 2);
+            _runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
             if (_runspacePool == null)
             {
                 throw new InvalidOperationException("Failed to create runspace pool.");
@@ -473,7 +470,7 @@ namespace KestrelLib
         public void Run()
         {
             ApplyConfiguration();
-             
+
             App?.Run();
         }
 
@@ -499,5 +496,79 @@ namespace KestrelLib
             // This initiates a graceful shutdown.
             App?.Lifetime.StopApplication();
         }
+
+
+        static string BuildErrorText(
+        IEnumerable<string> errors,
+        IEnumerable<string> verbose,
+        IEnumerable<string> warnings,
+        IEnumerable<string> debug,
+        IEnumerable<string> info)
+        {
+            var sb = new StringBuilder();
+
+            void append(string emoji, IEnumerable<string> lines)
+            {
+                if (!lines.Any()) return;
+                sb.AppendLine($"{emoji}[{emoji switch
+                {
+                    "❌" => "Error",
+                    "💬" => "Verbose",
+                    "⚠️" => "Warning",
+                    "🐞" => "Debug",
+                    _ => "Info"
+                }}]");
+                foreach (var l in lines) sb.AppendLine($"\t{l}");
+            }
+
+            append("❌", errors);
+            append("💬", verbose);
+            append("⚠️", warnings);
+            append("🐞", debug);
+            append("ℹ️", info);
+
+            var msg = sb.ToString();
+            Console.WriteLine(msg);
+
+
+            return msg;
+        }
+
+        static IResult BuildErrorResult(
+                IEnumerable<string> errors,
+                IEnumerable<string> verbose,
+                IEnumerable<string> warnings,
+                IEnumerable<string> debug,
+                IEnumerable<string> info)
+        {
+            var sb = new StringBuilder();
+
+            void append(string emoji, IEnumerable<string> lines)
+            {
+                if (!lines.Any()) return;
+                sb.AppendLine($"{emoji}[{emoji switch
+                {
+                    "❌" => "Error",
+                    "💬" => "Verbose",
+                    "⚠️" => "Warning",
+                    "🐞" => "Debug",
+                    _ => "Info"
+                }}]");
+                foreach (var l in lines) sb.AppendLine($"\t{l}");
+            }
+
+            append("❌", errors);
+            append("💬", verbose);
+            append("⚠️", warnings);
+            append("🐞", debug);
+            append("ℹ️", info);
+
+            var msg = sb.ToString();
+            Console.WriteLine(msg);
+
+            // 500 + text body
+            return Results.Text(content: msg, statusCode: 500, contentType: "text/plain; charset=utf-8");
+        }
+
     }
 }
