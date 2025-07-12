@@ -10,35 +10,53 @@ function Assert-AssemblyLoaded {
 }
 
 function Add-AspNetCoreType {
+    <#
+    .SYNOPSIS
+        Loads required ASP.NET Core assemblies for PowerShell usage.
+    .PARAMETER Version
+        The .NET version to target (e.g. net8, net9, net10).
+    #>
     param (
         [Parameter()]
         [ValidateSet("net8", "net9", "net10")]
         [string]$Version = "net8"
     )
     $versionNumber = $Version.Substring(3)
-    $path = Split-Path -Path (Get-Command -Name "dotnet.exe").Source -Parent
-    if (-not $path) {
+    $dotnetPath = (Get-Command -Name "dotnet.exe" -ErrorAction Stop).Source
+    $dotnetDir = Split-Path -Path $dotnetPath -Parent
+    if (-not $dotnetDir) {
         throw "Could not determine the path to the dotnet executable."
     }
-    $baseDir = Join-Path -Path $path -ChildPath "shared" -AdditionalChildPath "Microsoft.AspNetCore.App"
-    if (Test-Path -Path $baseDir -PathType Container) {
-        $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
-        foreach ($verDir in $versionDirs) {
-            $assemblyPath = Join-Path -Path $verDir.FullName -ChildPath "Microsoft.AspNetCore.dll"
-            if (Test-Path -Path $assemblyPath) {
-                Assert-AssemblyLoaded -AssemblyPath $assemblyPath
-               
-            }
-            $responseCompressionPath = Join-Path -Path $verDir.FullName -ChildPath "Microsoft.AspNetCore.ResponseCompression.dll"
-            if (Test-Path -Path $responseCompressionPath) {
-                Assert-AssemblyLoaded -AssemblyPath $responseCompressionPath
-            }
-
-            return 
-        }
-       
+    $baseDir = Join-Path -Path $dotnetDir -ChildPath "shared\Microsoft.AspNetCore.App"
+    if (-not (Test-Path -Path $baseDir -PathType Container)) {
+        throw "ASP.NET Core shared framework not found at $baseDir."
     }
-    throw "Microsoft.AspNetCore.App version $Version.* not found in PSModulePath."
+    $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
+    foreach ($verDir in $versionDirs) {
+        $assemblies = @(
+            "Microsoft.AspNetCore.dll",
+            "Microsoft.AspNetCore.ResponseCompression.dll",
+            "Microsoft.AspNetCore.Http.Results.dll"
+        )
+        $allFound = $true
+        foreach ($asm in $assemblies) {
+            $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
+            if (-not (Test-Path -Path $asmPath)) {
+                Write-Verbose "Assembly $asm not found in $($verDir.FullName)"
+                $allFound = $false
+                break
+            }
+        }
+        if ($allFound) {
+            foreach ($asm in $assemblies) {
+                $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
+                Assert-AssemblyLoaded -AssemblyPath $asmPath
+            }
+            Write-Verbose "Loaded ASP.NET Core assemblies from $($verDir.FullName)"
+            return $verDir.Name
+        }
+    }
+    throw "Microsoft.AspNetCore.App version $Version.* not found in $baseDir."
 }
 
 # root path

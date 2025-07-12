@@ -345,18 +345,12 @@ namespace KestrelLib
                     var hadErrors = ps.HadErrors || ps.Streams.Error.Any();
                     if (hadErrors)
                     {
-                        var errorResult = BuildErrorText(
+                        return BuildErrorResult(
                             ps.Streams.Error.Select(e => e.ToString()),
                             ps.Streams.Verbose.Select(v => v.ToString()),
                             ps.Streams.Warning.Select(w => w.ToString()),
                             ps.Streams.Debug.Select(d => d.ToString()),
-                            ps.Streams.Information.Select(i => i.ToString()));
-                        context.Response.StatusCode = 500;
-                        context.Response.ContentType = "text/plain; charset=utf-8";
-                        //  Console.WriteLine(errorResult);
-                        // return errorResult;
-                        await context.Response.WriteAsync(errorResult?.ToString() ?? string.Empty);
-                        return;
+                            ps.Streams.Information.Select(i => i.ToString())); 
                     }
 
 
@@ -364,12 +358,10 @@ namespace KestrelLib
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     {
                         context.Response.Redirect(krResponse.RedirectUrl);
-                        return;
+                        return  Results.Redirect(krResponse.RedirectUrl);
                     }
-                    await krResponse.ApplyTo(context.Response);
-                    // Optionally, you could return output/verbose/debug info here for diagnostics
-                    // return string.Join("\n", results.Select(r => r.ToString()));
-                    return;
+                    await krResponse.ApplyTo(context.Response); 
+                   return Results.Empty;    
                 });
             }
             catch (Exception ex)
