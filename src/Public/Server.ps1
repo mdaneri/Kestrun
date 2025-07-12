@@ -114,7 +114,8 @@ function Set-KrServerOptions {
         [switch]$DenyServerHeader,
         [switch]$AllowAlternateSchemes,
         [switch]$AllowHostHeaderOverride,
-        [switch]$DisableStringReuse
+        [switch]$DisableStringReuse,
+        [int]$MaxRunspaces
     )
     $options = [KestrelLib.KestrunOptions]::new() 
     if ($MaxRequestBodySize -gt 0) {
@@ -167,6 +168,9 @@ function Set-KrServerOptions {
     }
     if ($DisableStringReuse.IsPresent) {
         $options.DisableStringReuse = $true
+    }
+    if ($MaxRunspaces -gt 0) {
+        $options.MaxRunspaces = $MaxRunspaces
     }
     #RequestHeaderEncodingSelector 
     #ResponseHeaderEncodingSelector
@@ -222,7 +226,8 @@ function Add-KrRoute {
         [ScriptBlock]$ScriptBlock
     )
     $server.ApplyConfiguration()
-    $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
+     # $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrelLib.ScriptLanguage]::PowerShell , $Method)
+   $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
 }
 
 

@@ -52,6 +52,11 @@ namespace KestrelLib
         /// <summary>Application name (optional, for diagnostics).</summary>
         public string? ApplicationName { get; set; }
 
+        /// <summary>
+        /// Gets or sets the maximum number of runspaces to use for script execution.
+        /// </summary>
+        public int? MaxRunspaces { get; set; }
+
         // Add more properties as needed for your scenario.
     }
 }

@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kestrel", "src\Kestrel\Kestrel.csproj", "{2DC5C603-9907-9D28-5F02-DC85B2C9099B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kestrun", "src\Kestrun\Kestrun.csproj", "{2DC5C603-9907-9D28-5F02-DC85B2C9099B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

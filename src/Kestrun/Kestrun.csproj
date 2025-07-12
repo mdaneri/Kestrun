@@ -7,7 +7,11 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.3.0" />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.0" />
+    <PackageReference Include="pythonnet" Version="3.0.5" />
   </ItemGroup>
 </Project>
