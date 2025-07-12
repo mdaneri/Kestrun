@@ -5,13 +5,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" />
-    <PackageReference Include="Microsoft.AspNetCore.ResponseCompression" Version="2.3.0" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" /> 
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.0" />
-    <PackageReference Include="pythonnet" Version="3.0.5" />
+    <PackageReference Include="pythonnet" Version="3.0.5" /> 
   </ItemGroup>
 </Project>

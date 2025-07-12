@@ -215,6 +215,7 @@ function New-KrServer {
 
 
 function Add-KrRoute {
+    [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [KestrelLib.KestrunHost]$Server,
@@ -222,12 +223,22 @@ function Add-KrRoute {
         [string]$Method = "GET",
         [Parameter(Mandatory = $true)]
         [string]$Path,
-        [Parameter(Mandatory = $true)]
-        [ScriptBlock]$ScriptBlock
+        [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
+        [ScriptBlock]$ScriptBlock,
+        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
+        [string]$Code,
+        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
+        [KestrelLib.ScriptLanguage]$Language  
+
     )
     $server.ApplyConfiguration()
-     # $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrelLib.ScriptLanguage]::PowerShell , $Method)
-   $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
+    if ($PSCmdlet.ParameterSetName -eq "Code") {
+        $Server.AddRoute($Path, $Code, $Language, $Method)
+    }
+    else {
+        $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrelLib.ScriptLanguage]::PowerShell, $Method)
+    }
+    # $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
 }
 
 

@@ -69,7 +69,9 @@ Add-AspNetCoreType -Version "net8"
 $root = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
 # Assert that the assembly is loaded
 Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\Kestrun.dll"
-
+#Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\python.runtime.dll"
+#Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll"
+Assert-AssemblyLoaded "$($PSHOME)\Microsoft.CodeAnalysis.dll"
 # load private functions
 Get-ChildItem "$($root)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 

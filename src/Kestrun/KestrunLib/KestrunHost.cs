@@ -124,27 +124,100 @@ namespace KestrelLib
                 await res.ApplyTo(ctx.Response);
             };
         }
+
+        static public void ConfigurePythonRuntimePath(string path)
+        {
+            Python.Runtime.Runtime.PythonDLL = path;
+        }
+        // ---------------------------------------------------------------------------
+        //  helpers at class level
+        // ---------------------------------------------------------------------------
+        private static readonly object _pyGate = new();
+        private static bool _pyInit = false;
+
+        private static void EnsurePythonEngine()
+        {
+            if (_pyInit) return;
+
+            lock (_pyGate)
+            {
+                if (_pyInit) return;          // double-check
+
+                // If you need a specific DLL, set Runtime.PythonDLL
+                // or expose it via the PYTHONNET_PYDLL environment variable.
+                // Runtime.PythonDLL = @"C:\Python312\python312.dll";
+
+                PythonEngine.Initialize();        // load CPython once
+                PythonEngine.BeginAllowThreads(); // let other threads run
+                _pyInit = true;
+            }
+        }
+
+        // ---------------------------------------------------------------------------
+        //  per-route delegate builder
+        // ---------------------------------------------------------------------------
         private RequestDelegate BuildPyDelegate(string code)
         {
-            PythonEngine.Initialize();
-            using var gil = Py.GIL();
-            dynamic scope = Py.CreateScope();
-            scope.Exec(code);                    // script defines:  def handle(ctx, res): ...
+            EnsurePythonEngine();                 // one-time init
 
+            // ---------- compile the script once ----------
+            using var gil = Py.GIL();           // we are on the caller's thread
+            using var scope = Py.CreateScope();
+
+            /*  Expect the user script to contain:
+
+                    def handle(ctx, res):
+                        # ctx -> ASP.NET HttpContext (proxied)
+                        # res -> KestrunResponse    (proxied)
+                        ...
+
+                Scope.Exec compiles & executes that code once per route.
+            */
+            scope.Exec(code);
             dynamic pyHandle = scope.Get("handle");
 
+            // ---------- return a RequestDelegate ----------
             return async ctx =>
             {
-                using var _ = Py.GIL();
-                var res = new KestrunResponse();
-                pyHandle(ctx.ToPython(), res.ToPython());
+                try
+                {
+                    using var _ = Py.GIL();       // enter GIL for *this* request
 
-                if (!string.IsNullOrEmpty(res.RedirectUrl))
-                    return;
+                    var res = new KestrunResponse();
 
-                await res.ApplyTo(ctx.Response);
+                    // Call the Python handler (Python → .NET marshal is automatic)
+                    pyHandle(ctx, res);
+
+                    // redirect?
+                    if (!string.IsNullOrEmpty(res.RedirectUrl))
+                    {
+                        ctx.Response.Redirect(res.RedirectUrl);
+                        return;                   // finally-block will CompleteAsync
+                    }
+
+                    // normal response
+                    await res.ApplyTo(ctx.Response).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    // optional logging
+                    Console.WriteLine($"Python route error: {ex}");
+                    ctx.Response.StatusCode = 500;
+                    ctx.Response.ContentType = "text/plain; charset=utf-8";
+                    await ctx.Response.WriteAsync(
+                        "Python script failed while processing the request.").ConfigureAwait(false);
+                }
+                finally
+                {
+                    // Always flush & close so the client doesn’t hang
+                    try { await ctx.Response.CompleteAsync().ConfigureAwait(false); }
+                    catch (ObjectDisposedException) { /* client disconnected */ }
+                }
             };
         }
+
+
+
 
 
         private RequestDelegate BuildFsDelegate(string code)
@@ -204,77 +277,90 @@ namespace KestrelLib
 
         private RequestDelegate BuildPsDelegate(string code)
         {
-            var modules = _modulePaths.ToArray();
-            var pool = RunspaceFactory.CreateRunspacePool(1, Environment.ProcessorCount);
-            pool.Open();
 
-            return async (HttpContext context) =>
+            return async context =>
             {
-                using var reader = new StreamReader(context.Request.Body);
-                var body = await reader.ReadToEndAsync();
-                // context.Request.Headers.Remove("Accept-Encoding");
-                var request = new
+                try
                 {
-                    context.Request.Method,
-                    Path = context.Request.Path.ToString(),
-                    Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                    Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                    Body = body
-                };
-
-                var inputJson = JsonSerializer.Serialize(request);
-
-                var KrResponse = new KestrunResponse();
-
-                using PowerShell ps = PowerShell.Create();
-                ps.RunspacePool = _runspacePool;
-
-                // Always import stored modules
-                foreach (var modPath in _modulePaths)
-                {
-                    if (!string.IsNullOrWhiteSpace(modPath))
+                    using var reader = new StreamReader(context.Request.Body);
+                    var body = await reader.ReadToEndAsync();
+                    // context.Request.Headers.Remove("Accept-Encoding");
+                    var request = new
                     {
-                        ps.AddScript($"Import-Module -Name '{modPath.Replace("'", "''")}' -ErrorAction SilentlyContinue").Invoke();
-                        ps.Commands.Clear();
+                        context.Request.Method,
+                        Path = context.Request.Path.ToString(),
+                        Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
+                        Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
+                        Body = body
+                    };
+
+                    var inputJson = JsonSerializer.Serialize(request);
+
+                    var krResponse = new KestrunResponse();
+                    EnsureRunspacePoolOpen();
+                    using PowerShell ps = PowerShell.Create();
+                    ps.RunspacePool = _runspacePool;
+
+
+                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement().
+                     AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
+                     AddScript(code);
+                    // Execute the PowerShell script block
+                    // Using Task.Run to avoid blocking the thread 
+                    Console.WriteLine("Executing PowerShell script...");
+                    // Using Task.Run to avoid blocking the thread
+                    // This is necessary to prevent deadlocks in the runspace pool
+                    var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+                    .ConfigureAwait(false);
+
+                    Console.WriteLine($"PowerShell script executed with {psResults.Count} results.");
+                    //  var psResults = await Task.Run(() => ps.Invoke());
+                    // Capture errors and output from the runspace 
+                    if (ps.HadErrors || ps.Streams.Error.Count != 0)
+                    {
+                        await BuildErrorResponseAsync(context, ps);
+                        return;
+                    }
+
+                    Console.WriteLine("PowerShell script completed successfully.");
+                    // If redirect, nothing to return
+                    if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                    {
+                        Console.WriteLine($"Redirecting to {krResponse.RedirectUrl}");
+                        context.Response.Redirect(krResponse.RedirectUrl);
+                        return;
+                    }
+                    Console.WriteLine("Applying response to HttpResponse...");
+                    // Apply the response to the HttpResponse
+                    await krResponse.ApplyTo(context.Response);
+                    return;
+                }
+                // optional: catch client cancellation to avoid noisy logs
+                catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+                {
+                    // client disconnected – nothing to send
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception (optional)
+                    Console.WriteLine($"Error processing request: {ex.Message}");
+                    context.Response.StatusCode = 500; // Internal Server Error
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync("An error occurred while processing your request.");
+                }
+                finally
+                {
+                    // CompleteAsync is idempotent – safe to call once more
+                    try
+                    {
+                        Console.WriteLine("Completing response for " + context.Request.Path);
+                        await context.Response.CompleteAsync().ConfigureAwait(false);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // response has already been torn down (e.g., client aborted)
                     }
                 }
-                ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement();
-                ps.AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", KrResponse).AddParameter("Scope", "Script").AddStatement();
-                ps.AddScript(code);
-
-                var results = await Task.Run(() => ps.Invoke());
-
-                // Capture errors and output from the runspace
-                var errorOutput = ps.Streams.Error.Select(e => e.ToString()).ToList();
-                var verboseOutput = ps.Streams.Verbose.Select(v => v.ToString()).ToList();
-                var warningOutput = ps.Streams.Warning.Select(w => w.ToString()).ToList();
-                var debugOutput = ps.Streams.Debug.Select(d => d.ToString()).ToList();
-                var infoOutput = ps.Streams.Information.Select(i => i.ToString()).ToList();
-
-                if (ps.HadErrors || errorOutput.Count > 0)
-                {
-                    context.Response.StatusCode = 500;
-                    var errorMsg = $"❌[Error]\n\t" + string.Join("\n\t", errorOutput);
-                    if (verboseOutput.Count > 0)
-                        errorMsg += "\n💬[Verbose]\n\t" + string.Join("\n\t", verboseOutput);
-                    if (warningOutput.Count > 0)
-                        errorMsg += "\n⚠️[Warning]\n\t" + string.Join("\n\t", warningOutput);
-                    if (debugOutput.Count > 0)
-                        errorMsg += "\n🐞[Debug]\n\t" + string.Join("\n\t", debugOutput);
-                    if (infoOutput.Count > 0)
-                        errorMsg += "\nℹ️[Info]\n\t" + string.Join("\n\t", infoOutput);
-                    Console.WriteLine(errorMsg);
-
-                }
-
-
-                // If redirect, nothing to return
-                if (!string.IsNullOrEmpty(KrResponse.RedirectUrl))
-                    return;
-                await KrResponse.ApplyTo(context.Response);
-                // Optionally, you could return output/verbose/debug info here for diagnostics
-                // return string.Join("\n", results.Select(r => r.ToString()));
-                return;
             };
         }
 
@@ -302,6 +388,8 @@ namespace KestrelLib
 
             App.MapMethods(pattern, new[] { httpMethod.ToUpperInvariant() }, handler);
         }
+
+
 
         public void AddRoute(string pattern, string scriptBlock, string httpMethod = "GET")
         {
@@ -337,20 +425,13 @@ namespace KestrelLib
                      AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
                      AddScript(scriptBlock);
                     // Execute the PowerShell script block
-                    // Using Task.Run to avoid blocking the thread
-                    //  var results = await Task.Run(() => ps.Invoke());
-                    // var results = await ps.InvokeAsync();
-                    var results = await Task.Run(() => ps.Invoke());
+                    // Using Task.Run to avoid blocking the thread 
+                    var psResults = await ps.InvokeAsync();
                     // Capture errors and output from the runspace
-                    var hadErrors = ps.HadErrors || ps.Streams.Error.Any();
+                    var hadErrors = ps.HadErrors || ps.Streams.Error.Count != 0;
                     if (hadErrors)
                     {
-                        return BuildErrorResult(
-                            ps.Streams.Error.Select(e => e.ToString()),
-                            ps.Streams.Verbose.Select(v => v.ToString()),
-                            ps.Streams.Warning.Select(w => w.ToString()),
-                            ps.Streams.Debug.Select(d => d.ToString()),
-                            ps.Streams.Information.Select(i => i.ToString())); 
+                        return BuildErrorResult(ps);
                     }
 
 
@@ -358,10 +439,10 @@ namespace KestrelLib
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     {
                         context.Response.Redirect(krResponse.RedirectUrl);
-                        return  Results.Redirect(krResponse.RedirectUrl);
+                        return Results.Redirect(krResponse.RedirectUrl);
                     }
-                    await krResponse.ApplyTo(context.Response); 
-                   return Results.Empty;    
+                    await krResponse.ApplyTo(context.Response);
+                    return Results.Empty;
                 });
             }
             catch (Exception ex)
@@ -394,17 +475,8 @@ namespace KestrelLib
     */
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
-            var iss = InitialSessionState.CreateDefault(); foreach (var p in _modulePaths) { iss.ImportPSModule([p]); }
+            _runspacePool = CreateRunspacePool(options.MaxRunspaces);
 
-            _runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss);
-            _runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
-            _runspacePool.SetMinRunspaces(1);
-            _runspacePool.SetMaxRunspaces(options.MaxRunspaces ?? Environment.ProcessorCount * 2);
-            _runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
-            if (_runspacePool == null)
-            {
-                throw new InvalidOperationException("Failed to create runspace pool.");
-            }
             _runspacePool?.Open();
             KestrelServices(builder);
 
@@ -490,13 +562,18 @@ namespace KestrelLib
         }
 
 
-        static string BuildErrorText(
-        IEnumerable<string> errors,
-        IEnumerable<string> verbose,
-        IEnumerable<string> warnings,
-        IEnumerable<string> debug,
-        IEnumerable<string> info)
+        static string BuildErrorText(PowerShell ps)
         {
+            ArgumentNullException.ThrowIfNull(ps);
+
+            var errors = ps.Streams.Error.Select(e => e.ToString());
+            var verbose = ps.Streams.Verbose.Select(v => v.ToString());
+            var warnings = ps.Streams.Warning.Select(w => w.ToString());
+            var debug = ps.Streams.Debug.Select(d => d.ToString());
+            var info = ps.Streams.Information.Select(i => i.ToString());
+            // Format the output
+            // 500 + text body
+
             var sb = new StringBuilder();
 
             void append(string emoji, IEnumerable<string> lines)
@@ -525,14 +602,25 @@ namespace KestrelLib
 
             return msg;
         }
-
-        static IResult BuildErrorResult(
-                IEnumerable<string> errors,
-                IEnumerable<string> verbose,
-                IEnumerable<string> warnings,
-                IEnumerable<string> debug,
-                IEnumerable<string> info)
+        // Helper that writes the error to the response stream
+        static Task BuildErrorResponseAsync(HttpContext context, PowerShell ps)
         {
+            var errText = BuildErrorText(ps);               // plain string
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            return context.Response.WriteAsync(errText);    // returns Task
+        }
+
+
+        static IResult BuildErrorResult(PowerShell ps)
+        {
+            ArgumentNullException.ThrowIfNull(ps);
+
+            var errors = ps.Streams.Error.Select(e => e.ToString());
+            var verbose = ps.Streams.Verbose.Select(v => v.ToString());
+            var warnings = ps.Streams.Warning.Select(w => w.ToString());
+            var debug = ps.Streams.Debug.Select(d => d.ToString());
+            var info = ps.Streams.Information.Select(i => i.ToString());
             var sb = new StringBuilder();
 
             void append(string emoji, IEnumerable<string> lines)
@@ -562,5 +650,91 @@ namespace KestrelLib
             return Results.Text(content: msg, statusCode: 500, contentType: "text/plain; charset=utf-8");
         }
 
+
+
+
+        private readonly object _poolGate = new();          // protects (_runspacePool, iss)
+
+        /// <summary>
+        /// Ensures _runspacePool is in an Opened state.
+        /// If the pool is Broken/Closed it is torn down and recreated.
+        /// Call this right before you create a PowerShell instance.
+        /// </summary>
+        private void EnsureRunspacePoolOpen()
+        {
+            // Fast-path: already opened
+            if (_runspacePool?.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
+            {
+                Console.WriteLine("Runspace pool is already opened.");
+                return;
+            }
+            Console.WriteLine("Ensuring runspace pool is open...");
+            lock (_poolGate)
+            {
+                // Pool was never created
+                _runspacePool ??= CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
+
+                var state = _runspacePool.RunspacePoolStateInfo.State;
+                switch (state)
+                {
+                    // brand-new pool
+                    case RunspacePoolState.BeforeOpen:
+                        Console.WriteLine("Before opening runspace pool, opening now...");
+                        _runspacePool.Open();                      // blocks until Opened
+                        break;
+
+                    // another thread is already opening – wait
+                    case RunspacePoolState.Opening:
+                        Console.WriteLine("Runspace pool is opening, waiting for it to complete...");
+                        // Wait until the pool is opened
+                        while (_runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opening)
+                            Thread.Sleep(25);
+                        break;
+
+                    // pool closed or broken – throw it away and start fresh
+                    case RunspacePoolState.Closed:
+                    case RunspacePoolState.Broken:
+                        Console.WriteLine($"Runspace pool is {state}, disposing and recreating...");
+                        // Dispose the old pool and create a new one
+                        _runspacePool.Dispose();
+                        // Recreate the runspace pool
+                        Console.WriteLine("Creating a new runspace pool...");
+                        // Recreate the runspace pool with the specified max runspaces
+                        _runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
+                        _runspacePool.Open();
+                        break;
+
+                        // Opened / Disconnecting / Disconnected / Closing → leave alone,
+                        // callers will handle Disconnecting/Closing by catching exceptions
+                }
+            }
+        }
+
+
+        private RunspacePool CreateRunspacePool(int? maxRunspaces = 0)
+        {
+            var iss = InitialSessionState.CreateDefault(); foreach (var p in _modulePaths) { iss.ImportPSModule([p]); }
+            int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
+            Console.WriteLine($"Creating runspace pool with max runspaces: {maxRs}");
+            var runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss) ?? throw new InvalidOperationException("Failed to create runspace pool.");
+            runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
+            runspacePool.SetMinRunspaces(1);
+            runspacePool.SetMaxRunspaces(_kestrelOptions?.MaxRunspaces ?? Environment.ProcessorCount * 2);
+            // Set the maximum number of runspaces to the specified value or default to 2x CPU cores
+            _ = runspacePool.SetMaxRunspaces(maxRs);
+            runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
+            Console.WriteLine($"Runspace pool created with max runspaces: {maxRs}");
+            // Return the created runspace pool
+            return runspacePool;
+        }
+
+        public void Dispose()
+        {
+            _runspacePool?.Dispose();
+            _runspacePool = null;
+            _kestrelOptions = null;
+            _listenerOptions?.Clear();
+            App = null;
+        }
     }
 }
