@@ -6,7 +6,7 @@ using System.Management.Automation;
 using System.Text.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-namespace KestrelLib
+namespace KestrumLib
 {
     public static class YamlHelper
     {

@@ -2,7 +2,7 @@
 
 try {
     # Determine the script path and Kestrun module path
-    $ScriptPath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
+    $ScriptPath = (Split-Path -Parent (Split-Path -Parent -Path $MyInvocation.MyCommand.Path))
     $kestrunPath = Split-Path -Parent -Path $ScriptPath
 
     # Import the Kestrun module from the source path if it exists, otherwise from installed modules

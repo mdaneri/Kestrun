@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-namespace KestrelLib
+namespace KestrumLib
 {
     public class ListenerOptions
     {

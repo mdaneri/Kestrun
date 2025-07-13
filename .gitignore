@@ -2,3 +2,5 @@ cert.pfx
 src/Kestrun/bin
 src/Kestrun/obj
 global.json
+/examples/CSharpTest/bin
+/examples/CSharpTest/obj

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build CSharpTest",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharpTest/CSharpTest.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

@@ -97,7 +97,7 @@
 function Set-KrServerOptions {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrunHost]$Server,
+        [KestrumLib.KestrunHost]$Server,
         [long]$MaxRequestBodySize , # Default is 30,000,000 
         [int]$MaxConcurrentConnections ,
         [int]$MaxRequestHeaderCount , # Default is 100 
@@ -117,7 +117,7 @@ function Set-KrServerOptions {
         [switch]$DisableStringReuse,
         [int]$MaxRunspaces
     )
-    $options = [KestrelLib.KestrunOptions]::new() 
+    $options = [KestrumLib.KestrunOptions]::new() 
     if ($MaxRequestBodySize -gt 0) {
         $options.Limits.MaxRequestBodySize = $MaxRequestBodySize
     }
@@ -185,7 +185,7 @@ function Set-KrServerOptions {
 function Add-KrListener {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrunHost]$Server,
+        [KestrumLib.KestrunHost]$Server,
         [Parameter(Mandatory = $true)]
         [int]$Port,
         [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Any,
@@ -209,7 +209,7 @@ function New-KrServer {
     )
     $loadedModules = Get-UserImportedModule
     $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
-    $server = [KestrelLib.KestrunHost]::new($Name, $modulePaths)
+    $server = [KestrumLib.KestrunHost]::new($Name,[string[]] $modulePaths)
     return $server
 }
 
@@ -218,7 +218,7 @@ function Add-KrRoute {
     [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrunHost]$Server,
+        [KestrumLib.KestrunHost]$Server,
         [Parameter()]
         [string]$Method = "GET",
         [Parameter(Mandatory = $true)]
@@ -228,7 +228,7 @@ function Add-KrRoute {
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
         [string]$Code,
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
-        [KestrelLib.ScriptLanguage]$Language  
+        [KestrumLib.ScriptLanguage]$Language  
 
     )
     $server.ApplyConfiguration()
@@ -236,7 +236,7 @@ function Add-KrRoute {
         $Server.AddRoute($Path, $Code, $Language, $Method)
     }
     else {
-        $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrelLib.ScriptLanguage]::PowerShell, $Method)
+        $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrumLib.ScriptLanguage]::PowerShell, $Method)
     }
     # $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
 }
@@ -247,7 +247,7 @@ function Add-KrRoute {
 function Start-KrServer {
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-        [KestrelLib.KestrunHost]$Server,
+        [KestrumLib.KestrunHost]$Server,
         [Parameter()]
         [switch]$NoWait
     ) 

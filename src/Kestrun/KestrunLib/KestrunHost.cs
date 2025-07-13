@@ -20,9 +20,13 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using KestrunLib;
+using Microsoft.CodeAnalysis;
+using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp;
 
 
-namespace KestrelLib
+namespace KestrumLib
 {
     public class KestrunHost
     {
@@ -39,7 +43,7 @@ namespace KestrelLib
 
 
         // Accepts optional module paths (from PowerShell)
-        public KestrunHost(string? appName = null, object? modulePathsObj = null)
+        public KestrunHost(string? appName = null, string[]? modulePathsObj = null)
         {
             builder = WebApplication.CreateBuilder();
             if (!string.IsNullOrEmpty(appName))
@@ -53,7 +57,18 @@ namespace KestrelLib
                 {
                     if (modPathObj is string modPath && !string.IsNullOrWhiteSpace(modPath))
                     {
-                        _modulePaths.Add(modPath);
+                        if (File.Exists(modPath))
+                        {
+                            _modulePaths.Add(modPath);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[KestrunHost] Warning: Module path does not exist: {modPath}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("[KestrunHost] Warning: Invalid module path provided.");
                     }
                 }
             }
@@ -89,7 +104,7 @@ namespace KestrelLib
 
         private List<ListenerOptions>? _listenerOptions;
 
-        public void ConfigureListener(int port, IPAddress? iPAddress = null, string? certPath = null, string? certPassword = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
+        public void ConfigureListener(int port, IPAddress? ipAddress = null, string? certPath = null, string? certPassword = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
         {
             if (_listenerOptions == null)
             {
@@ -97,7 +112,7 @@ namespace KestrelLib
             }
             _listenerOptions.Add(new ListenerOptions
             {
-                IPAddress = iPAddress ?? IPAddress.Any,
+                IPAddress = ipAddress ?? IPAddress.Any,
                 Port = port,
                 UseHttps = !string.IsNullOrEmpty(certPath) && !string.IsNullOrEmpty(certPassword),
                 CertPath = certPath,
@@ -254,26 +269,55 @@ namespace KestrelLib
         }
 
 
-        private record CsGlobals(HttpContext Ctx, KestrunResponse Res);
+        // ---------------------------------------------------------------------------
+        //  C# delegate builder  –  now takes optional imports / references
+        // ---------------------------------------------------------------------------
+        public record CsGlobals(KestrunRequest Request, KestrunResponse Response);
 
-        private RequestDelegate BuildCsDelegate(string code)
+        private RequestDelegate BuildCsDelegate(
+                string code, string[]? extraImports,
+                Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
+            // 1. Compose ScriptOptions
             var opts = ScriptOptions.Default
-                         .WithImports("System", "System.Linq", "Microsoft.AspNetCore.Http")
-                         .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly);
+                       .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
+                       .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
+                       .WithLanguageVersion(languageVersion);
 
+            if (extraImports is { Length: > 0 })
+                opts = opts.WithImports(opts.Imports.Concat(extraImports));
+
+            if (extraRefs is { Length: > 0 })
+                opts = opts.WithReferences(opts.MetadataReferences
+                                              .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
+
+            // 2. Compile once
             var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
-            script.Compile();
+            var diagnostics = script.Compile();
+            if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
+                throw new CompilationErrorException("C# route code has errors:", diagnostics);
 
-            return async ctx =>
+            // 3. Build the per-request delegate
+            return async context =>
             {
-                var res = new KestrunResponse();
-                var state = await script.RunAsync(new CsGlobals(ctx, res));
+                try
+                {
+                    var krRequest = await KestrunRequest.NewRequest(context);
+                    var krResponse = new KestrunResponse();
+                    await script.RunAsync(new CsGlobals(krRequest, krResponse)).ConfigureAwait(false);
 
-                if (!string.IsNullOrEmpty(res.RedirectUrl))
-                    return;
+                    if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                    {
+                        context.Response.Redirect(krResponse.RedirectUrl);
+                        return;
+                    }
 
-                await res.ApplyTo(ctx.Response);
+                    await krResponse.ApplyTo(context.Response).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await context.Response.CompleteAsync().ConfigureAwait(false);
+                }
             };
         }
 
@@ -284,27 +328,26 @@ namespace KestrelLib
             {
                 try
                 {
-                    using var reader = new StreamReader(context.Request.Body);
-                    var body = await reader.ReadToEndAsync();
-                    // context.Request.Headers.Remove("Accept-Encoding");
-                    var request = new
-                    {
-                        context.Request.Method,
-                        Path = context.Request.Path.ToString(),
-                        Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                        Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                        Body = body
-                    };
-
-                    //    var inputJson = JsonConvert.SerializeObject(request);
-
+                    /*      using var reader = new StreamReader(context.Request.Body);
+                          var body = await reader.ReadToEndAsync();
+                          // context.Request.Headers.Remove("Accept-Encoding");
+                          var krRequest = new KestrunRequest
+                          {
+                              Method = context.Request.Method,
+                              Path = context.Request.Path.ToString(),
+                              Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
+                              Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
+                              Body = body
+                          };*/
+                    var krRequest = await KestrunRequest.NewRequest(context);
                     var krResponse = new KestrunResponse();
+
                     EnsureRunspacePoolOpen();
                     using PowerShell ps = PowerShell.Create();
                     ps.RunspacePool = _runspacePool;
 
 
-                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement().
+                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", krRequest).AddParameter("Scope", "Script").AddStatement().
                      AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
                      AddScript(code);
                     // Execute the PowerShell script block
@@ -369,9 +412,11 @@ namespace KestrelLib
 
 
         public void AddRoute(string pattern,
-                               string scriptBlock,
-                               ScriptLanguage language = ScriptLanguage.PowerShell,
-                               string httpMethod = "GET")
+                                string scriptBlock,
+                                ScriptLanguage language = ScriptLanguage.PowerShell,
+                                string httpMethod = "GET",
+                                string[]? extraImports = null,
+                                Assembly[]? extraRefs = null)
         {
             if (App is null)
                 throw new InvalidOperationException(
@@ -381,14 +426,14 @@ namespace KestrelLib
             var handler = language switch
             {
                 ScriptLanguage.PowerShell => BuildPsDelegate(scriptBlock),
-                ScriptLanguage.CSharp => BuildCsDelegate(scriptBlock),
+                ScriptLanguage.CSharp => BuildCsDelegate(scriptBlock, extraImports, extraRefs),
                 ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock), // F# scripting not implemented
                 ScriptLanguage.Python => BuildPyDelegate(scriptBlock),
                 ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
                 _ => throw new NotSupportedException(language.ToString())
             };
 
-            App.MapMethods(pattern, new[] { httpMethod.ToUpperInvariant() }, handler);
+            App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], handler);
         }
 
 
@@ -433,7 +478,7 @@ namespace KestrelLib
                     var hadErrors = ps.HadErrors || ps.Streams.Error.Count != 0;
                     if (hadErrors)
                     {
-                        return BuildErrorResult(ps);
+                        return BuildError.Result(ps);
                     }
 
 
@@ -470,11 +515,7 @@ namespace KestrelLib
             {
                 return; // Already configured
             }
-            /*    if (_kestrelOptions.Count == 0)
-                {
-                    throw new InvalidOperationException("No Kestrel options configured. Call ConfigureKestrel first.");
-                }
-    */
+
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
             _runspacePool = CreateRunspacePool(options.MaxRunspaces);
@@ -564,93 +605,16 @@ namespace KestrelLib
         }
 
 
-        static string BuildErrorText(PowerShell ps)
-        {
-            ArgumentNullException.ThrowIfNull(ps);
 
-            var errors = ps.Streams.Error.Select(e => e.ToString());
-            var verbose = ps.Streams.Verbose.Select(v => v.ToString());
-            var warnings = ps.Streams.Warning.Select(w => w.ToString());
-            var debug = ps.Streams.Debug.Select(d => d.ToString());
-            var info = ps.Streams.Information.Select(i => i.ToString());
-            // Format the output
-            // 500 + text body
-
-            var sb = new StringBuilder();
-
-            void append(string emoji, IEnumerable<string> lines)
-            {
-                if (!lines.Any()) return;
-                sb.AppendLine($"{emoji}[{emoji switch
-                {
-                    "❌" => "Error",
-                    "💬" => "Verbose",
-                    "⚠️" => "Warning",
-                    "🐞" => "Debug",
-                    _ => "Info"
-                }}]");
-                foreach (var l in lines) sb.AppendLine($"\t{l}");
-            }
-
-            append("❌", errors);
-            append("💬", verbose);
-            append("⚠️", warnings);
-            append("🐞", debug);
-            append("ℹ️", info);
-
-            var msg = sb.ToString();
-            Console.WriteLine(msg);
-
-
-            return msg;
-        }
         // Helper that writes the error to the response stream
         static Task BuildErrorResponseAsync(HttpContext context, PowerShell ps)
         {
-            var errText = BuildErrorText(ps);               // plain string
+            var errText = BuildError.Text(ps);               // plain string
             context.Response.StatusCode = 500;
             context.Response.ContentType = "text/plain; charset=utf-8";
             return context.Response.WriteAsync(errText);    // returns Task
         }
 
-
-        static IResult BuildErrorResult(PowerShell ps)
-        {
-            ArgumentNullException.ThrowIfNull(ps);
-
-            var errors = ps.Streams.Error.Select(e => e.ToString());
-            var verbose = ps.Streams.Verbose.Select(v => v.ToString());
-            var warnings = ps.Streams.Warning.Select(w => w.ToString());
-            var debug = ps.Streams.Debug.Select(d => d.ToString());
-            var info = ps.Streams.Information.Select(i => i.ToString());
-            var sb = new StringBuilder();
-
-            void append(string emoji, IEnumerable<string> lines)
-            {
-                if (!lines.Any()) return;
-                sb.AppendLine($"{emoji}[{emoji switch
-                {
-                    "❌" => "Error",
-                    "💬" => "Verbose",
-                    "⚠️" => "Warning",
-                    "🐞" => "Debug",
-                    _ => "Info"
-                }}]");
-                foreach (var l in lines) sb.AppendLine($"\t{l}");
-            }
-
-            append("❌", errors);
-            append("💬", verbose);
-            append("⚠️", warnings);
-            append("🐞", debug);
-            append("ℹ️", info);
-
-            var msg = sb.ToString();
-            Console.WriteLine(msg);
-
-            // 500 + text body
-            return Results.Text(content: msg, statusCode: 500, contentType: "text/plain; charset=utf-8");
-        }
 
 
 
@@ -715,17 +679,30 @@ namespace KestrelLib
 
         private RunspacePool CreateRunspacePool(int? maxRunspaces = 0)
         {
-            var iss = InitialSessionState.CreateDefault(); foreach (var p in _modulePaths) { iss.ImportPSModule([p]); }
+            // Create a default InitialSessionState _with_ an unrestricted policy:
+            var iss = InitialSessionState.CreateDefault();
+
+            iss.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Unrestricted;
+
+            foreach (var p in _modulePaths)
+            {
+                iss.ImportPSModule([p]);
+            }
             int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
+
             Console.WriteLine($"Creating runspace pool with max runspaces: {maxRs}");
             var runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss) ?? throw new InvalidOperationException("Failed to create runspace pool.");
             runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
             runspacePool.SetMinRunspaces(1);
             runspacePool.SetMaxRunspaces(_kestrelOptions?.MaxRunspaces ?? Environment.ProcessorCount * 2);
+
             // Set the maximum number of runspaces to the specified value or default to 2x CPU cores
             _ = runspacePool.SetMaxRunspaces(maxRs);
+
             runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
+
             Console.WriteLine($"Runspace pool created with max runspaces: {maxRs}");
+
             // Return the created runspace pool
             return runspacePool;
         }
@@ -733,7 +710,7 @@ namespace KestrelLib
 
 
 
-    
+
         public void Dispose()
         {
             _runspacePool?.Dispose();

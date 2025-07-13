@@ -1,4 +1,4 @@
-namespace KestrelLib
+namespace KestrumLib
 {
     public class NoopHostLifetime : IHostLifetime
     {

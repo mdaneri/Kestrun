@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace KestrelLib
+namespace KestrumLib
 {
-    class KestrunResponse
+    public class KestrunResponse
     {
         public int StatusCode { get; set; } = 200;
         public Dictionary<string, string> Headers { get; set; } = [];
@@ -31,23 +31,20 @@ namespace KestrelLib
             return Headers.TryGetValue(key, out var value) ? value : null;
         }
 
-        public void WriteJsonResponse(object inputObject, int statusCode = 200, JsonSerializerSettings? settings = null)
+        public void WriteJsonResponse(object inputObject, int statusCode)
         {
-            settings ??= new JsonSerializerSettings
-            {
-                Formatting = Formatting.None,
-                ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                NullValueHandling = NullValueHandling.Ignore,
-                DefaultValueHandling = DefaultValueHandling.Ignore,
-                MaxDepth = 10
-            };
-            Body = JsonConvert.SerializeObject(inputObject, settings);
+            WriteJsonResponse(inputObject, statusCode, depth: 10, compress: false);
+        }
+
+        public void WriteJsonResponse(object inputObject, int statusCode, JsonSerializerSettings serializerSettings)
+        {
+            Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
             ContentType = "application/json; charset=utf-8";
             StatusCode = statusCode;
         }
 
-        public void WriteJsonResponse(object inputObject, int depth, int statusCode = 200, bool compress = false)
+
+        public void WriteJsonResponse(object inputObject, int statusCode, int depth , bool compress )
         {
             var settings = new JsonSerializerSettings
             {
@@ -58,24 +55,33 @@ namespace KestrelLib
                 DefaultValueHandling = DefaultValueHandling.Ignore,
                 MaxDepth = depth
             };
-            Body = JsonConvert.SerializeObject(inputObject, settings);
-            ContentType = "application/json; charset=utf-8";
-            StatusCode = statusCode;
+            WriteJsonResponse(inputObject, statusCode, settings);
         }
 
+        public void WriteJsonResponse(object inputObject, int statusCode, bool compress)
+        {
+            WriteJsonResponse(inputObject, statusCode, depth: 10, compress: compress);
+        }
+
+        public void WriteJsonResponse(object inputObject, int statusCode, int depth)
+        {
+            WriteJsonResponse(inputObject, statusCode, depth: depth, compress: false);
+        }
+
+       
 
 
-        public void WriteYamlResponse(object inputObject, int depth, int statusCode = 200)
-        { 
+        public void WriteYamlResponse(object inputObject, int statusCode)
+        {
             Body = YamlHelper.ToYaml(inputObject);
             ContentType = "application/yaml; charset=utf-8";
             StatusCode = statusCode;
         }
 
 
-        
-        public void WriteTextResponse(object inputObject, int statusCode = 200)
-        { 
+
+        public void WriteTextResponse(object inputObject, int statusCode)
+        {
             Body = inputObject.ToString() ?? string.Empty;
             ContentType = "text/plain; charset=utf-8";
             StatusCode = statusCode;

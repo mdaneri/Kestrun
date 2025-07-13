@@ -6,11 +6,13 @@ function Write-KrJsonResponse {
         [int]$StatusCode = 200,
         [Parameter()]
         [ValidateRange(0, 100)]
-        [int]$Depth = 10
+        [int]$Depth = 10,
+        [Parameter()]
+        [bool]$Compress = $false
     )
     if ($null -ne $Response) {
         # Call the C# method on the $Response object
-        $Response.WriteJsonResponse(  $InputObject, $Depth, $StatusCode)
+        $Response.WriteJsonResponse(  $InputObject, $StatusCode, $Depth, $Compress)
     }
 }
 
@@ -20,14 +22,11 @@ function Write-KrYamlResponse {
         [Parameter(Mandatory = $true)]
         [object]$InputObject,
         [Parameter()]
-        [int]$StatusCode = 200,
-        [Parameter()]
-        [ValidateRange(0, 100)]
-        [int]$Depth = 10
+        [int]$StatusCode = 200 
     )
     if ($null -ne $Response) {
         # Call the C# method on the $Response object
-        $Response.WriteYamlResponse(  $InputObject, $Depth, $StatusCode)
+        $Response.WriteYamlResponse( $InputObject, $StatusCode)
     }
 }
 
@@ -40,6 +39,6 @@ function Write-KrTextResponse {
     )
     if ($null -ne $Response) {
         # Call the C# method on the $Response object
-        $Response.WriteTextResponse(  $InputObject, $StatusCode)
+        $Response.WriteTextResponse( $InputObject, $StatusCode)
     }
 }
