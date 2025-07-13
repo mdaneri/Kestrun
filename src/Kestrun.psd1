@@ -82,7 +82,9 @@
         'Add-KrListener',
         'Add-KrRoute',
         'Start-KrServer',
-        'Write-KrJsonResponse'
+        'Write-KrJsonResponse',
+        'Write-KrYamlResponse',
+        'Write-KrTextResponse'
     )
 
     # Variables to export from this module

@@ -1,4 +1,7 @@
- 
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+
 namespace KestrelLib
 {
     class KestrunResponse
@@ -21,11 +24,64 @@ namespace KestrelLib
 
         public KestrunResponse(int bodyAsyncThreshold = 8192)
         {
-            BodyAsyncThreshold = bodyAsyncThreshold; 
+            BodyAsyncThreshold = bodyAsyncThreshold;
+        }
+        public string? GetHeader(string key)
+        {
+            return Headers.TryGetValue(key, out var value) ? value : null;
         }
 
+        public void WriteJsonResponse(object inputObject, int statusCode = 200, JsonSerializerSettings? settings = null)
+        {
+            settings ??= new JsonSerializerSettings
+            {
+                Formatting = Formatting.None,
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                MaxDepth = 10
+            };
+            Body = JsonConvert.SerializeObject(inputObject, settings);
+            ContentType = "application/json; charset=utf-8";
+            StatusCode = statusCode;
+        }
+
+        public void WriteJsonResponse(object inputObject, int depth, int statusCode = 200, bool compress = false)
+        {
+            var settings = new JsonSerializerSettings
+            {
+                Formatting = compress ? Formatting.None : Formatting.Indented,
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                MaxDepth = depth
+            };
+            Body = JsonConvert.SerializeObject(inputObject, settings);
+            ContentType = "application/json; charset=utf-8";
+            StatusCode = statusCode;
+        }
+
+
+
+        public void WriteYamlResponse(object inputObject, int depth, int statusCode = 200)
+        { 
+            Body = YamlHelper.ToYaml(inputObject);
+            ContentType = "application/yaml; charset=utf-8";
+            StatusCode = statusCode;
+        }
+
+
         
-        public async Task ApplyTo(Microsoft.AspNetCore.Http.HttpResponse response)
+        public void WriteTextResponse(object inputObject, int statusCode = 200)
+        { 
+            Body = inputObject.ToString() ?? string.Empty;
+            ContentType = "text/plain; charset=utf-8";
+            StatusCode = statusCode;
+        }
+
+        public async Task ApplyTo(HttpResponse response)
         {
             if (!string.IsNullOrEmpty(RedirectUrl))
             {

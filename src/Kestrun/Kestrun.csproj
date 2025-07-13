@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.0" />
-    <PackageReference Include="pythonnet" Version="3.0.5" /> 
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="pythonnet" Version="3.0.5" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" /> 
   </ItemGroup>
 </Project>

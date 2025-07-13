@@ -27,10 +27,11 @@ Add-KrListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any)  -Protoc
 
 #$server.ApplyConfiguration()
         
+ 
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrRoute -Server $server -Method "GET" -Path "/echo" -ScriptBlock {
+Add-KrRoute -Server $server -Method "GET" -Path "/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script!"
     $RequestJson = $Request | ConvertTo-Json
@@ -45,9 +46,47 @@ Add-KrRoute -Server $server -Method "GET" -Path "/echo" -ScriptBlock {
         RequestBody    = $Request.Body 
         
     }
-    Write-KrJsonResponse -inputObject $payload -statusCode 201
+    Write-KrJsonResponse -inputObject $payload -statusCode 200
 }
  
+
+Add-KrRoute -Server $server -Method "GET" -Path "/yaml" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script!"
+    $RequestJson = $Request | ConvertTo-Json
+    Write-Output "Request JSON: $RequestJson"
+    $payload = @{
+        Body           = "Hello from PowerShell script!"
+        RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body 
+        
+    } 
+    Write-KrYamlResponse -inputObject $payload -statusCode 200
+}
+
+
+Add-KrRoute -Server $server -Method "GET" -Path "/text" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script!"
+    $RequestJson = $Request | ConvertTo-Json
+    Write-Output "Request JSON: $RequestJson"
+    $payload = @{
+        Body           = "Hello from PowerShell script!"
+        RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body 
+        
+    } |Format-Table| Out-String
+    Write-KrTextResponse -inputObject $payload -statusCode 200
+}
+
 Add-KrRoute -Server $server -Method "GET" -Path "/messagestream" -ScriptBlock {
     $DebugPreference = 'Continue' 
     $VerbosePreference = 'Continue'
@@ -81,7 +120,7 @@ Response.ContentType = "text/plain";
 Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
 "@
  
-
+<#
 # ------------------------------------------------------------------
 # 3. Python script route  ─ /hello-py
 # ------------------------------------------------------------------
@@ -92,7 +131,7 @@ def handle(ctx, res):
     res.Body        = f'Hello from CPython {platform.python_version()} at {datetime.datetime.utcnow().isoformat()}'
 "@ 
  
-<#
+ 
 # ------------------------------------------------------------------
 # 4. JavaScript (Jint) route  ─ /hello-js
 # ------------------------------------------------------------------

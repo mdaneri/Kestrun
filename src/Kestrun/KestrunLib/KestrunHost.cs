@@ -18,6 +18,8 @@ using System.Text;
 using System.Net;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 
 namespace KestrelLib
@@ -294,7 +296,7 @@ namespace KestrelLib
                         Body = body
                     };
 
-                    var inputJson = JsonSerializer.Serialize(request);
+                    //    var inputJson = JsonConvert.SerializeObject(request);
 
                     var krResponse = new KestrunResponse();
                     EnsureRunspacePoolOpen();
@@ -413,7 +415,7 @@ namespace KestrelLib
                         Body = body
                     };
 
-                    var inputJson = JsonSerializer.Serialize(request);
+                    var inputJson = JsonConvert.SerializeObject(request);
 
                     var krResponse = new KestrunResponse();
 
@@ -728,6 +730,10 @@ namespace KestrelLib
             return runspacePool;
         }
 
+
+
+
+    
         public void Dispose()
         {
             _runspacePool?.Dispose();

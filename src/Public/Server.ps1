@@ -277,20 +277,5 @@ function Start-KrServer {
         }
     }
 }
-
-
-
-function Write-KrJsonResponse {
-    param(
-        [Parameter(Mandatory = $true)]
-        [object]$inputObject,
-        [Parameter()]
-        [int]$StatusCode = 200,
-        [Parameter()]
-        [ValidateRange(0, 100)]
-        [int]$Depth = 10
-    )
-    $Response.Body = $inputObject | ConvertTo-Json -Depth $Depth
-    $Response.ContentType = "application/json"
-    $Response.StatusCode = $StatusCode
-}   
+ 
+ 
