@@ -19,7 +19,7 @@ namespace KestrumLib
             .Build();
 
         // Serialize any PowerShell object to YAML
-        public static string ToYaml(object input)
+        public static string ToYaml(object? input)
         {
             var normalized = NormalizePSObject(input);
             return _serializer.Serialize(normalized);
@@ -41,7 +41,7 @@ namespace KestrumLib
         }
 
         // --- Helper: Normalize PowerShell object into plain .NET structure
-        private static object? NormalizePSObject(object obj)
+        private static object? NormalizePSObject(object? obj)
         {
             if (obj is PSObject psObj)
                 return NormalizePSObject(psObj.BaseObject);

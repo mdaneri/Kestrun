@@ -31,13 +31,13 @@ Add-KrListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any)  -Protoc
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrRoute -Server $server -Method "GET" -Path "/json" -ScriptBlock {
+Add-KrRoute -Server $server -Method "GET" -Path "/ps/json" -ScriptBlock {
 
-    Write-Output "Hello from PowerShell script!"
+    Write-Output "Hello from PowerShell script! - Json Response"
     $RequestJson = $Request | ConvertTo-Json
     Write-Output "Request JSON: $RequestJson"
     $payload = @{
-        Body           = "Hello from PowerShell script!"
+        Body           = "Hello from PowerShell script! - Json Response"
         RequestQuery   = $Request.Query
         RequestHeaders = $Request.Headers
         RequestMethod  = $Request.Method
@@ -50,13 +50,13 @@ Add-KrRoute -Server $server -Method "GET" -Path "/json" -ScriptBlock {
 }
  
 
-Add-KrRoute -Server $server -Method "GET" -Path "/yaml" -ScriptBlock {
+Add-KrRoute -Server $server -Method "GET" -Path "/ps/yaml" -ScriptBlock {
 
-    Write-Output "Hello from PowerShell script!"
+    Write-Output "Hello from PowerShell script! - Yaml Response" 
     $RequestJson = $Request | ConvertTo-Json
     Write-Output "Request JSON: $RequestJson"
     $payload = @{
-        Body           = "Hello from PowerShell script!"
+        Body           = "Hello from PowerShell script! - Yaml Response"
         RequestQuery   = $Request.Query
         RequestHeaders = $Request.Headers
         RequestMethod  = $Request.Method
@@ -69,23 +69,102 @@ Add-KrRoute -Server $server -Method "GET" -Path "/yaml" -ScriptBlock {
 }
 
 
-Add-KrRoute -Server $server -Method "GET" -Path "/text" -ScriptBlock {
+Add-KrRoute -Server $server -Method "GET" -Path "/ps/xml" -ScriptBlock {
 
-    Write-Output "Hello from PowerShell script!"
+    Write-Output "Hello from PowerShell script! - Xml Response"
     $RequestJson = $Request | ConvertTo-Json
     Write-Output "Request JSON: $RequestJson"
     $payload = @{
-        Body           = "Hello from PowerShell script!"
+        Body           = "Hello from PowerShell script! - Xml Response"
         RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body
+
+    }
+    Write-KrXmlResponse -inputObject $payload -statusCode 200
+}
+
+
+Add-KrRoute -Server $server -Method "GET" -Path "/ps/text" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - Text Response"
+    $RequestJson = $Request | ConvertTo-Json
+    Write-Output "Request JSON: $RequestJson"
+    $payload = @{
+        Body           = "Hello from PowerShell script! - Text Response"
+        RequestQuery   = $Request.RequestQuery
         RequestHeaders = $Request.Headers
         RequestMethod  = $Request.Method
         RequestPath    = $Request.Path
         # If you want to return the request body, uncomment the next line
         RequestBody    = $Request.Body 
         
-    } |Format-Table| Out-String
+    } | Format-Table | Out-String
     Write-KrTextResponse -inputObject $payload -statusCode 200
 }
+
+Add-KrRoute -Server $server -Method "GET" -Path "/cs/xml" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Xml Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Xml Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteXmlResponse( payload,  200);
+"@
+
+Add-KrRoute -Server $server -Method "GET" -Path "/cs/json" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Json Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Json Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteJsonResponse( payload,  200);
+"@
+
+Add-KrRoute -Server $server -Method "GET" -Path "/cs/yaml" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Yaml Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Yaml Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteYamlResponse( payload,  200);
+"@
+
+Add-KrRoute -Server $server -Method "GET" -Path "/cs/text" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Text Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Text Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteTextResponse( payload,  200);
+"@
 
 Add-KrRoute -Server $server -Method "GET" -Path "/messagestream" -ScriptBlock {
     $DebugPreference = 'Continue' 

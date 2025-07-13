@@ -1,4 +1,5 @@
 
+using System.Xml.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -31,20 +32,21 @@ namespace KestrumLib
             return Headers.TryGetValue(key, out var value) ? value : null;
         }
 
-        public void WriteJsonResponse(object inputObject, int statusCode)
+        public void WriteJsonResponse(object? inputObject, int statusCode)
         {
             WriteJsonResponse(inputObject, statusCode, depth: 10, compress: false);
         }
 
-        public void WriteJsonResponse(object inputObject, int statusCode, JsonSerializerSettings serializerSettings)
+        public void WriteJsonResponse(object? inputObject, int statusCode, JsonSerializerSettings serializerSettings)
         {
+
             Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
             ContentType = "application/json; charset=utf-8";
             StatusCode = statusCode;
         }
 
 
-        public void WriteJsonResponse(object inputObject, int statusCode, int depth , bool compress )
+        public void WriteJsonResponse(object? inputObject, int statusCode, int depth, bool compress)
         {
             var settings = new JsonSerializerSettings
             {
@@ -58,31 +60,37 @@ namespace KestrumLib
             WriteJsonResponse(inputObject, statusCode, settings);
         }
 
-        public void WriteJsonResponse(object inputObject, int statusCode, bool compress)
+        public void WriteJsonResponse(object? inputObject, int statusCode, bool compress)
         {
             WriteJsonResponse(inputObject, statusCode, depth: 10, compress: compress);
         }
 
-        public void WriteJsonResponse(object inputObject, int statusCode, int depth)
+        public void WriteJsonResponse(object? inputObject, int statusCode, int depth)
         {
             WriteJsonResponse(inputObject, statusCode, depth: depth, compress: false);
         }
 
-       
-
-
-        public void WriteYamlResponse(object inputObject, int statusCode)
+        public void WriteYamlResponse(object? inputObject, int statusCode)
         {
             Body = YamlHelper.ToYaml(inputObject);
             ContentType = "application/yaml; charset=utf-8";
             StatusCode = statusCode;
         }
 
-
-
-        public void WriteTextResponse(object inputObject, int statusCode)
+        public void WriteXmlResponse(object? inputObject, int statusCode)
         {
-            Body = inputObject.ToString() ?? string.Empty;
+            XElement xml = XmlUtil.ToXml("Response", inputObject);
+
+            Body = xml.ToString(SaveOptions.DisableFormatting);
+            ContentType = "application/xml; charset=utf-8";
+            StatusCode = statusCode;
+        }
+
+
+
+        public void WriteTextResponse(object? inputObject, int statusCode)
+        {
+            Body = inputObject?.ToString() ?? string.Empty;
             ContentType = "text/plain; charset=utf-8";
             StatusCode = statusCode;
         }

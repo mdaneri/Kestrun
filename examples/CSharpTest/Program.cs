@@ -94,6 +94,21 @@ class Program
             Write-KrYamlResponse -inputObject $payload -statusCode 200
         """, KestrumLib.ScriptLanguage.PowerShell, "GET");
 
+        server.AddRoute("/ps/xml", """
+            Write-Output "Hello from PowerShell script! - Xml Response(From C#)" 
+            $payload = @{
+                Body           = "Hello from PowerShell script!"
+                RequestQuery   = $Request.Query
+                RequestHeaders = $Request.Headers
+                RequestMethod  = $Request.Method
+                RequestPath    = $Request.Path
+                # If you want to return the request body, uncomment the next line
+                RequestBody    = $Request.Body 
+                
+            } 
+            Write-KrXmlResponse -inputObject $payload -statusCode 200
+        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+
         server.AddRoute("/ps/text", """        
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
             $payload = @{
@@ -153,8 +168,21 @@ class Program
 
         """, KestrumLib.ScriptLanguage.CSharp, "GET");
 
+        server.AddRoute("/cs/xml", """
+            Console.WriteLine("Hello from C# script! - Xml Response(From C#)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Yaml Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteXmlResponse( payload,  200);
+        """, KestrumLib.ScriptLanguage.CSharp, "GET");
 
-          server.AddRoute("/cs/text", """
+        server.AddRoute("/cs/text", """
             Console.WriteLine("Hello from C# script! - Text Response(From C#)");
             var payload = new
             {
