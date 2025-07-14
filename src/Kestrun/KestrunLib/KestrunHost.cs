@@ -13,6 +13,7 @@ using System;
 using System.IO;
 using System.Collections.Concurrent;
 using System.Collections;
+using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text;
 using System.Net;
@@ -311,8 +312,26 @@ namespace KestrumLib
             // 2. Compile once
             var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
             var diagnostics = script.Compile();
+            
+            // Check for compilation errors
             if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-                throw new CompilationErrorException("C# route code has errors:", diagnostics);
+            {
+                throw new CompilationErrorException("C# route code compilation failed", diagnostics);
+            }
+            
+            // Log warnings if any (optional - for debugging)
+            var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
+            if (warnings.Any())
+            {
+                Console.WriteLine($"C# script compilation completed with {warnings.Length} warning(s):");
+                foreach (var warning in warnings)
+                {
+                    var location = warning.Location.IsInSource 
+                        ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}" 
+                        : "";
+                    Console.WriteLine($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
+                }
+            }
 
             // 3. Build the per-request delegate
             return async context =>
@@ -433,18 +452,38 @@ namespace KestrumLib
                 throw new InvalidOperationException(
                     "WebApplication is not initialized. Call ApplyConfiguration first.");
 
-            // compile once – return an HttpContext->Task delegate
-            var handler = language switch
+            try
             {
-                ScriptLanguage.PowerShell => BuildPsDelegate(scriptBlock),
-                ScriptLanguage.CSharp => BuildCsDelegate(scriptBlock, extraImports, extraRefs),
-                ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock), // F# scripting not implemented
-                ScriptLanguage.Python => BuildPyDelegate(scriptBlock),
-                ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
-                _ => throw new NotSupportedException(language.ToString())
-            };
+                // compile once – return an HttpContext->Task delegate
+                var handler = language switch
+                {
+                    ScriptLanguage.PowerShell => BuildPsDelegate(scriptBlock),
+                    ScriptLanguage.CSharp => BuildCsDelegate(scriptBlock, extraImports, extraRefs),
+                    ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock), // F# scripting not implemented
+                    ScriptLanguage.Python => BuildPyDelegate(scriptBlock),
+                    ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
+                    _ => throw new NotSupportedException(language.ToString())
+                };
 
-            App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], handler);
+                App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], handler);
+            }
+            catch (CompilationErrorException ex)
+            {
+                // Log the detailed compilation errors
+                Console.WriteLine($"Failed to add route '{pattern}' due to compilation errors:");
+                Console.WriteLine(ex.GetDetailedErrorMessage());
+                
+                // Re-throw with additional context
+                throw new InvalidOperationException(
+                    $"Failed to compile {language} script for route '{pattern}'. {ex.GetErrors().Count()} error(s) found.", 
+                    ex);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to add route '{pattern}' with method '{httpMethod}' using {language}: {ex.Message}", 
+                    ex);
+            }
         }
 
 
@@ -732,6 +771,118 @@ namespace KestrumLib
             _listenerOptions?.Clear();
             App = null;
         }
+        #endregion
+
+        #region Script Validation
+
+        /// <summary>
+        /// Validates a C# script and returns compilation diagnostics without throwing exceptions.
+        /// Useful for testing scripts before adding routes.
+        /// </summary>
+        /// <param name="code">The C# script code to validate</param>
+        /// <param name="extraImports">Optional additional imports</param>
+        /// <param name="extraRefs">Optional additional assembly references</param>
+        /// <param name="languageVersion">C# language version to use</param>
+        /// <returns>Compilation diagnostics including errors and warnings</returns>
+        public ImmutableArray<Diagnostic> ValidateCSharpScript(
+            string code, 
+            string[]? extraImports = null, 
+            Assembly[]? extraRefs = null, 
+            LanguageVersion languageVersion = LanguageVersion.CSharp12)
+        {
+            try
+            {
+                // Use the same script options as BuildCsDelegate
+                var opts = ScriptOptions.Default
+                           .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
+                           .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
+                           .WithLanguageVersion(languageVersion);
+
+                if (extraImports is { Length: > 0 })
+                    opts = opts.WithImports(opts.Imports.Concat(extraImports));
+
+                if (extraRefs is { Length: > 0 })
+                    opts = opts.WithReferences(opts.MetadataReferences
+                                                  .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
+
+                var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
+                return script.Compile();
+            }
+            catch (Exception ex)
+            {
+                // If there's an exception during script creation, create a synthetic diagnostic
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "KESTRUN001", 
+                        "Script validation error", 
+                        "Script validation failed: {0}", 
+                        "Compilation", 
+                        DiagnosticSeverity.Error, 
+                        true), 
+                    Location.None, 
+                    ex.Message);
+                
+                return ImmutableArray.Create(diagnostic);
+            }
+        }
+
+        /// <summary>
+        /// Checks if a C# script has compilation errors.
+        /// </summary>
+        /// <param name="code">The C# script code to check</param>
+        /// <param name="extraImports">Optional additional imports</param>
+        /// <param name="extraRefs">Optional additional assembly references</param>
+        /// <param name="languageVersion">C# language version to use</param>
+        /// <returns>True if the script compiles without errors, false otherwise</returns>
+        public bool IsCSharpScriptValid(
+            string code, 
+            string[]? extraImports = null, 
+            Assembly[]? extraRefs = null, 
+            LanguageVersion languageVersion = LanguageVersion.CSharp12)
+        {
+            var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
+            return !diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
+        }
+
+        /// <summary>
+        /// Gets formatted error information for a C# script.
+        /// </summary>
+        /// <param name="code">The C# script code to check</param>
+        /// <param name="extraImports">Optional additional imports</param>
+        /// <param name="extraRefs">Optional additional assembly references</param>
+        /// <param name="languageVersion">C# language version to use</param>
+        /// <returns>Formatted error message, or null if no errors</returns>
+        public string? GetCSharpScriptErrors(
+            string code, 
+            string[]? extraImports = null, 
+            Assembly[]? extraRefs = null, 
+            LanguageVersion languageVersion = LanguageVersion.CSharp12)
+        {
+            var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
+            var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            
+            if (!errors.Any())
+                return null;
+
+            try
+            {
+                // Create a temporary exception to format the errors
+                var tempException = new CompilationErrorException("Script validation errors:", diagnostics);
+                return tempException.GetDetailedErrorMessage();
+            }
+            catch
+            {
+                // Fallback formatting if exception creation fails
+                var sb = new StringBuilder();
+                sb.AppendLine($"Script has {errors.Length} compilation error(s):");
+                for (int i = 0; i < errors.Length; i++)
+                {
+                    sb.AppendLine($"  {i + 1}. {errors[i].GetMessage()}");
+                }
+                return sb.ToString();
+            }
+        }
+
         #endregion
     }
 }
