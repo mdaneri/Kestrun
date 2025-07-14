@@ -55,5 +55,15 @@ namespace KestrunLib
 
             return msg;
         }
+
+        // Helper that writes the error to the response stream
+        static public Task ResponseAsync(HttpContext context, PowerShell ps)
+        {
+            var errText = BuildError.Text(ps);               // plain string
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "text/plain; charset=utf-8";
+            return context.Response.WriteAsync(errText);    // returns Task
+        }
+
     }
 }

@@ -1,9 +1,10 @@
 
-
+ 
 try {
+    $ScriptPath=(Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
     # Determine the script path and Kestrun module path
-    $ScriptPath = (Split-Path -Parent (Split-Path -Parent -Path $MyInvocation.MyCommand.Path))
-    $kestrunPath = Split-Path -Parent -Path $ScriptPath
+    $examplesPath = (Split-Path -Parent ($ScriptPath))
+    $kestrunPath = Split-Path -Parent -Path $examplesPath
 
     # Import the Kestrun module from the source path if it exists, otherwise from installed modules
     if (Test-Path -Path "$($kestrunPath)/src/Kestrun.psm1" -PathType Leaf) {
@@ -15,34 +16,35 @@ try {
 }
 catch { throw }
 
+
+$server = New-KrServer -Name "MyKestrunServer"
+
+
+
  
-
-$server = New-KrServer -Name "MyKestrunServer" 
-
-
-
-$cert = New-KestrunSelfSignedCertificate -DnsName 'localhost' -Exportable
-
-
-
-Test-KestrunCertificate -Certificate $cert -DenySelfSigned
-
-
-Export-KestrunCertificate -Certificate $cert `
-    -FilePath "$env:TEMP\devcert" -Format Pem -IncludePrivateKey -Password "MyP@ssw0rd"
-
+ $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
+ 
+<#
+if (Test-Path "$ScriptPath\devcert.pfx" ) {
+  $cert =  Import-KsCertificate -FilePath ".\cert\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+}
+else {
+    $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
+    Export-KsCertificate -Certificate $cert `
+        -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+}#>
 # Create a CSR
-$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
-                 -Country US -Org 'Acme' -CommonName 'example.com'
+#$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
+ #   -Country US -Org 'Acme' -CommonName 'example.com'
 
-
+Test-KsCertificate -Certificate $cert -DenySelfSigned
                  
 # Example usage:
 Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
  
 # Configure the listener (adjust port, cert path, and password)
-Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -CertPath "cert.pfx" -CertPassword "yourpassword" -Protocols Http1AndHttp2AndHttp3
-Add-KrListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any)  -Protocols Http1
+Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
+Add-KrListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any) 
 
 #$server.ApplyConfiguration()
         

@@ -24,6 +24,7 @@ using Org.BouncyCastle.X509;
 using System.Runtime.InteropServices;
 using System.Text;
 using Org.BouncyCastle.Asn1.X9;
+using System.Text.RegularExpressions;
 
 
 namespace KestrunLib;
@@ -122,8 +123,7 @@ public static class CertificateManager
 
 
 
-    public static (string csrPem, AsymmetricKeyParameter privateKey)
-     NewCertificateRequest(CsrOptions o)
+    public static (string csrPem, AsymmetricKeyParameter privateKey) NewCertificateRequest(CsrOptions o)
     {
         // 0️⃣ Setup
         var random = new SecureRandom(new CryptoApiRandomGenerator());
@@ -195,68 +195,222 @@ public static class CertificateManager
 
     #endregion
 
-    #region  Import / Export
-    public static X509Certificate2 Import(string path, string? password = null)
+    #region  Import  
+
+
+    public static X509Certificate2 Import(
+       string certPath,
+       ReadOnlySpan<char> password = default,
+       string? privateKeyPath = null,
+       X509KeyStorageFlags flags = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable)
     {
-        var bytes = File.ReadAllBytes(path);
-        return new X509Certificate2(bytes, password,
-            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-    }
+        var ext = Path.GetExtension(certPath).ToLowerInvariant();
 
-    public static void Export(
-    X509Certificate2 cert,
-    string filePath,
-    ExportFormat fmt,
-    ReadOnlySpan<char> password = default,
-    bool includePrivateKey = false)
-    {
-        // build the two password shapes we need once
-        string? pwdString = password.IsEmpty ? null : new string(password); // for cert.Export
-        char[]? pwdChars = password.IsEmpty ? null : password.ToArray();   // for Pkcs12Store.Load
-
-        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-
-        switch (fmt)
+        switch (ext)
         {
-            case ExportFormat.Pfx:
+            // — PFX/PKCS#12 with embedded key — 
+            case ".pfx":
+            case ".p12":
+                // Uses the X509Certificate2(byte[], ReadOnlySpan<char>, flags) ctor
+                return new X509Certificate2(
+                    File.ReadAllBytes(certPath),
+                    password,
+                    flags
+                );
+
+            // — DER-encoded public cert — 
+            case ".cer":
+            case ".der":
+                return new X509Certificate2(File.ReadAllBytes(certPath));
+
+            // — PEM (.pem/.crt): cert alone or cert+key, encrypted or not — 
+            case ".pem":
+            case ".crt":
+                if (string.IsNullOrEmpty(privateKeyPath))
                 {
-                    var pfx = cert.Export(X509ContentType.Pfx, pwdString);
-                    File.WriteAllBytes($"{filePath}.pfx", pfx);
-                    break;
+                    if (password.IsEmpty)
+                    {
+                        return LoadCertOnlyPem(certPath);
+                    }
+                    else
+                    {
+                        // encrypted key is in the same file
+                        return X509Certificate2.CreateFromEncryptedPemFile(certPath, password);
+                    }
+                }
+                else if (!password.IsEmpty)
+                {
+                    // Encrypted private key in the PEM (same file or separate)
+                    return X509Certificate2.CreateFromEncryptedPemFile(
+                        certPath,
+                        password,
+                        privateKeyPath
+                    );  // :contentReference[oaicite:0]{index=0}
+                }
+                else
+                {
+                    // Unencrypted: cert alone, or cert + unencrypted key (same file or separate)
+                    return X509Certificate2.CreateFromPemFile(
+                        certPath,
+                        privateKeyPath
+                    );  // :contentReference[oaicite:1]{index=1}
                 }
 
-            case ExportFormat.Pem:
-                {
-                    using (var sw = new StreamWriter(path: $"{filePath}.crt", append: false, encoding: Encoding.ASCII))
+            default:
+                throw new NotSupportedException(
+                    $"Certificate extension '{ext}' is not supported."
+                );
+        }
+    }
+
+    /// <summary>
+    /// Loads a certificate from a PEM file that contains *only* a CERTIFICATE block (no key).
+    /// </summary>
+    private static X509Certificate2 LoadCertOnlyPem(string certPath)
+    {
+        // 1) Read + trim the whole PEM text
+        string pem = File.ReadAllText(certPath).Trim();
+
+        // 2) Define the BEGIN/END markers
+        const string begin = "-----BEGIN CERTIFICATE-----";
+        const string end = "-----END CERTIFICATE-----";
+
+        // 3) Find their positions
+        int start = pem.IndexOf(begin, StringComparison.Ordinal);
+        if (start < 0) throw new InvalidDataException("BEGIN CERTIFICATE marker not found");
+        start += begin.Length;
+
+        int stop = pem.IndexOf(end, start, StringComparison.Ordinal);
+        if (stop < 0) throw new InvalidDataException("END CERTIFICATE marker not found");
+
+        // 4) Extract, clean, and decode the Base64 payload
+        string b64 = pem[start..stop]
+                       .Replace("\r", "")
+                       .Replace("\n", "")
+                       .Trim();
+        byte[] der = Convert.FromBase64String(b64);
+
+        // 5) Return the X509Certificate2
+        return new X509Certificate2(der);
+    }
+
+    public static X509Certificate2 Import(
+       string certPath,
+       SecureString password,
+       string? privateKeyPath = null,
+       X509KeyStorageFlags flags = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable)
+    {
+        X509Certificate2? result = null;
+
+        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+        password.ToSecureSpan(span =>
+        {
+            // capture the return value of the span-based overload
+            result = Import(certPath, span, privateKeyPath, flags);
+        });
+
+        // at this point, unmanaged memory is already zeroed
+        return result!;   // non-null because the callback always runs exactly once
+    }
+
+
+
+    #endregion
+
+    #region Export
+    public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
+           ReadOnlySpan<char> password = default, bool includePrivateKey = false)
+    {
+        // ensure directory exists
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+
+        // build both shapes once
+        using SecureString? pwdString = password.IsEmpty
+            ? null
+            : ToSecureString(password);
+        char[]? pwdChars = password.IsEmpty
+            ? null
+            : password.ToArray();
+
+        try
+        {
+            switch (fmt)
+            {
+                case ExportFormat.Pfx:
+                    {
+                        byte[] pfx = cert.Export(X509ContentType.Pfx, pwdString);
+                        File.WriteAllBytes($"{filePath}.pfx", pfx);
+                        break;
+                    }
+                case ExportFormat.Pem:
+                    {
+                        // export cert
+                        using var sw = new StreamWriter($"{filePath}.crt", false, Encoding.ASCII);
                         new PemWriter(sw).WriteObject(
                             Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
 
-                    if (includePrivateKey)
-                    {
-                        if (pwdChars is null)
-                            throw new ArgumentException(
-                                "Password is required when exporting the private key.", nameof(password));
+                        if (includePrivateKey)
+                        {
+                            // 3) pick the right private-key export path
+                            byte[] keyDer;
+                            string pemLabel;
+                            if (password.IsEmpty)
+                            {
+                                // unencrypted PKCS#8
+                                keyDer = cert.GetRSAPrivateKey() is RSA rsa
+                                           ? rsa.ExportPkcs8PrivateKey()
+                                           : cert.GetECDsaPrivateKey()!.ExportPkcs8PrivateKey();
+                                pemLabel = "PRIVATE KEY";
+                            }
+                            else
+                            {
+                                // encrypted PKCS#8
+                                var pbe = new PbeParameters(
+                                    PbeEncryptionAlgorithm.Aes256Cbc,
+                                    HashAlgorithmName.SHA256,
+                                    100_000
+                                );
 
-                        var pfx = cert.Export(X509ContentType.Pkcs12, pwdString);
-                        var store = new Pkcs12StoreBuilder().Build();
-                        store.Load(new MemoryStream(pfx), pwdChars);
+                                keyDer = cert.GetRSAPrivateKey() is RSA rsaEnc
+                                           ? rsaEnc.ExportEncryptedPkcs8PrivateKey(password, pbe)
+                                           : cert.GetECDsaPrivateKey()!
+                                                .ExportEncryptedPkcs8PrivateKey(password, pbe);
+                                pemLabel = "ENCRYPTED PRIVATE KEY";
 
-                        var alias = store.Aliases.Cast<string>().Single(store.IsKeyEntry);
-                        var key = store.GetKey(alias).Key;
+                            }  // 2) Wrap that DER in PEM *correctly*:
+                            string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
 
-                        using var pk = new StreamWriter(path: $"{filePath}.key", append: false, encoding: Encoding.ASCII);
-                        new PemWriter(pk).WriteObject(key);
+                            // 3) Write the .key file
+                            File.WriteAllText($"{filePath}.key", keyPem);
+                        }
+                        break;
                     }
-                    break;
-                }
+            }
         }
-
-        // scrub the char[] copy; string cannot be cleared
-        if (pwdChars is not null)
-            Array.Clear(pwdChars, 0, pwdChars.Length);
+        finally
+        {
+            // scrub the char[] copy
+            if (pwdChars is not null)
+                Array.Clear(pwdChars, 0, pwdChars.Length);
+        }
     }
 
-
+    // 2) The SecureString overload just calls (1) in a callback
+    public static void Export(
+        X509Certificate2 cert,
+        string filePath,
+        ExportFormat fmt,
+        SecureString password,
+        bool includePrivateKey = false)
+    {
+        password.ToSecureSpan(span =>
+            // this will run your span‐based implementation,
+            // then immediately zero & free the unmanaged buffer
+            Export(cert, filePath, fmt, span, includePrivateKey)
+        );
+    }
 
     #endregion
 
@@ -383,5 +537,52 @@ public static class CertificateManager
         return new X509Certificate2(ms.ToArray(), (string?)null,
             flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0));
     }
+
+
     #endregion
+
+    #region  SecureString extension for ReadOnlySpan<char>
+    public unsafe delegate void SpanHandler(ReadOnlySpan<char> span);
+
+
+    public static unsafe void ToSecureSpan(this SecureString secureString, SpanHandler handler)
+    {
+        ArgumentNullException.ThrowIfNull(secureString);
+        ArgumentNullException.ThrowIfNull(handler);
+
+        IntPtr ptr = IntPtr.Zero;
+        try
+        {
+            ptr = Marshal.SecureStringToCoTaskMemUnicode(secureString);
+            var span = new ReadOnlySpan<char>((char*)ptr, secureString.Length);
+            handler(span);
+        }
+        finally
+        {
+            if (ptr != IntPtr.Zero)
+            {
+                // zero & free
+                for (int i = 0; i < secureString.Length; i++)
+                    Marshal.WriteInt16(ptr, i * 2, 0);
+                Marshal.ZeroFreeCoTaskMemUnicode(ptr);
+            }
+        }
+    }
+    public static SecureString ToSecureString(this ReadOnlySpan<char> span)
+    {
+        if (span.Length == 0)
+            throw new ArgumentException("Span is empty", nameof(span));
+
+        var secure = new SecureString();
+        foreach (char c in span)
+            secure.AppendChar(c);
+
+        secure.MakeReadOnly();
+        return secure;
+    } 
+
+    #endregion
+
+
+
 }

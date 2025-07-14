@@ -7,3 +7,5 @@ global.json
 /examples/CSharp/Certificates/bin
 /examples/CSharp/Certificates/obj
 /examples/CSharp/Certificates/out
+cert/devcert.crt
+/cert

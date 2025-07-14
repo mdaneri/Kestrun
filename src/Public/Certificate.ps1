@@ -3,8 +3,8 @@
 $Kcm = [KestrunLib.CertificateManager]
 
 # ---------------------------------------------------------------------------
-function New-KestrunSelfSignedCertificate {
-<#
+function New-KsSelfSignedCertificate {
+    <#
 .SYNOPSIS
     Generates a self-signed X.509 certificate (RSA or ECDSA).
 
@@ -17,14 +17,14 @@ function New-KestrunSelfSignedCertificate {
         [Parameter(Mandatory)]
         [string[]]  $DnsName,
 
-        [ValidateSet('Rsa','Ecdsa')]
-        [string]    $KeyType      = 'Rsa',
+        [ValidateSet('Rsa', 'Ecdsa')]
+        [string]    $KeyType = 'Rsa',
 
-        [ValidateRange(256,8192)]
-        [int]       $KeyLength    = 2048,
+        [ValidateRange(256, 8192)]
+        [int]       $KeyLength = 2048,
 
-        [ValidateRange(1,3650)]
-        [int]       $ValidDays    = 365,
+        [ValidateRange(1, 3650)]
+        [int]       $ValidDays = 365,
 
         [switch]    $Ephemeral,
         [switch]    $Exportable
@@ -44,8 +44,8 @@ function New-KestrunSelfSignedCertificate {
 }
 
 # ---------------------------------------------------------------------------
-function New-KestrunCertificateRequest {
-<#
+function New-KsCertificateRequest {
+    <#
 .SYNOPSIS
     Creates a PEM-encoded CSR (and returns the private key).
 
@@ -57,10 +57,10 @@ function New-KestrunCertificateRequest {
         [Parameter(Mandatory)]
         [string[]] $DnsName,
 
-        [ValidateSet('Rsa','Ecdsa')]
-        [string]   $KeyType      = 'Rsa',
+        [ValidateSet('Rsa', 'Ecdsa')]
+        [string]   $KeyType = 'Rsa',
 
-        [int]      $KeyLength    = 2048,
+        [int]      $KeyLength = 2048,
 
         [string]   $Country,
         [string]   $Org,
@@ -82,22 +82,23 @@ function New-KestrunCertificateRequest {
 }
 
 # ---------------------------------------------------------------------------
-function Import-KestrunCertificate {
-<#
+function Import-KsCertificate {
+    <#
 .SYNOPSIS
     Imports a PFX/PEM certificate file and returns X509Certificate2.
 #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string] $Path,
-        [string] $Password
+        [Parameter(Mandatory)][string] $FilePath,
+        [securestring] $Password,
+        [string] $PrivateKeyPath
     )
 
-    return $Kcm::Import($Path, $Password)
+    return $Kcm::Import($FilePath, $Password, $PrivateKeyPath)
 }
 
 # ---------------------------------------------------------------------------
-function Export-KestrunCertificate {
+function Export-KsCertificate {
 <#
 .SYNOPSIS
     Exports an X509Certificate2 to PFX or PEM(+key).
@@ -109,22 +110,23 @@ function Export-KestrunCertificate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate,
-        [Parameter(Mandatory)][string]   $FilePath,
+        [Parameter(Mandatory)][string]$FilePath,
 
-        [ValidateSet('Pfx','Pem')]
+        [ValidateSet('Pfx', 'Pem')]
         [string] $Format = 'Pfx',
 
-        [string] $Password,
+        [securestring] $Password,
         [switch] $IncludePrivateKey
     )
 
     $fmtEnum = [KestrunLib.CertificateManager+ExportFormat]::$Format
     $Kcm::Export($Certificate, $FilePath, $fmtEnum, $Password,
-                 $IncludePrivateKey.IsPresent)
+        $IncludePrivateKey.IsPresent)
 }
 
 # ---------------------------------------------------------------------------
-function Test-KestrunCertificate {
+ 
+function Test-KsCertificate {
 <#
 .SYNOPSIS
     Validates a certificate’s chain, EKU, and cryptographic strength.
@@ -149,19 +151,20 @@ function Test-KestrunCertificate {
         $oc = [System.Security.Cryptography.OidCollection]::new()
         foreach ($p in $ExpectedPurpose) { $oc.Add([System.Security.Cryptography.Oid]::new($p)) }
         $oc
-    } else { $null }
+    }
+    else { $null }
 
     return $Kcm::Validate($Certificate,
-                          $CheckRevocation.IsPresent,
-                          $AllowWeakAlgorithms.IsPresent,
-                          $DenySelfSigned.IsPresent,
-                          $oidColl,
-                          $StrictPurpose.IsPresent)
+        $CheckRevocation.IsPresent,
+        $AllowWeakAlgorithms.IsPresent,
+        $DenySelfSigned.IsPresent,
+        $oidColl,
+        $StrictPurpose.IsPresent)
 }
 
 # ---------------------------------------------------------------------------
-function Get-KestrunCertificatePurpose {
-<#
+function Get-KsCertificatePurpose {
+    <#
 .SYNOPSIS
     Lists the Enhanced Key Usage values on a certificate.
 #>
@@ -173,5 +176,4 @@ function Get-KestrunCertificatePurpose {
 
     return $Kcm::GetPurposes($Certificate)
 }
-
-Export-ModuleMember -Function *-Kestrun*
+ 

@@ -24,12 +24,17 @@ using KestrunLib;
 using Microsoft.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Security.Cryptography.X509Certificates;
+using System.Security;
+using Microsoft.AspNetCore.Hosting;
 
 
 namespace KestrumLib
 {
     public class KestrunHost
     {
+        #region Fields
+        // Shared state across routes
         private readonly ConcurrentDictionary<string, string> sharedState = new();
         private readonly WebApplicationBuilder builder;
         private WebApplication? App;
@@ -40,9 +45,11 @@ namespace KestrumLib
         private bool _isConfigured = false;
 
         private RunspacePool? _runspacePool;
+        #endregion
 
 
         // Accepts optional module paths (from PowerShell)
+        #region Constructor
         public KestrunHost(string? appName = null, string[]? modulePathsObj = null)
         {
             builder = WebApplication.CreateBuilder();
@@ -73,6 +80,7 @@ namespace KestrumLib
                 }
             }
         }
+        #endregion
 
 
         private void KestrelServices(WebApplicationBuilder builder)
@@ -95,33 +103,34 @@ namespace KestrumLib
         }
 
 
-        public void ConfigureKestrel(KestrunOptions options)
-        {
-            _kestrelOptions = options;
-        }
 
 
+        #region ListenerOptions
 
         private List<ListenerOptions>? _listenerOptions;
 
-        public void ConfigureListener(int port, IPAddress? ipAddress = null, string? certPath = null, string? certPassword = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
+
+        public void ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
         {
-            if (_listenerOptions == null)
-            {
-                _listenerOptions = [];
-            }
+            _listenerOptions ??= [];
             _listenerOptions.Add(new ListenerOptions
             {
                 IPAddress = ipAddress ?? IPAddress.Any,
                 Port = port,
-                UseHttps = !string.IsNullOrEmpty(certPath) && !string.IsNullOrEmpty(certPassword),
-                CertPath = certPath,
-                CertPassword = certPassword,
+                UseHttps = x509Certificate != null,
+                X509Certificate = x509Certificate,
                 Protocols = protocols,
                 UseConnectionLogging = useConnectionLogging
             });
 
         }
+
+        public void ConfigureListener(int port, IPAddress? ipAddress = null, bool useConnectionLogging = false)
+        {
+            ConfigureListener(port: port, ipAddress: ipAddress, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
+        }
+
+        #endregion
 
 
         private RequestDelegate BuildJsDelegate(string code)
@@ -141,6 +150,11 @@ namespace KestrumLib
                 await res.ApplyTo(ctx.Response);
             };
         }
+
+
+
+        #region Python
+
 
         static public void ConfigurePythonRuntimePath(string path)
         {
@@ -235,6 +249,7 @@ namespace KestrumLib
 
 
 
+        #endregion
 
 
         private RequestDelegate BuildFsDelegate(string code)
@@ -268,6 +283,8 @@ namespace KestrumLib
             };
         }
 
+
+        #region C#
 
         // ---------------------------------------------------------------------------
         //  C# delegate builder  –  now takes optional imports / references
@@ -320,7 +337,9 @@ namespace KestrumLib
                 }
             };
         }
+        #endregion
 
+        #region PowerShell
         private RequestDelegate BuildPsDelegate(string code)
         {
 
@@ -328,17 +347,6 @@ namespace KestrumLib
             {
                 try
                 {
-                    /*      using var reader = new StreamReader(context.Request.Body);
-                          var body = await reader.ReadToEndAsync();
-                          // context.Request.Headers.Remove("Accept-Encoding");
-                          var krRequest = new KestrunRequest
-                          {
-                              Method = context.Request.Method,
-                              Path = context.Request.Path.ToString(),
-                              Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                              Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                              Body = body
-                          };*/
                     var krRequest = await KestrunRequest.NewRequest(context);
                     var krResponse = new KestrunResponse();
 
@@ -363,7 +371,7 @@ namespace KestrumLib
                     // Capture errors and output from the runspace 
                     if (ps.HadErrors || ps.Streams.Error.Count != 0)
                     {
-                        await BuildErrorResponseAsync(context, ps);
+                        await BuildError.ResponseAsync(context, ps);
                         return;
                     }
 
@@ -408,15 +416,18 @@ namespace KestrumLib
                 }
             };
         }
+        #endregion
 
+
+        #region Route
 
 
         public void AddRoute(string pattern,
-                                string scriptBlock,
-                                ScriptLanguage language = ScriptLanguage.PowerShell,
-                                string httpMethod = "GET",
-                                string[]? extraImports = null,
-                                Assembly[]? extraRefs = null)
+                                    string scriptBlock,
+                                    ScriptLanguage language = ScriptLanguage.PowerShell,
+                                    string httpMethod = "GET",
+                                    string[]? extraImports = null,
+                                    Assembly[]? extraRefs = null)
         {
             if (App is null)
                 throw new InvalidOperationException(
@@ -499,6 +510,12 @@ namespace KestrumLib
         }
 
 
+        #endregion
+        #region Configuration
+        public void ConfigureKestrel(KestrunOptions options)
+        {
+            _kestrelOptions = options;
+        }
 
         public void ApplyConfiguration()
         {
@@ -561,8 +578,8 @@ namespace KestrumLib
                         kestrelOpts.Listen(opt.IPAddress, opt.Port, listenOptions =>
                         {
                             listenOptions.Protocols = opt.Protocols;
-                            if (opt.UseHttps && !string.IsNullOrEmpty(opt.CertPath))
-                                listenOptions.UseHttps(opt.CertPath, opt.CertPassword);
+                            if (opt.UseHttps && opt.X509Certificate != null)
+                                listenOptions.UseHttps(opt.X509Certificate);
                             if (opt.UseConnectionLogging)
                                 listenOptions.UseConnectionLogging();
                         });
@@ -573,6 +590,9 @@ namespace KestrumLib
             App.UseResponseCompression();
             _isConfigured = true;
         }
+
+        #endregion
+        #region Run/Start/Stop
 
         public void Run()
         {
@@ -604,20 +624,11 @@ namespace KestrumLib
             App?.Lifetime.StopApplication();
         }
 
-
-
-        // Helper that writes the error to the response stream
-        static Task BuildErrorResponseAsync(HttpContext context, PowerShell ps)
-        {
-            var errText = BuildError.Text(ps);               // plain string
-            context.Response.StatusCode = 500;
-            context.Response.ContentType = "text/plain; charset=utf-8";
-            return context.Response.WriteAsync(errText);    // returns Task
-        }
+        #endregion
 
 
 
-
+        #region Runspace Pool Management
 
         private readonly object _poolGate = new();          // protects (_runspacePool, iss)
 
@@ -708,8 +719,10 @@ namespace KestrumLib
         }
 
 
+        #endregion
 
 
+        #region Disposable
 
         public void Dispose()
         {
@@ -719,5 +732,6 @@ namespace KestrumLib
             _listenerOptions?.Clear();
             App = null;
         }
+        #endregion
     }
 }

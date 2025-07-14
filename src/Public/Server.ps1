@@ -183,21 +183,50 @@ function Set-KrServerOptions {
 
 
 function Add-KrListener {
+    [CmdletBinding(defaultParameterSetName = "NoCert")]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [KestrumLib.KestrunHost]$Server,
+
         [Parameter(Mandatory = $true)]
         [int]$Port,
+        
         [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Any,
-        [string]$CertPath = $null,
-        [string]$CertPassword = $null,
-        [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]$Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1, 
-        [switch]$UseConnectionLogging 
+        [Parameter(mandatory = $true, ParameterSetName = "CertFile")]
+        [string]$CertPath,
+
+        [Parameter(mandatory = $false, ParameterSetName = "CertFile")]
+        [SecureString]$CertPassword = $null,
+
+        [Parameter(mandatory = $true, ParameterSetName = "x509Certificate")]
+        [System.Security.Cryptography.X509Certificates.X509Certificate2]$X509Certificate = $null,
+
+        [Parameter(ParameterSetName = "x509Certificate")]
+        [Parameter(ParameterSetName = "CertFile")]
+        [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]$Protocols,
+
+        [Parameter()]
+        [switch]$UseConnectionLogging
     )
-    if ($null -eq $CertPath -and $Protocols -ne [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1) {
-        throw "CertPath must be provided when using protocols other than Http1."
+ 
+
+    if ($null -eq $Protocols) {
+      if ($PSCmdlet.ParameterSetName -eq "NoCert") {
+            $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1
+        }
+        else {
+            $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1OrHttp2
+        }
+    } 
+    if ($PSCmdlet.ParameterSetName -eq "CertFile") {
+        if (-not (Test-Path $CertPath)) {
+            throw "Certificate file not found: $CertPath"
+        }
+        $X509Certificate = Import-KestrunCertificate -Path $CertPath -Password $CertPassword
     }
-    $Server.ConfigureListener($Port, $IPAddress, $CertPath, $CertPassword, $Protocols, $UseConnectionLogging.IsPresent)
+
+
+    $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)
 }
 
 
@@ -209,7 +238,7 @@ function New-KrServer {
     )
     $loadedModules = Get-UserImportedModule
     $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
-    $server = [KestrumLib.KestrunHost]::new($Name,[string[]] $modulePaths)
+    $server = [KestrumLib.KestrunHost]::new($Name, [string[]] $modulePaths)
     return $server
 }
 

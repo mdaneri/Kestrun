@@ -9,7 +9,7 @@
 @{
 
     # Script module or binary module file associated with this manifest.
-    RootModule = 'Kestrun.psm1'
+    RootModule             = 'Kestrun.psm1'
 
     # Version number of this module.
     ModuleVersion          = '0.0.1'
@@ -84,7 +84,15 @@
         'Start-KrServer',
         'Write-KrJsonResponse',
         'Write-KrYamlResponse',
-        'Write-KrTextResponse'
+        'Write-KrTextResponse',
+        'Write-KrXmlResponse',
+        'New-KrPythonRuntime',
+        'Import-KrCertificate',
+        'Export-KrCertificate',
+        'Test-KrCertificate',
+        'Get-KrCertificatePurpose',
+        'New-KrSelfSignedCertificate',
+        'New-KrCertificateRequest'
     )
 
     # Variables to export from this module
