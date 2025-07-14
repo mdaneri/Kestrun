@@ -10,6 +10,16 @@
                 "${workspaceFolder}/examples/CSharpTest/CSharpTest.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build Certificates",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharp/Certificates/Certificates.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

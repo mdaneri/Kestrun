@@ -18,6 +18,17 @@
             "args": [],
             "cwd": "${workspaceFolder}/examples/CSharpTest",
             "stopAtEntry": false,
+            "console": "integratedTerminal" 
+        },
+         {
+            "name": ".NET Launch CSharp/Certificates",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Certificates",
+            "program": "${workspaceFolder}/examples/CSharp/Certificates/bin/Debug/net8.0/Certificates.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/Certificates",
+            "stopAtEntry": false,
             "console": "integratedTerminal"
         }
     ]

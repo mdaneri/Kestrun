@@ -18,6 +18,25 @@ catch { throw }
  
 
 $server = New-KrServer -Name "MyKestrunServer" 
+
+
+
+$cert = New-KestrunSelfSignedCertificate -DnsName 'localhost' -Exportable
+
+
+
+Test-KestrunCertificate -Certificate $cert -DenySelfSigned
+
+
+Export-KestrunCertificate -Certificate $cert `
+    -FilePath "$env:TEMP\devcert" -Format Pem -IncludePrivateKey -Password "MyP@ssw0rd"
+
+# Create a CSR
+$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
+                 -Country US -Org 'Acme' -CommonName 'example.com'
+
+
+                 
 # Example usage:
 Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
  

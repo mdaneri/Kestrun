@@ -4,3 +4,6 @@ src/Kestrun/obj
 global.json
 /examples/CSharpTest/bin
 /examples/CSharpTest/obj
+/examples/CSharp/Certificates/bin
+/examples/CSharp/Certificates/obj
+/examples/CSharp/Certificates/out
