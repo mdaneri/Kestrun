@@ -61,20 +61,20 @@ function Add-AspNetCoreType {
 }
 
 # root path
-$root = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
+$script:KestrunRoot = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
 # Usage
 Add-AspNetCoreType -Version "net8"
 # Add-AspNetCoreType -Version "net8.0.*"
 
 # root path
-$root = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
+$script:KestrunRoot  = Split-Path -Parent -Path $MyInvocation.MyCommand.Path 
 # Assert that the assembly is loaded
-Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\Kestrun.dll"
-#Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\python.runtime.dll"
-#Assert-AssemblyLoaded "$root\Kestrun\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll"
+Assert-AssemblyLoaded "$script:KestrunRoot\Kestrun\bin\Debug\net8.0\Kestrun.dll"
+#Assert-AssemblyLoaded "$KestrunRoot \Kestrun\bin\Debug\net8.0\python.runtime.dll"
+#Assert-AssemblyLoaded "$KestrunRoot \Kestrun\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll"
 Assert-AssemblyLoaded "$($PSHOME)\Microsoft.CodeAnalysis.dll"
 # load private functions
-Get-ChildItem "$($root)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+Get-ChildItem "$($script:KestrunRoot)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # only import public functions
 $sysfuncs = Get-ChildItem Function:
@@ -83,7 +83,7 @@ $sysfuncs = Get-ChildItem Function:
 $sysaliases = Get-ChildItem Alias:
 
 # load public functions
-Get-ChildItem "$($root)/Public/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+Get-ChildItem "$($script:KestrunRoot)/Public/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # get functions from memory and compare to existing to find new functions added
 $funcs = Get-ChildItem Function: | Where-Object { $sysfuncs -notcontains $_ }

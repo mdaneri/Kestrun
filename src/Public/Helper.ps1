@@ -49,20 +49,20 @@ function Set-KrPythonRuntime {
         if ($IsWindows) {
             # Windows: take the DLL next to the first python.exe on PATH
             $pyExe = (Get-Command python.exe, python3.exe -ErrorAction Ignore |
-                      Select-Object -First 1).Source
+                Select-Object -First 1).Source
             if ($pyExe) {
                 $Path = Get-ChildItem (Join-Path (Split-Path $pyExe) 'python*.dll') -ErrorAction Ignore |
-                        Sort-Object VersionInfo.FileVersion -Descending |
-                        Select-Object -First 1 -Expand FullName
+                Sort-Object VersionInfo.FileVersion -Descending |
+                Select-Object -First 1 -Expand FullName
             }
         }
         else {
             # Linux / macOS: ask whereis for libpython3*.so / .dylib
             $pattern = if ($IsMacOS) { 'libpython3*.dylib' } else { 'libpython3*.so' }
             $Path = & whereis -b $pattern 2>$null |
-                    Select-String -Pattern $pattern |
-                    ForEach-Object { $_.ToString().Split(' ',2)[1] } |
-                    Sort-Object Length | Select-Object -First 1
+            Select-String -Pattern $pattern |
+            ForEach-Object { $_.ToString().Split(' ', 2)[1] } |
+            Sort-Object Length | Select-Object -First 1
         }
     }
 
@@ -83,3 +83,19 @@ function Set-KrPythonRuntime {
 }
 
 
+function Resolve-KrPath {
+    param (
+        [string] $Path
+    )
+
+    $resolved = (Resolve-Path -Path $Path -RelativeBasePath $script:KestrunRoot -ErrorAction SilentlyContinue)
+    if ($null -eq $resolved) {
+        return $Path
+    }
+    return $resolved.Path 
+}
+ 
+
+function Get-KestrunRoot {
+    return $script:KestrunRoot
+}

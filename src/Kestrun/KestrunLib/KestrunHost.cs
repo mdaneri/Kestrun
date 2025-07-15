@@ -58,10 +58,10 @@ namespace KestrumLib
 
             // Configure Serilog logger
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Debug().MinimumLevel.Verbose()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                 .Enrich.FromLogContext()
-               // .WriteTo.Console()
+                // .WriteTo.Console()
                 .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
                 .CreateLogger();
             // Log constructor entry
@@ -412,6 +412,11 @@ namespace KestrumLib
                     {
                         await BuildError.ResponseAsync(context, ps);
                         return;
+                    }
+                    else if (ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
+                    {
+                        Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
+                        BuildError.Text(ps);
                     }
 
                     Log.Verbose("PowerShell script completed successfully.");

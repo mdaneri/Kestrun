@@ -5,6 +5,8 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text;
 using Org.BouncyCastle.Asn1.Ocsp;
+using Serilog;
+using Serilog.Events;
 namespace KestrumLib
 {
 
@@ -71,6 +73,12 @@ namespace KestrumLib
 
         public static bool IsTextBasedContentType(string type)
         {
+            if(Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Checking if content type is text-based: {ContentType}", type);
+
+            // Check if the content type is text-based or has a charset
+            if (string.IsNullOrEmpty(type))
+                return false;
             if (type.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                 return true;
 
@@ -106,14 +114,17 @@ namespace KestrumLib
         /// If the response body is larger than the specified threshold (in bytes), async write will be used.
         /// </remarks>
         public void WriteFileResponse(
-            string filePath,
+            string? filePath,
             bool inline = false,
             string? fileDownloadName = null,
             int statusCode = StatusCodes.Status200OK,
             string? contentType = null
         )
         {
-            Console.WriteLine(Directory.GetCurrentDirectory());
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType}, CurrentDirectory={CurrentDirectory}",
+                    filePath, statusCode, contentType, Directory.GetCurrentDirectory());
+
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
             if (!File.Exists(filePath))
@@ -163,6 +174,8 @@ namespace KestrumLib
 
         public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing JSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
             Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
             ContentType = contentType ?? $"application/json; charset={Encoding.WebName}";
@@ -172,6 +185,10 @@ namespace KestrumLib
 
         public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing JSON response, StatusCode={StatusCode}, ContentType={ContentType}, Depth={Depth}, Compress={Compress}",
+                    statusCode, contentType, depth, compress);
+
             var serializerSettings = new JsonSerializerSettings
             {
                 Formatting = compress ? Formatting.None : Formatting.Indented,
@@ -188,6 +205,9 @@ namespace KestrumLib
 
         public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing YAML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
             Body = YamlHelper.ToYaml(inputObject);
             ContentType = contentType ?? $"application/yaml; charset={Encoding.WebName}";
             StatusCode = statusCode;
@@ -195,6 +215,9 @@ namespace KestrumLib
 
         public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing XML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
             XElement xml = XmlUtil.ToXml("Response", inputObject);
 
             Body = xml.ToString(SaveOptions.DisableFormatting);
@@ -204,6 +227,13 @@ namespace KestrumLib
 
         public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
+
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing text response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+            if (inputObject is null)
+                throw new ArgumentNullException(nameof(inputObject), "Input object cannot be null for text response.");
+
             Body = inputObject?.ToString() ?? string.Empty;
             ContentType = contentType ?? $"text/plain; charset={Encoding.WebName}";
             StatusCode = statusCode;
@@ -211,6 +241,11 @@ namespace KestrumLib
 
         public void WriteRedirectResponse(string url, string? message = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing redirect response, StatusCode={StatusCode}, Location={Location}", StatusCode, url);
+
+            if (string.IsNullOrEmpty(url))
+                throw new ArgumentNullException(nameof(url), "URL cannot be null for redirect response.");
             // framework hook
             RedirectUrl = url;
 
@@ -239,7 +274,9 @@ namespace KestrumLib
         }
         public void WriteBinaryResponse(byte[] data, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
         {
-            Body = data;
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing binary response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+            Body = data ?? throw new ArgumentNullException(nameof(data), "Data cannot be null for binary response.");
             ContentType = contentType;
             StatusCode = statusCode;
             Headers["Content-Length"] = data.Length.ToString();
@@ -247,6 +284,8 @@ namespace KestrumLib
 
         public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing stream response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
             Body = stream;
             ContentType = contentType;
             StatusCode = statusCode;
@@ -255,6 +294,9 @@ namespace KestrumLib
 
         public async Task ApplyTo(HttpResponse response)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Applying KestrunResponse to HttpResponse, StatusCode={StatusCode}, ContentType={ContentType}, BodyType={BodyType}",
+                    StatusCode, ContentType, Body?.GetType().Name ?? "null");
 
             if (!string.IsNullOrEmpty(RedirectUrl))
             {

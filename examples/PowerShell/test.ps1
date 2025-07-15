@@ -131,7 +131,7 @@ Add-KrRoute -Server $server -Method "GET" -Path "/ps/text" -ScriptBlock {
 Add-KrRoute -Server $server -Method "GET" -Path "/ps/file" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - file Response"
-    Write-KrFileResponse -FilePath "./README.md" -FileDownloadName "README.md" -Inline   -statusCode 200
+    Write-KrFileResponse -FilePath "../../README.md" -FileDownloadName "README.md" -Inline   -statusCode 200
 }
 
 Add-KrRoute -Server $server -Method "GET" -Path "/cs/xml" -Language CSharp -Code @"

@@ -1,6 +1,7 @@
 
 using System.Management.Automation;
 using System.Text;
+using Serilog;
 
 namespace KestrunLib
 {
@@ -50,7 +51,7 @@ namespace KestrunLib
             append("ℹ️", info);
 
             var msg = sb.ToString();
-            Console.WriteLine(msg);
+            Log.Information(msg);
 
 
             return msg;

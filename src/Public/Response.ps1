@@ -89,7 +89,7 @@ function Write-KrFileResponse {
     try {
         if ($null -ne $Response) {
             # Call the C# method on the $Response object
-            $Response.WriteFileResponse((Resolve-Path -Path $FilePath -ErrorAction SilentlyContinue), $Inline.IsPresent, $FileDownloadName, $StatusCode, $ContentType)
+            $Response.WriteFileResponse((Resolve-KrPath -Path $FilePath), $Inline.IsPresent, $FileDownloadName, $StatusCode, $ContentType)
             Write-Information "File response written for $FilePath with download name $FileDownloadName"
         }
     }
