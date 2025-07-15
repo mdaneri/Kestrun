@@ -13,14 +13,14 @@ function Write-KrJsonResponse {
         [string]$ContentType
     )
     if ($null -ne $Response) {
-        $serializerSettings = [JsonSerializerSettings]::new()
-        $serializerSettings.Formatting = if ($Compress) { Formatting.None } else { Formatting.Indented }
-        $serializerSettings.ContractResolver = [CamelCasePropertyNamesContractResolver]::new()
-        $serializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-        $serializerSettings.NullValueHandling = NullValueHandling.Ignore
-        $serializerSettings.DefaultValueHandling = DefaultValueHandling.Ignore
+        $serializerSettings =  [Newtonsoft.Json.JsonSerializerSettings]::new()
+        $serializerSettings.Formatting = if ($Compress) { [Newtonsoft.Json.Formatting]::None } else { [Newtonsoft.Json.Formatting]::Indented }
+        $serializerSettings.ContractResolver = [Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver]::new()
+        $serializerSettings.ReferenceLoopHandling = [Newtonsoft.Json.ReferenceLoopHandling]::Ignore
+        $serializerSettings.NullValueHandling = [Newtonsoft.Json.NullValueHandling]::Ignore
+        $serializerSettings.DefaultValueHandling = [Newtonsoft.Json.DefaultValueHandling]::Ignore
         $serializerSettings.MaxDepth = $Depth
-        $serializerSettings.DateFormatHandling = DateFormatHandling.IsoDateFormat
+        $serializerSettings.DateFormatHandling = [Newtonsoft.Json.DateFormatHandling]::IsoDateFormat
         # Call the C# method on the $Response object
         $Response.WriteJsonResponse($InputObject, $serializerSettings, $ContentType)
     }

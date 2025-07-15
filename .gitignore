@@ -9,3 +9,4 @@ global.json
 /examples/CSharp/Certificates/out
 cert/devcert.crt
 /cert
+/examples/CSharpTest/logs

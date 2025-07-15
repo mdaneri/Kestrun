@@ -83,7 +83,7 @@ server.AddRoute("/ps/json", """
                 # If you want to return the request body, uncomment the next line
                 RequestBody    = $Request.Body 
             }
-            Write-KrJsonResponse -inputObject $payload -statusCode 200
+            Write-KrJsonResponse -InputObject $payload -StatusCode 200
         """, KestrumLib.ScriptLanguage.PowerShell, "GET");
 
 server.AddRoute("/ps/yaml", """

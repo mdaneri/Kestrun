@@ -28,6 +28,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using System.Security.Cryptography.X509Certificates;
 using System.Security;
 using Microsoft.AspNetCore.Hosting;
+using Serilog;
+using Serilog.Events;
 
 
 namespace KestrumLib
@@ -53,7 +55,23 @@ namespace KestrumLib
         #region Constructor
         public KestrunHost(string? appName = null, string[]? modulePathsObj = null)
         {
+
+            // Configure Serilog logger
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .Enrich.FromLogContext()
+               // .WriteTo.Console()
+                .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
+                .CreateLogger();
+            // Log constructor entry
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("KestrunHost constructor called with appName: {AppName}, modulePathsObj length: {ModulePathsLength}", appName, modulePathsObj?.Length ?? 0);
+
             builder = WebApplication.CreateBuilder();
+            // Add Serilog to ASP.NET Core logging
+            builder.Host.UseSerilog();
+
             if (!string.IsNullOrEmpty(appName))
             {
                 _kestrelOptions = new KestrunOptions { ApplicationName = appName };
@@ -71,12 +89,12 @@ namespace KestrumLib
                         }
                         else
                         {
-                            Console.WriteLine($"[KestrunHost] Warning: Module path does not exist: {modPath}");
+                            Log.Warning("[KestrunHost] Module path does not exist: {ModPath}", modPath);
                         }
                     }
                     else
                     {
-                        Console.WriteLine("[KestrunHost] Warning: Invalid module path provided.");
+                        Log.Warning("[KestrunHost] Invalid module path provided.");
                     }
                 }
             }
@@ -86,6 +104,8 @@ namespace KestrumLib
 
         private void KestrelServices(WebApplicationBuilder builder)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Configuring Kestrel services");
             builder = builder ?? throw new ArgumentNullException(nameof(builder));
 
             // Disable Kestrel's built-in console lifetime management
@@ -113,6 +133,9 @@ namespace KestrumLib
 
         public void ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
+
             _listenerOptions ??= [];
             _listenerOptions.Add(new ListenerOptions
             {
@@ -136,12 +159,17 @@ namespace KestrumLib
 
         private RequestDelegate BuildJsDelegate(string code)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Building JavaScript delegate, script length={Length}", code?.Length);
             var engine = new V8ScriptEngine();
             engine.AddHostType("KestrunResponse", typeof(KestrunResponse));
             engine.Execute(code);               // script defines global  function handle(ctx, res) { ... }
 
             return async context =>
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("JS delegate invoked for {Path}", context.Request.Path);
+
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
                 engine.Script.handle(context, krResponse);
@@ -191,6 +219,10 @@ namespace KestrumLib
         // ---------------------------------------------------------------------------
         private RequestDelegate BuildPyDelegate(string code)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Building Python delegate, script length={Length}", code?.Length);
+            if (string.IsNullOrWhiteSpace(code))
+                throw new ArgumentException("Python script code cannot be empty.", nameof(code));
             EnsurePythonEngine();                 // one-time init
 
             // ---------- compile the script once ----------
@@ -212,6 +244,9 @@ namespace KestrumLib
             // ---------- return a RequestDelegate ----------
             return async context =>
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Python delegate invoked for {Path}", context.Request.Path);
+
                 try
                 {
                     using var _ = Py.GIL();       // enter GIL for *this* request
@@ -234,7 +269,7 @@ namespace KestrumLib
                 catch (Exception ex)
                 {
                     // optional logging
-                    Console.WriteLine($"Python route error: {ex}");
+                    Log.Error($"Python route error: {ex}");
                     context.Response.StatusCode = 500;
                     context.Response.ContentType = "text/plain; charset=utf-8";
                     await context.Response.WriteAsync(
@@ -256,6 +291,8 @@ namespace KestrumLib
 
         private RequestDelegate BuildFsDelegate(string code)
         { // F# scripting not implemented yet
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Building F# delegate, script length={Length}", code?.Length);
             throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");
         }
 
@@ -271,6 +308,10 @@ namespace KestrumLib
                 string code, string[]? extraImports,
                 Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+                    code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+
             // 1. Compose ScriptOptions
             var opts = ScriptOptions.Default
                        .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
@@ -298,13 +339,13 @@ namespace KestrumLib
             var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
             if (warnings.Any())
             {
-                Console.WriteLine($"C# script compilation completed with {warnings.Length} warning(s):");
+                Log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
                 foreach (var warning in warnings)
                 {
                     var location = warning.Location.IsInSource
                         ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
                         : "";
-                    Console.WriteLine($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
+                    Log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
                 }
             }
 
@@ -336,9 +377,13 @@ namespace KestrumLib
         #region PowerShell
         private RequestDelegate BuildPsDelegate(string code)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Building PowerShell delegate, script length={Length}", code?.Length);
 
             return async context =>
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("PS delegate invoked for {Path}", context.Request.Path);
 
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
@@ -353,14 +398,14 @@ namespace KestrumLib
                      AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
                      AddScript(code);
                     // Execute the PowerShell script block
-                    // Using Task.Run to avoid blocking the thread 
-                    Console.WriteLine("Executing PowerShell script...");
+                    // Using Task.Run to avoid blocking the thread
+                    Log.Verbose("Executing PowerShell script...");
                     // Using Task.Run to avoid blocking the thread
                     // This is necessary to prevent deadlocks in the runspace pool
                     var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
                     .ConfigureAwait(false);
 
-                    Console.WriteLine($"PowerShell script executed with {psResults.Count} results.");
+                    Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                     //  var psResults = await Task.Run(() => ps.Invoke());
                     // Capture errors and output from the runspace 
                     if (ps.HadErrors || ps.Streams.Error.Count != 0)
@@ -369,15 +414,15 @@ namespace KestrumLib
                         return;
                     }
 
-                    Console.WriteLine("PowerShell script completed successfully.");
+                    Log.Verbose("PowerShell script completed successfully.");
                     // If redirect, nothing to return
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     {
-                        Console.WriteLine($"Redirecting to {krResponse.RedirectUrl}");
+                        Log.Verbose($"Redirecting to {krResponse.RedirectUrl}");
                         context.Response.Redirect(krResponse.RedirectUrl);
                         return;
                     }
-                    Console.WriteLine("Applying response to HttpResponse...");
+                    Log.Verbose("Applying response to HttpResponse...");
                     // Apply the response to the HttpResponse
 
                     await krResponse.ApplyTo(context.Response);
@@ -391,7 +436,7 @@ namespace KestrumLib
                 catch (Exception ex)
                 {
                     // Log the exception (optional)
-                    Console.WriteLine($"Error processing request: {ex.Message}");
+                    Log.Error($"Error processing request: {ex.Message}");
                     context.Response.StatusCode = 500; // Internal Server Error
                     context.Response.ContentType = "text/plain; charset=utf-8";
                     await context.Response.WriteAsync("An error occurred while processing your request.");
@@ -403,12 +448,12 @@ namespace KestrumLib
                     {
                         if (!context.Response.HasStarted)
                         {
-                            Console.WriteLine("Completing response for " + context.Request.Path);
+                            Log.Verbose("Completing response for " + context.Request.Path);
                             await context.Response.CompleteAsync().ConfigureAwait(false);
                         }
                         else
                         {
-                            Console.WriteLine("Response already started; skipping CompleteAsync()");
+                            Log.Verbose("Response already started; skipping CompleteAsync()");
                         }
                     }
                     catch (ObjectDisposedException)
@@ -431,6 +476,8 @@ namespace KestrumLib
                                     string[]? extraImports = null,
                                     Assembly[]? extraRefs = null)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Method}", pattern, language, httpMethod);
             if (App is null)
                 throw new InvalidOperationException(
                     "WebApplication is not initialized. Call ApplyConfiguration first.");
@@ -453,8 +500,8 @@ namespace KestrumLib
             catch (CompilationErrorException ex)
             {
                 // Log the detailed compilation errors
-                Console.WriteLine($"Failed to add route '{pattern}' due to compilation errors:");
-                Console.WriteLine(ex.GetDetailedErrorMessage());
+                Log.Error($"Failed to add route '{pattern}' due to compilation errors:");
+                Log.Error(ex.GetDetailedErrorMessage());
 
                 // Re-throw with additional context
                 throw new InvalidOperationException(
@@ -481,6 +528,8 @@ namespace KestrumLib
 
         public void ApplyConfiguration()
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("ApplyConfiguration() called");
             if (_kestrelOptions == null)
             {
                 _kestrelOptions = new KestrunOptions();
@@ -490,8 +539,13 @@ namespace KestrumLib
 
         public void ApplyConfiguration(KestrunOptions options)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("ApplyConfiguration(options) called: {@Options}", options);
+
             if (_isConfigured)
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Configuration already applied, skipping");
                 return; // Already configured
             }
 
@@ -558,6 +612,8 @@ namespace KestrumLib
 
         public void Run()
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Run() called");
             ApplyConfiguration();
 
             App?.Run();
@@ -565,6 +621,8 @@ namespace KestrumLib
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("StartAsync() called");
             ApplyConfiguration();
             if (App != null)
             {
@@ -574,6 +632,8 @@ namespace KestrumLib
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("StopAsync() called");
             if (App != null)
             {
                 await App.StopAsync(cancellationToken);
@@ -582,6 +642,8 @@ namespace KestrumLib
 
         public void Stop()
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Stop() called");
             // This initiates a graceful shutdown.
             App?.Lifetime.StopApplication();
         }
@@ -601,13 +663,15 @@ namespace KestrumLib
         /// </summary>
         private void EnsureRunspacePoolOpen()
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("EnsureRunspacePoolOpen() called");
             // Fast-path: already opened
             if (_runspacePool?.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
             {
-                Console.WriteLine("Runspace pool is already opened.");
+                Log.Verbose("Runspace pool is already opened.");
                 return;
             }
-            Console.WriteLine("Ensuring runspace pool is open...");
+            Log.Verbose("Ensuring runspace pool is open...");
             lock (_poolGate)
             {
                 // Pool was never created
@@ -618,13 +682,13 @@ namespace KestrumLib
                 {
                     // brand-new pool
                     case RunspacePoolState.BeforeOpen:
-                        Console.WriteLine("Before opening runspace pool, opening now...");
+                        Log.Verbose("Before opening runspace pool, opening now...");
                         _runspacePool.Open();                      // blocks until Opened
                         break;
 
                     // another thread is already opening – wait
                     case RunspacePoolState.Opening:
-                        Console.WriteLine("Runspace pool is opening, waiting for it to complete...");
+                        Log.Verbose("Runspace pool is opening, waiting for it to complete...");
                         // Wait until the pool is opened
                         while (_runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opening)
                             Thread.Sleep(25);
@@ -633,11 +697,11 @@ namespace KestrumLib
                     // pool closed or broken – throw it away and start fresh
                     case RunspacePoolState.Closed:
                     case RunspacePoolState.Broken:
-                        Console.WriteLine($"Runspace pool is {state}, disposing and recreating...");
+                        Log.Warning($"Runspace pool is {state}, disposing and recreating...");
                         // Dispose the old pool and create a new one
                         _runspacePool.Dispose();
                         // Recreate the runspace pool
-                        Console.WriteLine("Creating a new runspace pool...");
+                        Log.Verbose("Creating a new runspace pool...");
                         // Recreate the runspace pool with the specified max runspaces
                         _runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
                         _runspacePool.Open();
@@ -652,7 +716,10 @@ namespace KestrumLib
 
         private RunspacePool CreateRunspacePool(int? maxRunspaces = 0)
         {
-            // Create a default InitialSessionState _with_ an unrestricted policy:
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("CreateRunspacePool() called: {@MaxRunspaces}", maxRunspaces);
+
+            // Create a default InitialSessionState with an unrestricted policy:
             var iss = InitialSessionState.CreateDefault();
 
             iss.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Unrestricted;
@@ -663,7 +730,7 @@ namespace KestrumLib
             }
             int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 
-            Console.WriteLine($"Creating runspace pool with max runspaces: {maxRs}");
+            Log.Information($"Creating runspace pool with max runspaces: {maxRs}");
             var runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss) ?? throw new InvalidOperationException("Failed to create runspace pool.");
             runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
             runspacePool.SetMinRunspaces(1);
@@ -674,7 +741,7 @@ namespace KestrumLib
 
             runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
 
-            Console.WriteLine($"Runspace pool created with max runspaces: {maxRs}");
+            Log.Information($"Runspace pool created with max runspaces: {maxRs}");
 
             // Return the created runspace pool
             return runspacePool;
@@ -688,6 +755,8 @@ namespace KestrumLib
 
         public void Dispose()
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Dispose() called");
             _runspacePool?.Dispose();
             _runspacePool = null;
             _kestrelOptions = null;
@@ -708,11 +777,14 @@ namespace KestrumLib
         /// <param name="languageVersion">C# language version to use</param>
         /// <returns>Compilation diagnostics including errors and warnings</returns>
         public ImmutableArray<Diagnostic> ValidateCSharpScript(
-            string code,
+            string? code,
             string[]? extraImports = null,
             Assembly[]? extraRefs = null,
             LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("ValidateCSharpScript() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+                    code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
             try
             {
                 // Use the same script options as BuildCsDelegate
@@ -781,10 +853,14 @@ namespace KestrumLib
             Assembly[]? extraRefs = null,
             LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("GetCSharpScriptErrors() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+                    code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+
             var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
             var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
 
-            if (!errors.Any())
+            if (errors.Length == 0)
                 return null;
 
             try
