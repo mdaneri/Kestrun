@@ -2,17 +2,47 @@
 using System.Xml.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-
+using Microsoft.AspNetCore.StaticFiles;
+using System.Text;
 namespace KestrumLib
 {
+
+
     public class KestrunResponse
     {
+        public enum ContentDispositionType
+        {
+            Attachment,
+            Inline,
+            NoContentDisposition
+        }
+
+        /// <summary>
+        /// Options for Content-Disposition header.
+        /// </summary>
+        public record ContentDispositionOptions(
+               string? FileName = null,
+               ContentDispositionType Type = ContentDispositionType.NoContentDisposition
+           );
+
         public int StatusCode { get; set; } = 200;
         public Dictionary<string, string> Headers { get; set; } = [];
         public string ContentType { get; set; } = "text/plain";
         public object? Body { get; set; }
         public string? RedirectUrl { get; set; } // For HTTP redirects
         public List<string>? Cookies { get; set; } // For Set-Cookie headers
+
+
+        /// <summary>
+        /// Text encoding for textual MIME types.
+        /// </summary>
+        public Encoding Encoding { get; set; } = Encoding.UTF8;
+
+        /// <summary>
+        /// Content-Disposition header value.
+        /// </summary>
+        public ContentDispositionOptions ContentDisposition { get; set; } = new ContentDispositionOptions();
+
         /// <summary>
         /// Global text encoding for all responses. Defaults to UTF-8.
         /// </summary>
@@ -32,7 +62,83 @@ namespace KestrumLib
             return Headers.TryGetValue(key, out var value) ? value : null;
         }
 
-        public void WriteJsonResponse(object? inputObject, int statusCode)
+        public static bool IsTextBasedContentType(string type)
+        {
+            if (type.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Include structured types using XML or JSON suffixes
+            if (type.EndsWith("+xml", StringComparison.OrdinalIgnoreCase) ||
+                type.EndsWith("+json", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Common application types where charset makes sense
+            switch (type.ToLowerInvariant())
+            {
+                case "application/json":
+                case "application/xml":
+                case "application/javascript":
+                case "application/xhtml+xml":
+                case "application/x-www-form-urlencoded":
+                case "application/yaml":
+                case "application/graphql":
+                    return true;
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Shortcut to send a file (as attachment or inline).
+        /// </summary>
+        /// <param name="filePath">Path to the file to send.</param>
+        /// <param name="asAttachment">If true, the file will be sent as an attachment.</param>
+        /// <param name="downloadName">Optional download name for the file.</param> 
+        /// <param name="contentType">Optional content type. If not provided, it will be determined based on the file extension.</param>
+        /// <param name="statusCode">HTTP status code for the response.</param> 
+        /// <remarks>
+        /// If the response body is larger than the specified threshold (in bytes), async write will be used.
+        /// </remarks>
+        public void WriteFileResponse(
+            string filePath,
+            bool asAttachment = true,
+            string? downloadName = null,
+            string? contentType = null,
+            int statusCode = StatusCodes.Status200OK
+        )
+        {
+            var fi = new FileInfo(filePath);
+            var provider = new FileExtensionContentTypeProvider();
+            if (contentType == null)
+            {
+                contentType = provider.TryGetContentType(filePath, out var ct)
+                    ? ct
+                    : "application/octet-stream";
+                // body as stream
+                Body = File.OpenRead(filePath);
+            }
+
+            if (IsTextBasedContentType(contentType) &&
+                !contentType.Contains("charset=", StringComparison.OrdinalIgnoreCase))
+            {
+                contentType += $"; charset={Encoding.WebName}";
+            }
+
+            // headers & metadata
+            StatusCode = statusCode;
+            ContentType = contentType;
+            Headers["Content-Length"] = fi.Length.ToString();
+
+            // content‑disposition
+            var dispType = asAttachment
+                ? ContentDispositionType.Attachment
+                : ContentDispositionType.Inline;
+            ContentDisposition = new ContentDispositionOptions
+            {
+                FileName = downloadName ?? fi.Name,
+                Type = dispType
+            };
+        }
+        public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
         {
             WriteJsonResponse(inputObject, statusCode, depth: 10, compress: false);
         }
@@ -41,7 +147,7 @@ namespace KestrumLib
         {
 
             Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
-            ContentType = "application/json; charset=utf-8";
+            ContentType = $"application/json; charset={Encoding.WebName}";
             StatusCode = statusCode;
         }
 
@@ -70,29 +176,64 @@ namespace KestrumLib
             WriteJsonResponse(inputObject, statusCode, depth: depth, compress: false);
         }
 
-        public void WriteYamlResponse(object? inputObject, int statusCode)
+        public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             Body = YamlHelper.ToYaml(inputObject);
-            ContentType = "application/yaml; charset=utf-8";
+            ContentType = contentType ?? $"application/yaml; charset={Encoding.WebName}";
             StatusCode = statusCode;
         }
 
-        public void WriteXmlResponse(object? inputObject, int statusCode)
+        public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             XElement xml = XmlUtil.ToXml("Response", inputObject);
 
             Body = xml.ToString(SaveOptions.DisableFormatting);
-            ContentType = "application/xml; charset=utf-8";
+            ContentType = contentType ?? $"application/xml; charset={Encoding.WebName}";
             StatusCode = statusCode;
         }
 
-
-
-        public void WriteTextResponse(object? inputObject, int statusCode)
+        public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             Body = inputObject?.ToString() ?? string.Empty;
-            ContentType = "text/plain; charset=utf-8";
+            ContentType = contentType ?? $"text/plain; charset={Encoding.WebName}";
             StatusCode = statusCode;
+        }
+
+        public void WriteRedirectResponse(string url, int statusCode = StatusCodes.Status302Found, string? message = null)
+        {
+
+            // framework hook
+            RedirectUrl = url;
+
+            // HTTP status + Location header
+            StatusCode = statusCode;
+            Headers["Location"] = url;
+
+            if (message is not null)
+            {
+                // include a body
+                Body = message;
+                ContentType = $"text/plain; charset={Encoding.WebName}";
+
+                // compute byte‑length of the message in the chosen encoding
+                var bytes = Encoding.GetBytes(message);
+                Headers["Content-Length"] = bytes.Length.ToString();
+            }
+            else
+            {
+                // no body: clear any existing body/headers
+                Body = null;
+                //ContentType = null;
+                Headers.Remove("Content-Length");
+            }
+
+        }
+        public void WriteBinaryResponse(byte[] data, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
+        {
+            Body = data;
+            ContentType = contentType;
+            StatusCode = statusCode;
+            Headers["Content-Length"] = data.Length.ToString();
         }
 
         public async Task ApplyTo(HttpResponse response)
@@ -113,6 +254,22 @@ namespace KestrumLib
                 }
             }
             response.ContentType = contentType;
+            if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
+            {
+                string dispositionValue = ContentDisposition.Type switch
+                {
+                    ContentDispositionType.Attachment => "attachment",
+                    ContentDispositionType.Inline => "inline",
+                    _ => throw new InvalidOperationException("Invalid Content-Disposition type")
+                };
+
+                if (!string.IsNullOrEmpty(ContentDisposition.FileName))
+                {
+                    dispositionValue += $"; filename=\"{ContentDisposition.FileName}\"";
+                }
+                response.Headers.Append("Content-Disposition", dispositionValue);
+            }
+
             if (Headers != null)
             {
                 foreach (var kv in Headers)
