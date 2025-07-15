@@ -140,15 +140,16 @@ namespace KestrumLib
             engine.AddHostType("KestrunResponse", typeof(KestrunResponse));
             engine.Execute(code);               // script defines global  function handle(ctx, res) { ... }
 
-            return async ctx =>
+            return async context =>
             {
-                var res = new KestrunResponse();
-                engine.Script.handle(ctx, res);
+                var krRequest = await KestrunRequest.NewRequest(context);
+                var krResponse = new KestrunResponse(krRequest);
+                engine.Script.handle(context, krResponse);
 
-                if (!string.IsNullOrEmpty(res.RedirectUrl))
+                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     return;
 
-                await res.ApplyTo(ctx.Response);
+                await krResponse.ApplyTo(context.Response);
             };
         }
 
@@ -209,40 +210,40 @@ namespace KestrumLib
             dynamic pyHandle = scope.Get("handle");
 
             // ---------- return a RequestDelegate ----------
-            return async ctx =>
+            return async context =>
             {
                 try
                 {
                     using var _ = Py.GIL();       // enter GIL for *this* request
-
-                    var res = new KestrunResponse();
+                    var krRequest = await KestrunRequest.NewRequest(context);
+                    var krResponse = new KestrunResponse(krRequest);
 
                     // Call the Python handler (Python → .NET marshal is automatic)
-                    pyHandle(ctx, res);
+                    pyHandle(context, krResponse);
 
                     // redirect?
-                    if (!string.IsNullOrEmpty(res.RedirectUrl))
+                    if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     {
-                        ctx.Response.Redirect(res.RedirectUrl);
+                        context.Response.Redirect(krResponse.RedirectUrl);
                         return;                   // finally-block will CompleteAsync
                     }
 
                     // normal response
-                    await res.ApplyTo(ctx.Response).ConfigureAwait(false);
+                    await krResponse.ApplyTo(context.Response).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     // optional logging
                     Console.WriteLine($"Python route error: {ex}");
-                    ctx.Response.StatusCode = 500;
-                    ctx.Response.ContentType = "text/plain; charset=utf-8";
-                    await ctx.Response.WriteAsync(
+                    context.Response.StatusCode = 500;
+                    context.Response.ContentType = "text/plain; charset=utf-8";
+                    await context.Response.WriteAsync(
                         "Python script failed while processing the request.").ConfigureAwait(false);
                 }
                 finally
                 {
                     // Always flush & close so the client doesn’t hang
-                    try { await ctx.Response.CompleteAsync().ConfigureAwait(false); }
+                    try { await context.Response.CompleteAsync().ConfigureAwait(false); }
                     catch (ObjectDisposedException) { /* client disconnected */ }
                 }
             };
@@ -254,34 +255,8 @@ namespace KestrumLib
 
 
         private RequestDelegate BuildFsDelegate(string code)
-        {
-#pragma warning disable CS0618  // LegacyReferenceResolver is obsolete
-            var fsi = Shell.FsiEvaluationSession.Create(
-                       Shell.FsiEvaluationSession.GetDefaultConfiguration(),
-                        ["fsi.exe", "--noninteractive"],
-                          inReader: Console.In,
-                          outWriter: Console.Out,
-                          errorWriter: Console.Error,
-                          collectible: FSharpOption<bool>.None,
-                          legacyReferenceResolver: FSharpOption<FSharp.Compiler.CodeAnalysis.LegacyReferenceResolver?>.None
-            );
-#pragma warning restore CS0618  // LegacyReferenceResolver is obsolete
-
-            // script must define:  let handle (ctx: HttpContext) (res: KestrunResponse) = ...
-            fsi.EvalInteraction(code, null);
-
-            return async ctx =>
-            {
-                var res = new KestrunResponse();
-                fsi.AddBoundValue("ctx", ctx);
-                fsi.AddBoundValue("res", res);
-                fsi.EvalInteraction("handle ctx res", null);
-
-                if (!string.IsNullOrEmpty(res.RedirectUrl))
-                    return;
-
-                await res.ApplyTo(ctx.Response);
-            };
+        { // F# scripting not implemented yet
+            throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");
         }
 
 
@@ -312,13 +287,13 @@ namespace KestrumLib
             // 2. Compile once
             var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
             var diagnostics = script.Compile();
-            
+
             // Check for compilation errors
             if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
             {
                 throw new CompilationErrorException("C# route code compilation failed", diagnostics);
             }
-            
+
             // Log warnings if any (optional - for debugging)
             var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
             if (warnings.Any())
@@ -326,8 +301,8 @@ namespace KestrumLib
                 Console.WriteLine($"C# script compilation completed with {warnings.Length} warning(s):");
                 foreach (var warning in warnings)
                 {
-                    var location = warning.Location.IsInSource 
-                        ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}" 
+                    var location = warning.Location.IsInSource
+                        ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
                         : "";
                     Console.WriteLine($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
                 }
@@ -339,7 +314,7 @@ namespace KestrumLib
                 try
                 {
                     var krRequest = await KestrunRequest.NewRequest(context);
-                    var krResponse = new KestrunResponse();
+                    var krResponse = new KestrunResponse(krRequest);
                     await script.RunAsync(new CsGlobals(krRequest, krResponse)).ConfigureAwait(false);
 
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
@@ -364,11 +339,11 @@ namespace KestrumLib
 
             return async context =>
             {
+
+                var krRequest = await KestrunRequest.NewRequest(context);
+                var krResponse = new KestrunResponse(krRequest);
                 try
                 {
-                    var krRequest = await KestrunRequest.NewRequest(context);
-                    var krResponse = new KestrunResponse();
-
                     EnsureRunspacePoolOpen();
                     using PowerShell ps = PowerShell.Create();
                     ps.RunspacePool = _runspacePool;
@@ -404,6 +379,7 @@ namespace KestrumLib
                     }
                     Console.WriteLine("Applying response to HttpResponse...");
                     // Apply the response to the HttpResponse
+
                     await krResponse.ApplyTo(context.Response);
                     return;
                 }
@@ -425,8 +401,15 @@ namespace KestrumLib
                     // CompleteAsync is idempotent – safe to call once more
                     try
                     {
-                        Console.WriteLine("Completing response for " + context.Request.Path);
-                        await context.Response.CompleteAsync().ConfigureAwait(false);
+                        if (!context.Response.HasStarted)
+                        {
+                            Console.WriteLine("Completing response for " + context.Request.Path);
+                            await context.Response.CompleteAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Response already started; skipping CompleteAsync()");
+                        }
                     }
                     catch (ObjectDisposedException)
                     {
@@ -472,81 +455,21 @@ namespace KestrumLib
                 // Log the detailed compilation errors
                 Console.WriteLine($"Failed to add route '{pattern}' due to compilation errors:");
                 Console.WriteLine(ex.GetDetailedErrorMessage());
-                
+
                 // Re-throw with additional context
                 throw new InvalidOperationException(
-                    $"Failed to compile {language} script for route '{pattern}'. {ex.GetErrors().Count()} error(s) found.", 
+                    $"Failed to compile {language} script for route '{pattern}'. {ex.GetErrors().Count()} error(s) found.",
                     ex);
             }
             catch (Exception ex)
             {
                 throw new InvalidOperationException(
-                    $"Failed to add route '{pattern}' with method '{httpMethod}' using {language}: {ex.Message}", 
+                    $"Failed to add route '{pattern}' with method '{httpMethod}' using {language}: {ex.Message}",
                     ex);
             }
         }
 
 
-
-        public void AddRoute(string pattern, string scriptBlock, string httpMethod = "GET")
-        {
-            try
-            {
-                if (App == null)
-                {
-                    throw new InvalidOperationException("WebApplication is not initialized. Call ApplyConfiguration first.");
-                }
-                _ = App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], async (HttpContext context) =>
-                {
-                    using var reader = new StreamReader(context.Request.Body);
-                    var body = await reader.ReadToEndAsync();
-                    // context.Request.Headers.Remove("Accept-Encoding");
-                    var request = new
-                    {
-                        context.Request.Method,
-                        Path = context.Request.Path.ToString(),
-                        Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                        Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
-                        Body = body
-                    };
-
-                    var inputJson = JsonConvert.SerializeObject(request);
-
-                    var krResponse = new KestrunResponse();
-
-                    using PowerShell ps = PowerShell.Create();
-                    ps.RunspacePool = _runspacePool;
-
-
-                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", request).AddParameter("Scope", "Script").AddStatement().
-                     AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
-                     AddScript(scriptBlock);
-                    // Execute the PowerShell script block
-                    // Using Task.Run to avoid blocking the thread 
-                    var psResults = await ps.InvokeAsync();
-                    // Capture errors and output from the runspace
-                    var hadErrors = ps.HadErrors || ps.Streams.Error.Count != 0;
-                    if (hadErrors)
-                    {
-                        return BuildError.Result(ps);
-                    }
-
-
-                    // If redirect, nothing to return
-                    if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                    {
-                        context.Response.Redirect(krResponse.RedirectUrl);
-                        return Results.Redirect(krResponse.RedirectUrl);
-                    }
-                    await krResponse.ApplyTo(context.Response);
-                    return Results.Empty;
-                });
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Failed to add route '{pattern}' with method '{httpMethod}': {ex.Message}", ex);
-            }
-        }
 
 
         #endregion
@@ -785,9 +708,9 @@ namespace KestrumLib
         /// <param name="languageVersion">C# language version to use</param>
         /// <returns>Compilation diagnostics including errors and warnings</returns>
         public ImmutableArray<Diagnostic> ValidateCSharpScript(
-            string code, 
-            string[]? extraImports = null, 
-            Assembly[]? extraRefs = null, 
+            string code,
+            string[]? extraImports = null,
+            Assembly[]? extraRefs = null,
             LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
             try
@@ -813,15 +736,15 @@ namespace KestrumLib
                 // If there's an exception during script creation, create a synthetic diagnostic
                 var diagnostic = Diagnostic.Create(
                     new DiagnosticDescriptor(
-                        "KESTRUN001", 
-                        "Script validation error", 
-                        "Script validation failed: {0}", 
-                        "Compilation", 
-                        DiagnosticSeverity.Error, 
-                        true), 
-                    Location.None, 
+                        "KESTRUN001",
+                        "Script validation error",
+                        "Script validation failed: {0}",
+                        "Compilation",
+                        DiagnosticSeverity.Error,
+                        true),
+                    Location.None,
                     ex.Message);
-                
+
                 return ImmutableArray.Create(diagnostic);
             }
         }
@@ -835,9 +758,9 @@ namespace KestrumLib
         /// <param name="languageVersion">C# language version to use</param>
         /// <returns>True if the script compiles without errors, false otherwise</returns>
         public bool IsCSharpScriptValid(
-            string code, 
-            string[]? extraImports = null, 
-            Assembly[]? extraRefs = null, 
+            string code,
+            string[]? extraImports = null,
+            Assembly[]? extraRefs = null,
             LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
             var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
@@ -853,14 +776,14 @@ namespace KestrumLib
         /// <param name="languageVersion">C# language version to use</param>
         /// <returns>Formatted error message, or null if no errors</returns>
         public string? GetCSharpScriptErrors(
-            string code, 
-            string[]? extraImports = null, 
-            Assembly[]? extraRefs = null, 
+            string code,
+            string[]? extraImports = null,
+            Assembly[]? extraRefs = null,
             LanguageVersion languageVersion = LanguageVersion.CSharp12)
         {
             var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
             var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-            
+
             if (!errors.Any())
                 return null;
 

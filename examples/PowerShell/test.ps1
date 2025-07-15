@@ -1,7 +1,7 @@
 
  
 try {
-    $ScriptPath=(Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
+    $ScriptPath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
     # Determine the script path and Kestrun module path
     $examplesPath = (Split-Path -Parent ($ScriptPath))
     $kestrunPath = Split-Path -Parent -Path $examplesPath
@@ -22,7 +22,7 @@ $server = New-KrServer -Name "MyKestrunServer"
 
 
  
- $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
+$cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
  
 <#
 if (Test-Path "$ScriptPath\devcert.pfx" ) {
@@ -35,7 +35,7 @@ else {
 }#>
 # Create a CSR
 #$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
- #   -Country US -Org 'Acme' -CommonName 'example.com'
+#   -Country US -Org 'Acme' -CommonName 'example.com'
 
 Test-KsCertificate -Certificate $cert -DenySelfSigned
                  
@@ -127,6 +127,13 @@ Add-KrRoute -Server $server -Method "GET" -Path "/ps/text" -ScriptBlock {
     Write-KrTextResponse -inputObject $payload -statusCode 200
 }
 
+
+Add-KrRoute -Server $server -Method "GET" -Path "/ps/file" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - file Response"
+    Write-KrFileResponse -FilePath "./README.md" -FileDownloadName "README.md" -Inline   -statusCode 200
+}
+
 Add-KrRoute -Server $server -Method "GET" -Path "/cs/xml" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Xml Response(From PowerShell)");
@@ -185,6 +192,13 @@ Add-KrRoute -Server $server -Method "GET" -Path "/cs/text" -Language CSharp -Cod
                 RequestBody = Request.Body
             };
             Response.WriteTextResponse( payload,  200);
+"@
+
+
+Add-KrRoute -Server $server -Method "GET" -Path "/cs/file" -Language CSharp -Code @"
+
+    Console.WriteLine("Hello from C# script! - file Response(From C#)");
+    Response.WriteFileResponse("../../README.md", true, "README.md");
 "@
 
 Add-KrRoute -Server $server -Method "GET" -Path "/messagestream" -ScriptBlock {

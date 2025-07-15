@@ -36,7 +36,8 @@ function Add-AspNetCoreType {
         $assemblies = @(
             "Microsoft.AspNetCore.dll",
             "Microsoft.AspNetCore.ResponseCompression.dll",
-            "Microsoft.AspNetCore.Http.Results.dll"
+            "Microsoft.AspNetCore.Http.Results.dll",
+            "Microsoft.AspNetCore.StaticFiles.dll"
         )
         $allFound = $true
         foreach ($asm in $assemblies) {

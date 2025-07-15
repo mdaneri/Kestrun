@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text;
+using Org.BouncyCastle.Asn1.Ocsp;
 namespace KestrumLib
 {
 
@@ -42,19 +43,25 @@ namespace KestrumLib
         /// Content-Disposition header value.
         /// </summary>
         public ContentDispositionOptions ContentDisposition { get; set; } = new ContentDispositionOptions();
+        public KestrunRequest Request { get; private set; }
 
         /// <summary>
         /// Global text encoding for all responses. Defaults to UTF-8.
         /// </summary>
-        public static System.Text.Encoding TextEncoding { get; set; } = System.Text.Encoding.UTF8;
+        //public static System.Text.Encoding TextEncoding { get; set; } = System.Text.Encoding.UTF8;
+
+        public Encoding AcceptCharset { get; private set; }
+
         /// <summary>
         /// If the response body is larger than this threshold (in bytes), async write will be used.
         /// </summary>
         public int BodyAsyncThreshold { get; set; } = 8192; // 8 KB default
 
 
-        public KestrunResponse(int bodyAsyncThreshold = 8192)
+        public KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 8192)
         {
+            Request = request ?? throw new ArgumentNullException(nameof(request));
+            AcceptCharset = request.Headers.TryGetValue("Accept-Charset", out string? value) ? Encoding.GetEncoding(value) : Encoding.UTF8; // Default to UTF-8 if null
             BodyAsyncThreshold = bodyAsyncThreshold;
         }
         public string? GetHeader(string key)
@@ -91,8 +98,8 @@ namespace KestrumLib
         /// Shortcut to send a file (as attachment or inline).
         /// </summary>
         /// <param name="filePath">Path to the file to send.</param>
-        /// <param name="asAttachment">If true, the file will be sent as an attachment.</param>
-        /// <param name="downloadName">Optional download name for the file.</param> 
+        /// <param name="inline">If true, the file will be sent inline.</param>
+        /// <param name="fileDownloadName">Optional download name for the file.</param> 
         /// <param name="contentType">Optional content type. If not provided, it will be determined based on the file extension.</param>
         /// <param name="statusCode">HTTP status code for the response.</param> 
         /// <remarks>
@@ -100,12 +107,23 @@ namespace KestrumLib
         /// </remarks>
         public void WriteFileResponse(
             string filePath,
-            bool asAttachment = true,
-            string? downloadName = null,
-            string? contentType = null,
-            int statusCode = StatusCodes.Status200OK
+            bool inline = false,
+            string? fileDownloadName = null,
+            int statusCode = StatusCodes.Status200OK,
+            string? contentType = null
         )
         {
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            if (string.IsNullOrEmpty(filePath))
+                throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
+            if (!File.Exists(filePath))
+            {
+                StatusCode = StatusCodes.Status404NotFound;
+                Body = $"File not found: {filePath}";
+                ContentType = $"text/plain; charset={Encoding.WebName}";
+                return;
+            }
+
             var fi = new FileInfo(filePath);
             var provider = new FileExtensionContentTypeProvider();
             if (contentType == null)
@@ -129,32 +147,32 @@ namespace KestrumLib
             Headers["Content-Length"] = fi.Length.ToString();
 
             // content‑disposition
-            var dispType = asAttachment
-                ? ContentDispositionType.Attachment
-                : ContentDispositionType.Inline;
+            var dispType = inline
+                ? ContentDispositionType.Inline
+                : ContentDispositionType.Attachment;
             ContentDisposition = new ContentDispositionOptions
             {
-                FileName = downloadName ?? fi.Name,
+                FileName = fileDownloadName ?? fi.Name,
                 Type = dispType
             };
         }
         public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
         {
-            WriteJsonResponse(inputObject, statusCode, depth: 10, compress: false);
+            WriteJsonResponse(inputObject, depth: 10, compress: false, statusCode: statusCode);
         }
 
-        public void WriteJsonResponse(object? inputObject, int statusCode, JsonSerializerSettings serializerSettings)
+        public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
 
             Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
-            ContentType = $"application/json; charset={Encoding.WebName}";
+            ContentType = contentType ?? $"application/json; charset={Encoding.WebName}";
             StatusCode = statusCode;
         }
 
 
-        public void WriteJsonResponse(object? inputObject, int statusCode, int depth, bool compress)
+        public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
-            var settings = new JsonSerializerSettings
+            var serializerSettings = new JsonSerializerSettings
             {
                 Formatting = compress ? Formatting.None : Formatting.Indented,
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
@@ -163,18 +181,10 @@ namespace KestrumLib
                 DefaultValueHandling = DefaultValueHandling.Ignore,
                 MaxDepth = depth
             };
-            WriteJsonResponse(inputObject, statusCode, settings);
+            WriteJsonResponse(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
         }
 
-        public void WriteJsonResponse(object? inputObject, int statusCode, bool compress)
-        {
-            WriteJsonResponse(inputObject, statusCode, depth: 10, compress: compress);
-        }
 
-        public void WriteJsonResponse(object? inputObject, int statusCode, int depth)
-        {
-            WriteJsonResponse(inputObject, statusCode, depth: depth, compress: false);
-        }
 
         public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
@@ -199,14 +209,13 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
-        public void WriteRedirectResponse(string url, int statusCode = StatusCodes.Status302Found, string? message = null)
+        public void WriteRedirectResponse(string url, string? message = null)
         {
-
             // framework hook
             RedirectUrl = url;
 
             // HTTP status + Location header
-            StatusCode = statusCode;
+            StatusCode = StatusCodes.Status302Found;
             Headers["Location"] = url;
 
             if (message is not null)
@@ -236,84 +245,115 @@ namespace KestrumLib
             Headers["Content-Length"] = data.Length.ToString();
         }
 
+        public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
+        {
+            Body = stream;
+            ContentType = contentType;
+            StatusCode = statusCode;
+            Headers["Content-Length"] = stream.Length.ToString();
+        }
+
         public async Task ApplyTo(HttpResponse response)
         {
+
             if (!string.IsNullOrEmpty(RedirectUrl))
             {
                 response.Redirect(RedirectUrl);
                 return;
             }
-            response.StatusCode = StatusCode;
-            // Ensure charset is set for text content types
-            string contentType = ContentType;
-            if (contentType != null && contentType.StartsWith("text/", System.StringComparison.OrdinalIgnoreCase))
-            {
-                if (!contentType.Contains("charset=", System.StringComparison.OrdinalIgnoreCase))
-                {
-                    contentType = contentType.TrimEnd(';') + $"; charset={TextEncoding.WebName}";
-                }
-            }
-            response.ContentType = contentType;
-            if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
-            {
-                string dispositionValue = ContentDisposition.Type switch
-                {
-                    ContentDispositionType.Attachment => "attachment",
-                    ContentDispositionType.Inline => "inline",
-                    _ => throw new InvalidOperationException("Invalid Content-Disposition type")
-                };
 
-                if (!string.IsNullOrEmpty(ContentDisposition.FileName))
+            try
+            {
+                response.StatusCode = StatusCode;
+                // Ensure charset is set for text content types
+                string contentType = ContentType;
+                if (contentType != null && contentType.StartsWith("text/", System.StringComparison.OrdinalIgnoreCase))
                 {
-                    dispositionValue += $"; filename=\"{ContentDisposition.FileName}\"";
+                    if (!contentType.Contains("charset=", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        contentType = contentType.TrimEnd(';') + $"; charset={AcceptCharset.WebName}";
+                    }
                 }
-                response.Headers.Append("Content-Disposition", dispositionValue);
-            }
+                response.ContentType = contentType;
+                if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
+                {
+                    string dispositionValue = ContentDisposition.Type switch
+                    {
+                        ContentDispositionType.Attachment => "attachment",
+                        ContentDispositionType.Inline => "inline",
+                        _ => throw new InvalidOperationException("Invalid Content-Disposition type")
+                    };
 
-            if (Headers != null)
-            {
-                foreach (var kv in Headers)
+                    if (!string.IsNullOrEmpty(ContentDisposition.FileName))
+                    {
+                        dispositionValue += $"; filename=\"{ContentDisposition.FileName}\"";
+                    }
+                    response.Headers.Append("Content-Disposition", dispositionValue);
+                }
+
+                if (Headers != null)
                 {
-                    response.Headers[kv.Key] = kv.Value;
+                    foreach (var kv in Headers)
+                    {
+                        response.Headers[kv.Key] = kv.Value;
+                    }
+                }
+                if (Cookies != null)
+                {
+                    foreach (var cookie in Cookies)
+                    {
+                        response.Headers.Append("Set-Cookie", cookie);
+                    }
+                }
+                if (Body != null)
+                {
+                    switch (Body)
+                    {
+                        case byte[] bytes:
+                            if (bytes.Length > BodyAsyncThreshold)
+                                await response.Body.WriteAsync(bytes);
+                            else
+                                response.Body.Write(bytes, 0, bytes.Length);
+                            break;
+                        case System.IO.Stream stream:
+                            Console.WriteLine("Writing stream response");
+                            if (stream.CanSeek && stream.Length > BodyAsyncThreshold)
+                            {
+                                // Reset position if the stream is seekable
+                                stream.Position = 0;
+                            }
+                            else if (!stream.CanSeek)
+                            {
+                                // If not seekable, we assume it's a live stream
+                                response.Headers.Remove("Content-Length"); // Content-Length is not reliable for streams
+                            }
+
+                            // Always use async for streams
+                            await stream.CopyToAsync(response.Body);
+                            break;
+                        case string str:
+                            var strBytes = AcceptCharset.GetBytes(str);
+                            if (strBytes.Length > BodyAsyncThreshold)
+                                await response.Body.WriteAsync(strBytes);
+                            else
+                                response.Body.Write(strBytes, 0, strBytes.Length);
+                            break;
+                        default:
+                            var fallback = Body.ToString() ?? string.Empty;
+                            var fallbackBytes = AcceptCharset.GetBytes(fallback);
+                            if (fallbackBytes.Length > BodyAsyncThreshold)
+                                await response.Body.WriteAsync(fallbackBytes);
+                            else
+                                response.Body.Write(fallbackBytes, 0, fallbackBytes.Length);
+                            break;
+                    }
                 }
             }
-            if (Cookies != null)
+            catch (Exception ex)
             {
-                foreach (var cookie in Cookies)
-                {
-                    response.Headers.Append("Set-Cookie", cookie);
-                }
-            }
-            if (Body != null)
-            {
-                switch (Body)
-                {
-                    case byte[] bytes:
-                        if (bytes.Length > BodyAsyncThreshold)
-                            await response.Body.WriteAsync(bytes);
-                        else
-                            response.Body.Write(bytes, 0, bytes.Length);
-                        break;
-                    case System.IO.Stream stream:
-                        // Always use async for streams
-                        await stream.CopyToAsync(response.Body);
-                        break;
-                    case string str:
-                        var strBytes = TextEncoding.GetBytes(str);
-                        if (strBytes.Length > BodyAsyncThreshold)
-                            await response.Body.WriteAsync(strBytes);
-                        else
-                            response.Body.Write(strBytes, 0, strBytes.Length);
-                        break;
-                    default:
-                        var fallback = Body.ToString() ?? string.Empty;
-                        var fallbackBytes = TextEncoding.GetBytes(fallback);
-                        if (fallbackBytes.Length > BodyAsyncThreshold)
-                            await response.Body.WriteAsync(fallbackBytes);
-                        else
-                            response.Body.Write(fallbackBytes, 0, fallbackBytes.Length);
-                        break;
-                }
+                Console.WriteLine($"Error applying response: {ex.Message}");
+                // Optionally, you can log the exception or handle it as needed
+                throw;
             }
         }
     }
