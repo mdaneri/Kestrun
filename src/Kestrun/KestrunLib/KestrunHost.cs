@@ -385,29 +385,52 @@ namespace KestrumLib
 
             public async Task InvokeAsync(HttpContext context)
             {
-                // Acquire a runspace from the pool and keep it for the whole request
-                using PowerShell ps = PowerShell.Create();
-                ps.RunspacePool = _pool;
-                var krReq = await KestrunRequest.NewRequest(context);
-                var krResp = new KestrunResponse(krReq);
-
-                // keep a reference for any C# code later in the pipeline
-                context.Items["KR_REQUEST"] = krReq;
-                context.Items["KR_RESPONSE"] = krResp;
-                // Set the PowerShell variables for the request and response
-                var ss = ps.Runspace.SessionStateProxy;
-                ss.SetVariable("Request", krReq);
-                ss.SetVariable("Response", krResp);
-                context.Items[PsItemKey] = ps;
-
                 try
                 {
-                    await _next(context);                // continue the pipeline
+                    EnsureRunspacePoolOpen(_pool);
+                    // Acquire a runspace from the pool and keep it for the whole request
+                    using PowerShell ps = PowerShell.Create();
+                    ps.RunspacePool = _pool;
+                    var krRequest = await KestrunRequest.NewRequest(context);
+                    var krResponse = new KestrunResponse(krRequest);
+
+                    // keep a reference for any C# code later in the pipeline
+                    context.Items["KR_REQUEST"] = krRequest;
+                    context.Items["KR_RESPONSE"] = krResponse;
+                    // Set the PowerShell variables for the request and response
+                    //  var ss = ps.Runspace.SessionStateProxy; 
+                    //ss.SetVariable("Request", krReq);
+                    // ss.SetVariable("Response", krResp);
+
+                    ps.AddCommand("Set-Variable")
+                        .AddParameter("Name", "Request")
+                        .AddParameter("Value", krRequest)
+                        .AddParameter("Scope", "Script")
+                        .AddStatement()
+                        .AddCommand("Set-Variable")
+                        .AddParameter("Name", "Response")
+                        .AddParameter("Value", krResponse)
+                        .AddParameter("Scope", "Script");
+
+                    // Run this once to inject variables into the runspace 
+                    ps.Invoke();
+                    // clear the commands so you can use ps.Invoke/InvokeAsync again later:
+                    ps.Commands.Clear();
+                    context.Items[PsItemKey] = ps;
+                    try
+                    {
+                        await _next(context);                // continue the pipeline
+                    }
+                    finally
+                    {
+
+                        context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object
+                                                             // Dispose() returns the runspace to the pool
+                    }
                 }
-                finally
+                catch (Exception ex)
                 {
-                    context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object
-                                                         // Dispose() returns the runspace to the pool
+                    Log.Error(ex, "Error occurred in PowerShellRunspaceMiddleware");
                 }
             }
         }
@@ -538,7 +561,7 @@ namespace KestrumLib
         {
             AddRoute(pattern, [httpVerbs], scriptBlock, language, extraImports, extraRefs);
         }
-        
+
         public void AddRoute(string pattern,
                                   IEnumerable<HttpVerb> httpVerbs,
                                     string scriptBlock,
@@ -736,18 +759,19 @@ namespace KestrumLib
 
         #region Runspace Pool Management
 
-        private readonly object _poolGate = new();          // protects (_runspacePool, iss)
+        private static readonly object _poolGate = new();          // protects (_runspacePool, iss)
 
         /// <summary>
         /// Ensures _runspacePool is in an Opened state.
         /// If the pool is Broken/Closed it is torn down and recreated.
         /// Call this right before you create a PowerShell instance.
         /// </summary>
-        private void EnsureRunspacePoolOpen(RunspacePool? runspacePool)
+        private static void EnsureRunspacePoolOpen(RunspacePool? runspacePool)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("EnsureRunspacePoolOpen() called");
-            if (runspacePool != null && runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
+            if (runspacePool == null) { throw new ArgumentNullException(nameof(runspacePool), "Runspace pool cannot be null."); }
+            if (runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
             {
                 Log.Verbose("Runspace pool is already opened.");
                 return;
@@ -755,8 +779,6 @@ namespace KestrumLib
             Log.Verbose("Ensuring runspace pool is open...");
             lock (_poolGate)
             {
-                // Pool was never created
-                runspacePool ??= CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
 
                 var state = runspacePool.RunspacePoolStateInfo.State;
                 switch (state)
@@ -782,11 +804,13 @@ namespace KestrumLib
                         // Dispose the old pool and create a new one
                         runspacePool.Dispose();
                         // Recreate the runspace pool
-                        Log.Verbose("Creating a new runspace pool...");
+                        //   Log.Verbose("Creating a new runspace pool...");
                         // Recreate the runspace pool with the specified max runspaces
-                        runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
-                        runspacePool.Open();
-                        break;
+                        // runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
+                        // runspacePool.Open();
+                        throw new InvalidOperationException(
+                             $"Runspace pool is {state}, cannot use it. A new pool must be created.");
+
 
                         // Opened / Disconnecting / Disconnected / Closing → leave alone,
                         // callers will handle Disconnecting/Closing by catching exceptions
