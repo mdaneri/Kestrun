@@ -4,7 +4,7 @@ using System.Net;
 using KestrumLib;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using KestrunLib; 
+using KestrunLib;
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -39,14 +39,14 @@ var options = new KestrunOptions
     AllowSynchronousIO = true,
     AddServerHeader = false // DenyServerHeader
 };
- 
+
 options.Limits.MaxRequestBodySize = 10485760;
 options.Limits.MaxConcurrentConnections = 100;
 options.Limits.MaxRequestHeaderCount = 100;
 options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 server.ConfigureKestrel(options);
 
-X509Certificate2 x509Certificate = null;
+X509Certificate2? x509Certificate = null;
 
 if (File.Exists("./devcert.pfx"))
 {
@@ -79,7 +79,7 @@ else
 
 }
 
-if(!KestrunLib.CertificateManager.Validate(
+if (!KestrunLib.CertificateManager.Validate(
     x509Certificate,
     checkRevocation: false,
     allowWeakAlgorithms: false,
@@ -108,9 +108,16 @@ server.ConfigureListener(
 );
 
 server.ApplyConfiguration();
-
+/*string pattern,
+                                    IEnumerable<HttpMethod> httpMethods,
+                                    string scriptBlock,
+                                    ScriptLanguage language = ScriptLanguage.PowerShell,
+                                    string[]? extraImports = null,
+                                    Assembly[]? extraRefs = null)*/
 // 4. Add routes
-server.AddRoute("/ps/json", """
+server.AddRoute("/ps/json",
+            HttpVerb.Get,
+            """
             Write-Output "Hello from PowerShell script!" 
             $payload = @{
                 Body           = "Hello from PowerShell script! - Json Response(From C#)"
@@ -122,9 +129,10 @@ server.AddRoute("/ps/json", """
                 RequestBody    = $Request.Body 
             }
             Write-KrJsonResponse -InputObject $payload -StatusCode 200
-        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+            """,
+            ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/yaml", """
+server.AddRoute("/ps/yaml", HttpVerb.Get,"""
             Write-Output "Hello from PowerShell script! - Yaml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -137,9 +145,9 @@ server.AddRoute("/ps/yaml", """
                 
             } 
             Write-KrYamlResponse -inputObject $payload -statusCode 200
-        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+        """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/xml", """
+server.AddRoute("/ps/xml",HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Xml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -152,9 +160,9 @@ server.AddRoute("/ps/xml", """
                 
             } 
             Write-KrXmlResponse -inputObject $payload -statusCode 200
-        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+        """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/text", """        
+server.AddRoute("/ps/text", HttpVerb.Get,"""        
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -167,26 +175,26 @@ server.AddRoute("/ps/text", """
                 
             } |Format-Table| Out-String
             Write-KrTextResponse -inputObject $payload -statusCode 200        
-        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+        """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/file", """        
+server.AddRoute("/ps/file", HttpVerb.Get,"""        
                 Write-Output "Hello from PowerShell script! - file Response"
                 Write-KrFileResponse -FilePath "./README.md" -FileDownloadName "README.md" -Inline   -statusCode 200      
-            """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+            """, KestrumLib.ScriptLanguage.PowerShell);
 
 
-server.AddRoute("/hello-ps", """
+server.AddRoute("/hello-ps",HttpVerb.Get, """
             $Response.ContentType = 'text/plain'
             $Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
-        """, KestrumLib.ScriptLanguage.PowerShell, "GET");
+        """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/hello-cs", """
+server.AddRoute("/hello-cs",HttpVerb.Get, """
             Response.ContentType = "text/plain";
             Response.Body = $"Hello from C# at {DateTime.Now:O}";
-        """, KestrumLib.ScriptLanguage.CSharp, "GET");
+        """, KestrumLib.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/json", """
+server.AddRoute("/cs/json", HttpVerb.Get,"""
             Console.WriteLine("Hello from C# script! - Json Response(From C#)");
             var payload = new
             {
@@ -200,9 +208,9 @@ server.AddRoute("/cs/json", """
 
             Response.WriteJsonResponse( payload,  200);
 
-        """, KestrumLib.ScriptLanguage.CSharp, "GET");
+        """, KestrumLib.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/yaml", """
+server.AddRoute("/cs/yaml",HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Yaml Response(From C#)");
             var payload = new
             {
@@ -216,9 +224,9 @@ server.AddRoute("/cs/yaml", """
 
             Response.WriteYamlResponse( payload,  200);
 
-        """, KestrumLib.ScriptLanguage.CSharp, "GET");
+        """, KestrumLib.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/xml", """
+server.AddRoute("/cs/xml",HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Xml Response(From C#)");
             var payload = new
             {
@@ -230,9 +238,9 @@ server.AddRoute("/cs/xml", """
                 RequestBody = Request.Body
             };
             Response.WriteXmlResponse( payload,  200);
-        """, KestrumLib.ScriptLanguage.CSharp, "GET");
+        """, KestrumLib.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/text", """
+server.AddRoute("/cs/text",HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Text Response(From C#)");
             var payload = new
             {
@@ -246,13 +254,13 @@ server.AddRoute("/cs/text", """
 
             Response.WriteTextResponse( payload,  200);
 
-        """, KestrumLib.ScriptLanguage.CSharp, "GET");
+        """, KestrumLib.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/file", """        
+server.AddRoute("/cs/file", HttpVerb.Get,"""        
                 Console.WriteLine("Hello from C# script! - file Response(From C#)");
                 Response.WriteFileResponse("../../README.md", true, "README.md");
-            """, KestrumLib.ScriptLanguage.CSharp, "GET");
+            """, KestrumLib.ScriptLanguage.CSharp);
 // 5. Start the server
 server.StartAsync().Wait();
 

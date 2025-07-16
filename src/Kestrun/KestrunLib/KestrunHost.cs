@@ -375,6 +375,46 @@ namespace KestrumLib
         #endregion
 
         #region PowerShell
+
+        public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, RunspacePool pool)
+        {
+            public const string PsItemKey = "PS_INSTANCE";
+
+            private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
+            private readonly RunspacePool _pool = pool ?? throw new ArgumentNullException(nameof(pool));
+
+            public async Task InvokeAsync(HttpContext context)
+            {
+                // Acquire a runspace from the pool and keep it for the whole request
+                using PowerShell ps = PowerShell.Create();
+                ps.RunspacePool = _pool;
+                var krReq = await KestrunRequest.NewRequest(context);
+                var krResp = new KestrunResponse(krReq);
+
+                // keep a reference for any C# code later in the pipeline
+                context.Items["KR_REQUEST"] = krReq;
+                context.Items["KR_RESPONSE"] = krResp;
+                // Set the PowerShell variables for the request and response
+                var ss = ps.Runspace.SessionStateProxy;
+                ss.SetVariable("Request", krReq);
+                ss.SetVariable("Response", krResp);
+                context.Items[PsItemKey] = ps;
+
+                try
+                {
+                    await _next(context);                // continue the pipeline
+                }
+                finally
+                {
+                    context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object
+                                                         // Dispose() returns the runspace to the pool
+                }
+            }
+        }
+
+
+
+
         private RequestDelegate BuildPsDelegate(string code)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -384,19 +424,31 @@ namespace KestrumLib
             {
                 if (Log.IsEnabled(LogEventLevel.Debug))
                     Log.Debug("PS delegate invoked for {Path}", context.Request.Path);
+                if (!context.Items.ContainsKey("PSRunspace"))
+                {
 
-                var krRequest = await KestrunRequest.NewRequest(context);
-                var krResponse = new KestrunResponse(krRequest);
+                }
+                // Ensure the runspace pool is open before executing the script
+                // var krRequest = await KestrunRequest.NewRequest(context);
+                //   var krResponse = new KestrunResponse(krRequest);
                 try
                 {
-                    EnsureRunspacePoolOpen();
-                    using PowerShell ps = PowerShell.Create();
-                    ps.RunspacePool = _runspacePool;
+                    // Pick up the PowerShell created by the middleware.
+                    // If someone calls this delegate outside the HTTP pipeline,
+                    // we still fall back to creating our own instance.
+                    var ps = (context.Items.TryGetValue(
+                                 PowerShellRunspaceMiddleware.PsItemKey, out var o)
+                              && o is PowerShell cachedPs)
+                             ? cachedPs
+                             : PowerShell.Create();
 
+                    ps.RunspacePool ??= _runspacePool;    // safety net
 
-                    ps.AddCommand("Set-Variable").AddParameter("Name", "Request").AddParameter("Value", krRequest).AddParameter("Scope", "Script").AddStatement().
-                     AddCommand("Set-Variable").AddParameter("Name", "Response").AddParameter("Value", krResponse).AddParameter("Scope", "Script").AddStatement().
-                     AddScript(code);
+                    var krRequest = context.Items["KR_REQUEST"] as KestrunRequest
+                        ?? throw new InvalidOperationException("KR_REQUEST not found in context items.");
+                    var krResponse = context.Items["KR_RESPONSE"] as KestrunResponse
+                        ?? throw new InvalidOperationException("KR_RESPONSE not found in context items.");
+                    ps.AddScript(code);
                     // Execute the PowerShell script block
                     // Using Task.Run to avoid blocking the thread
                     Log.Verbose("Executing PowerShell script...");
@@ -462,7 +514,7 @@ namespace KestrumLib
                         // or the client has disconnected
                         Log.Debug(odex, "Response already completed for {Path}", context.Request.Path);
                     }
-                     
+
                     catch (InvalidOperationException ioex)
                     {
                         // This can happen if the response has already been completed
@@ -477,20 +529,34 @@ namespace KestrumLib
 
         #region Route
 
-
         public void AddRoute(string pattern,
+                                         HttpVerb httpVerbs,
+                                           string scriptBlock,
+                                           ScriptLanguage language = ScriptLanguage.PowerShell,
+                                           string[]? extraImports = null,
+                                           Assembly[]? extraRefs = null)
+        {
+            AddRoute(pattern, [httpVerbs], scriptBlock, language, extraImports, extraRefs);
+        }
+        
+        public void AddRoute(string pattern,
+                                  IEnumerable<HttpVerb> httpVerbs,
                                     string scriptBlock,
                                     ScriptLanguage language = ScriptLanguage.PowerShell,
-                                    string httpMethod = "GET",
                                     string[]? extraImports = null,
                                     Assembly[]? extraRefs = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Method}", pattern, language, httpMethod);
+                Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Methods}", pattern, language, httpVerbs);
             if (App is null)
                 throw new InvalidOperationException(
                     "WebApplication is not initialized. Call ApplyConfiguration first.");
+            if (string.IsNullOrWhiteSpace(scriptBlock))
+                throw new ArgumentException("Script block cannot be empty.", nameof(scriptBlock));
 
+            if (string.IsNullOrWhiteSpace(pattern))
+                throw new ArgumentException("Route pattern cannot be empty.", nameof(pattern));
+            if (httpVerbs.Count() == 0) httpVerbs = new[] { HttpVerb.Get };
             try
             {
                 // compile once – return an HttpContext->Task delegate
@@ -503,8 +569,8 @@ namespace KestrumLib
                     ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
                     _ => throw new NotSupportedException(language.ToString())
                 };
-
-                App.MapMethods(pattern, [httpMethod.ToUpperInvariant()], handler);
+                string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
+                App.MapMethods(pattern, methods, handler).WithLanguage(language);
             }
             catch (CompilationErrorException ex)
             {
@@ -520,7 +586,7 @@ namespace KestrumLib
             catch (Exception ex)
             {
                 throw new InvalidOperationException(
-                    $"Failed to add route '{pattern}' with method '{httpMethod}' using {language}: {ex.Message}",
+                    $"Failed to add route '{pattern}' with method '{string.Join(", ", httpVerbs)}' using {language}: {ex.Message}",
                     ex);
             }
         }
@@ -561,8 +627,11 @@ namespace KestrumLib
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
             _runspacePool = CreateRunspacePool(options.MaxRunspaces);
-
-            _runspacePool?.Open();
+            if (_runspacePool == null)
+            {
+                throw new InvalidOperationException("Failed to create runspace pool.");
+            }
+            _runspacePool.Open();
             KestrelServices(builder);
 
             builder.WebHost.ConfigureKestrel(kestrelOpts =>
@@ -611,8 +680,12 @@ namespace KestrumLib
                     });
                 }
             });
+
+            // Build the WebApplication
             App = builder.Build();
-            App.UseResponseCompression();
+            //  App.UsePowerShellRunspace(_runspacePool);
+            App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
+            //  App.UseResponseCompression();
             _isConfigured = true;
         }
 
@@ -670,12 +743,11 @@ namespace KestrumLib
         /// If the pool is Broken/Closed it is torn down and recreated.
         /// Call this right before you create a PowerShell instance.
         /// </summary>
-        private void EnsureRunspacePoolOpen()
+        private void EnsureRunspacePoolOpen(RunspacePool? runspacePool)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("EnsureRunspacePoolOpen() called");
-            // Fast-path: already opened
-            if (_runspacePool?.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
+            if (runspacePool != null && runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
             {
                 Log.Verbose("Runspace pool is already opened.");
                 return;
@@ -684,22 +756,22 @@ namespace KestrumLib
             lock (_poolGate)
             {
                 // Pool was never created
-                _runspacePool ??= CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
+                runspacePool ??= CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
 
-                var state = _runspacePool.RunspacePoolStateInfo.State;
+                var state = runspacePool.RunspacePoolStateInfo.State;
                 switch (state)
                 {
                     // brand-new pool
                     case RunspacePoolState.BeforeOpen:
                         Log.Verbose("Before opening runspace pool, opening now...");
-                        _runspacePool.Open();                      // blocks until Opened
+                        runspacePool.Open();                      // blocks until Opened
                         break;
 
                     // another thread is already opening – wait
                     case RunspacePoolState.Opening:
                         Log.Verbose("Runspace pool is opening, waiting for it to complete...");
                         // Wait until the pool is opened
-                        while (_runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opening)
+                        while (runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opening)
                             Thread.Sleep(25);
                         break;
 
@@ -708,12 +780,12 @@ namespace KestrumLib
                     case RunspacePoolState.Broken:
                         Log.Warning($"Runspace pool is {state}, disposing and recreating...");
                         // Dispose the old pool and create a new one
-                        _runspacePool.Dispose();
+                        runspacePool.Dispose();
                         // Recreate the runspace pool
                         Log.Verbose("Creating a new runspace pool...");
                         // Recreate the runspace pool with the specified max runspaces
-                        _runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
-                        _runspacePool.Open();
+                        runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
+                        runspacePool.Open();
                         break;
 
                         // Opened / Disconnecting / Disconnected / Closing → leave alone,
