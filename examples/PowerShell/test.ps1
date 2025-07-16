@@ -14,7 +14,11 @@ try {
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
 }
-catch { throw }
+catch { 
+    Write-Error "Failed to import Kestrun module: $_"
+    Write-Error "Ensure the Kestrun module is installed or the path is correct."
+    exit 1
+}
 
 
 $server = New-KrServer -Name "MyKestrunServer"
@@ -131,7 +135,7 @@ Add-KrRoute -Server $server -Method "GET" -Path "/ps/text" -ScriptBlock {
 Add-KrRoute -Server $server -Method "GET" -Path "/ps/file" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - file Response"
-    Write-KrFileResponse -FilePath "../../README.md" -FileDownloadName "README.md" -Inline   -statusCode 200
+    Write-KrFileResponse -FilePath "C:\Users\m_dan\Documents\GitHub\Kestrun\README.md" -FileDownloadName "README.md" -Inline   -statusCode 200 -EmbedFileContent
 }
 
 Add-KrRoute -Server $server -Method "GET" -Path "/cs/xml" -Language CSharp -Code @"
@@ -198,7 +202,7 @@ Add-KrRoute -Server $server -Method "GET" -Path "/cs/text" -Language CSharp -Cod
 Add-KrRoute -Server $server -Method "GET" -Path "/cs/file" -Language CSharp -Code @"
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
-    Response.WriteFileResponse("../../README.md", true, "README.md");
+    Response.WriteFileResponse("C:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\README.md", true, "README.md",200,null, true);
 "@
 
 Add-KrRoute -Server $server -Method "GET" -Path "/messagestream" -ScriptBlock {

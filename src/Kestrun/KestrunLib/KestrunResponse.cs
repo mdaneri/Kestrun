@@ -73,7 +73,7 @@ namespace KestrumLib
 
         public static bool IsTextBasedContentType(string type)
         {
-            if(Log.IsEnabled(LogEventLevel.Debug))
+            if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Checking if content type is text-based: {ContentType}", type);
 
             // Check if the content type is text-based or has a charset
@@ -118,12 +118,13 @@ namespace KestrumLib
             bool inline = false,
             string? fileDownloadName = null,
             int statusCode = StatusCodes.Status200OK,
-            string? contentType = null
+            string? contentType = null,
+            bool embedFileContent = false
         )
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType}, CurrentDirectory={CurrentDirectory}",
-                    filePath, statusCode, contentType, Directory.GetCurrentDirectory());
+                Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType},EmbedFileContent={EmbedFileContent}, CurrentDirectory={CurrentDirectory}",
+                    filePath, statusCode, contentType, embedFileContent, Directory.GetCurrentDirectory());
 
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
@@ -142,8 +143,19 @@ namespace KestrumLib
                 contentType = provider.TryGetContentType(filePath, out var ct)
                     ? ct
                     : "application/octet-stream";
-                // body as stream
-                Body = File.OpenRead(filePath);
+                if (embedFileContent)
+                {
+                    // load entire file into Body
+                    if (IsTextBasedContentType(contentType))
+                        Body = File.ReadAllText(filePath, Encoding);
+                    else
+                        Body = File.ReadAllBytes(filePath);
+                }
+                else
+                {
+                    // body as stream
+                    Body = File.OpenRead(filePath);
+                }
             }
 
             if (IsTextBasedContentType(contentType) &&
@@ -358,20 +370,24 @@ namespace KestrumLib
                                 response.Body.Write(bytes, 0, bytes.Length);
                             break;
                         case System.IO.Stream stream:
-                            Console.WriteLine("Writing stream response");
+                            Log.Debug("Writing stream response, Length={Length}, CanSeek={CanSeek}", stream.Length, stream.CanSeek);
                             if (stream.CanSeek && stream.Length > BodyAsyncThreshold)
                             {
+                                // If the stream is seekable and large, use async write
+                                await stream.CopyToAsync(response.Body);
                                 // Reset position if the stream is seekable
                                 stream.Position = 0;
+                                Log.Debug("Stream position reset to 0 after copying to response body.");
                             }
                             else if (!stream.CanSeek)
                             {
+                                // If the stream is not seekable, we cannot reset position
+                                Log.Warning("Stream is not seekable, cannot reset position. Assuming live stream.");
                                 // If not seekable, we assume it's a live stream
                                 response.Headers.Remove("Content-Length"); // Content-Length is not reliable for streams
+                                await stream.CopyToAsync(response.Body);
                             }
 
-                            // Always use async for streams
-                            await stream.CopyToAsync(response.Body);
                             break;
                         case string str:
                             var strBytes = AcceptCharset.GetBytes(str);

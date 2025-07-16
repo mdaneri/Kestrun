@@ -92,7 +92,8 @@
         'Test-KrCertificate',
         'Get-KrCertificatePurpose',
         'New-KrSelfSignedCertificate',
-        'New-KrCertificateRequest'
+        'New-KrCertificateRequest',
+        'Write-KrLog'
     )
 
     # Variables to export from this module

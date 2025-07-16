@@ -87,7 +87,7 @@ function Resolve-KrPath {
     param (
         [string] $Path
     )
-
+    Write-KrLog -level "Verbose" -Message "Resolve-KrPath : Relative Path :$($script:KestrunRoot)"
     $resolved = (Resolve-Path -Path $Path -RelativeBasePath $script:KestrunRoot -ErrorAction SilentlyContinue)
     if ($null -eq $resolved) {
         return $Path

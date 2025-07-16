@@ -451,19 +451,23 @@ namespace KestrumLib
                     // CompleteAsync is idempotent – safe to call once more
                     try
                     {
-                        if (!context.Response.HasStarted)
-                        {
-                            Log.Verbose("Completing response for " + context.Request.Path);
-                            await context.Response.CompleteAsync().ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            Log.Verbose("Response already started; skipping CompleteAsync()");
-                        }
+
+                        Log.Verbose("Completing response for " + context.Request.Path);
+                        await context.Response.CompleteAsync().ConfigureAwait(false);
+
                     }
-                    catch (ObjectDisposedException)
+                    catch (ObjectDisposedException odex)
                     {
-                        // response has already been torn down (e.g., client aborted)
+                        // This can happen if the response has already been completed
+                        // or the client has disconnected
+                        Log.Debug(odex, "Response already completed for {Path}", context.Request.Path);
+                    }
+                     
+                    catch (InvalidOperationException ioex)
+                    {
+                        // This can happen if the response has already been completed
+                        Log.Debug(ioex, "Response already completed for {Path}", context.Request.Path);
+                        // No action needed, as the response is already completed
                     }
                 }
             };

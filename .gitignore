@@ -10,3 +10,4 @@ global.json
 cert/devcert.crt
 /cert
 /examples/CSharpTest/logs
+/logs
