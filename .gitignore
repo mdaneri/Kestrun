@@ -11,3 +11,8 @@ cert/devcert.crt
 /cert
 /examples/CSharpTest/logs
 /logs
+*.pfx
+*.p12
+*.pem 
+*.csr
+*.key

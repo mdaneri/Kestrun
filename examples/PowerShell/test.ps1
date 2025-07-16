@@ -26,22 +26,25 @@ $server = New-KrServer -Name "MyKestrunServer"
 
 
  
-$cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
+#$cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
  
-<#
+ 
 if (Test-Path "$ScriptPath\devcert.pfx" ) {
-  $cert =  Import-KsCertificate -FilePath ".\cert\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+    $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
 else {
     $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
     Export-KsCertificate -Certificate $cert `
         -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
-}#>
+}# 
 # Create a CSR
 #$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
 #   -Country US -Org 'Acme' -CommonName 'example.com'
 
-Test-KsCertificate -Certificate $cert -DenySelfSigned
+if(-not (Test-KsCertificate -Certificate $cert -DenySelfSigned)){
+    Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
+    exit 1
+}
                  
 # Example usage:
 Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader

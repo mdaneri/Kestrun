@@ -25,6 +25,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Org.BouncyCastle.Asn1.X9;
 using System.Text.RegularExpressions;
+using Serilog;
+using Serilog.Events;
 
 
 namespace KestrunLib;
@@ -202,8 +204,14 @@ public static class CertificateManager
        string certPath,
        ReadOnlySpan<char> password = default,
        string? privateKeyPath = null,
-       X509KeyStorageFlags flags = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable)
+       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
     {
+        if (string.IsNullOrEmpty(certPath))
+            throw new ArgumentException("Certificate path cannot be null or empty.", nameof(certPath));
+        if (!File.Exists(certPath))
+            throw new FileNotFoundException("Certificate file not found.", certPath);
+        if (!string.IsNullOrEmpty(privateKeyPath) && !File.Exists(privateKeyPath))
+            throw new FileNotFoundException("Private key file not found.", privateKeyPath);
         var ext = Path.GetExtension(certPath).ToLowerInvariant();
 
         switch (ext)
@@ -298,21 +306,34 @@ public static class CertificateManager
        string certPath,
        SecureString password,
        string? privateKeyPath = null,
-       X509KeyStorageFlags flags = X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable)
+       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
     {
         X509Certificate2? result = null;
-
+        Log.Debug("Importing certificate from {CertPath} with flags {Flags}", certPath, flags);
         // ToSecureSpan zero-frees its buffer as soon as this callback returns.
         password.ToSecureSpan(span =>
         {
             // capture the return value of the span-based overload
-            result = Import(certPath, span, privateKeyPath, flags);
+            result = Import(certPath: certPath, password: span, privateKeyPath: privateKeyPath, flags: flags);
         });
 
         // at this point, unmanaged memory is already zeroed
         return result!;   // non-null because the callback always runs exactly once
     }
 
+    public static X509Certificate2 Import(
+         string certPath,
+         string? privateKeyPath = null,
+         X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
+    {
+        X509Certificate2? result = null;
+
+        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+        ReadOnlySpan<char> passwordSpan = default;
+        // capture the return value of the span-based overload
+        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: privateKeyPath, flags: flags);
+        return result!;
+    }
 
 
     #endregion
@@ -321,10 +342,36 @@ public static class CertificateManager
     public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
            ReadOnlySpan<char> password = default, bool includePrivateKey = false)
     {
+        var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+        switch (fileExtension)
+        {
+            case ".pfx":
+                if (fmt != ExportFormat.Pfx)
+                    throw new NotSupportedException(
+                        $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
+                break;
+
+
+            case ".pem":
+                if (fmt != ExportFormat.Pem)
+                    throw new NotSupportedException(
+                        $"File extension '{fileExtension}' for '{filePath}' is not supported for PEM certificates.");
+                break;
+
+            case "":
+                // no extension, use the format as the extension
+                filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
+                break;
+            default:
+                throw new NotSupportedException(
+                    $"File extension '{fileExtension}' for '{filePath}' is not supported. Use .pfx or .pem.");
+        }
+
         // ensure directory exists
         var dir = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(dir))
-            Directory.CreateDirectory(dir);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            throw new DirectoryNotFoundException(
+                $"Directory '{dir}' does not exist. Cannot export certificate to {filePath}.");
 
         // build both shapes once
         using SecureString? pwdString = password.IsEmpty
@@ -341,13 +388,13 @@ public static class CertificateManager
                 case ExportFormat.Pfx:
                     {
                         byte[] pfx = cert.Export(X509ContentType.Pfx, pwdString);
-                        File.WriteAllBytes($"{filePath}.pfx", pfx);
+                        File.WriteAllBytes(filePath, pfx);
                         break;
                     }
                 case ExportFormat.Pem:
                     {
                         // export cert
-                        using var sw = new StreamWriter($"{filePath}.crt", false, Encoding.ASCII);
+                        using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
                         new PemWriter(sw).WriteObject(
                             Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
 
@@ -379,11 +426,12 @@ public static class CertificateManager
                                                 .ExportEncryptedPkcs8PrivateKey(password, pbe);
                                 pemLabel = "ENCRYPTED PRIVATE KEY";
 
-                            }  // 2) Wrap that DER in PEM *correctly*:
+                            }
+                            // 2) Wrap that DER in PEM *correctly*:
                             string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
-
+                            string keyFilePath = Path.GetFileNameWithoutExtension(filePath) + ".key";
                             // 3) Write the .key file
-                            File.WriteAllText($"{filePath}.key", keyPem);
+                            File.WriteAllText(keyFilePath, keyPem);
                         }
                         break;
                     }
@@ -428,7 +476,8 @@ public static class CertificateManager
             return false;
 
         // ── 2. Self-signed check ──────────────────────────────────────
-        if (denySelfSigned && cert.Subject == cert.Issuer)
+        bool isSelfSigned = cert.Subject == cert.Issuer;
+        if (denySelfSigned && isSelfSigned)
             return false;
 
         // ── 3. Chain building  + optional revocation ──────────────────
@@ -439,7 +488,13 @@ public static class CertificateManager
                                 : X509RevocationMode.NoCheck;
 
             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EndCertificateOnly;
+            chain.ChainPolicy.DisableCertificateDownloads = !checkRevocation;
 
+            // Allow untrusted root when we’re not denying self-signed
+            if (isSelfSigned)
+            {
+                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+            }
             if (!chain.Build(cert))
                 return false;
         }
@@ -547,18 +602,36 @@ public static class CertificateManager
 
     public static unsafe void ToSecureSpan(this SecureString secureString, SpanHandler handler)
     {
+        Log.Debug("Converting SecureString to ReadOnlySpan<char> for handler {Handler}", handler.Method.Name);
+
         ArgumentNullException.ThrowIfNull(secureString);
         ArgumentNullException.ThrowIfNull(handler);
-
+        if (secureString.Length == 0)
+            throw new ArgumentException("SecureString is empty", nameof(secureString));
+        // Convert SecureString to a ReadOnlySpan<char> using a pointer
+        // This is safe because SecureString guarantees that the memory is zeroed after use.
         IntPtr ptr = IntPtr.Zero;
         try
         {
+            // Convert SecureString to a pointer
+            // Marshal.SecureStringToCoTaskMemUnicode returns a pointer to the unmanaged memory
+            // that contains the characters of the SecureString.
+            // This memory must be freed after use to avoid memory leaks.
+            Log.Debug("Marshalling SecureString to unmanaged memory");
             ptr = Marshal.SecureStringToCoTaskMemUnicode(secureString);
             var span = new ReadOnlySpan<char>((char*)ptr, secureString.Length);
             handler(span);
+            Log.Debug("Handler executed successfully with SecureString span");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error while converting SecureString to ReadOnlySpan<char>");
+            throw; // rethrow the exception for further handling
         }
         finally
         {
+            // Ensure the unmanaged memory is zeroed and freed
+            Log.Debug("Zeroing and freeing unmanaged memory for SecureString");
             if (ptr != IntPtr.Zero)
             {
                 // zero & free
@@ -579,7 +652,7 @@ public static class CertificateManager
 
         secure.MakeReadOnly();
         return secure;
-    } 
+    }
 
     #endregion
 

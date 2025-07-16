@@ -90,7 +90,7 @@ function Write-KrFileResponse {
 
     try {
         if ($null -ne $Response) {
-            $resolvedPath = Resolve-KrPath -Path $FilePath
+            $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
             Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
             # Call the C# method on the $Response object
             $Response.WriteFileResponse($resolvedPath, $Inline.IsPresent, $FileDownloadName, $StatusCode, $ContentType, $EmbedFileContent.IsPresent)

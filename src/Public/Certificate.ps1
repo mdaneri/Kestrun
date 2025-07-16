@@ -93,13 +93,17 @@ function Import-KsCertificate {
         [securestring] $Password,
         [string] $PrivateKeyPath
     )
-
-    return $Kcm::Import($FilePath, $Password, $PrivateKeyPath)
+    $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
+    Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
+    if ($null -eq $Password) {
+        return $Kcm::Import($resolvedPath, $PrivateKeyPath)
+    }
+    return $Kcm::Import($resolvedPath, $Password, $PrivateKeyPath)
 }
 
 # ---------------------------------------------------------------------------
 function Export-KsCertificate {
-<#
+    <#
 .SYNOPSIS
     Exports an X509Certificate2 to PFX or PEM(+key).
 
@@ -118,16 +122,18 @@ function Export-KsCertificate {
         [securestring] $Password,
         [switch] $IncludePrivateKey
     )
+    $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot
+    Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
 
     $fmtEnum = [KestrunLib.CertificateManager+ExportFormat]::$Format
-    $Kcm::Export($Certificate, $FilePath, $fmtEnum, $Password,
+    $Kcm::Export($Certificate, $resolvedPath, $fmtEnum, $Password,
         $IncludePrivateKey.IsPresent)
 }
 
 # ---------------------------------------------------------------------------
  
 function Test-KsCertificate {
-<#
+    <#
 .SYNOPSIS
     Validates a certificate’s chain, EKU, and cryptographic strength.
 

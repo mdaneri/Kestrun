@@ -4,7 +4,7 @@ using System.Net;
 using KestrumLib;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using KestrunLib;
+using KestrunLib; 
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -39,22 +39,60 @@ var options = new KestrunOptions
     AllowSynchronousIO = true,
     AddServerHeader = false // DenyServerHeader
 };
-
+ 
 options.Limits.MaxRequestBodySize = 10485760;
 options.Limits.MaxConcurrentConnections = 100;
 options.Limits.MaxRequestHeaderCount = 100;
 options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 server.ConfigureKestrel(options);
 
-var x509Certificate = CertificateManager.NewSelfSigned(
-    new CertificateManager.SelfSignedOptions(
-        DnsNames: new[] { "localhost", "127.0.0.1" },
-        KeyType: CertificateManager.KeyType.Rsa,
-        KeyLength: 2048,
-        ValidDays: 30,
-        Exportable: true
-    )
-);
+X509Certificate2 x509Certificate = null;
+
+if (File.Exists("./devcert.pfx"))
+{
+    // Import existing certificate
+    x509Certificate = CertificateManager.Import(
+      "./devcert.pfx",
+      "p@ss".AsSpan()
+  );
+}
+else
+{
+    // Create a new self-signed certificate
+
+    x509Certificate = KestrunLib.CertificateManager.NewSelfSigned(
+      new KestrunLib.CertificateManager.SelfSignedOptions(
+          DnsNames: new[] { "localhost", "127.0.0.1" },
+          KeyType: KestrunLib.CertificateManager.KeyType.Rsa,
+          KeyLength: 2048,
+          ValidDays: 30,
+          Exportable: true
+      )
+  );
+    // Export the certificate to a file
+    KestrunLib.CertificateManager.Export(
+        x509Certificate,
+        "./devcert.pfx",
+        KestrunLib.CertificateManager.ExportFormat.Pfx,
+        "p@ss".AsSpan()
+    );
+
+}
+
+if(!KestrunLib.CertificateManager.Validate(
+    x509Certificate,
+    checkRevocation: false,
+    allowWeakAlgorithms: false,
+    denySelfSigned: false,
+    strictPurpose: true
+))
+{
+    Console.WriteLine("Certificate validation failed.");
+    //Log.Error("Certificate validation failed. Ensure the certificate is valid.");
+    Environment.Exit(1);
+}
+
+
 
 // 3. Add listeners
 server.ConfigureListener(

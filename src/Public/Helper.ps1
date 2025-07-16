@@ -82,10 +82,11 @@ function Set-KrPythonRuntime {
     return $Path
 }
 
-
+<#>
 function Resolve-KrPath {
     param (
-        [string] $Path
+        [string] $Path,
+        [switch] $Force
     )
     Write-KrLog -level "Verbose" -Message "Resolve-KrPath : Relative Path :$($script:KestrunRoot)"
     $resolved = (Resolve-Path -Path $Path -RelativeBasePath $script:KestrunRoot -ErrorAction SilentlyContinue)
@@ -93,8 +94,72 @@ function Resolve-KrPath {
         return $Path
     }
     return $resolved.Path 
-}
+}#>
  
+
+function Resolve-KrPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [string] $Path,
+
+        [Parameter(parameterSetName = 'RelativeBasePath')]
+        [string] $RelativeBasePath,
+
+        [Parameter(parameterSetName = 'KestrunRoot')]
+        [switch] $KestrunRoot,
+
+        [Parameter()]
+        [switch] $Test
+    )
+    process {
+        # --- 1. Expand ~/env in both Path and, if supplied, RelativeBasePath ---
+        $expand = {
+            param($p)
+            if ($p -like '~*') {
+                $p = $p -replace '^~', $HOME
+            }
+            [Environment]::ExpandEnvironmentVariables($p)
+        }
+
+        $p3 = & $expand $Path
+
+        if($KestrunRoot) {
+            # Use the Kestrun root as base
+            $RelativeBasePath = $script:KestrunRoot
+        }
+
+        if ($RelativeBasePath) {
+            # Expand + normalize the base, even if it doesn't exist
+            $base3 = & $expand $RelativeBasePath
+            $baseFull = [IO.Path]::GetFullPath($base3)
+
+            # If $Path is rooted, ignore the base; else combine
+            if ([IO.Path]::IsPathRooted($p3)) {
+                $full = [IO.Path]::GetFullPath($p3)
+            }
+            else {
+                $combined = [IO.Path]::Combine($baseFull, $p3)
+                $full = [IO.Path]::GetFullPath($combined)
+            }
+        }
+        else {
+            # No base supplied: just make absolute against current directory
+            $full = [IO.Path]::GetFullPath($p3)
+        }
+
+        # --- 4. If -Test was used and file doesn't exist, return the original input Path ---
+        if ($Test -and -not (Test-Path $full)) {
+            return $Path
+        }
+
+        return $full
+    }
+}
+
+
+ 
+
 
 function Get-KestrunRoot {
     return $script:KestrunRoot
