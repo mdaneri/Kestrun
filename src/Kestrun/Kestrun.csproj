@@ -1,35 +1,109 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!--───────────── Global Build Configuration ─────────────-->
+  <PropertyGroup>
+    <!-- Target .NET version -->
+    <TargetFramework>net8.0</TargetFramework>
+
+    <!-- Enable nullable reference types (safer code) -->
+    <Nullable>enable</Nullable>
+
+    <!-- Enable implicit using directives for common namespaces -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Allow unsafe code blocks -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Assembly output type -->
+    <OutputType>Library</OutputType>
+
+    <!-- Set assembly and namespace naming -->
+    <AssemblyName>Kestrun</AssemblyName>
+    <RootNamespace>Kestrun</RootNamespace>
+
+    <!-- Copy all referenced assemblies locally (needed for scripting engines like ClearScript) -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+
+    <!-- Treat all warnings as errors (set to true in CI if desired) -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- Optional: Generate XML documentation (good for public NuGet packages) -->
+    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
+    <!-- <NoWarn>1591</NoWarn> -->
+
+    <!-- Assembly versioning -->
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+  </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <OutputType>Library</OutputType>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <ItemGroup>
- 
+    <!-- Enable packing for NuGet -->
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 
-    <!-- Hosting & DI   -->
+    <!-- Package identity -->
+    <PackageId>Kestrun</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Max Daneri</Authors>
+    <Company>Kestrun</Company>
+    <Description>Kestrun Web Framework</Description>
+
+    <!-- Licensing and repo info -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/mdaneri/Kestrun</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mdaneri/Kestrun</PackageProjectUrl>
+
+    <!-- Include README in NuGet package -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PackageVersion>1.0.0</PackageVersion>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+  </PropertyGroup>
+  <!--───────────── Optional Platform Targeting ─────────────-->
+
+  <PropertyGroup>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+
+    <PublishTrimmed>false</PublishTrimmed>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!--───────────── Files to Include in Package ─────────────-->
+  <ItemGroup>
+    <!-- README will show on NuGet.org page -->
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!--───────────── NuGet Dependencies ─────────────-->
+  <ItemGroup>
+    <!-- Hosting & DI -->
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" /> 
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />  
-    <!-- Your other packages -->
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" /> 
-    <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" /> 
-    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.11" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="pythonnet" Version="3.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
+
+    <!-- Logging -->
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Serilog.Sinks.Http" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" /> 
+
+    <!-- Scripting Engines -->
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.11" />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+    <PackageReference Include="pythonnet" Version="3.0.5" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" />
+
+    <!-- Utilities -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
   </ItemGroup>
+
 </Project>
