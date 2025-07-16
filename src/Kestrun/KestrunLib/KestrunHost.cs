@@ -48,14 +48,16 @@ namespace KestrumLib
         private bool _isConfigured = false;
 
         private RunspacePool? _runspacePool;
+        public string KestrunRoot { get; private set; }
         #endregion
 
 
         // Accepts optional module paths (from PowerShell)
         #region Constructor
-        public KestrunHost(string? appName = null, string[]? modulePathsObj = null)
+        public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null)
         {
-
+            KestrunRoot = kestrunRoot ?? Directory.GetCurrentDirectory();
+            Directory.SetCurrentDirectory(KestrunRoot);
             // Configure Serilog logger
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug().MinimumLevel.Verbose()
@@ -66,7 +68,7 @@ namespace KestrumLib
                 .CreateLogger();
             // Log constructor entry
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("KestrunHost constructor called with appName: {AppName}, modulePathsObj length: {ModulePathsLength}", appName, modulePathsObj?.Length ?? 0);
+                Log.Debug("KestrunHost constructor called with appName: {AppName},  kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, KestrunRoot, modulePathsObj?.Length ?? 0);
 
             builder = WebApplication.CreateBuilder();
             // Add Serilog to ASP.NET Core logging
@@ -74,6 +76,7 @@ namespace KestrumLib
 
             if (!string.IsNullOrEmpty(appName))
             {
+                Log.Information("Setting application name: {AppName}", appName);
                 _kestrelOptions = new KestrunOptions { ApplicationName = appName };
             }
             // Store module paths if provided
@@ -85,6 +88,7 @@ namespace KestrumLib
                     {
                         if (File.Exists(modPath))
                         {
+                            Log.Information("[KestrunHost] Adding module path: {ModPath}", modPath);
                             _modulePaths.Add(modPath);
                         }
                         else
@@ -98,6 +102,8 @@ namespace KestrumLib
                     }
                 }
             }
+
+            Log.Information("Current working directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
         }
         #endregion
 
@@ -401,7 +407,7 @@ namespace KestrumLib
                     //  var ss = ps.Runspace.SessionStateProxy; 
                     //ss.SetVariable("Request", krReq);
                     // ss.SetVariable("Response", krResp);
-
+                    Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
                     ps.AddCommand("Set-Variable")
                         .AddParameter("Name", "Request")
                         .AddParameter("Value", krRequest)
@@ -423,9 +429,7 @@ namespace KestrumLib
                     }
                     finally
                     {
-
-                        context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object
-                                                             // Dispose() returns the runspace to the pool
+                        context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                     }
                 }
                 catch (Exception ex)
@@ -563,7 +567,7 @@ namespace KestrumLib
         }
 
         public void AddRoute(string pattern,
-                                  IEnumerable<HttpVerb> httpVerbs,
+                                    IEnumerable<HttpVerb> httpVerbs,
                                     string scriptBlock,
                                     ScriptLanguage language = ScriptLanguage.PowerShell,
                                     string[]? extraImports = null,

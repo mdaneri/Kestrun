@@ -150,7 +150,7 @@ function Test-KsCertificate {
         [switch] $DenySelfSigned,
 
         [string[]] $ExpectedPurpose,
-        [switch]   $StrictPurpose
+        [switch] $StrictPurpose
     )
 
     $oidColl = if ($ExpectedPurpose) {

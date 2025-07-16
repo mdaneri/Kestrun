@@ -211,7 +211,7 @@ function Add-KrListener {
  
 
     if ($null -eq $Protocols) {
-      if ($PSCmdlet.ParameterSetName -eq "NoCert") {
+        if ($PSCmdlet.ParameterSetName -eq "NoCert") {
             $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1
         }
         else {
@@ -238,7 +238,7 @@ function New-KrServer {
     )
     $loadedModules = Get-UserImportedModule
     $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
-    $server = [KestrumLib.KestrunHost]::new($Name, [string[]] $modulePaths)
+    $server = [KestrumLib.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths)
     return $server
 }
 
@@ -249,7 +249,7 @@ function Add-KrRoute {
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [KestrumLib.KestrunHost]$Server,
         [Parameter()]
-        [string]$Method = "GET",
+        [KestrumLib.HttpVerb[]]$Verbs = @([KestrumLib.HttpVerb]::Get),
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
@@ -257,17 +257,20 @@ function Add-KrRoute {
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
         [string]$Code,
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
-        [KestrumLib.ScriptLanguage]$Language  
+        [KestrumLib.ScriptLanguage]$Language,
+        [Parameter()]
+        [string[]]$ExtraImports = $null,
+        [Parameter()]
+        [System.Reflection.Assembly[]]$ExtraRefs = $null
 
     )
     $server.ApplyConfiguration()
     if ($PSCmdlet.ParameterSetName -eq "Code") {
-        $Server.AddRoute($Path, $Code, $Language, $Method)
+        $Server.AddRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
     }
     else {
-        $Server.AddRoute($Path, $ScriptBlock.ToString(), [KestrumLib.ScriptLanguage]::PowerShell, $Method)
+        $Server.AddRoute($Path, $Verbs, $ScriptBlock.ToString(), [KestrumLib.ScriptLanguage]::PowerShell)
     }
-    # $Server.AddRoute($Path, $ScriptBlock.ToString(), $Method)
 }
 
 

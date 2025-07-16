@@ -6,7 +6,7 @@
             "name": "PowerShell: Launch test.ps1",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/examples/PowerShell/test.ps1",
+            "script": "${workspaceFolder}/examples/PowerShell/MultiRoutes.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell"
         },
         {

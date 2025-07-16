@@ -156,11 +156,7 @@ function Resolve-KrPath {
         return $full
     }
 }
-
-
  
-
-
 function Get-KestrunRoot {
     return $script:KestrunRoot
 }

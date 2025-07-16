@@ -16,3 +16,4 @@ cert/devcert.crt
 *.pem 
 *.csr
 *.key
+/examples/PowerShell/logs
