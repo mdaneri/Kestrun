@@ -197,9 +197,7 @@ public static class CertificateManager
 
     #endregion
 
-    #region  Import  
-
-
+    #region  Import
     public static X509Certificate2 Import(
        string certPath,
        ReadOnlySpan<char> password = default,
@@ -334,6 +332,18 @@ public static class CertificateManager
         result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: privateKeyPath, flags: flags);
         return result!;
     }
+
+    public static X509Certificate2 Import(string certPath)
+    {
+        X509Certificate2? result = null;
+
+        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+        ReadOnlySpan<char> passwordSpan = default;
+        // capture the return value of the span-based overload
+        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
+        return result!;
+    }
+
 
 
     #endregion

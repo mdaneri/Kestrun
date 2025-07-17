@@ -10,6 +10,7 @@ using Serilog.Events;
 using System.Buffers;
 using Microsoft.Extensions.FileProviders;
 using System.Net.Mime;
+using Microsoft.AspNetCore.WebUtilities;
 namespace KestrumLib
 {
 
@@ -19,24 +20,23 @@ namespace KestrumLib
         Inline,
         NoContentDisposition
     }
+    /// <summary>
+    /// Options for Content-Disposition header.
+    /// </summary>
+    public struct ContentDispositionOptions
+    {
+        public ContentDispositionOptions()
+        {
+            FileName = null;
+            Type = ContentDispositionType.NoContentDisposition;
+        }
+
+        public string? FileName { get; set; }
+        public ContentDispositionType Type { get; set; }
+    }
     public class KestrunResponse
     {
 
-
-        /// <summary>
-        /// Options for Content-Disposition header.
-        /// </summary>
-        public struct ContentDispositionOptions
-        {
-            public ContentDispositionOptions()
-            {
-                FileName = null;
-                Type = ContentDispositionType.NoContentDisposition;
-            }
-
-            public string? FileName { get; set; }
-            public ContentDispositionType Type { get; set; }
-        }
         public int StatusCode { get; set; } = 200;
         public Dictionary<string, string> Headers { get; set; } = [];
         public string ContentType { get; set; } = "text/plain";
@@ -68,16 +68,31 @@ namespace KestrumLib
         /// </summary>
         public int BodyAsyncThreshold { get; set; } = 8192; // 8 KB default
 
-
+        #region Constructors
         public KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 8192)
         {
             Request = request ?? throw new ArgumentNullException(nameof(request));
             AcceptCharset = request.Headers.TryGetValue("Accept-Charset", out string? value) ? Encoding.GetEncoding(value) : Encoding.UTF8; // Default to UTF-8 if null
             BodyAsyncThreshold = bodyAsyncThreshold;
         }
+        #endregion
+
+        #region Helpers
         public string? GetHeader(string key)
         {
             return Headers.TryGetValue(key, out var value) ? value : null;
+        }
+
+        private string DetermineContentType(string? contentType, string defaultType = "text/plain")
+        {
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                Request.Headers.TryGetValue("Accept", out var acceptHeader);
+                contentType = (acceptHeader ?? defaultType)
+                                     .ToLowerInvariant();
+            }
+
+            return contentType;
         }
 
         public static bool IsTextBasedContentType(string type)
@@ -97,21 +112,15 @@ namespace KestrumLib
                 return true;
 
             // Common application types where charset makes sense
-            switch (type.ToLowerInvariant())
+            return type.ToLowerInvariant() switch
             {
-                case "application/json":
-                case "application/xml":
-                case "application/javascript":
-                case "application/xhtml+xml":
-                case "application/x-www-form-urlencoded":
-                case "application/yaml":
-                case "application/graphql":
-                    return true;
-            }
-
-            return false;
+                "application/json" or "application/xml" or "application/javascript" or "application/xhtml+xml" or "application/x-www-form-urlencoded" or "application/yaml" or "application/graphql" => true,
+                _ => false,
+            };
         }
+        #endregion
 
+        #region  Response Writers
         public void WriteFileResponse(
             string? filePath,
             string? contentType,
@@ -172,6 +181,31 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
+        public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing response, StatusCode={StatusCode}", statusCode);
+
+            Body = inputObject;
+            ContentType = DetermineContentType(string.Empty, "text/plain"); // Ensure ContentType is set based on Accept header
+
+            if (ContentType.Contains("json"))
+            {
+                WriteJsonResponse(inputObject: inputObject, statusCode: statusCode);
+            }
+            else if (ContentType.Contains("yaml") || ContentType.Contains("yml"))
+            {
+                WriteYamlResponse(inputObject: inputObject, statusCode: statusCode);
+            }
+            else if (ContentType.Contains("xml"))
+            {
+                WriteXmlResponse(inputObject: inputObject, statusCode: statusCode);
+            }
+            else
+            {
+                WriteTextResponse(inputObject: inputObject, statusCode: statusCode);
+            }
+        }
 
         public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
@@ -190,8 +224,6 @@ namespace KestrumLib
             };
             WriteJsonResponse(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
         }
-
-
 
         public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
@@ -248,10 +280,6 @@ namespace KestrumLib
                 // include a body
                 Body = message;
                 ContentType = $"text/plain; charset={Encoding.WebName}";
-
-                // compute byte‑length of the message in the chosen encoding
-                //   var bytes = Encoding.GetBytes(message);
-                //   Headers["Content-Length"] = bytes.Length.ToString();
             }
             else
             {
@@ -281,9 +309,144 @@ namespace KestrumLib
             StatusCode = statusCode;
             //      Headers["Content-Length"] = stream.Length.ToString();
         }
+        #endregion
+
+        #region Error Responses
+        /// <summary>
+        /// Structured payload for error responses.
+        /// </summary>
+        internal record ErrorPayload
+        {
+            public string Error { get; init; } = default!;
+            public string? Details { get; init; }
+            public string? Exception { get; init; }
+            public string? StackTrace { get; init; }
+            public int Status { get; init; }
+            public string Reason { get; init; } = default!;
+            public string Timestamp { get; init; } = default!;
+            public string? Path { get; init; }
+            public string? Method { get; init; }
+        }
+
+        /// <summary>
+        /// Write an error response with a custom message.
+        /// Chooses JSON/YAML/XML/plain-text based on override → Accept → default JSON.
+        /// </summary>
+        public void WriteErrorResponse(
+            string message,
+            int statusCode = StatusCodes.Status500InternalServerError,
+            string? contentType = null,
+            string? details = null)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing error response, StatusCode={StatusCode}, ContentType={ContentType}, Message={Message}",
+                    statusCode, contentType, message);
+            if (string.IsNullOrWhiteSpace(message))
+                throw new ArgumentNullException(nameof(message));
+
+            Log.Warning("Writing error response with status {StatusCode}: {Message}", statusCode, message);
+
+            var payload = new ErrorPayload
+            {
+                Error = message,
+                Details = details,
+                Exception = null,
+                StackTrace = null,
+                Status = statusCode,
+                Reason = ReasonPhrases.GetReasonPhrase(statusCode),
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Path = Request?.Path,
+                Method = Request?.Method
+            };
+
+            WriteFormattedErrorResponse(payload, contentType);
+        }
+
+        /// <summary>
+        /// Write an error response based on an exception.
+        /// Chooses JSON/YAML/XML/plain-text based on override → Accept → default JSON.
+        /// </summary>
+        public void WriteErrorResponse(
+            Exception ex,
+            int statusCode = StatusCodes.Status500InternalServerError,
+            string? contentType = null,
+            bool includeStack = true)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing error response from exception, StatusCode={StatusCode}, ContentType={ContentType}, IncludeStack={IncludeStack}",
+                    statusCode, contentType, includeStack);
+
+            ArgumentNullException.ThrowIfNull(ex);
+
+            Log.Warning(ex, "Writing error response with status {StatusCode}", statusCode);
+
+            var payload = new ErrorPayload
+            {
+                Error = ex.Message,
+                Details = null,
+                Exception = ex.GetType().Name,
+                StackTrace = includeStack ? ex.ToString() : null,
+                Status = statusCode,
+                Reason = ReasonPhrases.GetReasonPhrase(statusCode),
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Path = Request?.Path,
+                Method = Request?.Method
+            };
+
+            WriteFormattedErrorResponse(payload, contentType);
+        }
 
 
+        /// <summary>
+        /// Internal dispatcher: serializes the payload according to the chosen content-type.
+        /// </summary>
+        private void WriteFormattedErrorResponse(ErrorPayload payload, string? contentType = null)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Writing formatted error response, ContentType={ContentType}, Status={Status}", contentType, payload.Status);
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                Request.Headers.TryGetValue("Accept", out var acceptHeader);
+                contentType = (acceptHeader ?? "text/plain")
+                                     .ToLowerInvariant();
+            }
+            if (contentType.Contains("json"))
+            {
+                WriteJsonResponse(payload, payload.Status);
+            }
+            else if (contentType.Contains("yaml") || contentType.Contains("yml"))
+            {
+                WriteYamlResponse(payload, payload.Status);
+            }
+            else if (contentType.Contains("xml"))
+            {
+                WriteXmlResponse(payload, payload.Status);
+            }
+            else
+            {
+                // Plain-text fallback
+                var lines = new List<string>
+                {
+                    $"Status: {payload.Status} ({payload.Reason})",
+                    $"Error: {payload.Error}",
+                    $"Time: {payload.Timestamp}"
+                };
 
+                if (!string.IsNullOrWhiteSpace(payload.Details))
+                    lines.Add("Details:\n" + payload.Details);
+
+                if (!string.IsNullOrWhiteSpace(payload.Exception))
+                    lines.Add($"Exception: {payload.Exception}");
+
+                if (!string.IsNullOrWhiteSpace(payload.StackTrace))
+                    lines.Add("StackTrace:\n" + payload.StackTrace);
+
+                var text = string.Join("\n", lines);
+                WriteTextResponse(text, payload.Status, "text/plain");
+            }
+        }
+        #endregion
+        #region Apply to HttpResponse
         public async Task ApplyTo(HttpResponse response)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -300,15 +463,12 @@ namespace KestrumLib
             {
                 response.StatusCode = StatusCode;
                 // Ensure charset is set for text content types
-                string contentType = ContentType;
-                if (contentType != null && contentType.StartsWith("text/", System.StringComparison.OrdinalIgnoreCase))
+
+                if (!string.IsNullOrEmpty(ContentType) && IsTextBasedContentType(ContentType) && (!ContentType.Contains("charset=", System.StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (!contentType.Contains("charset=", System.StringComparison.OrdinalIgnoreCase))
-                    {
-                        contentType = contentType.TrimEnd(';') + $"; charset={AcceptCharset.WebName}";
-                    }
+                    ContentType = ContentType.TrimEnd(';') + $"; charset={AcceptCharset.WebName}";
                 }
-                response.ContentType = contentType;
+                response.ContentType = ContentType;
                 if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
                 {
                     string dispositionValue = ContentDisposition.Type switch
@@ -412,7 +572,7 @@ namespace KestrumLib
                             await response.Body.WriteAsync(data, response.HttpContext.RequestAborted);
                             await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
-                        
+
                         default:
                             Body = "Unsupported body type: " + Body.GetType().Name;
                             Log.Warning("Unsupported body type: {BodyType}", Body.GetType().Name);
@@ -430,5 +590,6 @@ namespace KestrumLib
                 throw;
             }
         }
+        #endregion
     }
 }

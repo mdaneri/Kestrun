@@ -429,14 +429,14 @@ namespace KestrumLib
                         .AddParameter("Value", krResponse)
                         .AddParameter("Scope", "Script");
 
-                    foreach (var kv in GlobalVariables.GetAllValues())
+                 /*   foreach (var kv in GlobalVariables.GetAllValues())
                     {
                         ps.AddCommand("Set-Variable")
                           .AddParameter("Name", kv.Key)
                           .AddParameter("Value", kv.Value ?? PSObject.AsPSObject(null)) // handle nulls
                           .AddParameter("Scope", "Script")
                           .AddStatement();
-                    }
+                    }*/
                     // Run this once to inject variables into the runspace 
                     ps.Invoke();
                     // clear the commands so you can use ps.Invoke/InvokeAsync again later:
@@ -446,7 +446,7 @@ namespace KestrumLib
                     {
                         await _next(context);                // continue the pipeline
 
-                        foreach (var name in GlobalVariables.GetAllValues().Keys)
+                    /*    foreach (var name in GlobalVariables.GetAllValues().Keys)
                         {
                             ps.AddCommand("Get-Variable")
                               .AddParameter("Name", name)
@@ -459,7 +459,7 @@ namespace KestrumLib
                                 var newVal = results[0].BaseObject;
                                 GlobalVariables.UpdateValue(name, newVal);
                             }
-                        }
+                        }*/
                     }
                     finally
                     {
@@ -476,8 +476,6 @@ namespace KestrumLib
                 }
             }
         }
-
-
 
 
         private RequestDelegate BuildPsDelegate(string code)
@@ -898,7 +896,7 @@ namespace KestrumLib
             }
 
             // Inject global variables into all runspaces
-       /*     foreach (var kvp in GlobalVariables.GetAllValues())
+            foreach (var kvp in GlobalVariables.GetAllValues())
             {
                 // kvp.Key = "Visits", kvp.Value = 0
                 iss.Variables.Add(
@@ -908,7 +906,7 @@ namespace KestrumLib
                         "Global variable"
                     )
                 );
-            }*/
+            } 
             int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 
             Log.Information($"Creating runspace pool with max runspaces: {maxRs}");

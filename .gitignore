@@ -1,12 +1,75 @@
-cert.pfx
-src/Kestrun/bin
-src/Kestrun/obj
-global.json
-/examples/CSharpTest/bin
-/examples/CSharpTest/obj
-/examples/CSharp/Certificates/bin
-/examples/CSharp/Certificates/obj
-/examples/CSharp/Certificates/out
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+.history/
+
+# Dotnet & NuGet
+*.nupkg
+*.snupkg
+*.nuspec
+*.psmdcp
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET temporary files
+**/Properties/launchSettings.json
+
+# Paket
+.paket/
+paket-files/
+
+# Other
+*.dbmdl
+*.pdb
+*.cache
+*.log
+*.vspscc
+_TestResults/
+TestResults/
+*.testresults
+
+# Entity Framework Migrations
+Migrations/*Designer.cs
+Migrations/*Snapshot.cs
+
+# Global JetBrains Rider user settings
+.idea/
+
+# Mac/Linux/Windows OS junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Secret configuration (if any)
+appsettings.Development.json
+secrets.json
+
+# ReSharper/Code analysis
+_ReSharper*/
+*.DotSettings.user
+
+# Optional: Dotnet tools
+.tools/
+
+
+cert.pfx 
+global.json 
 cert/devcert.crt
 /cert
 /examples/CSharpTest/logs

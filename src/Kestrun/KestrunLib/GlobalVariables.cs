@@ -10,6 +10,13 @@ namespace KestrumLib
 
         public static bool Define<T>(string name, T value, bool readOnly = false)
         {
+
+            var t = typeof(T);
+            if (t.IsValueType)
+                throw new ArgumentException(
+                    $"Cannot define global variable '{name}' of value type '{t.FullName}'. Only reference types are allowed.",
+                    nameof(value)
+                );
             var entry = new GlobalEntry(value!, typeof(T), readOnly);
 
             return _store.AddOrUpdate(name,

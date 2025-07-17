@@ -30,6 +30,17 @@
             "cwd": "${workspaceFolder}/examples/CSharp/Certificates",
             "stopAtEntry": false,
             "console": "integratedTerminal"
+        },
+           {
+            "name": ".NET Launch CSharp/GlobalVar",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build GlobalVar",
+            "program": "${workspaceFolder}/examples/CSharp/GlobalVar/bin/Debug/net8.0/GlobalVar.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/GlobalVar",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }

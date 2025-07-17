@@ -22,7 +22,7 @@ function Write-KrJsonResponse {
         [string]$ContentType
     )
     if ($null -ne $Response) {
-        $serializerSettings =  [Newtonsoft.Json.JsonSerializerSettings]::new()
+        $serializerSettings = [Newtonsoft.Json.JsonSerializerSettings]::new()
         $serializerSettings.Formatting = if ($Compress) { [Newtonsoft.Json.Formatting]::None } else { [Newtonsoft.Json.Formatting]::Indented }
         $serializerSettings.ContractResolver = [Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver]::new()
         $serializerSettings.ReferenceLoopHandling = [Newtonsoft.Json.ReferenceLoopHandling]::Ignore
@@ -207,5 +207,58 @@ function Write-KrStreamResponse {
     if ($null -ne $Response) {
         # Call the C# method on the $Response object
         $Response.WriteStreamResponse($InputObject, $StatusCode, $ContentType)
+    }
+}
+
+function Write-KrResponse {
+    param(
+        [Parameter(Mandatory = $true)]
+        [stream]$InputObject,
+        [Parameter()]
+        [int]$StatusCode = 200
+    )
+    if ($null -ne $Response) {
+        # Call the C# method on the $Response object
+        $Response.WriteResponse($InputObject, $StatusCode, $ContentType)
+    }
+}
+
+function Write-KrErrorResponse {
+    [CmdletBinding(DefaultParameterSetName = 'Message')]
+    param (
+        [Parameter(ParameterSetName = 'Message', Mandatory = $true)]
+        [string]$Message,
+
+        [Parameter(ParameterSetName = 'Exception', Mandatory = $true)]
+        [System.Exception]$Exception,
+
+        [Parameter()]
+        [int]$StatusCode = 500,
+
+        [Parameter()]
+        [string]$ContentType,
+
+        [Parameter()]
+        [string]$Details,
+
+        [Parameter()]
+        [switch]$IncludeStack 
+    )
+
+    if ($PSCmdlet.ParameterSetName -eq "Message") {
+        $Response.WriteErrorResponse(
+            $Message,
+            $StatusCode,
+            $ContentType,
+            $Details
+        )
+    }
+    else {
+        $Response.WriteErrorResponse(
+            $Exception,
+            $StatusCode,
+            $ContentType,
+            $IncludeStack.IsPresent
+        )
     }
 }
