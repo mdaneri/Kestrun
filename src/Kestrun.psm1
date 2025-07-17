@@ -1,3 +1,13 @@
+<#
+.SYNOPSIS
+    Ensures that a .NET assembly is loaded only once.
+
+.DESCRIPTION
+    Checks the currently loaded assemblies for the specified path. If the
+    assembly has not been loaded yet, it is added to the current AppDomain.
+.PARAMETER AssemblyPath
+    Path to the assembly file to load.
+#>
 function Assert-AssemblyLoaded {
     param (
         [string]$AssemblyPath
