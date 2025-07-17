@@ -86,6 +86,9 @@
         'Write-KrYamlResponse',
         'Write-KrTextResponse',
         'Write-KrXmlResponse',
+        'WriteErrorResponse',
+        'Write-KrResponse',
+        'Write-KrFileResponse',
         'New-KrPythonRuntime',
         'Import-KrCertificate',
         'Export-KrCertificate',
@@ -97,6 +100,7 @@
         'Set-KrGlobalVar',
         'Get-KrGlobalVar',
         'Remove-KrGlobalVar'
+         
     )
 
     # Variables to export from this module
