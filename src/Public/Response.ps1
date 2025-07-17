@@ -83,9 +83,7 @@ function Write-KrFileResponse {
         [Parameter()]
         [switch]$Inline,
         [Parameter()]
-        [string]$ContentType,
-        [Parameter()]
-        [switch]$EmbedFileContent
+        [string]$ContentType 
     )
 
     try {
@@ -93,7 +91,7 @@ function Write-KrFileResponse {
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
             Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
             # Call the C# method on the $Response object
-            $Response.WriteFileResponse($resolvedPath, $Inline.IsPresent, $FileDownloadName, $ContentType, $EmbedFileContent.IsPresent, $StatusCode)
+            $Response.WriteFileResponse($resolvedPath, $ContentType, $StatusCode)
             Write-Information "File response written for $FilePath with download name $FileDownloadName"
         }
     }

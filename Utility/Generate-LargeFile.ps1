@@ -1,10 +1,11 @@
 param(
+    [parameter(Mandatory = $true)]
+    [string]$Path,
+    [parameter()]
     [ValidateSet("Text", "Binary")]
     [string]$Mode = "Text",
-
-    [int]$SizeMB = 100,
-
-    [string]$Path = "large_file.out"
+    [parameter()]
+    [int]$SizeMB = 100     
 )
 
 # ─── Setup ────────────────────────────────────────────────────────
@@ -19,17 +20,25 @@ if (Test-Path $Path) {
 # ─── Generate Binary File ─────────────────────────────────────────
 if ($Mode -eq "Binary") {
     $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-    $buffer = New-Object byte[] (1MB)
+    $buffer = [byte[]]::new(1MB)
     $written = 0
-    $fs = [System.IO.File]::OpenWrite($Path)
+    try {
+        $fs = [System.IO.File]::OpenWrite($Path)
 
-    while ($written -lt $targetBytes) {
-        $rng.GetBytes($buffer)
-        $bytesToWrite = [Math]::Min($buffer.Length, $targetBytes - $written)
-        $fs.Write($buffer, 0, $bytesToWrite)
-        $written += $bytesToWrite
+        while ($written -lt $targetBytes) {
+            $rng.GetBytes($buffer)
+            $bytesToWrite = [Math]::Min($buffer.Length, $targetBytes - $written)
+            $fs.Write($buffer, 0, $bytesToWrite)
+            $written += $bytesToWrite
+            if ($written % (10MB) -eq 0) {
+                # Print progress every 10MB
+                Write-Host "#" -NoNewline
+            }
+        }
     }
-    $fs.Close()
+    finally {
+        $fs.Close() 
+    }
     Write-Host "Binary file done."
 }
 
@@ -42,19 +51,28 @@ if ($Mode -eq "Text") {
     $lineCount = [math]::Ceiling($targetBytes / $lineBytes)
 
     $rand = [System.Random]::new()
-    $writer = [System.IO.StreamWriter]::new($Path, $false, [System.Text.Encoding]::UTF8)
+    try {
+        $writer = [System.IO.StreamWriter]::new($Path, $false, [System.Text.Encoding]::UTF8)
 
-    for ($i = 0; $i -lt $lineCount; $i++) {
-        if ($i % $entropyRate -eq 0) {
-            # Inject a small random string
-            $randomSuffix = $rand.Next(100000, 999999)
-            $line = "$baseLine-$randomSuffix" * 5 + "`n"
-        } else {
-            $line = $lineTemplate
+        for ($i = 0; $i -lt $lineCount; $i++) {
+            if ($i % $entropyRate -eq 0) {
+                # Inject a small random string
+                $randomSuffix = $rand.Next(100000, 999999)
+                $line = "$baseLine-$randomSuffix" * 5 + "`n"
+            }
+            else {
+                $line = $lineTemplate
+            }
+            # Write the line to the file
+            $writer.Write($line)
+            if ($i % 1000 -eq 0) {
+                Write-Host "#" -NoNewline
+            }
         }
-        $writer.Write($line)
     }
-    $writer.Close()
+    finally {
+        $writer.Close()
+    }
     Write-Host "Text file with entropy done."
 }
 

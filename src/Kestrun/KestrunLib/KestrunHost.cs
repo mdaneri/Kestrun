@@ -327,7 +327,13 @@ namespace KestrumLib
                        .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
                        .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
                        .WithLanguageVersion(languageVersion);
-
+            extraImports ??= ["KestrumLib"];
+            if (!extraImports.Contains("KestrumLib"))
+            {
+                var importsList = extraImports.ToList();
+                importsList.Add("KestrumLib");
+                extraImports = [.. importsList];
+            }
             if (extraImports is { Length: > 0 })
                 opts = opts.WithImports(opts.Imports.Concat(extraImports));
 
@@ -621,8 +627,6 @@ namespace KestrumLib
                     ex);
             }
         }
-
-
 
 
         #endregion

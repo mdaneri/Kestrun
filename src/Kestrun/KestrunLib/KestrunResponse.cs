@@ -7,27 +7,36 @@ using System.Text;
 using Org.BouncyCastle.Asn1.Ocsp;
 using Serilog;
 using Serilog.Events;
+using System.Buffers;
+using Microsoft.Extensions.FileProviders;
+using System.Net.Mime;
 namespace KestrumLib
 {
 
-
+    public enum ContentDispositionType
+    {
+        Attachment,
+        Inline,
+        NoContentDisposition
+    }
     public class KestrunResponse
     {
-        public enum ContentDispositionType
-        {
-            Attachment,
-            Inline,
-            NoContentDisposition
-        }
+
 
         /// <summary>
         /// Options for Content-Disposition header.
         /// </summary>
-        public record ContentDispositionOptions(
-               string? FileName = null,
-               ContentDispositionType Type = ContentDispositionType.NoContentDisposition
-           );
+        public struct ContentDispositionOptions
+        {
+            public ContentDispositionOptions()
+            {
+                FileName = null;
+                Type = ContentDispositionType.NoContentDisposition;
+            }
 
+            public string? FileName { get; set; }
+            public ContentDispositionType Type { get; set; }
+        }
         public int StatusCode { get; set; } = 200;
         public Dictionary<string, string> Headers { get; set; } = [];
         public string ContentType { get; set; } = "text/plain";
@@ -44,7 +53,7 @@ namespace KestrumLib
         /// <summary>
         /// Content-Disposition header value.
         /// </summary>
-        public ContentDispositionOptions ContentDisposition { get; set; } = new ContentDispositionOptions();
+        public ContentDispositionOptions ContentDisposition = new();
         public KestrunRequest Request { get; private set; }
 
         /// <summary>
@@ -105,17 +114,13 @@ namespace KestrumLib
 
         public void WriteFileResponse(
             string? filePath,
-            bool inline,
-            string? fileDownloadName,
             string? contentType,
-            bool embedFileContent,
             int statusCode = StatusCodes.Status200OK
         )
         {
-
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType},EmbedFileContent={EmbedFileContent}, CurrentDirectory={CurrentDirectory}",
-                    filePath, statusCode, contentType, embedFileContent, Directory.GetCurrentDirectory());
+                Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType}, CurrentDirectory={CurrentDirectory}",
+                    filePath, statusCode, contentType, Directory.GetCurrentDirectory());
 
             if (string.IsNullOrEmpty(filePath))
                 throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
@@ -126,47 +131,30 @@ namespace KestrumLib
                 ContentType = $"text/plain; charset={Encoding.WebName}";
                 return;
             }
+            // 1. Make sure you have an absolute file path
+            var fullPath = Path.GetFullPath(filePath);
 
-            var fi = new FileInfo(filePath);
+            // 2. Extract the directory to use as the "root"
+            var directory = Path.GetDirectoryName(fullPath)
+                           ?? throw new InvalidOperationException("Could not determine directory from file path");
+
+            //       var fi = new FileInfo(filePath);
+            var physicalProvider = new PhysicalFileProvider(directory);
+            IFileInfo fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
             var provider = new FileExtensionContentTypeProvider();
             contentType ??= provider.TryGetContentType(filePath, out var ct)
                     ? ct
                     : "application/octet-stream";
-            if (embedFileContent)
-            {
-                // load entire file into Body
-                if (IsTextBasedContentType(contentType))
-                    Body = File.ReadAllText(filePath, Encoding);
-                else
-                    Body = File.ReadAllBytes(filePath);
-            }
-            else
-            {
-                // body as stream
-                Body = File.OpenRead(filePath);
-            }
-
-
-            if (IsTextBasedContentType(contentType) &&
-                !contentType.Contains("charset=", StringComparison.OrdinalIgnoreCase))
-            {
-                contentType += $"; charset={Encoding.WebName}";
-            }
+            Body = fi;
 
             // headers & metadata
             StatusCode = statusCode;
             ContentType = contentType;
             Headers["Content-Length"] = fi.Length.ToString();
 
-            // content‑disposition
-            var dispType = inline
-                ? ContentDispositionType.Inline
-                : ContentDispositionType.Attachment;
-            ContentDisposition = new ContentDispositionOptions
-            {
-                FileName = fileDownloadName ?? fi.Name,
-                Type = dispType
-            };
+            // content‑disposition 
+            ContentDisposition.FileName = fi.Name;
+            ContentDisposition.Type = ContentDispositionType.Attachment;
         }
 
         public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
@@ -262,8 +250,8 @@ namespace KestrumLib
                 ContentType = $"text/plain; charset={Encoding.WebName}";
 
                 // compute byte‑length of the message in the chosen encoding
-                var bytes = Encoding.GetBytes(message);
-                Headers["Content-Length"] = bytes.Length.ToString();
+                //   var bytes = Encoding.GetBytes(message);
+                //   Headers["Content-Length"] = bytes.Length.ToString();
             }
             else
             {
@@ -281,7 +269,7 @@ namespace KestrumLib
             Body = data ?? throw new ArgumentNullException(nameof(data), "Data cannot be null for binary response.");
             ContentType = contentType;
             StatusCode = statusCode;
-            Headers["Content-Length"] = data.Length.ToString();
+            //       Headers["Content-Length"] = data.Length.ToString();
         }
 
         public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
@@ -291,8 +279,10 @@ namespace KestrumLib
             Body = stream;
             ContentType = contentType;
             StatusCode = statusCode;
-            Headers["Content-Length"] = stream.Length.ToString();
+            //      Headers["Content-Length"] = stream.Length.ToString();
         }
+
+
 
         public async Task ApplyTo(HttpResponse response)
         {
@@ -333,6 +323,7 @@ namespace KestrumLib
                         dispositionValue += $"; filename=\"{ContentDisposition.FileName}\"";
                     }
                     response.Headers.Append("Content-Disposition", dispositionValue);
+
                 }
 
                 if (Headers != null)
@@ -353,8 +344,19 @@ namespace KestrumLib
                 {
                     switch (Body)
                     {
+                        case IFileInfo fileInfo:
+                            Log.Debug("Sending file {FileName} (Length={Length})", fileInfo.Name, fileInfo.Length);
+                            response.ContentLength = fileInfo.Length;   // conveys intent & avoids string conversion 
+                            response.Headers.LastModified = fileInfo.LastModified.ToString("R");
+                            await response.SendFileAsync(
+                                file: fileInfo,
+                                offset: 0,
+                                count: fileInfo.Length,
+                                cancellationToken: response.HttpContext.RequestAborted
+                            );
+                            break;
                         case byte[] bytes:
-
+                            response.ContentLength = bytes.LongLength;
                             await response.Body.WriteAsync(bytes, response.HttpContext.RequestAborted);
                             await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
@@ -367,56 +369,56 @@ namespace KestrumLib
                             if (seekable)
                             {
                                 // ensure caller did not already set Content-Length
-                                response.Headers["Content-Length"] = stream.Length.ToString();
+                                response.ContentLength = stream.Length;
                                 stream.Position = 0;
                             }
                             else
                             {
-                                response.Headers.Remove("Content-Length");
+                                response.ContentLength = null; // no length for non-seekable streams
                             }
 
                             // copy async in 32 kB chunks (BodyAsyncThreshold is your buffer size)
-                            await stream.CopyToAsync(response.Body, BodyAsyncThreshold,
-                                                      response.HttpContext.RequestAborted);
+                            //    await stream.CopyToAsync(response.Body, BodyAsyncThreshold,
+                            //                            response.HttpContext.RequestAborted);
 
+                            const int BufferSize = 64 * 1024; // 64 KB
+                            var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                            try
+                            {
+                                int bytesRead;
+                                while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, BufferSize), response.HttpContext.RequestAborted)) > 0)
+                                {
+                                    // using the new Memory-based overload avoids an extra copy
+                                    await response.Body.WriteAsync(buffer.AsMemory(0, bytesRead),
+                                                                   response.HttpContext.RequestAborted);
+                                }
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                            // Ensure the response is flushed after writing the stream
+                            // This is important for non-seekable streams to ensure all data is sent
                             await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
-                        /*          Log.Debug("Writing stream response, Length={Length}, CanSeek={CanSeek}", stream.Length, stream.CanSeek);
-                                  if (stream.CanSeek && stream.Length > BodyAsyncThreshold)
-                                  {
-                                     // response.Headers.Remove("Content-Length"); // Content-Length is not reliable for streams
-                                      stream.Position = 0; // Reset position to start
-                                      // If the stream is seekable and large, use async write
-                                      await stream.CopyToAsync(response.Body);
-                                      // Reset position if the stream is seekable
-                                      stream.Position = 0;
-                                      Log.Debug("Stream position reset to 0 after copying to response body.");
-                                  }
-                                  else
-                                  {
-                                      // If the stream is seekable and small, write synchronously
-                                      stream.Position = 0; // Reset position to start
-                                      stream.CopyTo(response.Body);
-                                      Log.Debug("Stream position reset to 0 after copying to response body.");
-                                  }
-      */
+
                         case string str:
                             // Encode once
                             var data = AcceptCharset.GetBytes(str);
 
                             // Optionally set length (remove it if you prefer chunked for text)
-                            response.Headers["Content-Length"] = data.Length.ToString();
+                            response.ContentLength = data.Length;
 
                             await response.Body.WriteAsync(data, response.HttpContext.RequestAborted);
                             await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
+                        
                         default:
-                            var fallback = Body.ToString() ?? string.Empty;
-                            var fallbackBytes = AcceptCharset.GetBytes(fallback);
-                            if (fallbackBytes.Length > BodyAsyncThreshold)
-                                await response.Body.WriteAsync(fallbackBytes);
-                            else
-                                response.Body.Write(fallbackBytes, 0, fallbackBytes.Length);
+                            Body = "Unsupported body type: " + Body.GetType().Name;
+                            Log.Warning("Unsupported body type: {BodyType}", Body.GetType().Name);
+                            response.StatusCode = StatusCodes.Status500InternalServerError;
+                            response.ContentType = "text/plain; charset=utf-8";
+                            response.ContentLength = Body.ToString()?.Length ?? null;
                             break;
                     }
                 }

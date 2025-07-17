@@ -18,3 +18,4 @@ cert/devcert.crt
 *.key
 /examples/PowerShell/logs
 examples/CSharpTest/test.bin
+/examples/Files/LargeFiles

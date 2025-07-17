@@ -174,16 +174,16 @@ server.AddRoute("/ps/text", HttpVerb.Get, """
             Write-KrTextResponse -inputObject $payload -statusCode 200        
         """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/stream", HttpVerb.Get, """        
-                Write-Output 'Hello from PowerShell script! - stream file Response'
-                Write-KrFileResponse -FilePath './test.bin' -statusCode 200      
+server.AddRoute("/ps/stream/binary", HttpVerb.Get, """        
+                Write-Output 'Hello from PowerShell script! - stream Binary file Response'
+                Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.bin' -statusCode 200      
             """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/embedded", HttpVerb.Get, """        
-                Write-Output 'Hello from PowerShell script! - embedded file Response'
-                Write-KrFileResponse -FilePath './test.bin' -statusCode 200 -EmbedFileContent
-            """, KestrumLib.ScriptLanguage.PowerShell);
 
+server.AddRoute("/ps/stream/text", HttpVerb.Get, """        
+                Write-Output 'Hello from PowerShell script! - stream Text file Response'
+                Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.txt' -statusCode 200      
+            """, KestrumLib.ScriptLanguage.PowerShell);
 
 server.AddRoute("/hello-ps", HttpVerb.Get, """
             $Response.ContentType = 'text/plain'
@@ -224,8 +224,10 @@ server.AddRoute("/cs/yaml", HttpVerb.Get, """
                 RequestBody = Request.Body
             };
 
-            Response.WriteYamlResponse( payload,  200);
-
+            Response.WriteYamlResponse( payload,  200,
+                contentType: "text/yaml" );
+            Response.ContentDisposition.Type = ContentDispositionType.Inline;
+            Response.ContentDisposition.FileName = "response.yaml";
         """, KestrumLib.ScriptLanguage.CSharp);
 
 server.AddRoute("/cs/xml", HttpVerb.Get, """
@@ -259,16 +261,15 @@ server.AddRoute("/cs/text", HttpVerb.Get, """
         """, KestrumLib.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/stream", HttpVerb.Get, """        
-                Console.WriteLine("Hello from C# script! - stream file Response(From C#)");
-               Response.WriteFileResponse(filePath: "./test.bin", inline: false, fileDownloadName: "test.bin", contentType: "application/octet-stream", embedFileContent: false, statusCode: 200);
+server.AddRoute("/cs/stream/binary", HttpVerb.Get, """        
+                Console.WriteLine("Hello from C# script! - stream Binaryfile Response(From C#)");
+               Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
             """, KestrumLib.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/embedded", HttpVerb.Get, """        
-                Console.WriteLine("Hello from C# script! - embedded file Response(From C#)"); 
-                Response.WriteFileResponse(filePath: "./test.bin", inline: false, fileDownloadName: "test.bin", contentType: "application/octet-stream", embedFileContent: true, statusCode: 200);
+server.AddRoute("/cs/stream/text", HttpVerb.Get, """        
+                Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
+               Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
             """, KestrumLib.ScriptLanguage.CSharp);
-
 // 5. Start the server
 server.StartAsync().Wait();
 
