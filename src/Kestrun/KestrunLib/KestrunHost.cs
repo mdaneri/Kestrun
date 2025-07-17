@@ -489,8 +489,8 @@ namespace KestrumLib
                     Log.Verbose("Executing PowerShell script...");
                     // Using Task.Run to avoid blocking the thread
                     // This is necessary to prevent deadlocks in the runspace pool
-                     var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                     .ConfigureAwait(false);
+                    var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+                    .ConfigureAwait(false);
                     //  var psResults = ps.Invoke();
                     //var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
@@ -565,6 +565,30 @@ namespace KestrumLib
 
 
         #region Route
+        public delegate Task KestrunHandler(KestrunRequest req, KestrunResponse res);
+
+        public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("AddNativeRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
+            AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler);
+        }
+
+        public void AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler)
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
+            if (App is null)
+                throw new InvalidOperationException("WebApplication is not initialized. Call ApplyConfiguration first.");
+            string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
+            App.MapMethods(pattern, methods, async context =>
+            {
+                var req = await KestrunRequest.NewRequest(context);
+                var res = new KestrunResponse(req);
+                await handler(req, res);
+                await res.ApplyTo(context.Response);
+            });
+        }
 
         public void AddRoute(string pattern,
                                          HttpVerb httpVerbs,
@@ -593,7 +617,7 @@ namespace KestrumLib
 
             if (string.IsNullOrWhiteSpace(pattern))
                 throw new ArgumentException("Route pattern cannot be empty.", nameof(pattern));
-            if (httpVerbs.Count() == 0) httpVerbs = new[] { HttpVerb.Get };
+            if (httpVerbs.Count() == 0) httpVerbs = [HttpVerb.Get];
             try
             {
                 // compile once – return an HttpContext->Task delegate
@@ -720,7 +744,7 @@ namespace KestrumLib
             App = builder.Build();
             //  App.UsePowerShellRunspace(_runspacePool);
             App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
-             App.UseResponseCompression();
+            App.UseResponseCompression();
             _isConfigured = true;
         }
 

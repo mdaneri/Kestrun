@@ -270,6 +270,20 @@ server.AddRoute("/cs/stream/text", HttpVerb.Get, """
                 Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
                Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
             """, KestrumLib.ScriptLanguage.CSharp);
+
+server.AddNativeRoute("/compiled", HttpVerb.Get, async (req, res) =>
+{
+    res.WriteJsonResponse(new { ok = true, message = "Native C# works!" });
+    await Task.Yield();
+});
+
+server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (req, res) =>
+{
+    res.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
+    await Task.Yield();
+});
+
+
 // 5. Start the server
 server.StartAsync().Wait();
 
