@@ -174,9 +174,14 @@ server.AddRoute("/ps/text", HttpVerb.Get, """
             Write-KrTextResponse -inputObject $payload -statusCode 200        
         """, KestrumLib.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/file", HttpVerb.Get, """        
-                Write-Output "Hello from PowerShell script! - file Response"
-                Write-KrFileResponse -FilePath "./README.md" -FileDownloadName "README.md" -Inline   -statusCode 200      
+server.AddRoute("/ps/stream", HttpVerb.Get, """        
+                Write-Output 'Hello from PowerShell script! - stream file Response'
+                Write-KrFileResponse -FilePath './test.bin' -statusCode 200      
+            """, KestrumLib.ScriptLanguage.PowerShell);
+
+server.AddRoute("/ps/embedded", HttpVerb.Get, """        
+                Write-Output 'Hello from PowerShell script! - embedded file Response'
+                Write-KrFileResponse -FilePath './test.bin' -statusCode 200 -EmbedFileContent
             """, KestrumLib.ScriptLanguage.PowerShell);
 
 
@@ -254,10 +259,16 @@ server.AddRoute("/cs/text", HttpVerb.Get, """
         """, KestrumLib.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/file", HttpVerb.Get, """        
-                Console.WriteLine("Hello from C# script! - file Response(From C#)");
-                Response.WriteFileResponse("../../README.md", true, "README.md");
+server.AddRoute("/cs/stream", HttpVerb.Get, """        
+                Console.WriteLine("Hello from C# script! - stream file Response(From C#)");
+               Response.WriteFileResponse(filePath: "./test.bin", inline: false, fileDownloadName: "test.bin", contentType: "application/octet-stream", embedFileContent: false, statusCode: 200);
             """, KestrumLib.ScriptLanguage.CSharp);
+
+server.AddRoute("/cs/embedded", HttpVerb.Get, """        
+                Console.WriteLine("Hello from C# script! - embedded file Response(From C#)"); 
+                Response.WriteFileResponse(filePath: "./test.bin", inline: false, fileDownloadName: "test.bin", contentType: "application/octet-stream", embedFileContent: true, statusCode: 200);
+            """, KestrumLib.ScriptLanguage.CSharp);
+
 // 5. Start the server
 server.StartAsync().Wait();
 

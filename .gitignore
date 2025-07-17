@@ -17,3 +17,4 @@ cert/devcert.crt
 *.csr
 *.key
 /examples/PowerShell/logs
+examples/CSharpTest/test.bin

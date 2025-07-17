@@ -37,6 +37,10 @@ namespace KestrumLib
     public class KestrunHost
     {
         #region Fields
+
+        private const string PS_INSTANCE_KEY = "PS_INSTANCE";
+        private const string KR_REQUEST_KEY = "KR_REQUEST";
+        private const string KR_RESPONSE_KEY = "KR_RESPONSE";
         // Shared state across routes
         private readonly ConcurrentDictionary<string, string> sharedState = new();
         private readonly WebApplicationBuilder builder;
@@ -382,9 +386,10 @@ namespace KestrumLib
 
         #region PowerShell
 
+
+
         public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, RunspacePool pool)
         {
-            public const string PsItemKey = "PS_INSTANCE";
 
             private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
             private readonly RunspacePool _pool = pool ?? throw new ArgumentNullException(nameof(pool));
@@ -401,8 +406,8 @@ namespace KestrumLib
                     var krResponse = new KestrunResponse(krRequest);
 
                     // keep a reference for any C# code later in the pipeline
-                    context.Items["KR_REQUEST"] = krRequest;
-                    context.Items["KR_RESPONSE"] = krResponse;
+                    context.Items[KR_REQUEST_KEY] = krRequest;
+                    context.Items[KR_RESPONSE_KEY] = krResponse;
                     // Set the PowerShell variables for the request and response
                     //  var ss = ps.Runspace.SessionStateProxy; 
                     //ss.SetVariable("Request", krReq);
@@ -422,14 +427,14 @@ namespace KestrumLib
                     ps.Invoke();
                     // clear the commands so you can use ps.Invoke/InvokeAsync again later:
                     ps.Commands.Clear();
-                    context.Items[PsItemKey] = ps;
+                    context.Items[PS_INSTANCE_KEY] = ps;
                     try
                     {
                         await _next(context);                // continue the pipeline
                     }
                     finally
                     {
-                        context.Items.Remove(PsItemKey);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
+                        context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                     }
                 }
                 catch (Exception ex)
@@ -451,38 +456,37 @@ namespace KestrumLib
             {
                 if (Log.IsEnabled(LogEventLevel.Debug))
                     Log.Debug("PS delegate invoked for {Path}", context.Request.Path);
-                if (!context.Items.ContainsKey("PSRunspace"))
-                {
 
+                if (!context.Items.ContainsKey(PS_INSTANCE_KEY))
+                {
+                    throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
                 }
-                // Ensure the runspace pool is open before executing the script
-                // var krRequest = await KestrunRequest.NewRequest(context);
-                //   var krResponse = new KestrunResponse(krRequest);
+                // Retrieve the PowerShell instance from the context
+                Log.Verbose("Retrieving PowerShell instance from context items.");
+                PowerShell ps = context.Items[PS_INSTANCE_KEY] as PowerShell
+                    ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
+                if (ps.RunspacePool == null)
+                {
+                    throw new InvalidOperationException("PowerShell runspace pool is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+                }
+                // Ensure the runspace pool is open before executing the script 
                 try
                 {
-                    // Pick up the PowerShell created by the middleware.
-                    // If someone calls this delegate outside the HTTP pipeline,
-                    // we still fall back to creating our own instance.
-                    var ps = (context.Items.TryGetValue(
-                                 PowerShellRunspaceMiddleware.PsItemKey, out var o)
-                              && o is PowerShell cachedPs)
-                             ? cachedPs
-                             : PowerShell.Create();
-
-                    ps.RunspacePool ??= _runspacePool;    // safety net
-
-                    var krRequest = context.Items["KR_REQUEST"] as KestrunRequest
-                        ?? throw new InvalidOperationException("KR_REQUEST not found in context items.");
-                    var krResponse = context.Items["KR_RESPONSE"] as KestrunResponse
-                        ?? throw new InvalidOperationException("KR_RESPONSE not found in context items.");
+                    Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
+                    var krRequest = context.Items[KR_REQUEST_KEY] as KestrunRequest
+                        ?? throw new InvalidOperationException($"{KR_REQUEST_KEY} key not found in context items.");
+                    var krResponse = context.Items[KR_RESPONSE_KEY] as KestrunResponse
+                        ?? throw new InvalidOperationException($"{KR_RESPONSE_KEY} key not found in context items.");
                     ps.AddScript(code);
                     // Execute the PowerShell script block
                     // Using Task.Run to avoid blocking the thread
                     Log.Verbose("Executing PowerShell script...");
                     // Using Task.Run to avoid blocking the thread
                     // This is necessary to prevent deadlocks in the runspace pool
-                    var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                    .ConfigureAwait(false);
+                     var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+                     .ConfigureAwait(false);
+                    //  var psResults = ps.Invoke();
+                    //var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
                     Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                     //  var psResults = await Task.Run(() => ps.Invoke());
@@ -712,7 +716,7 @@ namespace KestrumLib
             App = builder.Build();
             //  App.UsePowerShellRunspace(_runspacePool);
             App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
-            //  App.UseResponseCompression();
+             App.UseResponseCompression();
             _isConfigured = true;
         }
 

@@ -102,26 +102,17 @@ namespace KestrumLib
 
             return false;
         }
-        /// <summary>
-        /// Shortcut to send a file (as attachment or inline).
-        /// </summary>
-        /// <param name="filePath">Path to the file to send.</param>
-        /// <param name="inline">If true, the file will be sent inline.</param>
-        /// <param name="fileDownloadName">Optional download name for the file.</param> 
-        /// <param name="contentType">Optional content type. If not provided, it will be determined based on the file extension.</param>
-        /// <param name="statusCode">HTTP status code for the response.</param> 
-        /// <remarks>
-        /// If the response body is larger than the specified threshold (in bytes), async write will be used.
-        /// </remarks>
+
         public void WriteFileResponse(
             string? filePath,
-            bool inline = false,
-            string? fileDownloadName = null,
-            int statusCode = StatusCodes.Status200OK,
-            string? contentType = null,
-            bool embedFileContent = false
+            bool inline,
+            string? fileDownloadName,
+            string? contentType,
+            bool embedFileContent,
+            int statusCode = StatusCodes.Status200OK
         )
         {
+
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Writing file response,FilePath={FilePath} StatusCode={StatusCode}, ContentType={ContentType},EmbedFileContent={EmbedFileContent}, CurrentDirectory={CurrentDirectory}",
                     filePath, statusCode, contentType, embedFileContent, Directory.GetCurrentDirectory());
@@ -138,25 +129,23 @@ namespace KestrumLib
 
             var fi = new FileInfo(filePath);
             var provider = new FileExtensionContentTypeProvider();
-            if (contentType == null)
-            {
-                contentType = provider.TryGetContentType(filePath, out var ct)
+            contentType ??= provider.TryGetContentType(filePath, out var ct)
                     ? ct
                     : "application/octet-stream";
-                if (embedFileContent)
-                {
-                    // load entire file into Body
-                    if (IsTextBasedContentType(contentType))
-                        Body = File.ReadAllText(filePath, Encoding);
-                    else
-                        Body = File.ReadAllBytes(filePath);
-                }
+            if (embedFileContent)
+            {
+                // load entire file into Body
+                if (IsTextBasedContentType(contentType))
+                    Body = File.ReadAllText(filePath, Encoding);
                 else
-                {
-                    // body as stream
-                    Body = File.OpenRead(filePath);
-                }
+                    Body = File.ReadAllBytes(filePath);
             }
+            else
+            {
+                // body as stream
+                Body = File.OpenRead(filePath);
+            }
+
 
             if (IsTextBasedContentType(contentType) &&
                 !contentType.Contains("charset=", StringComparison.OrdinalIgnoreCase))
@@ -179,6 +168,7 @@ namespace KestrumLib
                 Type = dispType
             };
         }
+
         public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
         {
             WriteJsonResponse(inputObject, depth: 10, compress: false, statusCode: statusCode);
@@ -364,37 +354,61 @@ namespace KestrumLib
                     switch (Body)
                     {
                         case byte[] bytes:
-                            if (bytes.Length > BodyAsyncThreshold)
-                                await response.Body.WriteAsync(bytes);
-                            else
-                                response.Body.Write(bytes, 0, bytes.Length);
+
+                            await response.Body.WriteAsync(bytes, response.HttpContext.RequestAborted);
+                            await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
                         case System.IO.Stream stream:
-                            Log.Debug("Writing stream response, Length={Length}, CanSeek={CanSeek}", stream.Length, stream.CanSeek);
-                            if (stream.CanSeek && stream.Length > BodyAsyncThreshold)
+                            bool seekable = stream.CanSeek;
+                            Log.Debug("Sending stream (seekable={Seekable}, len={Len})",
+                                      seekable, seekable ? stream.Length : -1);
+
+                            // If you *do* know length, set header; otherwise strip it
+                            if (seekable)
                             {
-                                // If the stream is seekable and large, use async write
-                                await stream.CopyToAsync(response.Body);
-                                // Reset position if the stream is seekable
+                                // ensure caller did not already set Content-Length
+                                response.Headers["Content-Length"] = stream.Length.ToString();
                                 stream.Position = 0;
-                                Log.Debug("Stream position reset to 0 after copying to response body.");
                             }
-                            else if (!stream.CanSeek)
+                            else
                             {
-                                // If the stream is not seekable, we cannot reset position
-                                Log.Warning("Stream is not seekable, cannot reset position. Assuming live stream.");
-                                // If not seekable, we assume it's a live stream
-                                response.Headers.Remove("Content-Length"); // Content-Length is not reliable for streams
-                                await stream.CopyToAsync(response.Body);
+                                response.Headers.Remove("Content-Length");
                             }
 
+                            // copy async in 32 kB chunks (BodyAsyncThreshold is your buffer size)
+                            await stream.CopyToAsync(response.Body, BodyAsyncThreshold,
+                                                      response.HttpContext.RequestAborted);
+
+                            await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
+                        /*          Log.Debug("Writing stream response, Length={Length}, CanSeek={CanSeek}", stream.Length, stream.CanSeek);
+                                  if (stream.CanSeek && stream.Length > BodyAsyncThreshold)
+                                  {
+                                     // response.Headers.Remove("Content-Length"); // Content-Length is not reliable for streams
+                                      stream.Position = 0; // Reset position to start
+                                      // If the stream is seekable and large, use async write
+                                      await stream.CopyToAsync(response.Body);
+                                      // Reset position if the stream is seekable
+                                      stream.Position = 0;
+                                      Log.Debug("Stream position reset to 0 after copying to response body.");
+                                  }
+                                  else
+                                  {
+                                      // If the stream is seekable and small, write synchronously
+                                      stream.Position = 0; // Reset position to start
+                                      stream.CopyTo(response.Body);
+                                      Log.Debug("Stream position reset to 0 after copying to response body.");
+                                  }
+      */
                         case string str:
-                            var strBytes = AcceptCharset.GetBytes(str);
-                            if (strBytes.Length > BodyAsyncThreshold)
-                                await response.Body.WriteAsync(strBytes);
-                            else
-                                response.Body.Write(strBytes, 0, strBytes.Length);
+                            // Encode once
+                            var data = AcceptCharset.GetBytes(str);
+
+                            // Optionally set length (remove it if you prefer chunked for text)
+                            response.Headers["Content-Length"] = data.Length.ToString();
+
+                            await response.Body.WriteAsync(data, response.HttpContext.RequestAborted);
+                            await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                             break;
                         default:
                             var fallback = Body.ToString() ?? string.Empty;
