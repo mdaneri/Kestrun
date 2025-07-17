@@ -5,9 +5,17 @@ using Serilog;
 
 namespace KestrunLib
 {
+    /// <summary>
+    /// Helper methods for formatting and returning PowerShell build errors.
+    /// </summary>
     static class BuildError
     {
-
+        /// <summary>
+        /// Creates a text response containing the formatted error output from a
+        /// <see cref="PowerShell"/> instance.
+        /// </summary>
+        /// <param name="ps">PowerShell instance whose streams contain the errors.</param>
+        /// <returns>An <see cref="IResult"/> containing the error text with HTTP status 500.</returns>
         static public IResult Result(PowerShell ps)
         {
             // 500 + text body
@@ -16,6 +24,12 @@ namespace KestrunLib
 
 
 
+        /// <summary>
+        /// Formats all output streams from the provided <see cref="PowerShell"/>
+        /// into a single human readable string.
+        /// </summary>
+        /// <param name="ps">PowerShell instance whose stream contents will be read.</param>
+        /// <returns>Formatted error text containing errors, warnings and verbose messages.</returns>
         static public string Text(PowerShell ps)
         {
             ArgumentNullException.ThrowIfNull(ps);
@@ -57,7 +71,13 @@ namespace KestrunLib
             return msg;
         }
 
-        // Helper that writes the error to the response stream
+        /// <summary>
+        /// Writes the formatted PowerShell error output directly to an
+        /// <see cref="HttpContext"/> response with status code 500.
+        /// </summary>
+        /// <param name="context">The current HTTP context.</param>
+        /// <param name="ps">The PowerShell instance containing error information.</param>
+        /// <returns>A task that completes when the response body has been written.</returns>
         static public Task ResponseAsync(HttpContext context, PowerShell ps)
         {
             var errText = BuildError.Text(ps);               // plain string

@@ -8,6 +8,9 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace KestrumLib
 {
+    /// <summary>
+    /// Utility methods for converting objects to and from YAML.
+    /// </summary>
     public static class YamlHelper
     {
         private static readonly ISerializer _serializer = new SerializerBuilder()
@@ -18,21 +21,31 @@ namespace KestrumLib
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .Build();
 
-        // Serialize any PowerShell object to YAML
+        /// <summary>
+        /// Serializes any PowerShell object to YAML.
+        /// </summary>
+        /// <param name="input">Object to serialize.</param>
+        /// <returns>YAML string representing the object.</returns>
         public static string ToYaml(object? input)
         {
             var normalized = NormalizePSObject(input);
             return _serializer.Serialize(normalized);
         }
 
-        // Deserialize YAML into Hashtable
+        /// <summary>
+        /// Deserializes YAML into a <see cref="Hashtable"/>.
+        /// </summary>
+        /// <param name="yaml">YAML text.</param>
         public static Hashtable FromYamlToHashtable(string yaml)
         {
             var obj = _deserializer.Deserialize<object>(yaml);
             return (Hashtable)ConvertToPSCompatible(obj);
         }
 
-        // Deserialize YAML into PSCustomObject
+        /// <summary>
+        /// Deserializes YAML into a <see cref="PSObject"/>.
+        /// </summary>
+        /// <param name="yaml">YAML text.</param>
         public static PSObject FromYamlToPSCustomObject(string yaml)
         {
             var obj = _deserializer.Deserialize<object>(yaml);

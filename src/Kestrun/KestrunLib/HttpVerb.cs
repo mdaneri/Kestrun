@@ -1,5 +1,8 @@
 namespace KestrumLib
 {
+    /// <summary>
+    /// HTTP methods supported by Kestrun.
+    /// </summary>
     public enum HttpVerb
     {
         Get,
@@ -15,6 +18,11 @@ namespace KestrumLib
 
     public static class HttpVerbExtensions
     {
+        /// <summary>
+        /// Converts the <see cref="HttpVerb"/> to its uppercase string representation.
+        /// </summary>
+        /// <param name="v">The verb to convert.</param>
+        /// <returns>Uppercase string form of the verb.</returns>
         public static string ToMethodString(this HttpVerb v) => v.ToString().ToUpperInvariant();
     }
 }

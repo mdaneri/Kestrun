@@ -1,5 +1,8 @@
 namespace KestrumLib
 {
+    /// <summary>
+    /// Simplified representation of an incoming HTTP request used by script handlers.
+    /// </summary>
     public class KestrunRequest
     {
         public required string Method { get; set; }
@@ -8,6 +11,11 @@ namespace KestrumLib
         public required Dictionary<string, string> Headers { get; set; }
         public required string Body { get; set; }
 
+        /// <summary>
+        /// Creates a <see cref="KestrunRequest"/> from the provided <see cref="HttpContext"/>.
+        /// </summary>
+        /// <param name="context">The current HTTP context.</param>
+        /// <returns>A populated <see cref="KestrunRequest"/> instance.</returns>
         static public async Task<KestrunRequest> NewRequest(HttpContext context)
         {
             using var reader = new StreamReader(context.Request.Body);

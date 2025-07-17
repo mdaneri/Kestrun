@@ -7,10 +7,19 @@ using System.Xml.Linq;
 
 namespace KestrumLib;
 
+/// <summary>
+/// Helper for converting arbitrary objects into simple XML representations.
+/// </summary>
 public static class XmlUtil
 {
     private static readonly XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
 
+    /// <summary>
+    /// Converts any .NET object into an <see cref="XElement"/>.
+    /// </summary>
+    /// <param name="name">Element name.</param>
+    /// <param name="value">Object to serialize.</param>
+    /// <returns>An <see cref="XElement"/> representing the value.</returns>
     public static XElement ToXml(string name, object? value)
     {
         // 1️⃣ null  → <name xsi:nil="true"/>

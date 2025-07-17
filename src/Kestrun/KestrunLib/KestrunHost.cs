@@ -58,6 +58,12 @@ namespace KestrumLib
 
         // Accepts optional module paths (from PowerShell)
         #region Constructor
+        /// <summary>
+        /// Creates a new Kestrun host instance.
+        /// </summary>
+        /// <param name="appName">Optional application name used for logging.</param>
+        /// <param name="kestrunRoot">Root directory where scripts are located.</param>
+        /// <param name="modulePathsObj">Additional PowerShell module paths.</param>
         public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null)
         {
             KestrunRoot = kestrunRoot ?? Directory.GetCurrentDirectory();
@@ -141,6 +147,9 @@ namespace KestrumLib
         private List<ListenerOptions>? _listenerOptions;
 
 
+        /// <summary>
+        /// Adds a listener for the specified port and IP address.
+        /// </summary>
         public void ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -159,6 +168,9 @@ namespace KestrumLib
 
         }
 
+        /// <summary>
+        /// Convenience overload that configures an HTTP listener without TLS.
+        /// </summary>
         public void ConfigureListener(int port, IPAddress? ipAddress = null, bool useConnectionLogging = false)
         {
             ConfigureListener(port: port, ipAddress: ipAddress, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
@@ -196,6 +208,10 @@ namespace KestrumLib
         #region Python
 
 
+        /// <summary>
+        /// Sets the path to the Python runtime DLL used by Python.NET.
+        /// </summary>
+        /// <param name="path">Full filesystem path to pythonXY.dll.</param>
         static public void ConfigurePythonRuntimePath(string path)
         {
             Python.Runtime.Runtime.PythonDLL = path;
@@ -592,6 +608,9 @@ namespace KestrumLib
         #region Route
         public delegate Task KestrunHandler(KestrunRequest req, KestrunResponse res);
 
+        /// <summary>
+        /// Adds a native .NET route handler for a single HTTP verb.
+        /// </summary>
         public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -599,6 +618,9 @@ namespace KestrumLib
             AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler);
         }
 
+        /// <summary>
+        /// Adds a native .NET route handler supporting multiple HTTP verbs.
+        /// </summary>
         public void AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -615,16 +637,22 @@ namespace KestrumLib
             });
         }
 
+        /// <summary>
+        /// Adds a script-based route for a single HTTP verb.
+        /// </summary>
         public void AddRoute(string pattern,
                                          HttpVerb httpVerbs,
-                                           string scriptBlock,
-                                           ScriptLanguage language = ScriptLanguage.PowerShell,
-                                           string[]? extraImports = null,
-                                           Assembly[]? extraRefs = null)
+                                          string scriptBlock,
+                                          ScriptLanguage language = ScriptLanguage.PowerShell,
+                                          string[]? extraImports = null,
+                                          Assembly[]? extraRefs = null)
         {
             AddRoute(pattern, [httpVerbs], scriptBlock, language, extraImports, extraRefs);
         }
 
+        /// <summary>
+        /// Adds a script-based route supporting multiple HTTP verbs.
+        /// </summary>
         public void AddRoute(string pattern,
                                     IEnumerable<HttpVerb> httpVerbs,
                                     string scriptBlock,
@@ -680,11 +708,17 @@ namespace KestrumLib
 
         #endregion
         #region Configuration
+        /// <summary>
+        /// Stores Kestrel configuration options to be applied later.
+        /// </summary>
         public void ConfigureKestrel(KestrunOptions options)
         {
             _kestrelOptions = options;
         }
 
+        /// <summary>
+        /// Applies previously configured options and initializes services.
+        /// </summary>
         public void ApplyConfiguration()
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -696,6 +730,9 @@ namespace KestrumLib
             ApplyConfiguration(_kestrelOptions);
         }
 
+        /// <summary>
+        /// Applies the specified options to the underlying web host.
+        /// </summary>
         public void ApplyConfiguration(KestrunOptions options)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -776,6 +813,9 @@ namespace KestrumLib
         #endregion
         #region Run/Start/Stop
 
+        /// <summary>
+        /// Runs the web application using the configured options.
+        /// </summary>
         public void Run()
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -785,6 +825,9 @@ namespace KestrumLib
             App?.Run();
         }
 
+        /// <summary>
+        /// Starts the web application without blocking the calling thread.
+        /// </summary>
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -796,6 +839,9 @@ namespace KestrumLib
             }
         }
 
+        /// <summary>
+        /// Stops the web application gracefully.
+        /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -806,6 +852,9 @@ namespace KestrumLib
             }
         }
 
+        /// <summary>
+        /// Requests the application to stop.
+        /// </summary>
         public void Stop()
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -932,6 +981,9 @@ namespace KestrumLib
 
         #region Disposable
 
+        /// <summary>
+        /// Disposes the runspace pool and releases resources.
+        /// </summary>
         public void Dispose()
         {
             if (Log.IsEnabled(LogEventLevel.Debug))

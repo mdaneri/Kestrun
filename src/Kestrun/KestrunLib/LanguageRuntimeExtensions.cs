@@ -18,8 +18,13 @@ namespace KestrumLib
 
     public static class LanguageRuntimeExtensions
     {
-        /// Adds <see cref="configure"/> to a sub-pipeline that runs
-        /// only when the resolved endpoint is tagged with the given language.
+        /// <summary>
+        /// Adds <paramref name="configure"/> to a sub-pipeline that runs only when
+        /// the resolved endpoint is tagged with the specified language.
+        /// </summary>
+        /// <param name="app">Application builder.</param>
+        /// <param name="language">Language tag to filter on.</param>
+        /// <param name="configure">Callback to configure the sub-pipeline.</param>
         public static IApplicationBuilder UseLanguageRuntime(
             this IApplicationBuilder app,
             ScriptLanguage language,

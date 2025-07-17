@@ -14,6 +14,9 @@ using Microsoft.AspNetCore.WebUtilities;
 namespace KestrumLib
 {
 
+    /// <summary>
+    /// Represents common values for the Content-Disposition response header.
+    /// </summary>
     public enum ContentDispositionType
     {
         Attachment,
@@ -21,7 +24,7 @@ namespace KestrumLib
         NoContentDisposition
     }
     /// <summary>
-    /// Options for Content-Disposition header.
+    /// Options for the Content-Disposition response header.
     /// </summary>
     public struct ContentDispositionOptions
     {
@@ -34,6 +37,9 @@ namespace KestrumLib
         public string? FileName { get; set; }
         public ContentDispositionType Type { get; set; }
     }
+    /// <summary>
+    /// Represents an HTTP response that can be written by script handlers.
+    /// </summary>
     public class KestrunResponse
     {
 
@@ -69,6 +75,11 @@ namespace KestrumLib
         public int BodyAsyncThreshold { get; set; } = 8192; // 8 KB default
 
         #region Constructors
+        /// <summary>
+        /// Initializes a new instance of <see cref="KestrunResponse"/> for the specified request.
+        /// </summary>
+        /// <param name="request">Originating request.</param>
+        /// <param name="bodyAsyncThreshold">Threshold in bytes above which the body is written asynchronously.</param>
         public KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 8192)
         {
             Request = request ?? throw new ArgumentNullException(nameof(request));
@@ -78,11 +89,22 @@ namespace KestrumLib
         #endregion
 
         #region Helpers
+        /// <summary>
+        /// Retrieves a previously set response header value.
+        /// </summary>
+        /// <param name="key">Header name.</param>
+        /// <returns>The header value if present; otherwise <c>null</c>.</returns>
         public string? GetHeader(string key)
         {
             return Headers.TryGetValue(key, out var value) ? value : null;
         }
 
+        /// <summary>
+        /// Determines the response content type based on an explicit value or the Accept header.
+        /// </summary>
+        /// <param name="contentType">Explicit content type if provided.</param>
+        /// <param name="defaultType">Default type to use when none is specified.</param>
+        /// <returns>The chosen content type string.</returns>
         private string DetermineContentType(string? contentType, string defaultType = "text/plain")
         {
             if (string.IsNullOrWhiteSpace(contentType))
@@ -121,6 +143,12 @@ namespace KestrumLib
         #endregion
 
         #region  Response Writers
+        /// <summary>
+        /// Writes a file to the response and sets appropriate headers.
+        /// </summary>
+        /// <param name="filePath">Path to the file on disk.</param>
+        /// <param name="contentType">Optional MIME type override.</param>
+        /// <param name="statusCode">HTTP status code to send.</param>
         public void WriteFileResponse(
             string? filePath,
             string? contentType,
@@ -166,11 +194,23 @@ namespace KestrumLib
             ContentDisposition.Type = ContentDispositionType.Attachment;
         }
 
+        /// <summary>
+        /// Serializes the given object to JSON and writes it to the response body.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="statusCode">HTTP status code to send.</param>
         public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
         {
             WriteJsonResponse(inputObject, depth: 10, compress: false, statusCode: statusCode);
         }
 
+        /// <summary>
+        /// Serializes the object to JSON using custom serializer settings.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="serializerSettings">Settings controlling JSON serialization.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">Optional content type override.</param>
         public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -181,6 +221,11 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
+        /// <summary>
+        /// Writes a response in a format determined by the Accept header.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="statusCode">HTTP status code.</param>
         public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -207,6 +252,14 @@ namespace KestrumLib
             }
         }
 
+        /// <summary>
+        /// Writes JSON to the response with advanced options.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="depth">Maximum JSON depth.</param>
+        /// <param name="compress">Whether to omit whitespace.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">Optional content type override.</param>
         public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -225,6 +278,12 @@ namespace KestrumLib
             WriteJsonResponse(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
         }
 
+        /// <summary>
+        /// Serializes the object to YAML and writes it to the response.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">Optional content type override.</param>
         public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -235,6 +294,12 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
+        /// <summary>
+        /// Serializes the object to XML and writes it to the response body.
+        /// </summary>
+        /// <param name="inputObject">Object to serialize.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">Optional content type override.</param>
         public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -247,6 +312,12 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
+        /// <summary>
+        /// Writes a plain text response using <c>ToString()</c> on the object.
+        /// </summary>
+        /// <param name="inputObject">Object to output.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">Optional content type override.</param>
         public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
         {
 
@@ -261,6 +332,11 @@ namespace KestrumLib
             StatusCode = statusCode;
         }
 
+        /// <summary>
+        /// Issues a 302 redirect to the specified URL.
+        /// </summary>
+        /// <param name="url">Destination URL.</param>
+        /// <param name="message">Optional response body.</param>
         public void WriteRedirectResponse(string url, string? message = null)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -290,6 +366,12 @@ namespace KestrumLib
             }
 
         }
+        /// <summary>
+        /// Writes raw binary data to the response body.
+        /// </summary>
+        /// <param name="data">Byte array to send.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">MIME type of the data.</param>
         public void WriteBinaryResponse(byte[] data, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -300,6 +382,12 @@ namespace KestrumLib
             //       Headers["Content-Length"] = data.Length.ToString();
         }
 
+        /// <summary>
+        /// Writes the contents of a stream to the response body.
+        /// </summary>
+        /// <param name="stream">Stream to copy to the response.</param>
+        /// <param name="statusCode">HTTP status code.</param>
+        /// <param name="contentType">MIME type for the stream contents.</param>
         public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -447,6 +535,11 @@ namespace KestrumLib
         }
         #endregion
         #region Apply to HttpResponse
+        /// <summary>
+        /// Applies this response to an <see cref="HttpResponse"/> instance.
+        /// </summary>
+        /// <param name="response">The ASP.NET response to write to.</param>
+        /// <returns>A task that completes when the response has been flushed.</returns>
         public async Task ApplyTo(HttpResponse response)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
