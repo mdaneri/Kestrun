@@ -1,3 +1,12 @@
+<#
+.SYNOPSIS
+    Writes an object to the HTTP response body as JSON.
+
+.DESCRIPTION
+    Serializes the provided object to JSON using Newtonsoft.Json and writes it
+    to the current HTTP response. The caller can specify the HTTP status code,
+    serialization depth and formatting options.
+#>
 function Write-KrJsonResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -27,6 +36,14 @@ function Write-KrJsonResponse {
 }
 
 
+<#
+.SYNOPSIS
+    Writes an object to the HTTP response body as YAML.
+
+.DESCRIPTION
+    Serializes the provided object to YAML using the underlying C# helper and
+    sets the specified status code on the response.
+#>
 function Write-KrYamlResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -42,6 +59,14 @@ function Write-KrYamlResponse {
     }
 }
 
+<#
+.SYNOPSIS
+    Writes plain text to the HTTP response body.
+
+.DESCRIPTION
+    Sends a raw text payload to the client and optionally sets the HTTP status
+    code and content type.
+#>
 function Write-KrTextResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -57,6 +82,14 @@ function Write-KrTextResponse {
     }
 }
 
+<#
+.SYNOPSIS
+    Writes an object serialized as XML to the HTTP response.
+
+.DESCRIPTION
+    Converts the provided object to XML and writes it to the response body. The
+    status code and content type can be customized.
+#>
 function Write-KrXmlResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -72,6 +105,16 @@ function Write-KrXmlResponse {
     }
 }
 
+<#
+.SYNOPSIS
+    Sends a file as the HTTP response.
+
+.DESCRIPTION
+    Writes a file from disk to the response body. The file path is resolved
+    relative to the Kestrun root if required. Additional options allow
+    specifying the download name, forcing inline display and custom content
+    type.
+#>
 function Write-KrFileResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -99,6 +142,14 @@ function Write-KrFileResponse {
         Write-Error "Error writing file response: $_"
     }
 }
+<#
+.SYNOPSIS
+    Issues an HTTP redirect response to the client.
+
+.DESCRIPTION
+    Sets the Location header to the provided URL and optionally includes a
+    message body describing the redirect.
+#>
 function Write-KrRedirectResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -113,6 +164,14 @@ function Write-KrRedirectResponse {
 }
  
 
+<#
+.SYNOPSIS
+    Writes binary data directly to the HTTP response body.
+
+.DESCRIPTION
+    Sends a byte array to the client. Useful for returning images or other
+    binary content with a specified status code and content type.
+#>
 function Write-KrBinaryResponse {
     param(
         [Parameter(Mandatory = $true)]
@@ -128,6 +187,14 @@ function Write-KrBinaryResponse {
     }
 }
 
+<#
+.SYNOPSIS
+    Writes a stream to the HTTP response body.
+
+.DESCRIPTION
+    Copies the provided stream to the response output stream. Useful for
+    forwarding large files or custom streaming scenarios.
+#>
 function Write-KrStreamResponse {
     param(
         [Parameter(Mandatory = $true)]
