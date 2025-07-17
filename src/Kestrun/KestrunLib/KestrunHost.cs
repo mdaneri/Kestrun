@@ -429,6 +429,14 @@ namespace KestrumLib
                         .AddParameter("Value", krResponse)
                         .AddParameter("Scope", "Script");
 
+                    foreach (var kv in GlobalVariables.GetAllValues())
+                    {
+                        ps.AddCommand("Set-Variable")
+                          .AddParameter("Name", kv.Key)
+                          .AddParameter("Value", kv.Value ?? PSObject.AsPSObject(null)) // handle nulls
+                          .AddParameter("Scope", "Script")
+                          .AddStatement();
+                    }
                     // Run this once to inject variables into the runspace 
                     ps.Invoke();
                     // clear the commands so you can use ps.Invoke/InvokeAsync again later:
@@ -437,10 +445,29 @@ namespace KestrumLib
                     try
                     {
                         await _next(context);                // continue the pipeline
+
+                        foreach (var name in GlobalVariables.GetAllValues().Keys)
+                        {
+                            ps.AddCommand("Get-Variable")
+                              .AddParameter("Name", name)
+                              .AddParameter("Scope", "Script");
+                            var results = ps.Invoke();
+                            ps.Commands.Clear();
+
+                            if (results.Count > 0)
+                            {
+                                var newVal = results[0].BaseObject;
+                                GlobalVariables.UpdateValue(name, newVal);
+                            }
+                        }
                     }
                     finally
                     {
-                        context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
+                        if (ps != null)
+                        {
+                            ps.Dispose();
+                            context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -869,12 +896,25 @@ namespace KestrumLib
             {
                 iss.ImportPSModule([p]);
             }
+
+            // Inject global variables into all runspaces
+       /*     foreach (var kvp in GlobalVariables.GetAllValues())
+            {
+                // kvp.Key = "Visits", kvp.Value = 0
+                iss.Variables.Add(
+                    new SessionStateVariableEntry(
+                        kvp.Key,
+                        kvp.Value,
+                        "Global variable"
+                    )
+                );
+            }*/
             int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 
             Log.Information($"Creating runspace pool with max runspaces: {maxRs}");
             var runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss) ?? throw new InvalidOperationException("Failed to create runspace pool.");
             runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
-            runspacePool.SetMinRunspaces(1);
+            runspacePool.SetMinRunspaces(_kestrelOptions?.MinRunspaces ?? 1);
             runspacePool.SetMaxRunspaces(_kestrelOptions?.MaxRunspaces ?? Environment.ProcessorCount * 2);
 
             // Set the maximum number of runspaces to the specified value or default to 2x CPU cores

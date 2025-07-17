@@ -56,6 +56,12 @@ namespace KestrumLib
         /// Gets or sets the maximum number of runspaces to use for script execution.
         /// </summary>
         public int? MaxRunspaces { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the minimum number of runspaces to use for script execution.   
+        /// Defaults to 1.
+        /// </summary>
+        public int MinRunspaces { get; set; }
 
         // Add more properties as needed for your scenario.
     }

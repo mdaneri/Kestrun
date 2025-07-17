@@ -1,4 +1,5 @@
  
+function Set-KrServerOptions {
 <#
 .SYNOPSIS
     Configures advanced options and operational limits for a Kestrun server instance.
@@ -86,6 +87,16 @@
     If set to $true, disables internal string reuse optimizations, which may increase memory usage but can help with certain debugging scenarios. 
     Default: $false.
 
+.PARAMETER MaxRunspaces
+    Specifies the maximum number of runspaces to use for script execution.  
+    This can help control resource usage and concurrency in script execution.
+    Default: 2x CPU cores or as specified in the KestrunOptions.
+
+.PARAMETER MinRunspaces
+    Specifies the minimum number of runspaces to use for script execution. 
+    This ensures that at least a certain number of runspaces are always available for processing requests.
+    Default: 1.
+
 .EXAMPLE
     Set-KrServerOptions -Server $srv -MaxRequestBodySize 1000000
     Configures the server instance $srv to limit request body size to 1,000,000 bytes.
@@ -94,7 +105,7 @@
     All parameters are optional except for -Server. 
     Defaults are based on typical Kestrun server settings as of the latest release.
 #>
-function Set-KrServerOptions {
+ 
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [KestrumLib.KestrunHost]$Server,
@@ -115,7 +126,8 @@ function Set-KrServerOptions {
         [switch]$AllowAlternateSchemes,
         [switch]$AllowHostHeaderOverride,
         [switch]$DisableStringReuse,
-        [int]$MaxRunspaces
+        [int]$MaxRunspaces,
+        [int]$MinRunspaces = 1
     )
     $options = [KestrumLib.KestrunOptions]::new() 
     if ($MaxRequestBodySize -gt 0) {
@@ -171,6 +183,9 @@ function Set-KrServerOptions {
     }
     if ($MaxRunspaces -gt 0) {
         $options.MaxRunspaces = $MaxRunspaces
+    }
+    if ($MinRunspaces -gt 0) {
+        $options.MinRunspaces = $MinRunspaces
     }
     #RequestHeaderEncodingSelector 
     #ResponseHeaderEncodingSelector

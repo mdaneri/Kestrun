@@ -93,7 +93,10 @@
         'Get-KrCertificatePurpose',
         'New-KrSelfSignedCertificate',
         'New-KrCertificateRequest',
-        'Write-KrLog'
+        'Write-KrLog',
+        'Set-KrGlobalVar',
+        'Get-KrGlobalVar',
+        'Remove-KrGlobalVar'
     )
 
     # Variables to export from this module
