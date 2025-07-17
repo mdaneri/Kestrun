@@ -4,17 +4,23 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kestrun", "src\Kestrun\Kestrun.csproj", "{2DC5C603-9907-9D28-5F02-DC85B2C9099B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KestrunLib.Tests", "tests\KestrunLib.Tests\KestrunLib.Tests.csproj", "{9370B831-8AFA-4D0B-9A82-6CA24A331A18}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
+GlobalSection(ProjectConfigurationPlatforms) = postSolution
+{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{2DC5C603-9907-9D28-5F02-DC85B2C9099B}.Release|Any CPU.Build.0 = Release|Any CPU
+{9370B831-8AFA-4D0B-9A82-6CA24A331A18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{9370B831-8AFA-4D0B-9A82-6CA24A331A18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{9370B831-8AFA-4D0B-9A82-6CA24A331A18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{9370B831-8AFA-4D0B-9A82-6CA24A331A18}.Release|Any CPU.Build.0 = Release|Any CPU
+EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
