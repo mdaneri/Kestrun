@@ -5,10 +5,10 @@ using Serilog;
 
 namespace KestrunLib
 {
-    static class BuildError
+    public static class BuildError
     {
 
-        static public IResult Result(PowerShell ps)
+        public static IResult Result(PowerShell ps)
         {
             // 500 + text body
             return Results.Text(content: Text(ps), statusCode: 500, contentType: "text/plain; charset=utf-8");

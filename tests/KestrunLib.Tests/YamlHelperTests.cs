@@ -20,7 +20,8 @@ public class YamlHelperTests
         string yaml = "name: foo\nvalue: 1";
         var ht = YamlHelper.FromYamlToHashtable(yaml);
         Assert.Equal("foo", ht["name"]);
-        Assert.Equal(1, (int)(ht["value"]));
+        Assert.NotNull(ht["value"]);
+        Assert.Equal(1, Convert.ToInt32(ht["value"]));
     }
 
     [Fact]
