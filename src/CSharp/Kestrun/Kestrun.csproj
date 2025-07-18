@@ -103,6 +103,7 @@
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.11" />
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     <PackageReference Include="pythonnet" Version="3.0.5" />
     <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" />
 
@@ -116,10 +117,7 @@
     <ItemGroup>
       <KestrunOutputFiles Include="$(OutputPath)*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(KestrunOutputFiles)"
-      DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyPowerShellModuleOnPublish" AfterTargets="Publish">
@@ -127,24 +125,18 @@
     <ItemGroup>
       <PowerShellModuleFiles Include="$(ProjectRoot)\src\PowerShell\Kestrun\**\*" Exclude="$(ProjectRoot)src\PowerShell\Kestrun\lib\**\*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(PowerShellModuleFiles)"
-      DestinationFiles="@(PowerShellModuleFiles->'$(ProjectRoot)\publish\%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PowerShellModuleFiles)" DestinationFiles="@(PowerShellModuleFiles->'$(ProjectRoot)\publish\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 
     <!-- Copy Release DLLs to $(ProjectRoot)\publish\lib -->
     <ItemGroup>
       <ReleaseLibFiles Include="$(OutputPath)*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(ReleaseLibFiles)"
-      DestinationFolder="$(ProjectRoot)\publish\lib\"
-      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ReleaseLibFiles)" DestinationFolder="$(ProjectRoot)\publish\lib\" SkipUnchangedFiles="true" />
   </Target>
-<Target Name="CustomClean" AfterTargets="Clean">
-  <!-- Clean PowerShell lib directory -->
-  <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib" />
-  <!-- Clean publish directory -->
-  <RemoveDir Directories="$(ProjectRoot)\publish" />
-</Target>
+  <Target Name="CustomClean" AfterTargets="Clean">
+    <!-- Clean PowerShell lib directory -->
+    <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib" />
+    <!-- Clean publish directory -->
+    <RemoveDir Directories="$(ProjectRoot)\publish" />
+  </Target>
 </Project>

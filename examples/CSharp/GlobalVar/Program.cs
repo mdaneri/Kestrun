@@ -30,13 +30,13 @@ if (!File.Exists(modulePath))
 }
 
 // 1. Create server
-var server = new KestrunHost("MyKestrunServer", currentDir, new[] { modulePath });
+var server = new KestrunHost("MyKestrunServer", currentDir, [modulePath]);
 
 // 2. Set server options
 var options = new KestrunOptions
 {
 
-    AllowSynchronousIO = true,
+    AllowSynchronousIO = false, // Disable synchronous IO
     AddServerHeader = false // DenyServerHeader
 };
 
@@ -99,17 +99,16 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
  
         GlobalVariables.TryGet("Visits", out  Hashtable? visits);
    
-    int? visitCount = visits != null && visits["Count"] is int v ? v : (int?)null;
+    int visitCount = visits != null && visits["Count"] is int v ? v : 0;
 
-    if (visitCount != null)
+    if (visits != null && visits["Count"] is int)
     {
         res.WriteTextResponse($"Visits so far: {visitCount}", 200);
     }
     else
     {
         res.WriteErrorResponse("Visits variable not found or invalid.", 500);
-    }
-    
+    }    
     await Task.Yield();
 });
 

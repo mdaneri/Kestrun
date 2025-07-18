@@ -81,7 +81,7 @@ Add-AspNetCoreType -Version "net8"
  
 # Assert that the assembly is loaded
 Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
-Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
+#Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
 # load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 

@@ -203,7 +203,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @
 Add-KrRoute -Server $server -Verbs Get -Path "/cs/file" -Language CSharp -Code @"
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
-    Response.WriteFileResponse("C:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\README.md", true, "README.md",200,null, true);
+    Response.WriteFileResponse("C:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\README.md", null, 200);
 "@
 
 Add-KrRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {

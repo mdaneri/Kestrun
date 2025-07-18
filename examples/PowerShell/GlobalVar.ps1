@@ -69,5 +69,11 @@ Add-KrRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
     Write-KrTextResponse -inputObject "Incremented to $($Visits.Count)" -statusCode 200
 }
 
+Add-KrRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {
+    # $Visits is available
+    Write-KrRedirectResponse -Url '/show' -Message "Redirecting to /show"
+}
+
+
 # Start the server (blocking)
 Start-KrServer -Server $server
