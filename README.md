@@ -41,21 +41,21 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
 
 Clone the repository:
 
-```sh
+```pwsh
 git clone https://github.com/mdaneri/Kestrun.git
 cd Kestrun
 ```
 
 Build the C# projects:
 
-```sh
+```pwsh
 dotnet build
 ```
 
 Run an example (e.g., CSharpTest):
 
-```sh
-dotnet run --project examples/CSharpTest/CSharpTest.csproj
+```pwsh
+dotnet run --project .\examples\CSharp\MultiRoutes\MultiRoutes.csproj
 ```
 
 ### Using the PowerShell Module
