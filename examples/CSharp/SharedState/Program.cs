@@ -53,10 +53,10 @@ server.ConfigureListener(
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
 
-var globalVisits = new Hashtable();
-globalVisits["Count"] = 0; 
+var sharedVisits = new Hashtable();
+sharedVisits["Count"] = 0; 
 // 3.1 Inject global variable
-if (!Kestrun.GlobalVariables.Define("Visits", globalVisits, readOnly: false))
+if (!Kestrun.SharedState.Set("Visits", sharedVisits))
 {
     Console.WriteLine("Failed to define global variable 'Visits'.");
     Environment.Exit(1);
@@ -67,7 +67,7 @@ server.AddRoute("/ps/show", HttpVerb.Get,
 """
     # $Visits is available      
 
-    Write-KrTextResponse -inputObject "Runspace: $([runspace]::DefaultRunspace) - Visits(type:$($Visits.GetType().Name)) so far: $($Visits["Count"])" -statusCode 200
+    Write-KrTextResponse -inputObject "Runspace: $([runspace]::DefaultRunspace.Name) - Visits(type:$($Visits.GetType().Name)) so far: $($Visits["Count"])" -statusCode 200
 """,
             ScriptLanguage.PowerShell);
 
@@ -97,7 +97,7 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 {
     Console.WriteLine("Native C# route hit!");
  
-        GlobalVariables.TryGet("Visits", out  Hashtable? visits);
+        SharedState.TryGet("Visits", out  Hashtable? visits);
    
     int visitCount = visits != null && visits["Count"] is int v ? v : 0;
 

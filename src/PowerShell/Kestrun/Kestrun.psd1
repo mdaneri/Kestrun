@@ -97,9 +97,9 @@
         'New-KrSelfSignedCertificate',
         'New-KrCertificateRequest',
         'Write-KrLog',
-        'Set-KrGlobalVar',
-        'Get-KrGlobalVar',
-        'Remove-KrGlobalVar'
+        'Set-KrSharedState',
+        'Get-KrSharedState',
+        'Remove-KrSharedState'
          
     )
 

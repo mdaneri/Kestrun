@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CSharp", "CSharp", "{8222C3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Certificates", "examples\CSharp\Certificates\Certificates.csproj", "{5E26F88B-EA49-4D72-B258-FBBA783BEF19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlobalVar", "examples\CSharp\GlobalVar\GlobalVar.csproj", "{F1B2D528-1DF6-4D8F-B2BC-679600ED642B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedState", "examples\CSharp\SharedState\SharedState.csproj", "{F1B2D528-1DF6-4D8F-B2BC-679600ED642B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiRoutes", "examples\CSharp\MultiRoutes\MultiRoutes.csproj", "{3AC25E88-10F6-4BD8-A76D-2D44A577CAA4}"
 EndProject

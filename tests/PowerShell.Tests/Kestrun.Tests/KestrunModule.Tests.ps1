@@ -31,17 +31,17 @@ Describe 'Kestrun PowerShell Functions' {
         Remove-Variable Response -Scope Script -ErrorAction SilentlyContinue
     }
 
-    It 'Set-KrGlobalVar defines and retrieves values' {
-        Set-KrGlobalVar -Name 'psTestVar' -Value @(1, 2, 3)
-        (Get-KrGlobalVar -Name 'psTestVar').Count | Should -Be 3
+    It 'Set-KrSharedState defines and retrieves values' {
+        Set-KrSharedState -Name 'psTestVar' -Value @(1, 2, 3)
+        (Get-KrSharedState -Name 'psTestVar').Count | Should -Be 3
     }
 
-    It 'Remove-KrGlobalVar deletes value' {
+    It 'Remove-KrSharedState deletes value' {
         $value= @()
-        Set-KrGlobalVar -Name 'psToRemove' -Value @(1,2,3)
-        [Kestrun.GlobalVariables]::TryGet[object]('psToRemove', [ref]$value)| Should -BeTrue
-        Remove-KrGlobalVar -Name 'psToRemove'
-        [Kestrun.GlobalVariables]::TryGet[object]('psToRemove', [ref]$value) | Should -BeFalse
+        Set-KrSharedState -Name 'psToRemove' -Value @(1,2,3)
+        [Kestrun.SharedState]::TryGet[object]('psToRemove', [ref]$value)| Should -BeTrue
+        Remove-KrSharedState -Name 'psToRemove'
+        [Kestrun.SharedState]::TryGet[object]('psToRemove', [ref]$value) | Should -BeFalse
     }
 
     It 'Resolve-KrPath returns absolute path' {

@@ -1,5 +1,3 @@
-# GlobalVars.psm1
-
 <#
 .SYNOPSIS
     Defines or updates a global variable accessible across Kestrun scripts.
@@ -10,32 +8,24 @@
 .PARAMETER Name
     Name of the variable to create or update.
 .PARAMETER Value
-    Value to assign to the variable.
-.PARAMETER ReadOnly
-    If specified, the variable is created as read-only and cannot be changed
-    later.
+    Value to assign to the variable. 
 #>
-function Set-KrGlobalVar {
+function Set-KrSharedState {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Name,
 
         [Parameter(Mandatory)]
-        [object]$Value,
-
-        [switch]$ReadOnly
+        [object]$Value 
     )
 
     # Define or update the variable; throws if it was already read-only
-    $ok = [Kestrun.GlobalVariables]::Define(
+    $null = [Kestrun.SharedState]::Set(
         $Name,
-        $Value,
-        [bool]$ReadOnly.IsPresent
+        $Value 
     )
-    if (-not $ok) {
-        throw "Failed to set global variable '$Name' (read-only or name conflict)."
-    }
+   
 }
 
 <#
@@ -48,7 +38,7 @@ function Set-KrGlobalVar {
 .PARAMETER Name
     Name of the variable to retrieve.
 #>
-function Get-KrGlobalVar {
+function Get-KrSharedState {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]
@@ -56,7 +46,7 @@ function Get-KrGlobalVar {
     )
 
     # Retrieve (or $null if not defined)
-    [Kestrun.GlobalVariables]::Get($Name)
+    return [Kestrun.SharedState]::Get($Name)
 }
 
 <#
@@ -68,7 +58,7 @@ function Get-KrGlobalVar {
 .PARAMETER Name
     Name of the variable to remove.
 #>
-function Remove-KrGlobalVar {
+function Remove-KrSharedState {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -76,8 +66,6 @@ function Remove-KrGlobalVar {
     )
 
     # Remove only if not read-only
-    $ok = [Kestrun.GlobalVariables]::Remove($Name)
-    if (-not $ok) {
-        throw "Failed to remove global variable '$Name' (it may be read-only or not exist)."
-    }
+    $null = [Kestrun.SharedState]::Remove($Name)
+
 }

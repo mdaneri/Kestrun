@@ -340,7 +340,7 @@ namespace Kestrun
                                               .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
 
             // 1. Inject each global as a top-level script variable
-            var allGlobals = GlobalVariables.GetAllValues();
+            var allGlobals = SharedState.Snapshot();
             if (allGlobals.Count > 0)
             {
                 var sb = new StringBuilder();
@@ -822,7 +822,7 @@ namespace Kestrun
             }
 
             // Inject global variables into all runspaces
-            foreach (var kvp in GlobalVariables.GetAllValues())
+            foreach (var kvp in SharedState.Snapshot())
             {
                 // kvp.Key = "Visits", kvp.Value = 0
                 iss.Variables.Add(
