@@ -67,7 +67,8 @@ _ReSharper*/
 # Optional: Dotnet tools
 .tools/
 
-
+/src/PowerShell/Kestrun/lib
+# Optional: PowerShell specific
 cert.pfx 
 global.json 
 cert/devcert.crt
