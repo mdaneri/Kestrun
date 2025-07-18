@@ -25,3 +25,8 @@ jobs:
       with:
         dotnet-version: '8.0.x'
     - run: dotnet test tests/KestrunLib.Tests/KestrunLib.Tests.csproj --no-build
+    - name: Run PowerShell tests
+      shell: pwsh
+      run: |
+        Install-Module Pester -Force -Scope CurrentUser
+        Invoke-Pester -CI -Path tests/PowerShell.Tests
