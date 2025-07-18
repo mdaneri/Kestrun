@@ -12,7 +12,7 @@ function New-KsSelfSignedCertificate {
     $cert = New-KestrunSelfSignedCertificate -DnsName localhost,127.0.0.1 `
                 -KeyType Rsa -KeyLength 2048 -ValidDays 30 -Exportable
 #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)]
         [string[]]  $DnsName,
@@ -40,19 +40,21 @@ function New-KsSelfSignedCertificate {
         $Exportable.IsPresent
     )
 
-    return $Kcm::NewSelfSigned($opts)
+    if ($PSCmdlet.ShouldProcess("Create self-signed certificate for $($DnsName -join ', ')")) {
+        return $Kcm::NewSelfSigned($opts)
+    }
 }
 
 # ---------------------------------------------------------------------------
 function New-KsCertificateRequest {
-    <#
+<#
 .SYNOPSIS
     Creates a PEM-encoded CSR (and returns the private key).
 
 .EXAMPLE
     $csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' -Country US
 #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)]
         [string[]] $DnsName,
@@ -78,12 +80,14 @@ function New-KsCertificateRequest {
         $CommonName
     )
 
-    return $Kcm::NewCertificateRequest($opts)
+    if ($PSCmdlet.ShouldProcess("Create certificate request for $($DnsName -join ', ')")) {
+        return $Kcm::NewCertificateRequest($opts)
+    }
 }
 
 # ---------------------------------------------------------------------------
 function Import-KsCertificate {
-    <#
+<#
 .SYNOPSIS
     Imports a PFX/PEM certificate file and returns X509Certificate2.
 #>
@@ -103,7 +107,7 @@ function Import-KsCertificate {
 
 # ---------------------------------------------------------------------------
 function Export-KsCertificate {
-    <#
+<#
 .SYNOPSIS
     Exports an X509Certificate2 to PFX or PEM(+key).
 
@@ -131,7 +135,6 @@ function Export-KsCertificate {
 }
 
 # ---------------------------------------------------------------------------
- 
 function Test-KsCertificate {
     <#
 .SYNOPSIS
@@ -170,7 +173,7 @@ function Test-KsCertificate {
 
 # ---------------------------------------------------------------------------
 function Get-KsCertificatePurpose {
-    <#
+<#
 .SYNOPSIS
     Lists the Enhanced Key Usage values on a certificate.
 #>

@@ -1,11 +1,12 @@
- 
-function Set-KrServerOptions {
-<#
+
+function Set-KrServerOption {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    <#
 .SYNOPSIS
     Configures advanced options and operational limits for a Kestrun server instance.
 
 .DESCRIPTION
-    The Set-KrServerOptions function allows fine-grained configuration of a Kestrun server instance. 
+    The Set-KrServerOption function allows fine-grained configuration of a Kestrun server instance. 
     It enables administrators to control server behavior, resource usage, and protocol compliance by 
     setting limits on request sizes, connection counts, timeouts, and other operational parameters. 
     Each parameter is optional and, if not specified, the server will use its built-in default value.
@@ -88,24 +89,24 @@ function Set-KrServerOptions {
     Default: $false.
 
 .PARAMETER MaxRunspaces
-    Specifies the maximum number of runspaces to use for script execution.  
+    Specifies the maximum number of runspaces to use for script execution.
     This can help control resource usage and concurrency in script execution.
     Default: 2x CPU cores or as specified in the KestrunOptions.
 
 .PARAMETER MinRunspaces
-    Specifies the minimum number of runspaces to use for script execution. 
+    Specifies the minimum number of runspaces to use for script execution.
     This ensures that at least a certain number of runspaces are always available for processing requests.
     Default: 1.
 
 .EXAMPLE
-    Set-KrServerOptions -Server $srv -MaxRequestBodySize 1000000
+    Set-KrServerOption -Server $srv -MaxRequestBodySize 1000000
     Configures the server instance $srv to limit request body size to 1,000,000 bytes.
 
 .NOTES
-    All parameters are optional except for -Server. 
+    All parameters are optional except for -Server.
     Defaults are based on typical Kestrun server settings as of the latest release.
 #>
- 
+
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
@@ -129,70 +130,71 @@ function Set-KrServerOptions {
         [int]$MaxRunspaces,
         [int]$MinRunspaces = 1
     )
-    $options = [Kestrun.KestrunOptions]::new() 
-    if ($MaxRequestBodySize -gt 0) {
-        $options.Limits.MaxRequestBodySize = $MaxRequestBodySize
+    begin {
+        $options = [Kestrun.KestrunOptions]::new()
+        if ($MaxRequestBodySize -gt 0) {
+            $options.Limits.MaxRequestBodySize = $MaxRequestBodySize
+        }
+        if ($MaxConcurrentConnections -gt 0) {
+            $options.Limits.MaxConcurrentConnections = $MaxConcurrentConnections
+        }
+        if ($MaxRequestHeaderCount -gt 0) {
+            $options.Limits.MaxRequestHeaderCount = $MaxRequestHeaderCount
+        }
+        if ($KeepAliveTimeoutSeconds -gt 0) {
+            $options.Limits.KeepAliveTimeout = [TimeSpan]::FromSeconds($KeepAliveTimeoutSeconds)
+        }
+        if ($MaxRequestBufferSize -gt 0) {
+            $options.Limits.MaxRequestBufferSize = $MaxRequestBufferSize
+        }
+        if ($MaxRequestHeadersTotalSize -gt 0) {
+            $options.Limits.MaxRequestHeadersTotalSize = $MaxRequestHeadersTotalSize
+        }
+        if ($MaxRequestLineSize -gt 0) {
+            $options.Limits.MaxRequestLineSize = $MaxRequestLineSize
+        }
+        if ($MaxResponseBufferSize -gt 0) {
+            $options.Limits.MaxResponseBufferSize = $MaxResponseBufferSize
+        }
+        if ($null -ne $MinRequestBodyDataRate) {
+            $options.Limits.MinRequestBodyDataRate = $MinRequestBodyDataRate
+        }
+        if ($null -ne $MinResponseDataRate) {
+            $options.Limits.MinResponseDataRate = $MinResponseDataRate
+        }
+        if ($null -ne $RequestHeadersTimeout) {
+            $options.Limits.RequestHeadersTimeout = [TimeSpan]::FromSeconds($RequestHeadersTimeoutSeconds)
+        }
+        if ($AllowSynchronousIO.IsPresent) { 
+            $options.AllowSynchronousIO = $AllowSynchronousIO.IsPresent
+        }
+        if ($DisableResponseHeaderCompression.IsPresent) {
+            $options.AllowResponseHeaderCompression = $false
+        }
+        if ($DenyServerHeader.IsPresent) {
+            $options.AddServerHeader = $false
+        }
+        if ($AllowAlternateSchemes.IsPresent) {
+            $options.AllowAlternateSchemes = $true
+        }
+        if ($AllowHostHeaderOverride.IsPresent) {
+            $options.AllowHostHeaderOverride = $true
+        }
+        if ($DisableStringReuse.IsPresent) {
+            $options.DisableStringReuse = $true
+        }
+        if ($MaxRunspaces -gt 0) {
+            $options.MaxRunspaces = $MaxRunspaces
+        }
+        if ($MinRunspaces -gt 0) {
+            $options.MinRunspaces = $MinRunspaces
+        }
     }
-    if ($MaxConcurrentConnections -gt 0) {
-        $options.Limits.MaxConcurrentConnections = $MaxConcurrentConnections
+    process {
+        if ($PSCmdlet.ShouldProcess("Kestrun server", "Set server option(s)")) {
+            $Server.ConfigureKestrel($options)
+        }
     }
-    if ($MaxRequestHeaderCount -gt 0) {
-        $options.Limits.MaxRequestHeaderCount = $MaxRequestHeaderCount
-    }
-    if ($KeepAliveTimeoutSeconds -gt 0) {
-        $options.Limits.KeepAliveTimeout = [TimeSpan]::FromSeconds($KeepAliveTimeoutSeconds)
-    }
-    if ($MaxRequestBufferSize -gt 0) {
-        $options.Limits.MaxRequestBufferSize = $MaxRequestBufferSize
-    }
-    if ($MaxRequestHeadersTotalSize -gt 0) {
-        $options.Limits.MaxRequestHeadersTotalSize = $MaxRequestHeadersTotalSize
-    }
-    if ($MaxRequestLineSize -gt 0) {
-        $options.Limits.MaxRequestLineSize = $MaxRequestLineSize
-    }
-    if ($MaxResponseBufferSize -gt 0) {
-        $options.Limits.MaxResponseBufferSize = $MaxResponseBufferSize
-    }
-    if ($null -ne $MinRequestBodyDataRate) {
-        $options.Limits.MinRequestBodyDataRate = $MinRequestBodyDataRate
-    }
-    if ($null -ne $MinResponseDataRate) {
-        $options.Limits.MinResponseDataRate = $MinResponseDataRate
-    }
-    if ($null -ne $RequestHeadersTimeout) {
-        $options.Limits.RequestHeadersTimeout = [TimeSpan]::FromSeconds($RequestHeadersTimeoutSeconds)
-    }
-    if ($AllowSynchronousIO.IsPresent) { 
-        $options.AllowSynchronousIO = $AllowSynchronousIO.IsPresent 
-    }
-    if ($DisableResponseHeaderCompression.IsPresent) {
-        $options.AllowResponseHeaderCompression = $false
-    }
-    if ($DenyServerHeader.IsPresent) {
-        $options.AddServerHeader = $false
-    }
-    if ($AllowAlternateSchemes.IsPresent) {
-        $options.AllowAlternateSchemes = $true
-    }
-    if ($AllowHostHeaderOverride.IsPresent) {
-        $options.AllowHostHeaderOverride = $true
-    }
-    if ($DisableStringReuse.IsPresent) {
-        $options.DisableStringReuse = $true
-    }
-    if ($MaxRunspaces -gt 0) {
-        $options.MaxRunspaces = $MaxRunspaces
-    }
-    if ($MinRunspaces -gt 0) {
-        $options.MinRunspaces = $MinRunspaces
-    }
-    #RequestHeaderEncodingSelector 
-    #ResponseHeaderEncodingSelector
-
-    #limits.http2
-    #limits.http3
-    $Server.ConfigureKestrel($options)
 }
 
 
@@ -205,7 +207,7 @@ function Add-KrListener {
 
         [Parameter(Mandatory = $true)]
         [int]$Port,
-        
+
         [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Any,
         [Parameter(mandatory = $true, ParameterSetName = "CertFile")]
         [string]$CertPath,
@@ -223,38 +225,43 @@ function Add-KrListener {
         [Parameter()]
         [switch]$UseConnectionLogging
     )
- 
 
-    if ($null -eq $Protocols) {
-        if ($PSCmdlet.ParameterSetName -eq "NoCert") {
-            $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1
+    process {
+        if ($null -eq $Protocols) {
+            if ($PSCmdlet.ParameterSetName -eq "NoCert") {
+                $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1
+            }
+            else {
+                $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1OrHttp2
+            }
         }
-        else {
-            $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1OrHttp2
+        if ($PSCmdlet.ParameterSetName -eq "CertFile") {
+            if (-not (Test-Path $CertPath)) {
+                throw "Certificate file not found: $CertPath"
+            }
+            $X509Certificate = Import-KestrunCertificate -Path $CertPath -Password $CertPassword
         }
-    } 
-    if ($PSCmdlet.ParameterSetName -eq "CertFile") {
-        if (-not (Test-Path $CertPath)) {
-            throw "Certificate file not found: $CertPath"
-        }
-        $X509Certificate = Import-KestrunCertificate -Path $CertPath -Password $CertPassword
+
+
+        $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)
     }
-
-
-    $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)
 }
 
 
 function New-KrServer {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Name
     )
-    $loadedModules = Get-UserImportedModule
-    $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
-    $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths)
-    return $server
+    process {
+        $loadedModules = Get-UserImportedModule
+        $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
+        if ($PSCmdlet.ShouldProcess("Kestrun server '$Name'", "Create new server instance")) {
+            $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths)
+            return $server
+        }
+    }
 }
 
 
@@ -279,12 +286,16 @@ function Add-KrRoute {
         [System.Reflection.Assembly[]]$ExtraRefs = $null
 
     )
-    $server.ApplyConfiguration()
-    if ($PSCmdlet.ParameterSetName -eq "Code") {
-        $Server.AddRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
+    begin {
+        $Server.ApplyConfiguration()
     }
-    else {
-        $Server.AddRoute($Path, $Verbs, $ScriptBlock.ToString(), [Kestrun.ScriptLanguage]::PowerShell)
+    process {
+        if ($PSCmdlet.ParameterSetName -eq "Code") {
+            $Server.AddRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
+        }
+        else {
+            $Server.AddRoute($Path, $Verbs, $ScriptBlock.ToString(), [Kestrun.ScriptLanguage]::PowerShell)
+        }
     }
 }
 
@@ -292,37 +303,42 @@ function Add-KrRoute {
 
 
 function Start-KrServer {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
         [switch]$NoWait
-    ) 
-    # Start the Kestrel server
-    Write-Output "Starting Kestrun ..."
-    $Server.StartAsync() | Out-Null
-    if (-not $NoWait.IsPresent) {
-        # Intercept Ctrl+C and gracefully stop the Kestrun server
-        try {
-            [Console]::TreatControlCAsInput = $true
-            while ($true) {
-                if ([Console]::KeyAvailable) {
-                    $key = [Console]::ReadKey($true)
-                    if (($key.Modifiers -eq 'Control') -and ($key.Key -eq 'C')) {
-                        Write-Host "Ctrl+C detected. Stopping Kestrun server..."
-                        $server.StopAsync().Wait()
-                        break
+    )
+    process {
+        foreach ($srv in $Server) {
+            if ($PSCmdlet.ShouldProcess("Kestrun server", "Start")) {
+                # Start the Kestrel server
+                Write-Output "Starting Kestrun ..."
+                $srv.StartAsync() | Out-Null
+                if (-not $NoWait.IsPresent) {
+                    # Intercept Ctrl+C and gracefully stop the Kestrun server
+                    try {
+                        [Console]::TreatControlCAsInput = $true
+                        while ($true) {
+                            if ([Console]::KeyAvailable) {
+                                $key = [Console]::ReadKey($true)
+                                if (($key.Modifiers -eq 'Control') -and ($key.Key -eq 'C')) {
+                                    Write-Host "Ctrl+C detected. Stopping Kestrun server..."
+                                    $srv.StopAsync().Wait()
+                                    break
+                                }
+                            }
+                            Start-Sleep -Milliseconds 100
+                        }
+                    }
+                    finally {
+                        # Ensure the server is stopped on exit
+                        Write-Host "Script exiting. Ensuring server is stopped..."
+                        $srv.StopAsync().Wait()
                     }
                 }
-                Start-Sleep -Milliseconds 100
             }
-        }
-        finally {
-            # Ensure the server is stopped on exit
-            Write-Host "Script exiting. Ensuring server is stopped..."
-            $server.StopAsync().Wait()
         }
     }
 }
- 
- 

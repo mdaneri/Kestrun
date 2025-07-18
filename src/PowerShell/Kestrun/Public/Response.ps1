@@ -31,7 +31,7 @@ function Write-KrJsonResponse {
         $serializerSettings.MaxDepth = $Depth
         $serializerSettings.DateFormatHandling = [Newtonsoft.Json.DateFormatHandling]::IsoDateFormat
         # Call the C# method on the $Response object
-        $Response.WriteJsonResponse($InputObject, $serializerSettings, $ContentType)
+        $Response.WriteJsonResponse($InputObject, $serializerSettings, $StatusCode, $ContentType)
     }
 }
 
@@ -120,19 +120,27 @@ function Write-KrFileResponse {
         [Parameter(Mandatory = $true)]
         [string]$FilePath,
         [Parameter()]
+        [string]$ContentType,
+        [Parameter()]
         [int]$StatusCode = 200,
         [Parameter()]
         [string]$FileDownloadName,
         [Parameter()]
-        [switch]$Inline,
-        [Parameter()]
-        [string]$ContentType 
+        [Kestrun.ContentDispositionType]$ContentDisposition = [Kestrun.ContentDispositionType]::NoContentDisposition
     )
 
     try {
         if ($null -ne $Response) {
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
-            Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
+            Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath" 
+            if ($ContentDisposition -ne [Kestrun.ContentDispositionType]::NoContentDisposition) {
+                $Response.ContentDisposition.Type = $ContentDisposition.ToString()
+            }
+
+            if (!([string]::IsNullOrEmpty($FileDownloadName))) {
+                $Response.ContentDisposition.FileName = $FileDownloadName
+            }
+
             # Call the C# method on the $Response object
             $Response.WriteFileResponse($resolvedPath, $ContentType, $StatusCode)
             Write-Information "File response written for $FilePath with download name $FileDownloadName"

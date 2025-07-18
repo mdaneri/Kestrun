@@ -11,6 +11,7 @@ using System.Buffers;
 using Microsoft.Extensions.FileProviders;
 using System.Net.Mime;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Net;
 namespace Kestrun
 {
 
@@ -23,7 +24,7 @@ namespace Kestrun
     /// <summary>
     /// Options for Content-Disposition header.
     /// </summary>
-    public struct ContentDispositionOptions
+    public class ContentDispositionOptions
     {
         public ContentDispositionOptions()
         {
@@ -33,6 +34,20 @@ namespace Kestrun
 
         public string? FileName { get; set; }
         public ContentDispositionType Type { get; set; }
+
+        public override string ToString()
+        {
+            if (Type == ContentDispositionType.NoContentDisposition)
+                return string.Empty;
+
+            var disposition = Type == ContentDispositionType.Attachment ? "attachment" : "inline";
+            if (string.IsNullOrEmpty(FileName))
+                return disposition;
+
+            // Escape the filename to handle special characters
+            var escapedFileName = WebUtility.UrlEncode(FileName);
+            return $"{disposition}; filename=\"{escapedFileName}\"";
+        }
     }
     public class KestrunResponse
     {
@@ -53,7 +68,7 @@ namespace Kestrun
         /// <summary>
         /// Content-Disposition header value.
         /// </summary>
-        public ContentDispositionOptions ContentDisposition = new();
+        public ContentDispositionOptions ContentDisposition { get; set; }  
         public KestrunRequest Request { get; private set; }
 
         /// <summary>
@@ -74,6 +89,7 @@ namespace Kestrun
             Request = request ?? throw new ArgumentNullException(nameof(request));
             AcceptCharset = request.Headers.TryGetValue("Accept-Charset", out string? value) ? Encoding.GetEncoding(value) : Encoding.UTF8; // Default to UTF-8 if null
             BodyAsyncThreshold = bodyAsyncThreshold;
+            ContentDisposition = new ContentDispositionOptions();
         }
         #endregion
 
@@ -151,19 +167,17 @@ namespace Kestrun
             var physicalProvider = new PhysicalFileProvider(directory);
             IFileInfo fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
             var provider = new FileExtensionContentTypeProvider();
-            contentType ??= provider.TryGetContentType(filePath, out var ct)
+            contentType ??= provider.TryGetContentType(fullPath, out var ct)
                     ? ct
                     : "application/octet-stream";
             Body = fi;
 
             // headers & metadata
             StatusCode = statusCode;
-            ContentType = contentType;
-            Headers["Content-Length"] = fi.Length.ToString();
-
-            // content‑disposition 
-            ContentDisposition.FileName = fi.Name;
-            ContentDisposition.Type = ContentDispositionType.Attachment;
+            ContentType = contentType; 
+            Log.Debug("File response prepared: FileName={FileName}, Length={Length}, ContentType={ContentType}",
+                fi.Name, fi.Length, ContentType);
+      
         }
 
         public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
@@ -446,6 +460,7 @@ namespace Kestrun
             }
         }
         #endregion
+
         #region Apply to HttpResponse
         public async Task ApplyTo(HttpResponse response)
         {
@@ -471,6 +486,11 @@ namespace Kestrun
                 response.ContentType = ContentType;
                 if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
                 {
+                    // Set Content-Disposition header based on type
+                    // Use the ContentDispositionType enum to determine the disposition value
+                    if (Log.IsEnabled(LogEventLevel.Debug))
+                        Log.Debug("Setting Content-Disposition header, Type={Type}, FileName={FileName}",
+                                  ContentDisposition.Type, ContentDisposition.FileName);
                     string dispositionValue = ContentDisposition.Type switch
                     {
                         ContentDispositionType.Attachment => "attachment",
@@ -478,9 +498,18 @@ namespace Kestrun
                         _ => throw new InvalidOperationException("Invalid Content-Disposition type")
                     };
 
+                    // If no filename is provided, use the default filename based on the body type
+                    if (string.IsNullOrEmpty(ContentDisposition.FileName) && Body is not null && Body is IFileInfo fileInfo)
+                    {
+                        ContentDisposition.FileName = fileInfo.Name;// If no filename is provided, use the file's name
+                    }
+
+                    // If a filename is provided, append it to the disposition value
                     if (!string.IsNullOrEmpty(ContentDisposition.FileName))
                     {
-                        dispositionValue += $"; filename=\"{ContentDisposition.FileName}\"";
+                        // Escape the filename to handle special characters
+                        var escapedFileName = WebUtility.UrlEncode(ContentDisposition.FileName);
+                        dispositionValue += $"; filename=\"{escapedFileName}\"";
                     }
                     response.Headers.Append("Content-Disposition", dispositionValue);
 

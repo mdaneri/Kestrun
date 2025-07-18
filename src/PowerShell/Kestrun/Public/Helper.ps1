@@ -24,7 +24,7 @@
     Set-KrPythonRuntime -Path '/opt/python312/lib/libpython3.12.so' -Force
 #>
 function Set-KrPythonRuntime {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [string] $Path,
         [switch] $Force
@@ -76,29 +76,17 @@ function Set-KrPythonRuntime {
     $Path = (Resolve-Path $Path).Path
     Write-Verbose "pythonnet will use: $Path"
 
-    # If pythonnet already loaded: update in-process
-    [Python.Runtime.Runtime]::PythonDLL = $Path
+    if ($PSCmdlet.ShouldProcess($Path, "Set pythonnet runtime DLL")) {
+        # If pythonnet already loaded: update in-process
+        [Python.Runtime.Runtime]::PythonDLL = $Path
+    }
 
     return $Path
 }
 
-<#>
-function Resolve-KrPath {
-    param (
-        [string] $Path,
-        [switch] $Force
-    )
-    Write-KrLog -level "Verbose" -Message "Resolve-KrPath : Relative Path :$($script:KestrunRoot)"
-    $resolved = (Resolve-Path -Path $Path -RelativeBasePath $script:KestrunRoot -ErrorAction SilentlyContinue)
-    if ($null -eq $resolved) {
-        return $Path
-    }
-    return $resolved.Path 
-}#>
- 
-
 function Resolve-KrPath {
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
         [string] $Path,
@@ -156,7 +144,7 @@ function Resolve-KrPath {
         return $full
     }
 }
- 
+
 function Get-KestrunRoot {
     return $script:KestrunRoot
 }

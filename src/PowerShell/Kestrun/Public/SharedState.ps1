@@ -8,10 +8,10 @@
 .PARAMETER Name
     Name of the variable to create or update.
 .PARAMETER Value
-    Value to assign to the variable. 
+    Value to assign to the variable.
 #>
 function Set-KrSharedState {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)]
         [string]$Name,
@@ -20,12 +20,13 @@ function Set-KrSharedState {
         [object]$Value 
     )
 
-    # Define or update the variable; throws if it was already read-only
-    $null = [Kestrun.SharedState]::Set(
-        $Name,
-        $Value 
-    )
-   
+    if ($PSCmdlet.ShouldProcess("Kestrun shared variable '$Name'", "Set")) {
+        # Define or update the variable; throws if it was already read-only
+        $null = [Kestrun.SharedState]::Set(
+            $Name,
+            $Value
+        )
+    }
 }
 
 <#
@@ -41,7 +42,7 @@ function Set-KrSharedState {
 function Get-KrSharedState {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, ValueFromPipeline)]
+        [Parameter(Mandatory)]
         [string]$Name
     )
 
@@ -59,13 +60,14 @@ function Get-KrSharedState {
     Name of the variable to remove.
 #>
 function Remove-KrSharedState {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)]
         [string]$Name
     )
 
-    # Remove only if not read-only
-    $null = [Kestrun.SharedState]::Remove($Name)
+    if ($PSCmdlet.ShouldProcess("Kestrun shared variable '$Name'", "Remove")) {
+        $null = [Kestrun.SharedState]::Remove($Name)
+    }
 
 }

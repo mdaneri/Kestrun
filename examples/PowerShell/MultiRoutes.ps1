@@ -1,5 +1,7 @@
 
- <# 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
+param()
+<#
 .SYNOPSIS
     Kestrun PowerShell Example: Multi Routes
 .DESCRIPTION
@@ -29,7 +31,6 @@ catch {
 
 $server = New-KrServer -Name "MyKestrunServer"
 
-  
 if (Test-Path "$ScriptPath\devcert.pfx" ) {
     $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
@@ -45,7 +46,7 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
 }
                  
 # Example usage:
-Set-KrServerOptions -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
+Set-KrServerOption -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
  
 # Configure the listener (adjust port, cert path, and password)
 Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
@@ -69,8 +70,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
         RequestMethod  = $Request.Method
         RequestPath    = $Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body 
-        
+        RequestBody    = $Request.Body
     }
     Write-KrJsonResponse -inputObject $payload -statusCode 200
 }
@@ -88,8 +88,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
         RequestMethod  = $Request.Method
         RequestPath    = $Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body 
-        
+        RequestBody    = $Request.Body
     } 
     Write-KrYamlResponse -inputObject $payload -statusCode 200
 }
@@ -126,8 +125,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
         RequestMethod  = $Request.Method
         RequestPath    = $Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body 
-        
+        RequestBody    = $Request.Body
     } | Format-Table | Out-String
     Write-KrTextResponse -inputObject $payload -statusCode 200
 }
@@ -136,7 +134,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
 Add-KrRoute -Server $server -Verbs Get -Path "/ps/file" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - file Response"
-    Write-KrFileResponse -FilePath "C:\Users\m_dan\Documents\GitHub\Kestrun\README.md" -FileDownloadName "README.md" -Inline   -statusCode 200 -EmbedFileContent
+    Write-KrFileResponse -FilePath "..\..\README.md" -FileDownloadName "README.md" -ContentDisposition Inline -statusCode 200 -ContentType "text/markdown"
 }
 
 Add-KrRoute -Server $server -Verbs Get -Path "/cs/xml" -Language CSharp -Code @"
