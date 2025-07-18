@@ -32,7 +32,7 @@ function Add-AspNetCoreType {
         [string]$Version = "net8"
     )
     $versionNumber = $Version.Substring(3)
-    $dotnetPath = (Get-Command -Name "dotnet.exe" -ErrorAction Stop).Source
+    $dotnetPath = (Get-Command -Name "dotnet" -ErrorAction Stop).Source
     $dotnetDir = Split-Path -Path $dotnetPath -Parent
     if (-not $dotnetDir) {
         throw "Could not determine the path to the dotnet executable."
