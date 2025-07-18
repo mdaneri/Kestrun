@@ -2,27 +2,23 @@
 using System.Collections.Generic;
 using System.Collections;
 using System.Net;
-using KestrumLib;
+using Kestrun;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
 
-
+ 
 var currentDir = Directory.GetCurrentDirectory();
 var parentDirInfo = Directory.GetParent(currentDir);
-if (parentDirInfo == null)
-{
-    Console.WriteLine("Unable to determine the parent directory for current path.");
-    return;
-}
-if (parentDirInfo.Parent == null || parentDirInfo.Parent.Parent == null)
+if (parentDirInfo == null || parentDirInfo.Parent == null|| parentDirInfo.Parent.Parent == null)
 {
     Console.WriteLine("Unable to determine the parent directory for module path.");
     return;
-}
+} 
 string modulePath = Path.Combine(
     parentDirInfo.Parent.Parent.FullName,
-    "src",
+    "src","PowerShell",
+    "Kestrun",
     "Kestrun.psm1"
 );
 
@@ -60,7 +56,7 @@ server.ConfigureListener(
 var globalVisits = new Hashtable();
 globalVisits["Count"] = 0; 
 // 3.1 Inject global variable
-if (!KestrumLib.GlobalVariables.Define("Visits", globalVisits, readOnly: false))
+if (!Kestrun.GlobalVariables.Define("Visits", globalVisits, readOnly: false))
 {
     Console.WriteLine("Failed to define global variable 'Visits'.");
     Environment.Exit(1);
@@ -80,7 +76,7 @@ server.AddRoute("/ps/visit", HttpVerb.Get,
     # increment the injected variable
     $Visits["Count"]++
     Write-KrTextResponse -inputObject "Runspace: $(([runspace]::DefaultRunspace).Name) - Incremented Visits(type:$($Visits.GetType().Name)) to $($Visits["Count"])" -statusCode 200
-""", KestrumLib.ScriptLanguage.PowerShell);
+""", Kestrun.ScriptLanguage.PowerShell);
 
 /*
 server.AddRoute("/cs/show", HttpVerb.Get,
@@ -95,7 +91,7 @@ server.AddRoute("/cs/visit", HttpVerb.Get, """
     $Visits++
 
     Response.WriteTextResponse($"Incremented to {visits}", 200);
-""", KestrumLib.ScriptLanguage.CSharp);*/
+""", Kestrun.ScriptLanguage.CSharp);*/
 
 server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 {
@@ -103,7 +99,7 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
  
         GlobalVariables.TryGet("Visits", out  Hashtable? visits);
    
-    int visitCount = visits != null && visits["Count"] is int v ? v : null;
+    int? visitCount = visits != null && visits["Count"] is int v ? v : (int?)null;
 
     if (visitCount != null)
     {

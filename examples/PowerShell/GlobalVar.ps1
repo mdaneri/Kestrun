@@ -1,20 +1,39 @@
-# app.ps1
+<# 
+.SYNOPSIS
+    Kestrun PowerShell Example: Global Variable Usage
+.DESCRIPTION
+    This script demonstrates how to define, retrieve, and remove global variables
+    in Kestrun, a PowerShell web server framework.
+#>
 
 try {
-    $ScriptPath   = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $ExamplesPath = Split-Path -Parent $ScriptPath
-    $RootPath     = Split-Path -Parent $ExamplesPath
+    # Get the path of the current script
+    # This allows the script to be run from any location
+    $ScriptPath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
+    # Determine the script path and Kestrun module path
+    $examplesPath = (Split-Path -Parent ($ScriptPath))
+    # Get the parent directory of the examples path
+    # This is useful for locating the Kestrun module
+    $kestrunPath = Split-Path -Parent -Path $examplesPath
+    # Construct the path to the Kestrun module
+    # This assumes the Kestrun module is located in the src/PowerShell/Kestr
+    $kestrunModulePath = "$kestrunPath/src/PowerShell/Kestrun/Kestrun.psm1"
 
     # Import Kestrun module (from source if present, otherwise the installed module)
-    $kestrunModule = "$RootPath/src/Kestrun.psm1"
-    if (Test-Path $kestrunModule -PathType Leaf) {
-        Import-Module $kestrunModule -Force -ErrorAction Stop
+    if (Test-Path $kestrunModulePath -PathType Leaf) {
+        # Import the Kestrun module from the source path if it exists
+        # This allows for development and testing of the module without needing to install it
+        Import-Module $kestrunModulePath -Force -ErrorAction Stop
     }
     else {
+        # If the source module does not exist, import the installed Kestrun module
+        # This is useful for running the script in a production environment where the module is installed
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
 }
 catch {
+    # If the import fails, output an error message and exit
+    # This ensures that the script does not continue running if the module cannot be loaded
     Write-Error "Failed to import Kestrun module: $_"
     exit 1
 }
@@ -26,7 +45,7 @@ $server = New-KrServer -Name 'MyKestrunServer'
 Add-KrListener -Server $server -Port 5000  
 
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrGlobalVar -Name 'Visits' -Value 0
+Set-KrGlobalVar -Name 'Visits' -Value @{Count = 0}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Route: GET /show
@@ -35,7 +54,7 @@ Set-KrGlobalVar -Name 'Visits' -Value 0
 # ─────────────────────────────────────────────────────────────────────────────
 Add-KrRoute -Server $server -Verbs Get -Path '/show' -ScriptBlock {
     # $Visits is available
-    Write-KrTextResponse -inputObject "Visits so far: $Visits" -statusCode 200
+    Write-KrTextResponse -inputObject "Visits so far: $($Visits.Count)" -statusCode 200
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -45,9 +64,9 @@ Add-KrRoute -Server $server -Verbs Get -Path '/show' -ScriptBlock {
 # ─────────────────────────────────────────────────────────────────────────────
 Add-KrRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
     # increment the injected variable
-    $Visits++
- 
-    Write-KrTextResponse -inputObject "Incremented to $Visits" -statusCode 200
+    $Visits.Count++
+
+    Write-KrTextResponse -inputObject "Incremented to $($Visits.Count)" -statusCode 200
 }
 
 # Start the server (blocking)

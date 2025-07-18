@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Kestrun\Kestrun.csproj" />
+    <ProjectReference Include="..\..\..\src\CSharp\Kestrun\Kestrun.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

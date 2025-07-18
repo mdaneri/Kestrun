@@ -2,12 +2,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build CSharpTest",
+            "label": "build MultiRoutes",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/examples/CSharpTest/CSharpTest.csproj"
+                "${workspaceFolder}/examples/CSharp/MultiRoutes/MultiRoutes.csproj"
             ],
             "problemMatcher": "$msCompile"
         },

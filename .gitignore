@@ -83,3 +83,4 @@ cert/devcert.crt
 examples/CSharpTest/test.bin
 /examples/Files/LargeFiles
 testResults.xml
+/publish

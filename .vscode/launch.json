@@ -1,26 +1,32 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
-         {
-            "name": "PowerShell: Launch test.ps1",
+        {
+            "name": "PowerShell: Launch MultiRoutes.ps1",
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}/examples/PowerShell/MultiRoutes.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell"
         },
         {
-            "name": ".NET Launch CSharpTest",
+            "name": "PowerShell: Launch GlobalVar.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/GlobalVar.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell"
+        },
+        {
+            "name": ".NET Launch MultiRoutes",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build CSharpTest",
-            "program": "${workspaceFolder}/examples/CSharpTest/bin/Debug/net8.0/CSharpTest.dll",
+            "preLaunchTask": "build MultiRoutes",
+            "program": "${workspaceFolder}/examples/CSharp/MultiRoutes/bin/Debug/net8.0/MultiRoutes.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/examples/CSharpTest",
+            "cwd": "${workspaceFolder}/examples/CSharp/MultiRoutes",
             "stopAtEntry": false,
-            "console": "integratedTerminal" 
+            "console": "integratedTerminal"
         },
-         {
+        {
             "name": ".NET Launch CSharp/Certificates",
             "type": "coreclr",
             "request": "launch",
@@ -31,7 +37,7 @@
             "stopAtEntry": false,
             "console": "integratedTerminal"
         },
-           {
+        {
             "name": ".NET Launch CSharp/GlobalVar",
             "type": "coreclr",
             "request": "launch",

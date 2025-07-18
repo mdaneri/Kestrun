@@ -10,10 +10,10 @@
 
 ## Running Tests
 
-Tests are written with `xUnit` under `tests/KestrunLib.Tests`. To execute them locally:
+Tests are written with `xUnit` under `tests/Kestrun.Tests`. To execute them locally:
 
 ```bash
-dotnet test tests/KestrunLib.Tests/KestrunLib.Tests.csproj
+dotnet test tests/Kestrun.Tests/Kestrun.Tests.csproj
 ```
 
 PowerShell module tests live under `tests/PowerShell.Tests` and use Pester.

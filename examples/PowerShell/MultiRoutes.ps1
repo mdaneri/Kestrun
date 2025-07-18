@@ -1,14 +1,20 @@
 
- 
+ <# 
+.SYNOPSIS
+    Kestrun PowerShell Example: Multi Routes
+.DESCRIPTION
+    This script demonstrates how to define multiple routes in Kestrun, a PowerShell web server framework.
+#>
+
 try {
     $ScriptPath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
     # Determine the script path and Kestrun module path
     $examplesPath = (Split-Path -Parent ($ScriptPath))
     $kestrunPath = Split-Path -Parent -Path $examplesPath
-
+    $kestrunModulePath = "$kestrunPath/src/PowerShell/Kestrun/Kestrun.psm1"
     # Import the Kestrun module from the source path if it exists, otherwise from installed modules
-    if (Test-Path -Path "$($kestrunPath)/src/Kestrun.psm1" -PathType Leaf) {
-        Import-Module "$($kestrunPath)/src/Kestrun.psm1" -Force -ErrorAction Stop
+    if (Test-Path -Path $kestrunModulePath -PathType Leaf) {
+        Import-Module $kestrunModulePath -Force -ErrorAction Stop
     }
     else {
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
@@ -31,12 +37,9 @@ else {
     $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
     Export-KsCertificate -Certificate $cert `
         -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
-}# 
-# Create a CSR
-#$csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' `
-#   -Country US -Org 'Acme' -CommonName 'example.com'
+}
 
-if(-not (Test-KsCertificate -Certificate $cert )){
+if (-not (Test-KsCertificate -Certificate $cert )) {
     Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
     exit 1
 }

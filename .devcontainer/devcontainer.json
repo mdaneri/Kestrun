@@ -1,0 +1,27 @@
+{
+    "name": "Codespace with PowerShell, Pester, and .NET 8",
+    "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/powershell:1": {},
+        "ghcr.io/devcontainers/features/dotnet:1": {
+            "version": "8.0"
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "lts"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.powershell",
+                "pspester.pester-test"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "pwsh",
+                "powershell.powerShellDefaultVersion": "PowerShell (x64)",
+                "powershell.enableProfileLoading": true
+            }
+        }
+    },
+    "postCreateCommand": "pwsh -Command \"Install-Module Pester -Force -Scope CurrentUser\""
+}

@@ -1,32 +1,50 @@
-name: .NET
+name: .NET and PowerShell Tests
 
 on:
   push:
     paths:
-      - '**.cs'
-      - '**.csproj'
-      - '**.yml'
-      - '**.yaml'
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/*.ps1'
+      - '**/*.psm1'
+      - '**/*.psd1'
+      - '**/*.yml'
+      - '**/*.yaml'
       - tests/**
   pull_request:
     paths:
-      - '**.cs'
-      - '**.csproj'
-      - '**.yml'
-      - '**.yaml'
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/*.ps1'
+      - '**/*.psm1'
+      - '**/*.psd1'
+      - '**/*.yml'
+      - '**/*.yaml'
       - tests/**
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-dotnet@v3
+    - name: 🛎️ Checkout
+      uses: actions/checkout@v3
+
+    - name: 🧰 Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
-    - run: dotnet test tests/KestrunLib.Tests/KestrunLib.Tests.csproj --no-build
-    - name: Run PowerShell tests
+
+    - name: 🧪 Run C# Tests
+      run: dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj --no-build
+
+    - name: 🔧 Install Pester
       shell: pwsh
-      run: |
-        Install-Module Pester -Force -Scope CurrentUser
-        Invoke-Pester -CI -Path tests/PowerShell.Tests
+      run: Install-Module -Name Pester -Force -Scope CurrentUser
+
+    - name: 🧪 Run PowerShell Tests
+      shell: pwsh
+      run: Invoke-Pester -CI -Path tests/PowerShell.Tests/Kestrun.Tests
+    
