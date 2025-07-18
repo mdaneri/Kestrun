@@ -48,7 +48,7 @@ Add-KrListener -Server $server -Port 5002
 Set-KrGlobalVar -Name 'Visits' -Value @{Count = 0}
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Route: GET /show
+# Route: GET /ps/show
 #   • $Visits is already injected as a PS variable
 #   • Just read and write it back in the response
 # ─────────────────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ Add-KrRoute -Server $server -Verbs Get -Path '/ps/show' -ScriptBlock {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Route: GET /visit
+# Route: GET /ps/visit
 #   • Increment $Visits directly
 #   • Persist the new value back into the global store
 # ─────────────────────────────────────────────────────────────────────────────
@@ -68,6 +68,28 @@ Add-KrRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
 
     Write-KrTextResponse -inputObject "Incremented to $($Visits.Count)" -statusCode 200
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Route: GET /cs/show
+#   • $Visits is already injected as a PS variable
+#   • Just read and write it back in the response
+# ─────────────────────────────────────────────────────────────────────────────
+Add-KrRoute -Server $server -Verbs Get -Path '/cs/show' -Code @'
+    // $Visits is available
+    Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
+'@ -Language CSharp
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Route: GET /cs/visit
+#   • Increment $Visits directly
+#   • Persist the new value back into the global store
+# ─────────────────────────────────────────────────────────────────────────────
+Add-KrRoute -Server $server -Verbs Get -Path '/cs/visit' -Code @'
+    // increment the injected variable
+    Visits["Count"] = ((int)Visits["Count"]) + 1;
+
+    Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
+'@ -Language CSharp
 
 Add-KrRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {
     # $Visits is available

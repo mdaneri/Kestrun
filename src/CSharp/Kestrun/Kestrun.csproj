@@ -105,7 +105,9 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     <PackageReference Include="pythonnet" Version="3.0.5" />
+    <!-- Not Implemented Yet 
     <PackageReference Include="FSharp.Compiler.Service" Version="43.9.300" />
+    -->
 
     <!-- Utilities -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

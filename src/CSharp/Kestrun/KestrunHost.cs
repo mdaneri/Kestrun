@@ -5,8 +5,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using FSharp.Compiler.Interactive;
-using Microsoft.FSharp.Core;
 using Python.Runtime;
 using Microsoft.ClearScript.V8;
 using System;
@@ -265,7 +263,7 @@ namespace Kestrun
                     var krResponse = new KestrunResponse(krRequest);
 
                     // Call the Python handler (Python → .NET marshal is automatic)
-                    pyHandle(context, krResponse);
+                    pyHandle(context, krResponse,context);
 
                     // redirect?
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
@@ -299,22 +297,21 @@ namespace Kestrun
 
         #endregion
 
-
+        #region F#
         private RequestDelegate BuildFsDelegate(string code)
         { // F# scripting not implemented yet
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Building F# delegate, script length={Length}", code?.Length);
             throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");
         }
-
+        #endregion
 
         #region C#
 
         // ---------------------------------------------------------------------------
         //  C# delegate builder  –  now takes optional imports / references
         // ---------------------------------------------------------------------------
-        public record CsGlobals(KestrunRequest Request, KestrunResponse Response);
-
+        public record CsGlobals(KestrunRequest Request, KestrunResponse Response, HttpContext Context, IReadOnlyDictionary<string, object?> Globals);
         private RequestDelegate BuildCsDelegate(
                 string code, string[]? extraImports,
                 Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
@@ -342,19 +339,29 @@ namespace Kestrun
                 opts = opts.WithReferences(opts.MetadataReferences
                                               .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
 
+            // 1. Inject each global as a top-level script variable
+            var allGlobals = GlobalVariables.GetAllValues();
+            if (allGlobals.Count > 0)
+            {
+                var sb = new StringBuilder();
+                foreach (var kvp in allGlobals)
+                {
+                    sb.AppendLine(
+                      $"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"];");
+                }
+                code = sb + code;
+            }
             // 2. Compile once
             var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
             var diagnostics = script.Compile();
 
             // Check for compilation errors
             if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-            {
                 throw new CompilationErrorException("C# route code compilation failed", diagnostics);
-            }
 
             // Log warnings if any (optional - for debugging)
             var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
-            if (warnings.Any())
+            if (warnings.Length != 0)
             {
                 Log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
                 foreach (var warning in warnings)
@@ -373,7 +380,7 @@ namespace Kestrun
                 {
                     var krRequest = await KestrunRequest.NewRequest(context);
                     var krResponse = new KestrunResponse(krRequest);
-                    await script.RunAsync(new CsGlobals(krRequest, krResponse)).ConfigureAwait(false);
+                    await script.RunAsync(new CsGlobals(krRequest, krResponse, context, allGlobals)).ConfigureAwait(false);
 
                     if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                     {
@@ -418,11 +425,12 @@ namespace Kestrun
                     // keep a reference for any C# code later in the pipeline
                     context.Items[KR_REQUEST_KEY] = krRequest;
                     context.Items[KR_RESPONSE_KEY] = krResponse;
-
+                    // Store the PowerShell instance in the context for later use
                     context.Items[PS_INSTANCE_KEY] = ps;
                     Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
                     // Set the PowerShell variables for the request and response
                     var ss = ps.Runspace.SessionStateProxy;
+                    ss.SetVariable("Context", context);
                     ss.SetVariable("Request", krRequest);
                     ss.SetVariable("Response", krResponse);
 
@@ -690,8 +698,8 @@ namespace Kestrun
             if (_runspacePool == null)
             {
                 throw new InvalidOperationException("Failed to create runspace pool.");
-            } 
-            
+            }
+
             KestrelServices(builder);
 
             builder.WebHost.ConfigureKestrel(kestrelOpts =>

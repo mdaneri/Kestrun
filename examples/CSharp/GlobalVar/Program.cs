@@ -78,20 +78,20 @@ server.AddRoute("/ps/visit", HttpVerb.Get,
     Write-KrTextResponse -inputObject "Runspace: $(([runspace]::DefaultRunspace).Name) - Incremented Visits(type:$($Visits.GetType().Name)) to $($Visits["Count"])" -statusCode 200
 """, Kestrun.ScriptLanguage.PowerShell);
 
-/*
+
 server.AddRoute("/cs/show", HttpVerb.Get,
 """
     // $Visits is available
-    Response.WriteTextResponse($"Visits so far: {visits}", 200);
+    Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
 """,
 ScriptLanguage.CSharp);
 
 server.AddRoute("/cs/visit", HttpVerb.Get, """
     // increment the injected variable
-    $Visits++
+    Visits["Count"] = ((int)Visits["Count"]) + 1;
 
-    Response.WriteTextResponse($"Incremented to {visits}", 200);
-""", Kestrun.ScriptLanguage.CSharp);*/
+    Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
+""", Kestrun.ScriptLanguage.CSharp);
 
 server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 {
