@@ -38,7 +38,7 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: 🧪 Run C# Tests
-      run: dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj --no-build
+      run: dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj
 
     - name: 🔧 Ensure Pester Installed
       shell: pwsh
@@ -46,7 +46,7 @@ jobs:
         if (-not (Get-Module -ListAvailable -Name Pester)) {
           Install-Module -Name Pester -Force -Scope CurrentUser
         }
-          
+
     - name: 🧾 Log Pester Version
       shell: pwsh
       run: |
