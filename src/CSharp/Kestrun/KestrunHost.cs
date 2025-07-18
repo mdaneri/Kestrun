@@ -51,8 +51,9 @@ namespace Kestrun
 
         private bool _isConfigured = false;
 
-        private RunspacePool? _runspacePool;
+        private KestrunRunspacePoolManager? _runspacePool;
         public string KestrunRoot { get; private set; }
+
         #endregion
 
 
@@ -394,77 +395,52 @@ namespace Kestrun
 
 
 
-        public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, RunspacePool pool)
+        public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRunspacePoolManager pool)
         {
 
             private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
-            private readonly RunspacePool _pool = pool ?? throw new ArgumentNullException(nameof(pool));
+            private readonly KestrunRunspacePoolManager _pool = pool ?? throw new ArgumentNullException(nameof(pool));
 
             public async Task InvokeAsync(HttpContext context)
             {
                 try
                 {
-                    EnsureRunspacePoolOpen(_pool);
+                    if (Log.IsEnabled(LogEventLevel.Debug))
+                        Log.Debug("PowerShellRunspaceMiddleware started for {Path}", context.Request.Path);
+                    // EnsureRunspacePoolOpen(_pool);
                     // Acquire a runspace from the pool and keep it for the whole request
-                    using PowerShell ps = PowerShell.Create();
-                    ps.RunspacePool = _pool;
+                    using PowerShell ps = PowerShell.Create(_pool.Acquire());
+                    // ps.RunspacePool = _pool;
+                    //  ps.Runspace = _pool.Acquire(); // acquire a runspace from the pool
                     var krRequest = await KestrunRequest.NewRequest(context);
                     var krResponse = new KestrunResponse(krRequest);
 
                     // keep a reference for any C# code later in the pipeline
                     context.Items[KR_REQUEST_KEY] = krRequest;
                     context.Items[KR_RESPONSE_KEY] = krResponse;
-                    // Set the PowerShell variables for the request and response
-                    //  var ss = ps.Runspace.SessionStateProxy; 
-                    //ss.SetVariable("Request", krReq);
-                    // ss.SetVariable("Response", krResp);
-                    Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
-                    ps.AddCommand("Set-Variable")
-                        .AddParameter("Name", "Request")
-                        .AddParameter("Value", krRequest)
-                        .AddParameter("Scope", "Script")
-                        .AddStatement()
-                        .AddCommand("Set-Variable")
-                        .AddParameter("Name", "Response")
-                        .AddParameter("Value", krResponse)
-                        .AddParameter("Scope", "Script");
 
-                 /*   foreach (var kv in GlobalVariables.GetAllValues())
-                    {
-                        ps.AddCommand("Set-Variable")
-                          .AddParameter("Name", kv.Key)
-                          .AddParameter("Value", kv.Value ?? PSObject.AsPSObject(null)) // handle nulls
-                          .AddParameter("Scope", "Script")
-                          .AddStatement();
-                    }*/
-                    // Run this once to inject variables into the runspace 
-                    ps.Invoke();
-                    // clear the commands so you can use ps.Invoke/InvokeAsync again later:
-                    ps.Commands.Clear();
                     context.Items[PS_INSTANCE_KEY] = ps;
+                    Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
+                    // Set the PowerShell variables for the request and response
+                    var ss = ps.Runspace.SessionStateProxy;
+                    ss.SetVariable("Request", krRequest);
+                    ss.SetVariable("Response", krResponse);
+
                     try
                     {
+                        if (Log.IsEnabled(LogEventLevel.Debug))
+                            Log.Debug("PowerShellRunspaceMiddleware - Continuing Pipeline  for {Path}", context.Request.Path);
                         await _next(context);                // continue the pipeline
-
-                    /*    foreach (var name in GlobalVariables.GetAllValues().Keys)
-                        {
-                            ps.AddCommand("Get-Variable")
-                              .AddParameter("Name", name)
-                              .AddParameter("Scope", "Script");
-                            var results = ps.Invoke();
-                            ps.Commands.Clear();
-
-                            if (results.Count > 0)
-                            {
-                                var newVal = results[0].BaseObject;
-                                GlobalVariables.UpdateValue(name, newVal);
-                            }
-                        }*/
+                        if (Log.IsEnabled(LogEventLevel.Debug))
+                            Log.Debug("PowerShellRunspaceMiddleware completed for {Path}", context.Request.Path);
                     }
                     finally
                     {
                         if (ps != null)
                         {
+
+                            _pool.Release(ps.Runspace); // return the runspace to the pool
+
                             ps.Dispose();
                             context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                         }
@@ -496,9 +472,9 @@ namespace Kestrun
                 Log.Verbose("Retrieving PowerShell instance from context items.");
                 PowerShell ps = context.Items[PS_INSTANCE_KEY] as PowerShell
                     ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-                if (ps.RunspacePool == null)
+                if (ps.Runspace == null)
                 {
-                    throw new InvalidOperationException("PowerShell runspace pool is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+                    throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
                 }
                 // Ensure the runspace pool is open before executing the script 
                 try
@@ -714,8 +690,8 @@ namespace Kestrun
             if (_runspacePool == null)
             {
                 throw new InvalidOperationException("Failed to create runspace pool.");
-            }
-            _runspacePool.Open();
+            } 
+            
             KestrelServices(builder);
 
             builder.WebHost.ConfigureKestrel(kestrelOpts =>
@@ -820,67 +796,9 @@ namespace Kestrun
 
         #region Runspace Pool Management
 
-        private static readonly object _poolGate = new();          // protects (_runspacePool, iss)
-
-        /// <summary>
-        /// Ensures _runspacePool is in an Opened state.
-        /// If the pool is Broken/Closed it is torn down and recreated.
-        /// Call this right before you create a PowerShell instance.
-        /// </summary>
-        private static void EnsureRunspacePoolOpen(RunspacePool? runspacePool)
-        {
-            if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("EnsureRunspacePoolOpen() called");
-            if (runspacePool == null) { throw new ArgumentNullException(nameof(runspacePool), "Runspace pool cannot be null."); }
-            if (runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opened)
-            {
-                Log.Verbose("Runspace pool is already opened.");
-                return;
-            }
-            Log.Verbose("Ensuring runspace pool is open...");
-            lock (_poolGate)
-            {
-
-                var state = runspacePool.RunspacePoolStateInfo.State;
-                switch (state)
-                {
-                    // brand-new pool
-                    case RunspacePoolState.BeforeOpen:
-                        Log.Verbose("Before opening runspace pool, opening now...");
-                        runspacePool.Open();                      // blocks until Opened
-                        break;
-
-                    // another thread is already opening – wait
-                    case RunspacePoolState.Opening:
-                        Log.Verbose("Runspace pool is opening, waiting for it to complete...");
-                        // Wait until the pool is opened
-                        while (runspacePool.RunspacePoolStateInfo.State == RunspacePoolState.Opening)
-                            Thread.Sleep(25);
-                        break;
-
-                    // pool closed or broken – throw it away and start fresh
-                    case RunspacePoolState.Closed:
-                    case RunspacePoolState.Broken:
-                        Log.Warning($"Runspace pool is {state}, disposing and recreating...");
-                        // Dispose the old pool and create a new one
-                        runspacePool.Dispose();
-                        // Recreate the runspace pool
-                        //   Log.Verbose("Creating a new runspace pool...");
-                        // Recreate the runspace pool with the specified max runspaces
-                        // runspacePool = CreateRunspacePool(_kestrelOptions?.MaxRunspaces);
-                        // runspacePool.Open();
-                        throw new InvalidOperationException(
-                             $"Runspace pool is {state}, cannot use it. A new pool must be created.");
 
 
-                        // Opened / Disconnecting / Disconnected / Closing → leave alone,
-                        // callers will handle Disconnecting/Closing by catching exceptions
-                }
-            }
-        }
-
-
-        private RunspacePool CreateRunspacePool(int? maxRunspaces = 0)
+        private KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0)
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("CreateRunspacePool() called: {@MaxRunspaces}", maxRunspaces);
@@ -906,22 +824,11 @@ namespace Kestrun
                         "Global variable"
                     )
                 );
-            } 
+            }
             int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 
             Log.Information($"Creating runspace pool with max runspaces: {maxRs}");
-            var runspacePool = RunspaceFactory.CreateRunspacePool(initialSessionState: iss) ?? throw new InvalidOperationException("Failed to create runspace pool.");
-            runspacePool.ThreadOptions = PSThreadOptions.ReuseThread;
-            runspacePool.SetMinRunspaces(_kestrelOptions?.MinRunspaces ?? 1);
-            runspacePool.SetMaxRunspaces(_kestrelOptions?.MaxRunspaces ?? Environment.ProcessorCount * 2);
-
-            // Set the maximum number of runspaces to the specified value or default to 2x CPU cores
-            _ = runspacePool.SetMaxRunspaces(maxRs);
-
-            runspacePool.ApartmentState = ApartmentState.MTA;  // multi-threaded apartment
-
-            Log.Information($"Runspace pool created with max runspaces: {maxRs}");
-
+            var runspacePool = new KestrunRunspacePoolManager(_kestrelOptions?.MinRunspaces ?? 1, maxRunspaces: maxRs, initialSessionState: iss);
             // Return the created runspace pool
             return runspacePool;
         }

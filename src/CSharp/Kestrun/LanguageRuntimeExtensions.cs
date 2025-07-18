@@ -25,10 +25,10 @@ namespace Kestrun
             ScriptLanguage language,
             Action<IApplicationBuilder> configure)
         {
-            return app.UseWhen(ctx =>
+            return app.UseWhen(context =>
             {
                 ScriptLanguageAttribute? attr =
-                    ctx.GetEndpoint()?.Metadata
+                    context.GetEndpoint()?.Metadata
                        .GetMetadata<ScriptLanguageAttribute>();
                 return attr?.Language == language;
             }, configure);

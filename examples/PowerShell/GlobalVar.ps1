@@ -42,7 +42,7 @@ catch {
 $server = New-KrServer -Name 'MyKestrunServer'
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Server $server -Port 5000  
+Add-KrListener -Server $server -Port 5002  
 
 # Seed a global counter (Visits) — injected as $Visits in every runspace
 Set-KrGlobalVar -Name 'Visits' -Value @{Count = 0}
@@ -52,7 +52,7 @@ Set-KrGlobalVar -Name 'Visits' -Value @{Count = 0}
 #   • $Visits is already injected as a PS variable
 #   • Just read and write it back in the response
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrRoute -Server $server -Verbs Get -Path '/show' -ScriptBlock {
+Add-KrRoute -Server $server -Verbs Get -Path '/ps/show' -ScriptBlock {
     # $Visits is available
     Write-KrTextResponse -inputObject "Visits so far: $($Visits.Count)" -statusCode 200
 }
@@ -62,7 +62,7 @@ Add-KrRoute -Server $server -Verbs Get -Path '/show' -ScriptBlock {
 #   • Increment $Visits directly
 #   • Persist the new value back into the global store
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
+Add-KrRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
     # increment the injected variable
     $Visits.Count++
 
@@ -71,7 +71,7 @@ Add-KrRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
 
 Add-KrRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {
     # $Visits is available
-    Write-KrRedirectResponse -Url '/show' -Message "Redirecting to /show"
+    Write-KrRedirectResponse -Url '/ps/show' -Message "Redirecting to /ps/show"
 }
 
 

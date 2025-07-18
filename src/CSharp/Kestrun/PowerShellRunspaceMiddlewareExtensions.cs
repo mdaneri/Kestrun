@@ -5,7 +5,7 @@ namespace Kestrun
     public static class PowerShellRunspaceMiddlewareExtensions
     {
         public static IApplicationBuilder UsePowerShellRunspace(
-            this IApplicationBuilder app, RunspacePool pool)
+            this IApplicationBuilder app, KestrunRunspacePoolManager pool)
         {
             return app.UseMiddleware<PowerShellRunspaceMiddleware>(pool);
         }
