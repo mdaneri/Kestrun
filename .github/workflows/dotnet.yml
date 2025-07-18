@@ -40,9 +40,17 @@ jobs:
     - name: 🧪 Run C# Tests
       run: dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj --no-build
 
-    - name: 🔧 Install Pester
+    - name: 🔧 Ensure Pester Installed
       shell: pwsh
-      run: Install-Module -Name Pester -Force -Scope CurrentUser
+      run: |
+        if (-not (Get-Module -ListAvailable -Name Pester)) {
+          Install-Module -Name Pester -Force -Scope CurrentUser
+        }
+          
+    - name: 🧾 Log Pester Version
+      shell: pwsh
+      run: |
+        Get-Module Pester -ListAvailable | Select-Object Name, Version, Path
 
     - name: 🧪 Run PowerShell Tests
       shell: pwsh
