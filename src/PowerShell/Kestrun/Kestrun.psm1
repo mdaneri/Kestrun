@@ -12,6 +12,9 @@ function Assert-AssemblyLoaded {
     param (
         [string]$AssemblyPath
     )
+    if (-not (Test-Path -Path $AssemblyPath -PathType Leaf)) {
+        throw "Assembly not found at path: $AssemblyPath"
+    }
     $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($AssemblyPath).Name
     $loaded = [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq $assemblyName }
     if (-not $loaded) {
@@ -77,10 +80,8 @@ Add-AspNetCoreType -Version "net8"
 # Add-AspNetCoreType -Version "net8.0.*"
  
 # Assert that the assembly is loaded
-Assert-AssemblyLoaded "$moduleRootPath\lib\Kestrun.dll"
-#Assert-AssemblyLoaded "$KestrunRoot \Kestrun\bin\Debug\net8.0\python.runtime.dll"
-#Assert-AssemblyLoaded "$KestrunRoot \Kestrun\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll"
-Assert-AssemblyLoaded "$($PSHOME)\Microsoft.CodeAnalysis.dll"
+Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
+Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
 # load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
