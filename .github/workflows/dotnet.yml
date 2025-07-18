@@ -1,0 +1,27 @@
+name: .NET
+
+on:
+  push:
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.yml'
+      - '**.yaml'
+      - tests/**
+  pull_request:
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.yml'
+      - '**.yaml'
+      - tests/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    - run: dotnet test tests/KestrunLib.Tests/KestrunLib.Tests.csproj --no-build
