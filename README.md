@@ -33,6 +33,7 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
 ## Getting Started
 
 ### Prerequisites
+
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [PowerShell 7+](https://github.com/PowerShell/PowerShell)
 
