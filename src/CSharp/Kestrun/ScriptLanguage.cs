@@ -1,11 +1,10 @@
-namespace Kestrun
+namespace Kestrun;
+
+public enum ScriptLanguage
 {
-    public enum ScriptLanguage
-    {
-        PowerShell,
-        CSharp,
-        FSharp,
-        Python,
-        JavaScript        // optional – ClearScript/Jint
-    }
+    PowerShell,
+    CSharp,
+    FSharp,
+    Python,
+    JavaScript        // optional – ClearScript/Jint
 }
