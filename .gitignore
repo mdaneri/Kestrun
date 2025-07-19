@@ -80,8 +80,10 @@ cert/devcert.crt
 *.pem 
 *.csr
 *.key
+*.log
 /examples/PowerShell/logs
 examples/CSharpTest/test.bin
 /examples/Files/LargeFiles
 testResults.xml
 /publish
+examples/CSharp/MultiRoutes/logs/audit-20250719.json

@@ -326,11 +326,11 @@ function Write-KrLog {
 
     if ($PSBoundParameters.ContainsKey('Exception')) {
       # e.g. $logger.Error($exception, $message, $arguments)
-      $logger.{ $method }($Exception, $Message, $Arguments)
+      $logger.$method($Exception, $Message, $Arguments)
     }
     else {
       # e.g. $logger.Information($message, $arguments)
-      $logger.{ $method }($Message, $Arguments)
+      $logger.$method($Message, $Arguments)
     }
   }
   finally {

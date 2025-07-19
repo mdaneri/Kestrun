@@ -4,7 +4,9 @@ using System.Net;
 using Kestrun;
 using System.Security;
 using System.Security.Cryptography.X509Certificates; 
-using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
+using Org.BouncyCastle.OpenSsl;
+using Serilog.Events;
+using Serilog;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
 var parentDirInfo = Directory.GetParent(currentDir);
@@ -25,6 +27,15 @@ if (!File.Exists(modulePath))
     Console.WriteLine($"Kestrun module not found at {modulePath}");
     return;
 }
+
+// 1️⃣  Audit log: only warnings and above, writes JSON files
+KestrunLogConfigurator.Configure("audit")
+    .Minimum(LogEventLevel.Warning)
+    .Sink(w => w.File(
+        path: "logs/audit-.json",
+        rollingInterval: RollingInterval.Day,
+        formatter: new Serilog.Formatting.Json.JsonFormatter()))
+    .Register();
 
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir, [modulePath]);
@@ -125,6 +136,7 @@ server.AddRoute("/ps/json",
                 # If you want to return the request body, uncomment the next line
                 RequestBody    = $Request.Body 
             }
+            write-KrLog -level Warning -name "audit" -object $payload  -message "This is a warning log from PowerShell script"
             Write-KrJsonResponse -InputObject $payload -StatusCode 200
             """,
             ScriptLanguage.PowerShell);
