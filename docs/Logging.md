@@ -7,12 +7,16 @@ Kestrun’s logging system builds on Serilog to give you:
 * **Multiple named loggers** — each with its own minimum level, enrichers, and sinks.
 * **Full Serilog flexibility** — use any sink (console, file, Seq, HTTP, syslog…), any enricher, any output template.
 * **Global fallback** — the library itself and any PowerShell scripts that don’t specify a logger still write to `Serilog.Log`.
+* **Global fallback** – when no named logger is specified, log events go through `Serilog.Log`.
 * **PowerShell support** — configure and invoke named loggers directly from PS scripts.
 
 Under the hood we provide:
 
-* **`KestrunLogConfigurator`** — a static registry for logger configurations and live loggers.
-* **`KestrunLoggerBuilder`** — a fluent builder that wraps `LoggerConfiguration` plus helper extensions (`WithProperty`, generic `With<TEnricher>`, `Sink(...)`, etc.).
+| C# Type / PS Module                          | Purpose                                                                                                                                                |
+|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KestrunLogConfigurator`                     | Static registry; creates, stores and re-configures loggers.                                                                                            |
+| `KestrunLoggerBuilder`                       | Fluent builder that wraps **Serilog.LoggerConfiguration** & adds helpers (`Minimum`, `WithProperty`, `With<TEnricher>`, `Sink(...)`, `Register(...)`). |
+| **PowerShell**   | Cmdlets that surface the builder pattern in PS pipelines (`New-KrLogger`, `Add-KrProperty`, `Add-KrSink`, …).                                          |
 
 ---
 
@@ -24,16 +28,12 @@ Under the hood we provide:
 var builder = KestrunLogConfigurator.Configure("api");
 ```
 
----
-
 ### 2. Setting the Minimum Level
 
 ```csharp
 builder.Minimum(LogEventLevel.Debug);
 // Events at Debug or above will be emitted; Verbose events are dropped.
 ```
-
----
 
 ### 3. Adding Enrichment
 
@@ -49,8 +49,6 @@ builder.With<MyCustomEnricher>("someSetting");
 ```
 
 Under the hood `WithProperty` and `With<TEnricher>` invoke the same Serilog enrichment pipeline your normal Serilog code uses.
-
----
 
 ### 4. Adding Sinks
 
@@ -70,8 +68,6 @@ builder.Sink(w => w.File(
 builder.Sink(w => w.DurableHttpUsingFileSizeRolledBuffers(
     requestUri: "https://logs.mycompany.com/api/logs"));
 ```
-
----
 
 ### 5. Finalizing the Logger
 
@@ -149,7 +145,6 @@ Log.Information("Service started at {Start}", DateTime.UtcNow);
 ## PowerShell Usage
 
 ```powershell
-Import-Module Kestrun.Logging
 
 # 1. Create a named logger “ps”
 New-KrLogger -Name "ps" -Level Debug |
@@ -160,6 +155,11 @@ New-KrLogger -Name "ps" -Level Debug |
 # 2. Write to it anywhere in your PS routes
 Write-KrLog -Name "ps" -Level Information `
     -Message "Handled {Method} {Path}" -Args $Request.Method, $Request.Path
+
+Write-KrLog -Name "ps" -Level Information `
+            -Message "Handled {Method} {Path}" `
+            -Arguments $Request.Method, $Request.Path `
+            -Properties @{ CorrelationId = $cid }
 ```
 
 If you pass `-Default` to `Apply-KrLogger`, it swaps in your PS logger as `Serilog.Log.Logger` so any C# or framework logs go to your sinks too.
@@ -170,8 +170,16 @@ If you pass `-Default` to `Apply-KrLogger`, it swaps in your PS logger as `Seril
 
 When you need to tear down and rebuild all loggers (e.g. upon config-file change or between tests), call:
 
+csharp
+
 ```csharp
 KestrunLogConfigurator.Reset();
+```
+
+powershell
+
+```powershell
+Reset-KrLogger -Name 'ps'
 ```
 
 This will:
@@ -181,11 +189,67 @@ This will:
 3. **Clear** internal registries.
 4. **Restore** a minimal console logger as `Serilog.Log.Logger`.
 
-After `Reset()`, you can re-run your `Configure(…)…Register()` calls to bring loggers back online.
-
-Below is an **addendum** you can tack onto the end of your `docs/logging.md` (or embed in the manual) to enumerate the **built-in enrichers** and **common sinks** that your `KestrunLoggerBuilder` makes readily available. Feel free to prune or extend this list as you wire up more Serilog packages in your project.
+After `Reset()` you can re-run your `Configure(…)…Register()` calls or (in PS) your
+`New-KrLogger … | Register-KrLogger` pipelines to spin loggers back up.
 
 ---
+
+## 3. PowerShell cmdlet reference
+
+| Cmdlet                                                                                                                                                                                                                | What it does                                                                                                                                   | Typical pipeline position |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------|
+| **`New-KrLogger`**<br/>`-Name` *string*<br/>`[-Level]` *Verbose∣Debug∣…*                                                                                                                                              | Starts a new *builder* for the named logger (or returns existing builder to mutate).                                                           | 1st                       |
+| **`Add-KrProperty`**<br/>`-Builder` *Builder*<br/>`-Name` *string* `-Value` *object*                                                                                                                                  | Adds a static property.                                                                                                                        | anywhere                  |
+| **`Add-KrEnricher`**<br/>`-TypeName` *"Namespace.Type"* `[-Arguments]` *object\[]*                                                                                                                                    | Adds an `ILogEventEnricher`.                                                                                                                   | anywhere                  |
+| **`Add-KrSink`**<br/>`-Type` *Console∣File∣Seq∣Http∣Syslog∣Custom*<br/>`[-Options]` *hashtable*<br/>`[-CustomSink]` *ILogEventSink*                                                                                   | Attaches a sink.                                                                                                                               | anywhere                  |
+| **`Register-KrLogger`** `[-Default]`                                                                                                                                                                                  | Builds the `ILogger`, stores it, optionally makes it global.                                                                                   | last                      |
+| **`Write-KrLog`**<br/>`[-Name]` *string*<br/>`-Level` *Verbose∣…*<br/>`-Message` *string*<br/>`[-Arguments]` *object\[]*<br/>`[-Exception]` *\[Exception]*<br/>`[-Properties]` *hashtable*<br/>`[-Object]` *psobject* | Emits an event through a named logger or `Serilog.Log`. Supports extra properties **and** arbitrary PS objects (`-Object` serialises to JSON). | n/a                       |
+| **`Update-KrLogger`**<br/>`-Name` *string*<br/>`-ScriptBlock` *{ param(\$cfg) … }*<br/>`[-Default]`                                                                                                                   | Re-builds the logger by replaying its recipe **plus** your script-block delta.                                                                 | n/a                       |
+| **`Get-KrLogger`** `-Name`                                                                                                                                                                                            | Returns the live `ILogger` (or throws).                                                                                                        | n/a                       |
+| **`Test-KrLogger`** `-Name`                                                                                                                                                                                           | `True/False` – does the logger exist?                                                                                                          | n/a                       |
+| **`Reset-KrLogger`** `-Name`                                                                                                                                                                                           | Reset the Logger (or THrow)                                                                                                          | n/a                       |
+
+---
+
+## 4. Complete C# examples
+
+### A.  Basic “api” logger
+
+```csharp
+KestrunLogConfigurator.Configure("api")
+    .Minimum(LogEventLevel.Information)
+    .WithProperty("Subsystem", "API")
+    .Sink(w => w.Console())
+    .Register();
+```
+
+### B.  Two loggers, different levels & sinks
+
+```csharp
+// Audit – JSON files, warnings+
+KestrunLogConfigurator.Configure("audit")
+    .Minimum(LogEventLevel.Warning)
+    .Sink(w => w.File("logs/audit-.json",
+                      rollingInterval: RollingInterval.Day,
+                      formatter: new JsonFormatter()))
+    .Register();
+
+// Debug – verbose console + Seq
+KestrunLogConfigurator.Configure("debug")
+    .Minimum(LogEventLevel.Verbose)
+    .Sink(w => w.Console("[{Level:u3}] {Message}"))
+    .Sink(w => w.Seq("http://localhost:5341"))
+    .Register();
+```
+
+### C.  Promote one as global default
+
+```csharp
+KestrunLogConfigurator.Configure("default")
+    .Minimum(LogEventLevel.Debug)
+    .Sink(w => w.Console())
+    .Register(setAsDefault: true);
+```
 
 ## Available Enrichers
 

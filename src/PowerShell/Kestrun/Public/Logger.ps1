@@ -440,3 +440,28 @@ function Test-KrLogger {
 
   return [Kestrun.KestrunLogConfigurator]::Exists($Name)
 }
+
+
+function Reset-KrLogger {
+  <#
+    .SYNOPSIS
+    Resets a configured Kestrun logger by name.
+
+    .PARAMETER Name
+    The name of the logger to reset.
+  #>
+  [CmdletBinding(SupportsShouldProcess = $true)]
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Name
+  )
+
+  if (-not [Kestrun.KestrunLogConfigurator]::Exists($Name)) {
+    throw "Logger '$Name' not found. Did you call New-KrLogger and Register-KrLogger?"
+  }
+
+  if ($PSCmdlet.ShouldProcess("Logger '$Name'", "Reset logger")) {
+    [Kestrun.KestrunLogConfigurator]::Reset($Name)
+  }
+}
+
