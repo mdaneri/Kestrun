@@ -98,6 +98,7 @@
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Serilog.Sinks.Http" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
+    <PackageReference Include="Serilog.Sinks.SyslogServer" Version="1.1.1" />
 
     <!-- Scripting Engines -->
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.11" />

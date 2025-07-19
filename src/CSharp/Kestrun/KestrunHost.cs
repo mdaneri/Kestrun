@@ -57,10 +57,20 @@ public class KestrunHost
 
     // Accepts optional module paths (from PowerShell)
     #region Constructor
-    public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null)
+
+
+    public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null, Serilog.Core.Logger? logger = null)
     {
+        Log.Logger = logger ?? CreateDefaultLogger();
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
+
+        // Set the Kestrun root directory, defaulting to current directory
         KestrunRoot = kestrunRoot ?? Directory.GetCurrentDirectory();
         Directory.SetCurrentDirectory(KestrunRoot);
+
+        // ①  Use the caller’s logger or create a default one
+
         // Configure Serilog logger
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug().MinimumLevel.Verbose()
@@ -70,8 +80,6 @@ public class KestrunHost
             .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
             .CreateLogger();
         // Log constructor entry
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("KestrunHost constructor called with appName: {AppName},  kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, KestrunRoot, modulePathsObj?.Length ?? 0);
 
         builder = WebApplication.CreateBuilder();
         // Add Serilog to ASP.NET Core logging
@@ -109,8 +117,19 @@ public class KestrunHost
         Log.Information("Current working directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
     }
     #endregion
+    
+    #region Logger
+    private static Serilog.Core.Logger CreateDefaultLogger()
+        => new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .Enrich.FromLogContext()
+            .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
+    #endregion
 
+    #region Services
     private void KestrelServices(WebApplicationBuilder builder)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -132,8 +151,7 @@ public class KestrunHost
         }
     }
 
-
-
+    #endregion
 
     #region ListenerOptions
 
