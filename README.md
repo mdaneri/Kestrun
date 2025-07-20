@@ -89,6 +89,13 @@ GitHub Actions runs these tests automatically on every push and pull request.
 ## Project Structure
 
 - `src/CSharp/` — C# core libraries and web server
+  - `Kestrun/Logging` — logging helpers
+  - `Kestrun/Hosting` — host configuration
+  - `Kestrun/PowerShell` — PowerShell integration
+  - `Kestrun/Scripting` — script language helpers
+  - `Kestrun/Security` — certificate utilities
+  - `Kestrun/Models` — request/response classes
+  - `Kestrun/Util` — shared utilities
 - `src/PowerShell/` — PowerShell module and scripts
 - `examples/` — Example projects (C#, PowerShell)
 - `tests/` — Test projects (C#, PowerShell)
