@@ -117,7 +117,7 @@ public class KestrunHost
         Log.Information("Current working directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
     }
     #endregion
-    
+
     #region Logger
     private static Serilog.Core.Logger CreateDefaultLogger()
         => new LoggerConfiguration()
@@ -144,6 +144,7 @@ public class KestrunHost
             {
                 options.EnableForHttps = true;
             });
+            builder.Services.AddRazorPages();
         }
         catch (Exception ex)
         {
@@ -435,8 +436,7 @@ public class KestrunHost
                 // EnsureRunspacePoolOpen(_pool);
                 // Acquire a runspace from the pool and keep it for the whole request
                 using PowerShell ps = PowerShell.Create(_pool.Acquire());
-                // ps.RunspacePool = _pool;
-                //  ps.Runspace = _pool.Acquire(); // acquire a runspace from the pool
+
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
 
@@ -464,9 +464,12 @@ public class KestrunHost
                 {
                     if (ps != null)
                     {
-
+                        if (Log.IsEnabled(LogEventLevel.Debug))
+                            Log.Debug("Returning runspace to pool: {RunspaceId}", ps.Runspace.InstanceId);
                         _pool.Release(ps.Runspace); // return the runspace to the pool
-
+                        if (Log.IsEnabled(LogEventLevel.Debug))
+                            Log.Debug("Disposing PowerShell instance: {InstanceId}", ps.InstanceId);
+                        // Dispose the PowerShell instance
                         ps.Dispose();
                         context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                     }
@@ -532,7 +535,7 @@ public class KestrunHost
                 else if (ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
                 {
                     Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
-                    BuildError.Text(ps);
+                    Log.Verbose(BuildError.Text(ps));
                 }
 
                 Log.Verbose("PowerShell script completed successfully.");
@@ -772,6 +775,23 @@ public class KestrunHost
         //  App.UsePowerShellRunspace(_runspacePool);
         App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
         App.UseResponseCompression();
+        App.UseStaticFiles();                      // optional
+        App.UsePowerShellRazorPages(_runspacePool!); // +++ PowerShell→Razor bridge
+        App.UseRouting();                          // if not already present
+        App.MapRazorPages();                       // +++ route the .cshtml files
+        var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
+
+        if (dataSource.Endpoints.Count == 0)
+        {
+            Log.Warning("EndpointDataSource is empty. No endpoints configured.");
+        }
+        else
+        {
+            foreach (var ep in dataSource.Endpoints)
+            {
+                Log.Information("➡️  Endpoint: {DisplayName}", ep.DisplayName);
+            }
+        }
         _isConfigured = true;
     }
 

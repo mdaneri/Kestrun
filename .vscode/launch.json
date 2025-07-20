@@ -47,6 +47,17 @@
             "cwd": "${workspaceFolder}/examples/CSharp/GlobalVar",
             "stopAtEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": ".NET Launch CSharp/RazorSample",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build RazorSample",
+            "program": "${workspaceFolder}/examples/CSharp/RazorSample/bin/Debug/net8.0/RazorSample.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/RazorSample",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -20,13 +20,24 @@
                 "${workspaceFolder}/examples/CSharp/Certificates/Certificates.csproj"
             ],
             "problemMatcher": "$msCompile"
-        },{
+        },
+        {
             "label": "build GlobalVar",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
                 "${workspaceFolder}/examples/CSharp/GlobalVar/GlobalVar.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build RazorSample",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharp/RazorSample/RazorSample.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
