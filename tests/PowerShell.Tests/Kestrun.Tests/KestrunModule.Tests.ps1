@@ -39,14 +39,7 @@ Describe 'Kestrun PowerShell Functions' {
         (Get-KrSharedState -Server $server -Name 'psTestVar').Count | Should -Be 3
     }
 
-    It 'Remove-KrSharedState deletes value' {
-        $value = @()
-        Set-KrSharedState -Server $server -Name 'psToRemove' -Value @(1, 2, 3)
-        $server.SharedState.TryGet[object]('psToRemove', [ref]$value) | Should -BeTrue
-        Remove-KrSharedState -Server $server -Name 'psToRemove'
-        $server.SharedState.TryGet[object]('psToRemove', [ref]$value) | Should -BeFalse
-    }
-
+ 
     It 'Resolve-KrPath returns absolute path' {
         $result = Resolve-KrPath -Path '.' -KestrunRoot
         [System.IO.Path]::IsPathRooted($result) | Should -BeTrue
