@@ -191,26 +191,26 @@ public class KestrunResponse
             Log.Debug("Writing JSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
         Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
-        ContentType = contentType ?? $"application/json; charset={Encoding.WebName}";
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/json; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
 
-   /// <summary>
-   /// Writes a CBOR response (binary, efficient, not human-readable).
-   /// </summary>
-   public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-   {
-       if (Log.IsEnabled(LogEventLevel.Debug))
-           Log.Debug("Writing CBOR response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+    /// <summary>
+    /// Writes a CBOR response (binary, efficient, not human-readable).
+    /// </summary>
+    public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing CBOR response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
-       // Serialize to CBOR using PeterO.Cbor
-       byte[] cborBytes = inputObject != null
-           ? PeterO.Cbor.CBORObject.FromObject(inputObject).EncodeToBytes()
-           : [];
-       Body = cborBytes;
-       ContentType = contentType ?? "application/cbor";
-       StatusCode = statusCode;
-   }
+        // Serialize to CBOR using PeterO.Cbor
+        byte[] cborBytes = inputObject != null
+            ? PeterO.Cbor.CBORObject.FromObject(inputObject).EncodeToBytes()
+            : [];
+        Body = cborBytes;
+        ContentType = string.IsNullOrEmpty(contentType) ? "application/cbor" : contentType;
+        StatusCode = statusCode;
+    }
 
 
 
@@ -221,7 +221,7 @@ public class KestrunResponse
 
         // Serialize to BSON (as byte[])
         Body = inputObject != null ? inputObject.ToBson() : [];
-        ContentType = contentType ?? "application/bson";
+        ContentType = string.IsNullOrEmpty(contentType) ? "application/bson" : contentType;
         StatusCode = statusCode;
     }
 
@@ -275,7 +275,7 @@ public class KestrunResponse
             Log.Debug("Writing YAML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
         Body = YamlHelper.ToYaml(inputObject);
-        ContentType = contentType ?? $"application/yaml; charset={Encoding.WebName}";
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/yaml; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
 
@@ -287,7 +287,7 @@ public class KestrunResponse
         XElement xml = XmlUtil.ToXml("Response", inputObject);
 
         Body = xml.ToString(SaveOptions.DisableFormatting);
-        ContentType = contentType ?? $"application/xml; charset={Encoding.WebName}";
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/xml; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
 
@@ -301,7 +301,7 @@ public class KestrunResponse
             throw new ArgumentNullException(nameof(inputObject), "Input object cannot be null for text response.");
 
         Body = inputObject?.ToString() ?? string.Empty;
-        ContentType = contentType ?? $"text/plain; charset={Encoding.WebName}";
+        ContentType = string.IsNullOrEmpty(contentType) ? $"text/plain; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
 
