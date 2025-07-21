@@ -9,25 +9,7 @@ using Serilog.Events;
 using Serilog;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
-var parentDirInfo = Directory.GetParent(currentDir);
-if (parentDirInfo == null || parentDirInfo.Parent == null|| parentDirInfo.Parent.Parent == null)
-{
-    Console.WriteLine("Unable to determine the parent directory for module path.");
-    return;
-} 
-string modulePath = Path.Combine(
-    parentDirInfo.Parent.Parent.FullName,
-    "src","PowerShell",
-    "Kestrun",
-    "Kestrun.psm1"
-);
-Console.WriteLine($"Using Kestrun module from: {modulePath}");
-if (!File.Exists(modulePath))
-{
-    Console.WriteLine($"Kestrun module not found at {modulePath}");
-    return;
-}
-
+ 
 // 1️⃣  Audit log: only warnings and above, writes JSON files
 KestrunLogConfigurator.Configure("audit")
     .Minimum(LogEventLevel.Warning)
@@ -38,7 +20,7 @@ KestrunLogConfigurator.Configure("audit")
     .Register();
 
 // 1. Create server
-var server = new KestrunHost("MyKestrunServer", currentDir, [modulePath]);
+var server = new KestrunHost("MyKestrunServer", currentDir);
 
 // 2. Set server options
 var options = new KestrunOptions

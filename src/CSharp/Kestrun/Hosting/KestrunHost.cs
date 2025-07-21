@@ -28,7 +28,6 @@ using System.Security;
 using Microsoft.AspNetCore.Hosting;
 using Serilog;
 using Serilog.Events;
-using Microsoft.Extensions.FileProviders;
 
 
 namespace Kestrun;
@@ -51,7 +50,7 @@ public class KestrunHost
     private bool _isConfigured = false;
 
     private KestrunRunspacePoolManager? _runspacePool;
-    public string KestrunRoot { get; private set; }
+    public string? KestrunRoot { get; private set; }
 
     public SharedStateStore SharedState { get; } = new();
 
@@ -64,25 +63,30 @@ public class KestrunHost
 
     public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null, Serilog.Core.Logger? logger = null)
     {
+        // Initialize Serilog logger if not provided
         Log.Logger = logger ?? CreateDefaultLogger();
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
+        if (!string.IsNullOrWhiteSpace(kestrunRoot))
+        {
+            Log.Information("Setting Kestrun root directory: {KestrunRoot}", kestrunRoot);
+            Directory.SetCurrentDirectory(kestrunRoot);
+        }
+        var kestrunModulePath = string.Empty;
+        if (modulePathsObj is null || (modulePathsObj?.Any(p => p.Contains("Kestrun.psm1", StringComparison.Ordinal)) == false))
+        {
+            kestrunModulePath = PowerShellModuleLocator.LocateKestrunModule();
+            if (string.IsNullOrWhiteSpace(kestrunModulePath))
+            {
+                Log.Fatal("Kestrun module not found. Ensure the Kestrun module is installed.");
+                throw new FileNotFoundException("Kestrun module not found.");
+            }
 
-        // Set the Kestrun root directory, defaulting to current directory
-        KestrunRoot = kestrunRoot ?? Directory.GetCurrentDirectory();
-        Directory.SetCurrentDirectory(KestrunRoot);
+            Log.Information("Found Kestrun module at: {KestrunModulePath}", kestrunModulePath);
+            Log.Verbose("Adding Kestrun module path: {KestrunModulePath}", kestrunModulePath);
+            _modulePaths.Add(kestrunModulePath);
+        }
 
-        // ①  Use the caller’s logger or create a default one
-
-        // Configure Serilog logger
-        Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug().MinimumLevel.Verbose()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .Enrich.FromLogContext()
-            // .WriteTo.Console()
-            .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-        // Log constructor entry
 
         builder = WebApplication.CreateBuilder();
         // Add Serilog to ASP.NET Core logging
@@ -93,6 +97,7 @@ public class KestrunHost
             Log.Information("Setting application name: {AppName}", appName);
             _kestrelOptions = new KestrunOptions { ApplicationName = appName };
         }
+
         // Store module paths if provided
         if (modulePathsObj is IEnumerable<object> modulePathsEnum)
         {
@@ -121,7 +126,13 @@ public class KestrunHost
     }
     #endregion
 
-    #region Logger
+    #region Helpers
+
+
+    /// <summary>
+    /// Creates a default Serilog logger with basic configuration.
+    /// </summary>
+    /// <returns>The configured Serilog logger.</returns>
     private static Serilog.Core.Logger CreateDefaultLogger()
         => new LoggerConfiguration()
             .MinimumLevel.Debug()
@@ -795,7 +806,7 @@ public class KestrunHost
                   }
           });*/
         App.UseStaticFiles(); // Serve static files from wwwroot by default
-     //   App.UseDefaultFiles(); // Serve default files like index.html
+                              //   App.UseDefaultFiles(); // Serve default files like index.html
         App.UseRouting();
         App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
         App.UseResponseCompression();                // optional

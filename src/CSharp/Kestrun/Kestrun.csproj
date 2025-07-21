@@ -39,7 +39,22 @@
     <!-- Assembly versioning -->
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+    <EpochDate>2020-01-01</EpochDate>
+
+    <!-- Get current UTC ticks and epoch ticks -->
+    <Now>$([System.DateTime]::UtcNow.Ticks)</Now>
+    <EpochTicks>$([System.DateTime]::Parse('$(EpochDate)').Ticks)</EpochTicks>
+
+    <!-- Subtract and divide inside MSBuild-compatible expressions -->
+    <TicksSinceEpoch>$([MSBuild]::Subtract($(Now), $(EpochTicks)))</TicksSinceEpoch>
+
+    <!-- 1 minute = 600,000,000 ticks -->
+    <BuildNumber>$([MSBuild]::Divide($(TicksSinceEpoch), 600000000))</BuildNumber>
+
+    <!-- Now use it for informational version -->
+    <InformationalVersion>1.2.3+build.$(BuildNumber).$(GitSha)</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -114,6 +129,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
+    <!-- Source Link for debugging  
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />-->
   </ItemGroup>
 
   <Target Name="CopyToPowerShellLib" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
@@ -142,4 +159,9 @@
     <!-- Clean publish directory -->
     <RemoveDir Directories="$(ProjectRoot)\publish" />
   </Target>
+
+  <Target Name="DisplayBuildVersion" AfterTargets="GenerateAssemblyInfo">
+  <Message Text="🌟 Kestrun Build Number: $(BuildNumber)" Importance="High" />
+  <Message Text="💫 InformationalVersion: $(InformationalVersion)" Importance="High" />
+</Target>
 </Project>
