@@ -1,6 +1,7 @@
 # PowerShell-backed Razor Pages
 
 > *Dynamic ASP.NET Core UI powered by PowerShell scripts — all inside **Kestrun***
+> Plus: how to collect form data both from PowerShell and C# Razor Pages
 
 ---
 
@@ -32,7 +33,7 @@ During a single HTTP request the pipeline looks like this:
 *Advantages*
 
 * **Zero compile step** — change the `.ps1` file, hit *F5*, refresh.
-* **Full access to Kestrun abstractions** (`$Request`, `$Response`, loggers, DI services).
+* **Full access to Kestrun abstractions** (`$Request`, `$Response`, loggers, DI).
 * **Razor tooling** — syntax highlighting, IntelliSense, TagHelpers, layout views, etc.
 
 ---
@@ -43,15 +44,18 @@ During a single HTTP request the pipeline looks like this:
 MyApp/
 └─ Pages/
    ├─ Hello.cshtml         ← Razor markup
-   └─ Hello.cshtml.ps1     ← PowerShell executed first
-   ├─ Admin/
-   │  ├─ Index.cshtml
-   │  └─ Index.cshtml.ps1
+   ├─ Hello.cshtml.ps1     ← PowerShell executed first
+   ├─ ps/
+   │  └─ Form.cshtml       ← PS form view
+   │  └─ Form.cshtml.ps1   ← PS form handler
+   ├─ cs/
+   │  └─ Form.cshtml       ← C# form view
+   │  └─ Form.cshtml.cs    ← C# form PageModel
    └─ _Layout.cshtml       ← optional shared layout
 ```
 
 * URL rule: `/Pages/Hello.cshtml` → **`/Hello`**
-* Sub-folders map to path segments (`/Admin/Index` → `/Admin`).
+* Sub-folders map to path segments (`/ps/Form` → `/ps/Form`, `/cs/Form` → `/cs/Form`).
 
 ---
 
@@ -61,19 +65,18 @@ MyApp/
 var server = new KestrunHost("MySite", kestRunRoot, [modulePath]);
 
 server.ConfigureKestrel(opts => { /* … */ });
-
 server.ApplyConfiguration();   // wires middleware
 
 /*
   Inside ApplyConfiguration():
     app.UseStaticFiles();
-    app.UsePowerShellRazorPages(runspacePool);  // 👈 middleware
+    app.UsePowerShellRazorPages(runspacePool);  // 👈 must come before
     app.UseRouting();
-    app.MapRazorPages();                        // standard Razor
+    app.MapRazorPages();
 */
 ```
 
-> **Important:** `UsePowerShellRazorPages()` **must appear before** `MapRazorPages()` so that the `$Model` object is ready when Razor runs.
+> **Important:** `UsePowerShellRazorPages()` **must appear before** `MapRazorPages()` so `$Model` is ready when Razor runs.
 
 ---
 
@@ -83,11 +86,11 @@ server.ApplyConfiguration();   // wires middleware
 
 ```razor
 @page
-@model Kestrun.PowerShellPageModel   <!-- supplied by Kestrun -->
+@model Kestrun.PowerShellPageModel
 
 @{
-    Layout = null;                   // use a plain page here
-    var data = Model.Data            // dynamic object from PS
+    Layout = null;
+    var data = Model.Data
               ?? new { Title = "Fallback", UserName = "Guest" };
 }
 
@@ -100,24 +103,26 @@ server.ApplyConfiguration();   // wires middleware
 ### 4.2 `Pages/Hello.cshtml.ps1`
 
 ```powershell
-<# Executed **in the same request** before Razor renders #>
+<# Executed **before** Razor renders #>
 
-# Build any object you like –
+param($Context)
+
+# Build your model however you like:
 $Model = [pscustomobject]@{
     Title    = 'PowerShell-backed Razor Page'
     UserName = 'Alice'
 }
 
-# Optional helpers:
-#   $Request   - KestrunRequest wrapper
-#   $Response  - KestrunResponse helper
-#   $Log       - current ILogger (Serilog)
-#   $Services  - IServiceProvider (DI container)
+# Helpers available in script:
+#   $Request   – KestrunRequest
+#   $Response  – KestrunResponse
+#   $Services  – IServiceProvider
+#   $Log       – Serilog.ILogger
 ```
 
 ---
 
-## 5. What variables are available in the script?
+### 4.2 What variables are available in the script?
 
 | Name            | Type                     | Purpose                                               |
 |-----------------|--------------------------|-------------------------------------------------------|
@@ -128,6 +133,149 @@ $Model = [pscustomobject]@{
 | **`$Model`**    | `object` (you create it) | Anything serialisable / anonymous / PSCustomObject.   |
 
 Return values are ignored; simply assign to `$Model`.
+
+---
+
+## 5. Working with Forms
+
+### 5.1 Add a `_ViewImports.cshtml`
+
+Create **`Pages/_ViewImports.cshtml`** (alongside `ps/` and `cs/`):
+
+```razor
+@using RazorSample.Pages
+@using Kestrun
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@namespace RazorSample.Pages
+```
+
+* **`@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers`** enables `<form asp-for>` and auto-injects antiforgery tokens.
+* **`@using`** brings your PageModels and `PowerShellPageModel` into scope.
+* **`@namespace`** sets the default C# namespace for views.
+
+### 5.2 PowerShell-backed form example
+
+#### `Pages/ps/Form.cshtml`
+
+```razor
+@page
+@model Kestrun.PowerShellPageModel
+@{
+    Layout = null;
+    dynamic data = Model.Data;
+}
+
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>PS Form</title></head>
+<body>
+  <h1>Contact Form (PowerShell)</h1>
+
+  @if (data.Submitted) {
+      <p>Thank you, <strong>@data.Name</strong>! We’ll email you at <em>@data.Email</em>.</p>
+  }
+  else {
+      <form method="post">
+          <label>Name:  <input name="Name" /></label><br />
+          <label>Email: <input name="Email" /></label><br />
+          <button type="submit">Submit</button>
+      </form>
+  }
+</body>
+</html>
+```
+
+#### `Pages/ps/Form.cshtml.ps1`
+
+```powershell
+param($Context)
+
+# On POST, collect form fields; on GET, show blank form
+if ($Context.Request.Method -eq 'POST') {
+    $form = $Context.Request.Form
+    $Model = [pscustomobject]@{
+        Submitted = $true
+        Name      = $form['Name']
+        Email     = $form['Email']
+    }
+} else {
+    $Model = [pscustomobject]@{
+        Submitted = $false
+        Name      = $null
+        Email     = $null
+    }
+}
+```
+
+---
+
+### 5.3 C# Razor-Page form example
+
+#### `Pages/cs/Form.cshtml`
+
+```razor
+@page
+@model RazorSample.Pages.CSharpFormModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>C# Form</title></head>
+<body>
+  <h1>Contact Form (C#)</h1>
+
+  @if (Model.Submitted) {
+      <p>Thank you, <strong>@Model.Name</strong>! We’ll email you at <em>@Model.Email</em>.</p>
+  }
+  else {
+      <form method="post">
+          <div>
+            <label asp-for="Name"></label>
+            <input asp-for="Name" />
+          </div>
+          <div>
+            <label asp-for="Email"></label>
+            <input asp-for="Email" />
+          </div>
+          <button type="submit">Submit</button>
+      </form>
+  }
+</body>
+</html>
+```
+
+#### `Pages/cs/Form.cshtml.cs`
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace RazorSample.Pages;
+
+public class CSharpFormModel : PageModel
+{
+    [BindProperty]
+    public string? Name { get; set; }
+
+    [BindProperty]
+    public string? Email { get; set; }
+
+    public bool Submitted { get; private set; }
+
+    public void OnGet()
+    {
+        // renders the form
+    }
+
+    public void OnPost()
+    {
+        // called on POST, with antiforgery token validated
+        Submitted = true;
+    }
+}
+```
 
 ---
 
