@@ -46,8 +46,9 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
 }
 
 # Example usage:
-Set-KrServerOption -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
+Set-KrServerOption -Server $server  -AllowSynchronousIO  -DenyServerHeader
  
+Set-KrServerLimit -Server $server  -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
 # Configure the listener (adjust port, cert path, and password)
 Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
 Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any) 
@@ -60,8 +61,7 @@ Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any)
 Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
-    $RequestJson = $Request | ConvertTo-Json
-    Write-Output "Request JSON: $RequestJson"
+    # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Json Response"
         RequestQuery   = $Request.Query
@@ -73,13 +73,46 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
     }
     Write-KrJsonResponse -inputObject $payload -statusCode 200
 }
+
+
+Add-KrRoute -Server $server -Verbs Get -Path "/ps/bson" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - Bson Response"
+    # Payload
+    $payload = @{
+        Body           = "Hello from PowerShell script! - Bson Response"
+        RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body
+    }
+    Write-KrBsonResponse -inputObject $payload -statusCode 200
+}
+
+Add-KrRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - Cbor Response"
+    # Payload
+    $payload = @{
+        Body           = "Hello from PowerShell script! - Cbor Response"
+        RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body
+    }
+    Write-KrCborResponse -inputObject $payload -statusCode 200
+}
+ 
  
 
 Add-KrRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Yaml Response" 
-    $RequestJson = $Request | ConvertTo-Json
-    Write-Output "Request JSON: $RequestJson"
+    # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Yaml Response"
         RequestQuery   = $Request.Query
@@ -96,8 +129,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
 Add-KrRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Xml Response"
-    $RequestJson = $Request | ConvertTo-Json
-    Write-Output "Request JSON: $RequestJson"
+    # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Xml Response"
         RequestQuery   = $Request.Query
@@ -115,8 +147,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
 Add-KrRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Text Response"
-    $RequestJson = $Request | ConvertTo-Json
-    Write-Output "Request JSON: $RequestJson"
+    # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Text Response"
         RequestQuery   = $Request.RequestQuery
@@ -164,6 +195,36 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Code @
                 RequestBody = Request.Body
             };
             Response.WriteJsonResponse( payload,  200);
+"@
+
+Add-KrRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Bson Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteBsonResponse( payload,  200);
+"@
+
+Add-KrRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Cbor Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Cbor Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteCborResponse( payload,  200);
 "@
 
 Add-KrRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Code @"

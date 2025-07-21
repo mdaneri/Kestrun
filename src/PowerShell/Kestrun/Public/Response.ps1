@@ -105,6 +105,69 @@ function Write-KrXmlResponse {
     }
 }
 
+
+function Write-KrBsonResponse {
+    <#
+    .SYNOPSIS
+        Writes an object serialized as BSON to the HTTP response.
+    .DESCRIPTION
+        Converts the provided object to BSON format and writes it to the response body. The status code and content type can be customized.
+    .PARAMETER InputObject  
+        The object to serialize and write to the response.              
+    .PARAMETER StatusCode
+        The HTTP status code to set for the response. Defaults to 200.
+    .PARAMETER ContentType
+        The content type to set for the response. If not specified, defaults to application/bson
+    .EXAMPLE
+        Write-KrBsonResponse -InputObject $myObject -StatusCode 200 -ContentType "application/bson"
+        Writes the $myObject serialized as BSON to the response with a 200 status code and      
+        content type "application/bson".
+    #>  
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$InputObject,
+        [Parameter()]
+        [int]$StatusCode = 200,
+        [Parameter()]
+        [string]$ContentType
+    )
+    if ($null -ne $Response) {
+        # Call the C# method on the $Response object
+        $Response.WriteBsonResponse($InputObject, $StatusCode, $ContentType)
+    }
+}
+
+function Write-KrCborResponse {
+    <#
+    .SYNOPSIS
+        Writes an object serialized as CBOR to the HTTP response.
+    .DESCRIPTION
+        Converts the provided object to CBOR format and writes it to the response body. The status code and content type can be customized.
+    .PARAMETER InputObject
+        The object to serialize and write to the response.
+    .PARAMETER StatusCode
+        The HTTP status code to set for the response. Defaults to 200.
+    .PARAMETER ContentType
+        The content type to set for the response. If not specified, defaults to application/cbor
+    .EXAMPLE
+        Write-KrCborResponse -InputObject $myObject -StatusCode 200 -ContentType "application/cbor"
+        Writes the $myObject serialized as CBOR to the response with a 200 status code and
+        content type "application/cbor".
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$InputObject,
+        [Parameter()]
+        [int]$StatusCode = 200,
+        [Parameter()]
+        [string]$ContentType
+    )
+    if ($null -ne $Response) {
+        # Call the C# method on the $Response object
+        $Response.WriteCborResponse($InputObject, $StatusCode, $ContentType)
+    }
+}
+
 <#
 .SYNOPSIS
     Sends a file as the HTTP response.

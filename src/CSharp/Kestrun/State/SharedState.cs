@@ -48,10 +48,6 @@ public partial class SharedStateStore
     public object? Get(string name) =>
         _store.TryGetValue(name, out var val) ? val : null;
 
-    /// <summary>Remove an entry (case‑insensitive key match).</summary>
-    public bool Remove(string name) =>
-        _store.TryRemove(name, out _);
-
     /// <summary>Snapshot of *all* current variables (shallow copy).</summary>
     public IReadOnlyDictionary<string, object?> Snapshot() =>
         _store.ToDictionary(kvp => kvp.Key, kvp => kvp.Value,
@@ -62,7 +58,7 @@ public partial class SharedStateStore
         [.. _store.Keys];
 
     // ── helpers ────────────────────────────────────────────────────
-    private void ValidateName(string name)
+    private static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || !_validName.IsMatch(name))
             throw new ArgumentException(

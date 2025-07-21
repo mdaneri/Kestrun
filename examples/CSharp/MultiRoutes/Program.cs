@@ -22,19 +22,15 @@ KestrunLogConfigurator.Configure("audit")
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
 
-// 2. Set server options
-var options = new KestrunOptions
-{
+// Set Kestrel options
+server.Options.ServerOptions.AllowSynchronousIO = false;
+server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader
 
-    AllowSynchronousIO = true,
-    AddServerHeader = false // DenyServerHeader
-};
+server.Options.ServerLimits.MaxRequestBodySize = 10485760;
+server.Options.ServerLimits.MaxConcurrentConnections = 100;
+server.Options.ServerLimits.MaxRequestHeaderCount = 100;
+server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
-options.Limits.MaxRequestBodySize = 10485760;
-options.Limits.MaxConcurrentConnections = 100;
-options.Limits.MaxRequestHeaderCount = 100;
-options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
-server.ConfigureKestrel(options);
 
 X509Certificate2? x509Certificate = null;
 
@@ -123,6 +119,43 @@ server.AddRoute("/ps/json",
             """,
             ScriptLanguage.PowerShell);
 
+
+
+server.AddRoute("/ps/bson",
+            HttpVerb.Get,
+            """
+            Write-Output "Hello from PowerShell script! - Bson Response"
+            # Payload
+            $payload = @{
+                Body           = "Hello from PowerShell script! - Bson Response"
+                RequestQuery   = $Request.Query
+                RequestHeaders = $Request.Headers
+                RequestMethod  = $Request.Method
+                RequestPath    = $Request.Path
+                # If you want to return the request body, uncomment the next line
+                RequestBody    = $Request.Body
+            }
+            Write-KrBsonResponse -inputObject $payload -statusCode 200
+            """,
+            ScriptLanguage.PowerShell);
+
+server.AddRoute("/ps/cbor",
+            HttpVerb.Get,
+            """            
+            Write-Output "Hello from PowerShell script! - Cbor Response"
+            $payload = @{
+                Body           = "Hello from PowerShell script! - Cbor Response"
+                RequestQuery   = $Request.Query
+                RequestHeaders = $Request.Headers
+                RequestMethod  = $Request.Method
+                RequestPath    = $Request.Path
+                # If you want to return the request body, uncomment the next line
+                RequestBody    = $Request.Body
+            }
+            Write-KrCborResponse -inputObject $payload -statusCode 200
+            """,
+            ScriptLanguage.PowerShell);
+
 server.AddRoute("/ps/yaml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Yaml Response(From C#)" 
             $payload = @{
@@ -205,6 +238,40 @@ server.AddRoute("/cs/json", HttpVerb.Get, """
             Response.WriteJsonResponse( payload,  200);
 
         """, Kestrun.ScriptLanguage.CSharp);
+
+server.AddRoute("/cs/bson",
+            HttpVerb.Get,
+            """
+            Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Bson Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteBsonResponse( payload,  200);
+            """,
+            ScriptLanguage.CSharp);
+
+server.AddRoute("/cs/cbor",
+            HttpVerb.Get,
+            """ 
+            Console.WriteLine("Hello from C# script! - Cbor Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Cbor Response",
+                RequestQuery = Request.Query,
+                RequestHeaders = Request.Headers,
+                RequestMethod = Request.Method,
+                RequestPath = Request.Path,
+                RequestBody = Request.Body
+            };
+            Response.WriteCborResponse( payload,  200);
+            """,
+            ScriptLanguage.CSharp);
 
 server.AddRoute("/cs/yaml", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Yaml Response(From C#)");

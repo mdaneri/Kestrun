@@ -7,19 +7,15 @@ var currentDir = Directory.GetCurrentDirectory();
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
 
-// 2. Set server options
-var options = new KestrunOptions
-{
+// Set Kestrel options
+server.Options.ServerOptions.AllowSynchronousIO = false;
+server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader
 
-    AllowSynchronousIO = false, // Disable synchronous IO
-    AddServerHeader = false // DenyServerHeader
-};
+server.Options.ServerLimits.MaxRequestBodySize = 10485760;
+server.Options.ServerLimits.MaxConcurrentConnections = 100;
+server.Options.ServerLimits.MaxRequestHeaderCount = 100;
+server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
-options.Limits.MaxRequestBodySize = 10485760;
-options.Limits.MaxConcurrentConnections = 100;
-options.Limits.MaxRequestHeaderCount = 100;
-options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
-server.ConfigureKestrel(options);
 
 // 3. Configure listeners
 server.ConfigureListener(
@@ -27,6 +23,7 @@ server.ConfigureListener(
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
+
 server.ApplyConfiguration();
 // 5️⃣ Run!
 Console.WriteLine("Open  http://localhost:5000/Hello");

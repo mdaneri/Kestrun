@@ -22,33 +22,14 @@ namespace Kestrun;
 /// </remarks>
 public class KestrunOptions
 {
-    /// <summary>Gets or sets whether the Server header should be included in each response. Defaults to true.</summary>
-    public bool? AddServerHeader { get; set; }
-
-    /// <summary>Gets or sets a value that controls whether dynamic compression of response headers is allowed. Defaults to true.</summary>
-    public bool? AllowResponseHeaderCompression { get; set; }
-
-    /// <summary>Gets or sets a value that controls whether synchronous IO is allowed for the HttpContext.Request and HttpContext.Response. Defaults to false.</summary>
-    public bool? AllowSynchronousIO { get; set; }
-
-    /// <summary>Gets or sets a value that controls how the :scheme field for HTTP/2 and HTTP/3 requests is validated. Defaults to false.</summary>
-    public bool? AllowAlternateSchemes { get; set; }
-
-    /// <summary>Gets or sets a value that controls whether the string values materialized will be reused across requests; if they match, or if the strings will always be reallocated. Defaults to false.</summary>
-    public bool? DisableStringReuse { get; set; }
-
-    /// <summary>Gets or sets whether the Host header check is bypassed and overwritten from the request target. Defaults to false.</summary>
-    public bool? AllowHostHeaderOverride { get; set; }
-
-    /// <summary>Gets or sets a callback that returns the Encoding to decode the value for the specified request header name, or null to use the default UTF8Encoding.</summary>
-    public Func<string, Encoding?>? RequestHeaderEncodingSelector { get; set; }
-
-    /// <summary>Gets or sets a callback that returns the Encoding to encode the value for the specified response header or trailer name, or null to use the default ASCIIEncoding.</summary>
-    public Func<string, Encoding?>? ResponseHeaderEncodingSelector { get; set; }
+ 
+    /// Gets the Kestrel server options.
+    /// </summary>
+    public KestrelServerOptions ServerOptions { get; set; } = new KestrelServerOptions();
 
     /// <summary>Provides access to request limit options. Use a hashtable or a KestrelServerLimits instance.</summary>
-    public KestrelServerLimits Limits { get; } = new KestrelServerLimits();
-
+    public KestrelServerLimits ServerLimits { get=>ServerOptions.Limits; }
+    
     /// <summary>Application name (optional, for diagnostics).</summary>
     public string? ApplicationName { get; set; }
 

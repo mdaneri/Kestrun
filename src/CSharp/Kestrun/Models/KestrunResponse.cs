@@ -12,6 +12,7 @@ using Microsoft.Extensions.FileProviders;
 using System.Net.Mime;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Net;
+using MongoDB.Bson;
 namespace Kestrun;
 
 public enum ContentDispositionType
@@ -191,6 +192,36 @@ public class KestrunResponse
 
         Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
         ContentType = contentType ?? $"application/json; charset={Encoding.WebName}";
+        StatusCode = statusCode;
+    }
+
+   /// <summary>
+   /// Writes a CBOR response (binary, efficient, not human-readable).
+   /// </summary>
+   public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+   {
+       if (Log.IsEnabled(LogEventLevel.Debug))
+           Log.Debug("Writing CBOR response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+       // Serialize to CBOR using PeterO.Cbor
+       byte[] cborBytes = inputObject != null
+           ? PeterO.Cbor.CBORObject.FromObject(inputObject).EncodeToBytes()
+           : [];
+       Body = cborBytes;
+       ContentType = contentType ?? "application/cbor";
+       StatusCode = statusCode;
+   }
+
+
+
+    public void WriteBsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing BSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+        // Serialize to BSON (as byte[])
+        Body = inputObject != null ? inputObject.ToBson() : [];
+        ContentType = contentType ?? "application/bson";
         StatusCode = statusCode;
     }
 

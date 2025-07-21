@@ -44,8 +44,8 @@ public class KestrunHost
     private readonly WebApplicationBuilder builder;
     private WebApplication? App;
 
-    private KestrunOptions? _kestrelOptions;
-    private readonly List<string> _modulePaths = new();
+    public KestrunOptions Options { get; private set; }
+    private readonly List<string> _modulePaths = [];
 
     private bool _isConfigured = false;
 
@@ -91,11 +91,15 @@ public class KestrunHost
         builder = WebApplication.CreateBuilder();
         // Add Serilog to ASP.NET Core logging
         builder.Host.UseSerilog();
-
-        if (!string.IsNullOrEmpty(appName))
+        if (string.IsNullOrEmpty(appName))
+        {
+            Log.Information("No application name provided, using default.");
+            Options = new KestrunOptions();
+        }
+        else
         {
             Log.Information("Setting application name: {AppName}", appName);
-            _kestrelOptions = new KestrunOptions { ApplicationName = appName };
+            Options = new KestrunOptions { ApplicationName = appName };
         }
 
         // Store module paths if provided
@@ -533,10 +537,10 @@ public class KestrunHost
                 Log.Verbose("Executing PowerShell script...");
                 // Using Task.Run to avoid blocking the thread
                 // This is necessary to prevent deadlocks in the runspace pool
-                var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                .ConfigureAwait(false);
+                //var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+               // .ConfigureAwait(false);
                 //  var psResults = ps.Invoke();
-                //var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
                 Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                 //  var psResults = await Task.Run(() => ps.Invoke());
@@ -699,26 +703,13 @@ public class KestrunHost
 
     #endregion
     #region Configuration
-    public void ConfigureKestrel(KestrunOptions options)
-    {
-        _kestrelOptions = options;
-    }
+
+
 
     public void ApplyConfiguration()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("ApplyConfiguration() called");
-        if (_kestrelOptions == null)
-        {
-            _kestrelOptions = new KestrunOptions();
-        }
-        ApplyConfiguration(_kestrelOptions);
-    }
-
-    public void ApplyConfiguration(KestrunOptions options)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("ApplyConfiguration(options) called: {@Options}", options);
+            Log.Debug("ApplyConfiguration(options) called");
 
         if (_isConfigured)
         {
@@ -729,44 +720,19 @@ public class KestrunHost
 
         // This method is called to apply the configured options to the Kestrel server.
         // The actual application of options is done in the Run method.
-        _runspacePool = CreateRunspacePool(options.MaxRunspaces);
+        _runspacePool = CreateRunspacePool(Options.MaxRunspaces);
         if (_runspacePool == null)
         {
             throw new InvalidOperationException("Failed to create runspace pool.");
         }
 
         KestrelServices(builder);
-
+        builder.WebHost.UseKestrel(opts =>
+        {
+            opts.CopyFromTemplate(Options.ServerOptions);
+        });
         builder.WebHost.ConfigureKestrel(kestrelOpts =>
         {
-            if (options.AllowSynchronousIO.HasValue)
-                kestrelOpts.AllowSynchronousIO = options.AllowSynchronousIO.Value;
-            if (options.AllowResponseHeaderCompression.HasValue)
-                kestrelOpts.AllowResponseHeaderCompression = options.AllowResponseHeaderCompression.Value;
-            if (options.AddServerHeader.HasValue)
-                kestrelOpts.AddServerHeader = options.AddServerHeader.Value;
-            if (options.AllowHostHeaderOverride.HasValue)
-                kestrelOpts.AllowHostHeaderOverride = options.AllowHostHeaderOverride.Value;
-            if (options.AllowAlternateSchemes.HasValue)
-                kestrelOpts.AllowAlternateSchemes = options.AllowAlternateSchemes.Value;
-            if (options.DisableStringReuse.HasValue)
-                kestrelOpts.DisableStringReuse = options.DisableStringReuse.Value;
-            if (options.ResponseHeaderEncodingSelector != null)
-                kestrelOpts.ResponseHeaderEncodingSelector = options.ResponseHeaderEncodingSelector;
-            if (options.RequestHeaderEncodingSelector != null)
-                kestrelOpts.RequestHeaderEncodingSelector = options.RequestHeaderEncodingSelector;
-
-            if (options.Limits.MaxRequestBodySize.HasValue)
-                kestrelOpts.Limits.MaxRequestBodySize = options.Limits.MaxRequestBodySize;
-            if (options.Limits.MaxConcurrentConnections.HasValue)
-                kestrelOpts.Limits.MaxConcurrentConnections = options.Limits.MaxConcurrentConnections;
-            if (options.Limits.MaxRequestHeaderCount > 0)
-                kestrelOpts.Limits.MaxRequestHeaderCount = options.Limits.MaxRequestHeaderCount;
-            if (options.Limits.KeepAliveTimeout != default(TimeSpan))
-                kestrelOpts.Limits.KeepAliveTimeout = options.Limits.KeepAliveTimeout;
-
-
-
             // Optionally, handle ApplicationName or other properties as needed
             if (_listenerOptions != null && _listenerOptions.Count > 0)
             {
@@ -909,7 +875,7 @@ public class KestrunHost
         int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 
         Log.Information($"Creating runspace pool with max runspaces: {maxRs}");
-        var runspacePool = new KestrunRunspacePoolManager(_kestrelOptions?.MinRunspaces ?? 1, maxRunspaces: maxRs, initialSessionState: iss);
+        var runspacePool = new KestrunRunspacePoolManager(Options?.MinRunspaces ?? 1, maxRunspaces: maxRs, initialSessionState: iss);
         // Return the created runspace pool
         return runspacePool;
     }
@@ -925,8 +891,8 @@ public class KestrunHost
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Dispose() called");
         _runspacePool?.Dispose();
-        _runspacePool = null;
-        _kestrelOptions = null;
+        _runspacePool = null; // Clear the runspace pool reference
+        _isConfigured = false; // Reset configuration state
         _listenerOptions?.Clear();
         App = null;
     }

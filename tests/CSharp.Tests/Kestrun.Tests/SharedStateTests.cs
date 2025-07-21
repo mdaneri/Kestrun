@@ -7,8 +7,7 @@ public class SharedStateTests
     [Fact]
     public void Set_And_TryGet_Work()
     {
-        var host = new KestrunHost();
-        host.SharedState.Remove("foo");
+        var host = new KestrunHost(); 
 
         Assert.True(host.SharedState.Set("foo", new List<int> { 1, 2 }));
         Assert.True(host.SharedState.TryGet("foo", out List<int>? list));
@@ -26,16 +25,7 @@ public class SharedStateTests
         Assert.Equal("baz", val);
     }
 
-    // ── removal sanity ───────────────────────────────────────────────
-    [Fact]
-    public void Remove_Works()
-    {
-        var host = new KestrunHost();
-        host.SharedState.Set("zap", new object());
-
-        Assert.True(host.SharedState.Remove("ZAP"));       // note the casing
-        Assert.False(host.SharedState.TryGet<object>("zap", out _));
-    }
+  
 
     // ── snapshot helpers ────────────────────────────────────────────
     [Fact]
