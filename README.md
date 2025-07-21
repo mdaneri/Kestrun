@@ -101,6 +101,7 @@ GitHub Actions runs these tests automatically on every push and pull request.
 - `tests/` — Test projects (C#, PowerShell)
 - `cert/` — Development certificates
 - `Utility/` — Helper scripts
+- `docs/` - Documentation
 
 ## Contributing
 

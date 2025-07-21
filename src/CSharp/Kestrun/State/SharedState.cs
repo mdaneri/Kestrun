@@ -9,19 +9,19 @@ namespace Kestrun;
 /// <summary>
 /// Thread‑safe, case‑insensitive global key/value store for reference‑type objects.
 /// </summary>
-public static partial class SharedState
+public partial class SharedStateStore
 {
     // ── configuration ───────────────────────────────────────────────
     private static readonly Regex _validName =
         MyRegex();
 
     // StringComparer.OrdinalIgnoreCase ⇒ 100 % case‑insensitive keys
-    private static readonly ConcurrentDictionary<string, object?> _store =
+    private readonly ConcurrentDictionary<string, object?> _store =
         new(StringComparer.OrdinalIgnoreCase);
 
     // ── public API ──────────────────────────────────────────────────
     /// <summary>Add or overwrite a value (reference‑types only).</summary>
-    public static bool Set(string name, object? value)
+    public bool Set(string name, object? value)
     {
         ValidateName(name);
         ValidateValue(name, value);
@@ -33,7 +33,7 @@ public static partial class SharedState
     /// Strongly‑typed fetch. Returns <c>false</c> if the key is missing
     /// or the stored value can’t be cast to <typeparamref name="T"/>.
     /// </summary>
-    public static bool TryGet<T>(string name, out T? value)
+    public bool TryGet<T>(string name, out T? value)
     {
         if (_store.TryGetValue(name, out var raw) && raw is T cast)
         {
@@ -45,24 +45,24 @@ public static partial class SharedState
     }
 
     /// <summary>Untyped fetch; <c>null</c> if absent.</summary>
-    public static object? Get(string name) =>
+    public object? Get(string name) =>
         _store.TryGetValue(name, out var val) ? val : null;
 
     /// <summary>Remove an entry (case‑insensitive key match).</summary>
-    public static bool Remove(string name) =>
+    public bool Remove(string name) =>
         _store.TryRemove(name, out _);
 
     /// <summary>Snapshot of *all* current variables (shallow copy).</summary>
-    public static IReadOnlyDictionary<string, object?> Snapshot() =>
+    public IReadOnlyDictionary<string, object?> Snapshot() =>
         _store.ToDictionary(kvp => kvp.Key, kvp => kvp.Value,
                             StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Snapshot of keys only—handy for quick listings.</summary>
-    public static IReadOnlyCollection<string> KeySnapshot() =>
+    public IReadOnlyCollection<string> KeySnapshot() =>
         [.. _store.Keys];
 
     // ── helpers ────────────────────────────────────────────────────
-    private static void ValidateName(string name)
+    private void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || !_validName.IsMatch(name))
             throw new ArgumentException(

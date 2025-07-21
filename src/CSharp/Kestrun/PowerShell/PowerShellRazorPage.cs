@@ -59,8 +59,8 @@ public static class PowerShellRazorPage
         Log.Information("Using Pages directory: {Path}", pagesRoot);
         if (!Directory.Exists(pagesRoot))
         {
-            Log.Error("Pages directory not found: {Path}", pagesRoot);
-            throw new DirectoryNotFoundException($"Pages directory not found: {pagesRoot}");
+            Log.Warning("Pages directory not found: {Path}", pagesRoot);
+         //  throw new DirectoryNotFoundException($"Pages directory not found: {pagesRoot}");
         }
 
         // MUST run before MapRazorPages()

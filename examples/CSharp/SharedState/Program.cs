@@ -7,17 +7,17 @@ using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
 
- 
+
 var currentDir = Directory.GetCurrentDirectory();
 var parentDirInfo = Directory.GetParent(currentDir);
-if (parentDirInfo == null || parentDirInfo.Parent == null|| parentDirInfo.Parent.Parent == null)
+if (parentDirInfo == null || parentDirInfo.Parent == null || parentDirInfo.Parent.Parent == null)
 {
     Console.WriteLine("Unable to determine the parent directory for module path.");
     return;
-} 
+}
 string modulePath = Path.Combine(
     parentDirInfo.Parent.Parent.FullName,
-    "src","PowerShell",
+    "src", "PowerShell",
     "Kestrun",
     "Kestrun.psm1"
 );
@@ -54,13 +54,13 @@ server.ConfigureListener(
 );
 
 var sharedVisits = new Hashtable();
-sharedVisits["Count"] = 0; 
+sharedVisits["Count"] = 0;
 // 3.1 Inject global variable
-if (!Kestrun.SharedState.Set("Visits", sharedVisits))
+if (!server.SharedState.Set("Visits", sharedVisits))
 {
     Console.WriteLine("Failed to define global variable 'Visits'.");
     Environment.Exit(1);
-} 
+}
 server.ApplyConfiguration();
 // 4. Add routes
 server.AddRoute("/ps/show", HttpVerb.Get,
@@ -96,9 +96,9 @@ server.AddRoute("/cs/visit", HttpVerb.Get, """
 server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 {
     Console.WriteLine("Native C# route hit!");
- 
-        SharedState.TryGet("Visits", out  Hashtable? visits);
-   
+
+    server.SharedState.TryGet("Visits", out Hashtable? visits);
+
     int visitCount = visits != null && visits["Count"] is int v ? v : 0;
 
     if (visits != null && visits["Count"] is int)
@@ -108,7 +108,7 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
     else
     {
         res.WriteErrorResponse("Visits variable not found or invalid.", 500);
-    }    
+    }
     await Task.Yield();
 });
 

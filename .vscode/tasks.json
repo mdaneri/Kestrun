@@ -22,12 +22,12 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build GlobalVar",
+            "label": "build SharedState",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/examples/CSharp/GlobalVar/GlobalVar.csproj"
+                "${workspaceFolder}/examples/CSharp/SharedState/SharedState.csproj"
             ],
             "problemMatcher": "$msCompile"
         },

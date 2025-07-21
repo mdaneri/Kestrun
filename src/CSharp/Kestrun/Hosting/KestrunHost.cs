@@ -28,6 +28,7 @@ using System.Security;
 using Microsoft.AspNetCore.Hosting;
 using Serilog;
 using Serilog.Events;
+using Microsoft.Extensions.FileProviders;
 
 
 namespace Kestrun;
@@ -51,6 +52,8 @@ public class KestrunHost
 
     private KestrunRunspacePoolManager? _runspacePool;
     public string KestrunRoot { get; private set; }
+
+    public SharedStateStore SharedState { get; } = new();
 
     #endregion
 
@@ -772,13 +775,34 @@ public class KestrunHost
 
         // Build the WebApplication
         App = builder.Build();
-        //  App.UsePowerShellRunspace(_runspacePool);
+
+        /*  App.UseStaticFiles(new StaticFileOptions
+          {
+              FileProvider = new PhysicalFileProvider(Path.Combine(KestrunRoot, "public")),
+              RequestPath = "/assets",
+              DefaultContentType = "text/plain",
+              ServeUnknownFileTypes = true,
+              OnPrepareResponse = ctx =>
+                  {
+                      var headers = ctx.Context.Response.Headers;
+
+                      // Set a fixed or computed Last-Modified time
+                      if (!string.IsNullOrEmpty(ctx.File.PhysicalPath))
+                      {
+                          var lastModified = File.GetLastWriteTimeUtc(ctx.File.PhysicalPath);
+                          headers.LastModified = lastModified.ToUniversalTime().ToString("R"); // RFC1123 format
+                      }
+                  }
+          });*/
+        App.UseStaticFiles(); // Serve static files from wwwroot by default
+     //   App.UseDefaultFiles(); // Serve default files like index.html
+        App.UseRouting();
         App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
-        App.UseResponseCompression();
-        App.UseStaticFiles();                      // optional
+        App.UseResponseCompression();                // optional
         App.UsePowerShellRazorPages(_runspacePool!); // +++ PowerShell→Razor bridge
-        App.UseRouting();                          // if not already present
         App.MapRazorPages();                       // +++ route the .cshtml files
+
+
         var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
 
         if (dataSource.Endpoints.Count == 0)

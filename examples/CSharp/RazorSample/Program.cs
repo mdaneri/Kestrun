@@ -42,7 +42,7 @@ server.ConfigureKestrel(options);
 
 // 3. Configure listeners
 server.ConfigureListener(
-    port: 5002,
+    port: 5000,
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );

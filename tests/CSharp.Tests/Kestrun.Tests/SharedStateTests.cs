@@ -7,10 +7,11 @@ public class SharedStateTests
     [Fact]
     public void Set_And_TryGet_Work()
     {
-        SharedState.Remove("foo");
+        var host = new KestrunHost();
+        host.SharedState.Remove("foo");
 
-        Assert.True(SharedState.Set("foo", new List<int> { 1, 2 }));
-        Assert.True(SharedState.TryGet("foo", out List<int>? list));
+        Assert.True(host.SharedState.Set("foo", new List<int> { 1, 2 }));
+        Assert.True(host.SharedState.TryGet("foo", out List<int>? list));
         Assert.Equal(2, list?.Count);
     }
 
@@ -18,9 +19,10 @@ public class SharedStateTests
     [Fact]
     public void CaseInsensitive_Access_Works()
     {
-        SharedState.Set("Bar", "baz");
+        var host = new KestrunHost();
+        host.SharedState.Set("Bar", "baz");
 
-        Assert.True(SharedState.TryGet("bar", out string? val));
+        Assert.True(host.SharedState.TryGet("bar", out string? val));
         Assert.Equal("baz", val);
     }
 
@@ -28,20 +30,22 @@ public class SharedStateTests
     [Fact]
     public void Remove_Works()
     {
-        SharedState.Set("zap", new object());
+        var host = new KestrunHost();
+        host.SharedState.Set("zap", new object());
 
-        Assert.True(SharedState.Remove("ZAP"));             // note the casing
-        Assert.False(SharedState.TryGet<object>("zap", out _));
+        Assert.True(host.SharedState.Remove("ZAP"));       // note the casing
+        Assert.False(host.SharedState.TryGet<object>("zap", out _));
     }
 
     // ── snapshot helpers ────────────────────────────────────────────
     [Fact]
     public void Snapshot_And_KeySnapshot_Work()
     {
-        SharedState.Set("snap", "val");
+        var host = new KestrunHost();
+        host.SharedState.Set("snap", "val");
 
-        var map  = SharedState.Snapshot();
-        var keys = SharedState.KeySnapshot();
+        var map = host.SharedState.Snapshot();
+        var keys = host.SharedState.KeySnapshot();
 
         Assert.True(map.ContainsKey("snap"));
         Assert.Equal("val", map["snap"]);
@@ -52,13 +56,15 @@ public class SharedStateTests
     [Fact]
     public void Invalid_Name_Throws()
     {
-        Assert.Throws<ArgumentException>(() => SharedState.Set("1bad",  "oops"));
-        Assert.Throws<ArgumentException>(() => SharedState.Set("bad-name", "oops"));
+        var host = new KestrunHost();
+        Assert.Throws<ArgumentException>(() => host.SharedState.Set("1bad", "oops"));
+        Assert.Throws<ArgumentException>(() => host.SharedState.Set("bad-name", "oops"));
     }
 
     [Fact]
     public void ValueType_Throws()
     {
-        Assert.Throws<ArgumentException>(() => SharedState.Set("num", 123)); // int ⇒ value‑type
+        var host = new KestrunHost();
+        Assert.Throws<ArgumentException>(() => host.SharedState.Set("num", 123)); // int ⇒ value‑type
     }
 }

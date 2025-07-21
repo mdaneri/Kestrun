@@ -86,4 +86,4 @@ examples/CSharpTest/test.bin
 /examples/Files/LargeFiles
 testResults.xml
 /publish
-examples/CSharp/MultiRoutes/logs/audit-20250719.json
+*/logs/*

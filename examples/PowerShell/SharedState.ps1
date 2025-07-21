@@ -42,10 +42,10 @@ catch {
 $server = New-KrServer -Name 'MyKestrunServer'
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Server $server -Port 5002  
+Add-KrListener -Server $server -Port 5000
 
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState -Name 'Visits' -Value @{Count = 0}
+Set-KrSharedState -Server $server -Name 'Visits' -Value @{Count = 0}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Route: GET /ps/show

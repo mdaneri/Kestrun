@@ -9,10 +9,10 @@
             "cwd": "${workspaceFolder}/examples/PowerShell"
         },
         {
-            "name": "PowerShell: Launch GlobalVar.ps1",
+            "name": "PowerShell: Launch SharedState.ps1",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/examples/PowerShell/GlobalVar.ps1",
+            "script": "${workspaceFolder}/examples/PowerShell/SharedState.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell"
         },
         {
@@ -38,13 +38,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": ".NET Launch CSharp/GlobalVar",
+            "name": ".NET Launch CSharp/SharedState",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build GlobalVar",
-            "program": "${workspaceFolder}/examples/CSharp/GlobalVar/bin/Debug/net8.0/GlobalVar.dll",
+            "preLaunchTask": "build SharedState",
+            "program": "${workspaceFolder}/examples/CSharp/SharedState/bin/Debug/net8.0/SharedState.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/examples/CSharp/GlobalVar",
+            "cwd": "${workspaceFolder}/examples/CSharp/SharedState",
             "stopAtEntry": false,
             "console": "integratedTerminal"
         },
