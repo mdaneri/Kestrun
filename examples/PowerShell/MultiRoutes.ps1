@@ -44,17 +44,16 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
     Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
     exit 1
 }
-                 
+
 # Example usage:
 Set-KrServerOption -Server $server -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120 -AllowSynchronousIO  -DenyServerHeader
  
 # Configure the listener (adjust port, cert path, and password)
 Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
-Add-KrListener -Server $server -Port 5002 -IPAddress ([IPAddress]::Any) 
+Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any) 
 
 #$server.ApplyConfiguration()
-        
- 
+
 # Set-KrPythonRuntime
 
 # Add a route with a script block
@@ -201,7 +200,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @
 Add-KrRoute -Server $server -Verbs Get -Path "/cs/file" -Language CSharp -Code @"
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
-    Response.WriteFileResponse("C:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\README.md", null, 200);
+    Response.WriteFileResponse("..\\..\\README.md", null, 200);
 "@
 
 Add-KrRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {

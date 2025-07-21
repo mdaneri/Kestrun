@@ -302,7 +302,10 @@ function Write-KrLog {
     }
   }
   else {
-    $logger = [Serilog.Log]
+    $logger = [Serilog.Log]::Logger
+    if (-not $logger) {
+      return
+    }
   }
 
   # 2️⃣  Push structured properties (if any) into Serilog's LogContext

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Net;
 using Kestrun;
 using System.Security;
-using System.Security.Cryptography.X509Certificates; 
+using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
- 
+
 // 1️⃣  Audit log: only warnings and above, writes JSON files
 KestrunLogConfigurator.Configure("audit")
     .Minimum(LogEventLevel.Warning)
@@ -52,7 +52,7 @@ else
 
     x509Certificate = Kestrun.CertificateManager.NewSelfSigned(
       new Kestrun.CertificateManager.SelfSignedOptions(
-          DnsNames: new[] { "localhost", "127.0.0.1" },
+          DnsNames: ["localhost", "127.0.0.1"],
           KeyType: Kestrun.CertificateManager.KeyType.Rsa,
           KeyLength: 2048,
           ValidDays: 30,
@@ -92,7 +92,7 @@ server.ConfigureListener(
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3
 );
 server.ConfigureListener(
-    port: 5002,
+    port: 5000,
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
@@ -264,6 +264,13 @@ server.AddRoute("/cs/stream/text", HttpVerb.Get, """
                 Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
                Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
             """, Kestrun.ScriptLanguage.CSharp);
+
+server.AddRoute("/cs/file", HttpVerb.Get, """
+                Console.WriteLine("Hello from C# script! - file Response(From C#)");
+                Response.WriteFileResponse("..\\..\\..\\README.md", null, 200);
+""", Kestrun.ScriptLanguage.CSharp);
+
+
 
 server.AddNativeRoute("/compiled", HttpVerb.Get, async (req, res) =>
 {

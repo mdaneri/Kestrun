@@ -16,7 +16,7 @@
             "cwd": "${workspaceFolder}/examples/PowerShell"
         },
         {
-            "name": ".NET Launch MultiRoutes",
+            "name": ".NET Launch CSharp/MultiRoutes",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build MultiRoutes",

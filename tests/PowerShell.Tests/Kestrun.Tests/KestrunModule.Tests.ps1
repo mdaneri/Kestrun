@@ -23,25 +23,28 @@ BeforeAll {
     }
 
 }
- 
+
 Describe 'Kestrun PowerShell Functions' {
-   
+
+    BeforeAll {
+        $server = New-KrServer -Name 'TestServer'
+    }
 
     AfterAll {
         Remove-Variable Response -Scope Script -ErrorAction SilentlyContinue
     }
 
     It 'Set-KrSharedState defines and retrieves values' {
-        Set-KrSharedState -Name 'psTestVar' -Value @(1, 2, 3)
-        (Get-KrSharedState -Name 'psTestVar').Count | Should -Be 3
+        Set-KrSharedState -Server $server -Name 'psTestVar' -Value @(1, 2, 3)
+        (Get-KrSharedState -Server $server -Name 'psTestVar').Count | Should -Be 3
     }
 
     It 'Remove-KrSharedState deletes value' {
-        $value= @()
-        Set-KrSharedState -Name 'psToRemove' -Value @(1,2,3)
-        [Kestrun.SharedState]::TryGet[object]('psToRemove', [ref]$value)| Should -BeTrue
-        Remove-KrSharedState -Name 'psToRemove'
-        [Kestrun.SharedState]::TryGet[object]('psToRemove', [ref]$value) | Should -BeFalse
+        $value = @()
+        Set-KrSharedState -Server $server -Name 'psToRemove' -Value @(1, 2, 3)
+        $server.SharedState.TryGet[object]('psToRemove', [ref]$value) | Should -BeTrue
+        Remove-KrSharedState -Server $server -Name 'psToRemove'
+        $server.SharedState.TryGet[object]('psToRemove', [ref]$value) | Should -BeFalse
     }
 
     It 'Resolve-KrPath returns absolute path' {
