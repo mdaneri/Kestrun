@@ -31,16 +31,16 @@ server.AddResponseCompression(options =>
     options.EnableForHttps = true;
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
     {
-        "application/json",
-        "application/bson",
-        "application/cbor",
-        "application/yaml",
-        "application/xml",
         "text/plain",
+        "text/css",
+        "application/javascript",
+        "application/json",
+        "application/xml",
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-}).AddCors(options =>
+})
+/*.AddCors("sss",options =>
 {
     options.AddDefaultPolicy(builder =>
     {
@@ -48,11 +48,12 @@ server.AddResponseCompression(options =>
                .AllowAnyMethod()
                .AllowAnyHeader();
     });
-}).AddPowerShellRuntime().AddFileServer(options =>
+})*/
+.AddFileServer(options =>
 {
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
-}).AddPowerShellRazorPages().AddHealthChecks();
+}).AddPowerShellRazorPages();
 
 
 

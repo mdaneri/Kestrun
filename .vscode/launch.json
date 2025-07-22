@@ -12,8 +12,15 @@
             "name": "PowerShell: Launch SharedState.ps1",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/examples/PowerShell/SharedState.ps1",
-            "cwd": "${workspaceFolder}/examples/PowerShell"
+            "script": "${workspaceFolder}/examples/PowerShell/SharedState/SharedState.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/SharedState"
+        },
+        {
+            "name": "PowerShell: Launch RazorSample.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/RazorSample/RazorSample.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/RazorSample"
         },
         {
             "name": ".NET Launch CSharp/MultiRoutes",

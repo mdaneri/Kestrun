@@ -58,7 +58,7 @@ function Add-AspNetCoreType {
             "Microsoft.AspNetCore.Cors.dll",
             "Microsoft.AspNetCore.Authentication.dll",
             "Microsoft.AspNetCore.Http.Abstractions.dll",
-            "Microsoft.Extensions.Diagnostics.HealthChecks.dll"
+            "Microsoft.AspNetCore.Antiforgery.dll"
 
         )
         $allFound = $true

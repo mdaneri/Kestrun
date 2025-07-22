@@ -36,7 +36,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;    // RazorPagesOptions
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Cors.Infrastructure;     // extension methods
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Antiforgery;     // extension methods
 //using Microsoft.AspNetCore.Authentication.BearerToken;
 
 namespace Kestrun;
@@ -767,41 +768,6 @@ public class KestrunHost
         });
 
 
-
-
-        // Build the WebApplication
-        //   App = builder.Build();
-
-        /*  App.UseStaticFiles(new StaticFileOptions
-          {
-              FileProvider = new PhysicalFileProvider(Path.Combine(KestrunRoot, "public")),
-              RequestPath = "/assets",
-              DefaultContentType = "text/plain",
-              ServeUnknownFileTypes = true,
-              OnPrepareResponse = ctx =>
-                  {
-                      var headers = ctx.Context.Response.Headers;
-
-                      // Set a fixed or computed Last-Modified time
-                      if (!string.IsNullOrEmpty(ctx.File.PhysicalPath))
-                      {
-                          var lastModified = File.GetLastWriteTimeUtc(ctx.File.PhysicalPath);
-                          headers.LastModified = lastModified.ToUniversalTime().ToString("R"); // RFC1123 format
-                      }
-                  }
-          });*/
-
-
-        /*  App.UseStaticFiles(); // Serve static files from wwwroot by default
-                                //   App.UseDefaultFiles(); // Serve default files like index.html
-          App.UseRouting();
-          App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
-          App.UseResponseCompression();                // optional
-          App.UsePowerShellRazorPages(_runspacePool!); // +++ PowerShell→Razor bridge
-          App.MapRazorPages();                       // +++ route the .cshtml files
-
-  */
-
         App = Build();
         var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
 
@@ -818,9 +784,20 @@ public class KestrunHost
         }
         _isConfigured = true;
     }
+    #endregion
+    #region Builder
+    /* More information about the KestrunHost class
+    https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.webapplication?view=aspnetcore-8.0
 
+    */
 
-    /// <summary>Apply queued services, build the WebApplication, queue middleware.</summary>
+    /// <summary>
+    /// Builds the WebApplication.
+    /// This method applies all queued services and middleware stages,
+    /// and returns the built WebApplication instance.
+    /// </summary>
+    /// <returns>The built WebApplication.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public WebApplication Build()
     {
         if (builder == null) throw new InvalidOperationException("Call CreateBuilder() first.");
@@ -830,54 +807,73 @@ public class KestrunHost
         {
             configure(builder.Services);
         }
-
+ 
         // 2️⃣  Build the WebApplication
         App = builder.Build();
-        // AddPowerShellRuntime(); // 4️⃣  Add PowerShell runtime middleware
 
         // 3️⃣  Apply all queued middleware stages
         foreach (var stage in _middlewareQueue)
         {
             stage(App);
         }
-        // 5️⃣  Terminal endpoint execution
-        //App.UseEndpoints(_ => { });   // empty delegate is fine
+        // 5️⃣  Terminal endpoint execution 
         return App;
     }
 
-
-
-    // Generic catch‑all – enqueue *any* service work you want.
+    /// <summary>
+    /// Adds a service configuration action to the service queue.
+    /// This action will be executed when the services are built.
+    /// </summary>
+    /// <param name="configure">The service configuration action.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddService(Action<IServiceCollection> configure)
     {
         _serviceQueue.Add(configure);
         return this;
     }
 
-    // Generic catch‑all – enqueue *any* middleware stage you want.
+    /// <summary>
+    /// Adds a middleware stage to the application pipeline.
+    /// </summary>
+    /// <param name="stage">The middleware stage to add.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost Use(Action<IApplicationBuilder> stage)
     {
         _middlewareQueue.Add(stage);
         return this;
     }
-    public KestrunHost AddRazorPages(RazorPagesOptions source)
+
+    /// <summary>
+    /// Adds Razor Pages to the application.
+    /// </summary>
+    /// <param name="cfg">The configuration options for Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddRazorPages(RazorPagesOptions? cfg)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Adding Razor Pages from source: {Source}", source);
-        ArgumentNullException.ThrowIfNull(source);
+            Log.Debug("Adding Razor Pages from source: {Source}", cfg);
+
+        if (cfg == null)
+            return AddRazorPages(); // no config, use defaults
 
         return AddRazorPages(dest =>
-        {
-            // simple value properties are fine
-            dest.RootDirectory = source.RootDirectory;
+            {
+                // simple value properties are fine
+                dest.RootDirectory = cfg.RootDirectory;
 
-            // copy conventions one‑by‑one (collection is read‑only)
-            foreach (var c in source.Conventions)
-                dest.Conventions.Add(c);
-        });
+                // copy conventions one‑by‑one (collection is read‑only)
+                foreach (var c in cfg.Conventions)
+                    dest.Conventions.Add(c);
+            });
     }
 
-
+    /// <summary>
+    /// Adds Razor Pages to the application.
+    /// This overload allows you to specify configuration options.
+    /// If you need to configure Razor Pages options, use the other overload.
+    /// </summary>
+    /// <param name="cfg">The configuration options for Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddRazorPages(Action<RazorPagesOptions>? cfg = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -895,7 +891,11 @@ public class KestrunHost
          .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
     }
 
-
+    /// <summary>
+    /// Adds MVC / API controllers to the application.
+    /// </summary>
+    /// <param name="cfg">The configuration options for MVC / API controllers.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddControllers(Action<Microsoft.AspNetCore.Mvc.MvcOptions>? cfg = null)
     {
         return AddService(services =>
@@ -905,8 +905,40 @@ public class KestrunHost
         });
     }
 
+    /// <summary>
+    /// Adds response compression to the application.
+    /// This overload allows you to specify configuration options.
+    /// </summary>
+    /// <param name="options">The configuration options for response compression.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddResponseCompression(ResponseCompressionOptions? options)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding response compression with options: {@Options}", options);
+        if (options == null)
+            return AddResponseCompression(); // no options, use defaults
+
+        // delegate shim – re‑use the existing pipeline
+        return AddResponseCompression(o =>
+        {
+            o.EnableForHttps = options.EnableForHttps;
+            o.MimeTypes = options.MimeTypes;
+            o.ExcludedMimeTypes = options.ExcludedMimeTypes;
+            // copy provider lists, levels, etc. if you expose them
+            foreach (var p in options.Providers) o.Providers.Add(p);
+        });
+    }
+
+    /// <summary>
+    /// Adds response compression to the application.
+    /// This overload allows you to specify configuration options.
+    /// </summary>
+    /// <param name="cfg">The configuration options for response compression.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddResponseCompression(Action<ResponseCompressionOptions>? cfg = null)
     {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding response compression with configuration: {Config}", cfg);
         // Service side
         AddService(services =>
         {
@@ -919,22 +951,18 @@ public class KestrunHost
         // Middleware side
         return Use(app => app.UseResponseCompression());
     }
-    public KestrunHost AddResponseCompression(ResponseCompressionOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
 
-        // delegate shim – re‑use the existing pipeline
-        return AddResponseCompression(o =>
-        {
-            o.EnableForHttps = options.EnableForHttps;
-            o.MimeTypes = options.MimeTypes;
-            // copy provider lists, levels, etc. if you expose them
-            foreach (var p in options.Providers) o.Providers.Add(p);
-        });
-    }
-
+    /// <summary>
+    /// Adds static files to the application.
+    /// This overload allows you to specify configuration options.
+    /// </summary>
+    /// <param name="cfg">The static file options to configure.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddStaticFiles(Action<StaticFileOptions>? cfg = null)
     {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding static files with configuration: {Config}", cfg);
+
         return Use(app =>
         {
             if (cfg == null)
@@ -949,24 +977,80 @@ public class KestrunHost
         });
     }
 
-    // ② object‑style overload (PowerShell‑friendly)
+    /// <summary>
+    /// Adds static files to the application.
+    /// This overload allows you to specify configuration options.
+    /// </summary>
+    /// <param name="options">The static file options to configure.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddStaticFiles(StaticFileOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding static files with options: {@Options}", options);
+
+        if (options == null)
+            return AddStaticFiles(); // no options, use defaults
 
         // reuse the delegate overload so the pipeline logic stays in one place
         return AddStaticFiles(o =>
         {
-            // copy only the properties callers are likely to set
-            o.RequestPath = options.RequestPath;
-            o.FileProvider = options.FileProvider;
-            o.ServeUnknownFileTypes = options.ServeUnknownFileTypes;
-            o.DefaultContentType = options.DefaultContentType;
-            o.ContentTypeProvider = options.ContentTypeProvider;
-            o.HttpsCompression = options.HttpsCompression;
-            o.OnPrepareResponse = options.OnPrepareResponse;
+            // copy only the properties callers are likely to set 
+            CopyStaticFileOptions(options, o);
+
         });
     }
+
+    /// <summary>
+    /// Adds antiforgery protection to the application.
+    /// This overload allows you to specify configuration options.
+    /// </summary>
+    /// <param name="options">The antiforgery options to configure.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddAntiforgery(AntiforgeryOptions? options)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding Antiforgery with configuration: {@Config}", options);
+
+        if (options == null)
+            return AddAntiforgery(); // no config, use defaults
+
+        // Delegate to the Action-based overload
+        return AddAntiforgery(cfg =>
+        {
+            cfg.Cookie = options.Cookie;
+            cfg.FormFieldName = options.FormFieldName;
+            cfg.HeaderName = options.HeaderName;
+            cfg.SuppressXFrameOptionsHeader = options.SuppressXFrameOptionsHeader;
+        });
+    }
+
+    /// <summary>
+    /// Adds antiforgery protection to the application.
+    /// </summary>
+    /// <param name="setupAction">An optional action to configure the antiforgery options.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddAntiforgery(Action<AntiforgeryOptions>? setupAction = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding Antiforgery with configuration: {@Config}", setupAction);
+        // Service side
+        AddService(services =>
+        {
+            if (setupAction == null)
+                services.AddAntiforgery();
+            else
+                services.AddAntiforgery(setupAction);
+        });
+
+        // Middleware side
+        return Use(app => app.UseAntiforgery());
+    }
+
+
+    /// <summary>
+    /// Adds a CORS policy that allows all origins, methods, and headers.
+    /// </summary>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddCorsAllowAll() =>
         AddCors("AllowAll", b => b.AllowAnyOrigin()
                                   .AllowAnyMethod()
@@ -999,9 +1083,19 @@ public class KestrunHost
         // 2️⃣ Middleware‑time application
         return Use(app => app.UseCors(policyName));
     }
-    
+
+    /// <summary>
+    /// Registers a named CORS policy that was already composed with a
+    /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
+    /// </summary>
+    /// <param name="policyName">The name to store/apply the policy under.</param>
+    /// <param name="buildPolicy">An action to configure the CORS policy.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    /// <exception cref="ArgumentException">Thrown when the policy name is null or whitespace.</exception>
     public KestrunHost AddCors(string policyName, Action<CorsPolicyBuilder> buildPolicy)
     {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding CORS policy: {PolicyName}", policyName);
         if (string.IsNullOrWhiteSpace(policyName))
             throw new ArgumentException("Policy name required.", nameof(policyName));
         ArgumentNullException.ThrowIfNull(buildPolicy);
@@ -1015,12 +1109,18 @@ public class KestrunHost
         return Use(app => app.UseCors(policyName));
     }
 
+    /// <summary>
+    /// Adds a PowerShell runtime to the application.
+    /// This middleware allows you to execute PowerShell scripts in response to HTTP requests.
+    /// </summary>
+    /// <param name="routePrefix">The route prefix to use for the PowerShell runtime.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddPowerShellRuntime(PathString? routePrefix = null)
     {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding PowerShell runtime with route prefix: {RoutePrefix}", routePrefix);
         return Use(app =>
         {
-            if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("Adding PowerShell runtime with route prefix: {RoutePrefix}", routePrefix);
             ArgumentNullException.ThrowIfNull(_runspacePool);
             if (routePrefix.HasValue)
             {
@@ -1042,9 +1142,43 @@ public class KestrunHost
         });
     }
 
+
+    /// <summary>
+    /// Adds PowerShell Razor Pages to the application.
+    /// This middleware allows you to serve Razor Pages using PowerShell scripts.
+    /// </summary>
+    /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
+    /// <param name="cfg">Configuration options for the Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddPowerShellRazorPages(PathString? routePrefix, RazorPagesOptions? cfg)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
+
+        if (cfg == null)
+            return AddPowerShellRazorPages(routePrefix); // no config, use defaults
+
+        return AddPowerShellRazorPages(routePrefix, dest =>
+            {
+                // simple value properties are fine
+                dest.RootDirectory = cfg.RootDirectory;
+
+                // copy conventions one‑by‑one (collection is read‑only)
+                foreach (var c in cfg.Conventions)
+                    dest.Conventions.Add(c);
+            });
+    }
+    /// <summary>
+    /// Adds PowerShell Razor Pages to the application.
+    /// This middleware allows you to serve Razor Pages using PowerShell scripts.
+    /// </summary>
+    /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
+    /// <param name="cfg">Configuration options for the Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddPowerShellRazorPages(PathString? routePrefix = null, Action<RazorPagesOptions>? cfg = null)
     {
-
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
         AddService(services =>
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -1053,7 +1187,6 @@ public class KestrunHost
             if (cfg != null)
                 mvc.AddRazorPagesOptions(cfg);
         });
-
 
         return Use(app =>
         {
@@ -1078,11 +1211,36 @@ public class KestrunHost
                 web.UsePowerShellRazorPages(_runspacePool);
                 web.MapRazorPages();
             }
-
-
         });
     }
-    // ① DefaultFiles helper
+
+    /// <summary>
+    /// Adds default files middleware to the application.
+    /// This middleware serves default files like index.html when a directory is requested.
+    /// </summary>
+    /// <param name="cfg">Configuration options for the default files middleware.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddDefaultFiles(DefaultFilesOptions? cfg)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding Default Files with configuration: {@Config}", cfg);
+
+        if (cfg == null)
+            return AddDefaultFiles(); // no config, use defaults
+
+        // Convert DefaultFilesOptions to an Action<DefaultFilesOptions>
+        return AddDefaultFiles(options =>
+        {
+            CopyDefaultFilesOptions(cfg, options);
+        });
+    }
+
+    /// <summary>
+    /// Adds default files middleware to the application.
+    /// This middleware serves default files like index.html when a directory is requested.
+    /// </summary>
+    /// <param name="cfg">Configuration options for the default files middleware.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddDefaultFiles(Action<DefaultFilesOptions>? cfg = null)
     {
         return Use(app =>
@@ -1093,9 +1251,98 @@ public class KestrunHost
         });
     }
 
-    // ② FileServer helper
+    /// <summary>
+    /// Copies static file options from one object to another.
+    /// </summary>
+    /// <param name="src">The source static file options.</param>
+    /// <param name="dest">The destination static file options.</param>
+    /// <remarks>
+    /// This method copies properties from the source static file options to the destination static file options.
+    /// </remarks>
+    private static void CopyStaticFileOptions(StaticFileOptions? src, StaticFileOptions dest)
+    {
+        // If no source, return a new empty options object
+        if (src == null || dest == null) return;
+        // Copy properties from source to destination
+        dest.ContentTypeProvider = src.ContentTypeProvider;
+        dest.OnPrepareResponse = src.OnPrepareResponse;
+        dest.ServeUnknownFileTypes = src.ServeUnknownFileTypes;
+        dest.DefaultContentType = src.DefaultContentType;
+        dest.FileProvider = src.FileProvider;
+        dest.RequestPath = src.RequestPath;
+        dest.RedirectToAppendTrailingSlash = src.RedirectToAppendTrailingSlash;
+        dest.HttpsCompression = src.HttpsCompression;
+    }
+
+    /// <summary>
+    /// Copies default files options from one object to another.
+    /// This method is used to ensure that the default files options are correctly configured.
+    /// </summary>
+    /// <param name="src">The source default files options.</param>
+    /// <param name="dest">The destination default files options.</param>
+    /// <remarks>
+    /// This method copies properties from the source default files options to the destination default files options.   
+    /// </remarks>
+    private static void CopyDefaultFilesOptions(DefaultFilesOptions? src, DefaultFilesOptions dest)
+    {
+        // If no source, return a new empty options object
+        if (src == null || dest == null) return;
+        // Copy properties from source to destination 
+        dest.DefaultFileNames.Clear();
+        foreach (var name in src.DefaultFileNames)
+            dest.DefaultFileNames.Add(name);
+        dest.FileProvider = src.FileProvider;
+        dest.RequestPath = src.RequestPath;
+        dest.RedirectToAppendTrailingSlash = src.RedirectToAppendTrailingSlash;
+    }
+
+    /// <summary>
+    /// Adds a file server middleware to the application.   
+    /// This middleware serves static files and default files from a specified file provider.
+    /// </summary>
+    /// <param name="cfg">Configuration options for the file server middleware.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    /// </remarks>
+    /// This method allows you to configure the file server options such as enabling default files, directory browsing,
+    /// and setting the file provider and request path.
+    /// </remarks>
+    public KestrunHost AddFileServer(FileServerOptions? cfg)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding File Server with configuration: {@Config}", cfg);
+        if (cfg == null)
+            return AddFileServer(); // no config, use defaults
+
+        // Convert FileServerOptions to an Action<FileServerOptions>
+        return AddFileServer(options =>
+        {
+            options.EnableDefaultFiles = cfg.EnableDefaultFiles;
+            options.EnableDirectoryBrowsing = cfg.EnableDirectoryBrowsing;
+            options.FileProvider = cfg.FileProvider;
+            options.RequestPath = cfg.RequestPath;
+            options.RedirectToAppendTrailingSlash = cfg.RedirectToAppendTrailingSlash;
+            CopyDefaultFilesOptions(cfg.DefaultFilesOptions, options.DefaultFilesOptions);
+            if (cfg.DirectoryBrowserOptions != null)
+            {
+                options.DirectoryBrowserOptions.FileProvider = cfg.DirectoryBrowserOptions.FileProvider;
+                options.DirectoryBrowserOptions.RequestPath = cfg.DirectoryBrowserOptions.RequestPath;
+                options.DirectoryBrowserOptions.RedirectToAppendTrailingSlash = cfg.DirectoryBrowserOptions.RedirectToAppendTrailingSlash;
+            }
+
+            CopyStaticFileOptions(cfg.StaticFileOptions, options.StaticFileOptions);
+        });
+    }
+
+    /// <summary>
+    /// Adds a file server middleware to the application.
+    /// This middleware serves static files and default files from a specified file provider.
+    /// </summary>
+    /// <param name="cfg">Configuration options for the file server middleware.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddFileServer(Action<FileServerOptions>? cfg = null)
     {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding File Server with configuration: {@Config}", cfg);
         return Use(app =>
         {
             var options = new FileServerOptions();
@@ -1121,18 +1368,6 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
     {
         return AddService(s => s.AddSignalR())
                .Use(app => ((IEndpointRouteBuilder)app).MapHub<T>(path));
-    }
-
-    // ③ HealthChecks
-    public KestrunHost AddHealthChecks(string pattern = "/healthz",
-                                       Action<IHealthChecksBuilder>? cfg = null)
-    {
-        return AddService(s =>
-        {
-            var builder = s.AddHealthChecks();
-            cfg?.Invoke(builder);
-        })
-        .Use(app => ((IEndpointRouteBuilder)app).MapHealthChecks(pattern));
     }
 
     /*
