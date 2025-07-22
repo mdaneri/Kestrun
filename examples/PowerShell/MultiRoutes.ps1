@@ -53,7 +53,9 @@ Set-KrServerLimit -Server $server  -MaxRequestBodySize 10485760 -MaxConcurrentCo
 Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
 Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any) 
 
-#$server.ApplyConfiguration()
+Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
+Add-KrPowerShellRuntime -Server $server
+ #$server.ApplyConfiguration()
 
 # Set-KrPythonRuntime
 

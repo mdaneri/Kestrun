@@ -99,8 +99,17 @@
         'Write-KrLog',
         'Set-KrSharedState',
         'Get-KrSharedState',
-        'Remove-KrSharedState'
-         
+        'Add-KrRazorPageService',
+        'Add-KrControllersService',
+        'Add-KrResponseCompression',
+        'Add-KrStaticFilesService',
+        'Add-KrDefaultFile',
+        'Add-KrFileServer',
+        'Add-KrCorsPolicy',
+        'Add-KrPowerShellRuntime',
+        'Add-KrPowerShellRazorPagesRuntime',
+        'Add-KrSignalRHub',
+        'Add-KrHealthCheck'
     )
 
     # Variables to export from this module

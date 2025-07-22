@@ -279,6 +279,7 @@ function Add-KrListener {
 
 function New-KrServer {
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([Kestrun.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Name
@@ -287,7 +288,7 @@ function New-KrServer {
         $loadedModules = Get-UserImportedModule
         $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
         if ($PSCmdlet.ShouldProcess("Kestrun server '$Name'", "Create new server instance")) {
-            $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths)
+            $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths, $null)
             return $server
         }
     }

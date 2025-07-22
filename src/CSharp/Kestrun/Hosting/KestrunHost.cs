@@ -28,7 +28,16 @@ using System.Security;
 using Microsoft.AspNetCore.Hosting;
 using Serilog;
 using Serilog.Events;
+using Microsoft.AspNetCore.StaticFiles.Infrastructure;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.Collections.Specialized;
+using Microsoft.AspNetCore.Mvc;               // MvcOptions, IMvcBuilder
+using Microsoft.AspNetCore.Mvc.RazorPages;    // RazorPagesOptions
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.Cors.Infrastructure;     // extension methods
+//using Microsoft.AspNetCore.Authentication.BearerToken;
 
 namespace Kestrun;
 
@@ -53,6 +62,13 @@ public class KestrunHost
     public string? KestrunRoot { get; private set; }
 
     public SharedStateStore SharedState { get; } = new();
+
+
+    // ── ✦ QUEUE #1 : SERVICE REGISTRATION ✦ ─────────────────────────────
+    private readonly List<Action<IServiceCollection>> _serviceQueue = [];
+
+    // ── ✦ QUEUE #2 : MIDDLEWARE STAGES ✦ ────────────────────────────────
+    private readonly List<Action<IApplicationBuilder>> _middlewareQueue = [];
 
     #endregion
 
@@ -537,10 +553,10 @@ public class KestrunHost
                 Log.Verbose("Executing PowerShell script...");
                 // Using Task.Run to avoid blocking the thread
                 // This is necessary to prevent deadlocks in the runspace pool
-                //var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-               // .ConfigureAwait(false);
+                var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+                 .ConfigureAwait(false);
                 //  var psResults = ps.Invoke();
-                var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                // var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
                 Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                 //  var psResults = await Task.Run(() => ps.Invoke());
@@ -726,7 +742,7 @@ public class KestrunHost
             throw new InvalidOperationException("Failed to create runspace pool.");
         }
 
-        KestrelServices(builder);
+        //     KestrelServices(builder);
         builder.WebHost.UseKestrel(opts =>
         {
             opts.CopyFromTemplate(Options.ServerOptions);
@@ -750,8 +766,11 @@ public class KestrunHost
             }
         });
 
+
+
+
         // Build the WebApplication
-        App = builder.Build();
+        //   App = builder.Build();
 
         /*  App.UseStaticFiles(new StaticFileOptions
           {
@@ -771,15 +790,19 @@ public class KestrunHost
                       }
                   }
           });*/
-        App.UseStaticFiles(); // Serve static files from wwwroot by default
-                              //   App.UseDefaultFiles(); // Serve default files like index.html
-        App.UseRouting();
-        App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
-        App.UseResponseCompression();                // optional
-        App.UsePowerShellRazorPages(_runspacePool!); // +++ PowerShell→Razor bridge
-        App.MapRazorPages();                       // +++ route the .cshtml files
 
 
+        /*  App.UseStaticFiles(); // Serve static files from wwwroot by default
+                                //   App.UseDefaultFiles(); // Serve default files like index.html
+          App.UseRouting();
+          App.UseLanguageRuntime(ScriptLanguage.PowerShell, branch => branch.UsePowerShellRunspace(_runspacePool));
+          App.UseResponseCompression();                // optional
+          App.UsePowerShellRazorPages(_runspacePool!); // +++ PowerShell→Razor bridge
+          App.MapRazorPages();                       // +++ route the .cshtml files
+
+  */
+
+        App = Build();
         var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
 
         if (dataSource.Endpoints.Count == 0)
@@ -795,6 +818,353 @@ public class KestrunHost
         }
         _isConfigured = true;
     }
+
+
+    /// <summary>Apply queued services, build the WebApplication, queue middleware.</summary>
+    public WebApplication Build()
+    {
+        if (builder == null) throw new InvalidOperationException("Call CreateBuilder() first.");
+
+        // 1️⃣  Apply all queued services
+        foreach (var configure in _serviceQueue)
+        {
+            configure(builder.Services);
+        }
+
+        // 2️⃣  Build the WebApplication
+        App = builder.Build();
+        // AddPowerShellRuntime(); // 4️⃣  Add PowerShell runtime middleware
+
+        // 3️⃣  Apply all queued middleware stages
+        foreach (var stage in _middlewareQueue)
+        {
+            stage(App);
+        }
+        // 5️⃣  Terminal endpoint execution
+        //App.UseEndpoints(_ => { });   // empty delegate is fine
+        return App;
+    }
+
+
+
+    // Generic catch‑all – enqueue *any* service work you want.
+    public KestrunHost AddService(Action<IServiceCollection> configure)
+    {
+        _serviceQueue.Add(configure);
+        return this;
+    }
+
+    // Generic catch‑all – enqueue *any* middleware stage you want.
+    public KestrunHost Use(Action<IApplicationBuilder> stage)
+    {
+        _middlewareQueue.Add(stage);
+        return this;
+    }
+    public KestrunHost AddRazorPages(RazorPagesOptions source)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding Razor Pages from source: {Source}", source);
+        ArgumentNullException.ThrowIfNull(source);
+
+        return AddRazorPages(dest =>
+        {
+            // simple value properties are fine
+            dest.RootDirectory = source.RootDirectory;
+
+            // copy conventions one‑by‑one (collection is read‑only)
+            foreach (var c in source.Conventions)
+                dest.Conventions.Add(c);
+        });
+    }
+
+
+    public KestrunHost AddRazorPages(Action<RazorPagesOptions>? cfg = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding Razor Pages with configuration: {Config}", cfg);
+        return AddService(services =>
+        {
+            var mvc = services.AddRazorPages();         // returns IMvcBuilder
+
+            if (cfg != null)
+                mvc.AddRazorPagesOptions(cfg);          // ← the correct extension
+                                                        //  —OR—
+                                                        // services.Configure(cfg);                 // also works
+        })
+         // optional: automatically map Razor endpoints after Build()
+         .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
+    }
+
+
+    public KestrunHost AddControllers(Action<Microsoft.AspNetCore.Mvc.MvcOptions>? cfg = null)
+    {
+        return AddService(services =>
+        {
+            var builder = services.AddControllers();
+            if (cfg != null) builder.ConfigureApplicationPartManager(pm => { }); // customise if you wish
+        });
+    }
+
+    public KestrunHost AddResponseCompression(Action<ResponseCompressionOptions>? cfg = null)
+    {
+        // Service side
+        AddService(services =>
+        {
+            if (cfg == null)
+                services.AddResponseCompression();
+            else
+                services.AddResponseCompression(cfg);
+        });
+
+        // Middleware side
+        return Use(app => app.UseResponseCompression());
+    }
+    public KestrunHost AddResponseCompression(ResponseCompressionOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        // delegate shim – re‑use the existing pipeline
+        return AddResponseCompression(o =>
+        {
+            o.EnableForHttps = options.EnableForHttps;
+            o.MimeTypes = options.MimeTypes;
+            // copy provider lists, levels, etc. if you expose them
+            foreach (var p in options.Providers) o.Providers.Add(p);
+        });
+    }
+
+    public KestrunHost AddStaticFiles(Action<StaticFileOptions>? cfg = null)
+    {
+        return Use(app =>
+        {
+            if (cfg == null)
+                app.UseStaticFiles();
+            else
+            {
+                var options = new StaticFileOptions();
+                cfg(options);
+
+                app.UseStaticFiles(options);
+            }
+        });
+    }
+
+    // ② object‑style overload (PowerShell‑friendly)
+    public KestrunHost AddStaticFiles(StaticFileOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        // reuse the delegate overload so the pipeline logic stays in one place
+        return AddStaticFiles(o =>
+        {
+            // copy only the properties callers are likely to set
+            o.RequestPath = options.RequestPath;
+            o.FileProvider = options.FileProvider;
+            o.ServeUnknownFileTypes = options.ServeUnknownFileTypes;
+            o.DefaultContentType = options.DefaultContentType;
+            o.ContentTypeProvider = options.ContentTypeProvider;
+            o.HttpsCompression = options.HttpsCompression;
+            o.OnPrepareResponse = options.OnPrepareResponse;
+        });
+    }
+    public KestrunHost AddCorsAllowAll() =>
+        AddCors("AllowAll", b => b.AllowAnyOrigin()
+                                  .AllowAnyMethod()
+                                  .AllowAnyHeader());
+
+    /// <summary>
+    /// Registers a named CORS policy that was already composed with a
+    /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
+    /// </summary>
+    /// <param name="policyName">The name to store/apply the policy under.</param>
+    /// <param name="builder">
+    ///     A fully‑configured <see cref="CorsPolicyBuilder"/>.
+    ///     Callers typically chain <c>.WithOrigins()</c>, <c>.WithMethods()</c>,
+    ///     etc. before passing it here.
+    /// </param>
+    public KestrunHost AddCors(string policyName, CorsPolicyBuilder builder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+        ArgumentNullException.ThrowIfNull(builder);
+
+        // 1️⃣ Service‑time registration
+        AddService(services =>
+        {
+            services.AddCors(options =>
+            {
+                options.AddPolicy(policyName, builder.Build());
+            });
+        });
+
+        // 2️⃣ Middleware‑time application
+        return Use(app => app.UseCors(policyName));
+    }
+    
+    public KestrunHost AddCors(string policyName, Action<CorsPolicyBuilder> buildPolicy)
+    {
+        if (string.IsNullOrWhiteSpace(policyName))
+            throw new ArgumentException("Policy name required.", nameof(policyName));
+        ArgumentNullException.ThrowIfNull(buildPolicy);
+
+        AddService(s =>
+        {
+            s.AddCors(o => o.AddPolicy(policyName, buildPolicy));
+        });
+
+        // apply only that policy
+        return Use(app => app.UseCors(policyName));
+    }
+
+    public KestrunHost AddPowerShellRuntime(PathString? routePrefix = null)
+    {
+        return Use(app =>
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Adding PowerShell runtime with route prefix: {RoutePrefix}", routePrefix);
+            ArgumentNullException.ThrowIfNull(_runspacePool);
+            if (routePrefix.HasValue)
+            {
+                // ── mount PowerShell only under /ps (or whatever you pass) ──
+                app.Map(routePrefix.Value, branch =>
+                {
+                    branch.UseLanguageRuntime(
+                        ScriptLanguage.PowerShell,
+                        b => b.UsePowerShellRunspace(_runspacePool));
+                });
+            }
+            else
+            {
+                // ── mount PowerShell at the root ──
+                app.UseLanguageRuntime(
+                    ScriptLanguage.PowerShell,
+                    b => b.UsePowerShellRunspace(_runspacePool));
+            }
+        });
+    }
+
+    public KestrunHost AddPowerShellRazorPages(PathString? routePrefix = null, Action<RazorPagesOptions>? cfg = null)
+    {
+
+        AddService(services =>
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}", routePrefix);
+            var mvc = services.AddRazorPages();
+            if (cfg != null)
+                mvc.AddRazorPagesOptions(cfg);
+        });
+
+
+        return Use(app =>
+        {
+            ArgumentNullException.ThrowIfNull(_runspacePool);
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Adding PowerShell Razor Pages middleware with route prefix: {RoutePrefix}", routePrefix);
+            var web = (WebApplication)app;
+            if (routePrefix.HasValue)
+            {
+
+                // Mount the bridge under a sub‑path, e.g. /pspages
+                web.Map(routePrefix.Value, branch =>
+                {
+                    var webBranch = (WebApplication)branch;
+                    webBranch.UsePowerShellRazorPages(_runspacePool);  // bridge
+                    webBranch.MapRazorPages();                // *.cshtml routes
+                });
+            }
+            else
+            {
+                // Mount at root
+                web.UsePowerShellRazorPages(_runspacePool);
+                web.MapRazorPages();
+            }
+
+
+        });
+    }
+    // ① DefaultFiles helper
+    public KestrunHost AddDefaultFiles(Action<DefaultFilesOptions>? cfg = null)
+    {
+        return Use(app =>
+        {
+            var options = new DefaultFilesOptions();
+            cfg?.Invoke(options);
+            app.UseDefaultFiles(options);
+        });
+    }
+
+    // ② FileServer helper
+    public KestrunHost AddFileServer(Action<FileServerOptions>? cfg = null)
+    {
+        return Use(app =>
+        {
+            var options = new FileServerOptions();
+            cfg?.Invoke(options);
+            app.UseFileServer(options);
+        });
+    }
+
+
+    /*
+public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
+    {
+        return AddService(s =>
+        {
+            s.AddAuthentication("Bearer")
+             .AddJwtBearer("Bearer", cfg);
+        })
+        .Use(app => app.UseAuthentication());   // auth middleware
+    }*/
+
+    // ② SignalR
+    public KestrunHost AddSignalR<T>(string path) where T : Hub
+    {
+        return AddService(s => s.AddSignalR())
+               .Use(app => ((IEndpointRouteBuilder)app).MapHub<T>(path));
+    }
+
+    // ③ HealthChecks
+    public KestrunHost AddHealthChecks(string pattern = "/healthz",
+                                       Action<IHealthChecksBuilder>? cfg = null)
+    {
+        return AddService(s =>
+        {
+            var builder = s.AddHealthChecks();
+            cfg?.Invoke(builder);
+        })
+        .Use(app => ((IEndpointRouteBuilder)app).MapHealthChecks(pattern));
+    }
+
+    /*
+        // ④ gRPC
+        public KestrunHost AddGrpc<TService>() where TService : class
+        {
+            return AddService(s => s.AddGrpc())
+                   .Use(app => app.MapGrpcService<TService>());
+        }
+    */
+
+    /*   public KestrunHost AddSwagger()
+       {
+           AddService(s =>
+           {
+               s.AddEndpointsApiExplorer();
+               s.AddSwaggerGen();
+           });
+           //  ⚠️ Swagger’s middleware normally goes first in the pipeline
+           return Use(app =>
+           {
+               app.UseSwagger();
+               app.UseSwaggerUI();
+           });
+       }*/
+
+    // Add as many tiny helpers as you wish:
+    // • AddAuthentication(jwt => { … })
+    // • AddSignalR()
+    // • AddHealthChecks()
+    // • AddGrpc()
+    // etc.
 
     #endregion
     #region Run/Start/Stop

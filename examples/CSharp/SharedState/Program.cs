@@ -24,13 +24,15 @@ server.Options.ServerLimits.MaxRequestHeaderCount = 100;
 server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
 
- 
+
 // 3. Configure listeners
 server.ConfigureListener(
     port: 5002,
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
+
+server.AddPowerShellRuntime();
 
 var sharedVisits = new Hashtable();
 sharedVisits["Count"] = 0;

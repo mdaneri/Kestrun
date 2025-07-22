@@ -6,7 +6,9 @@ using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
-using Serilog;   // Only for writing the CSR key
+using Serilog;
+using Microsoft.AspNetCore.ResponseCompression;
+using Org.BouncyCastle.Utilities.Zlib;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -30,6 +32,23 @@ server.Options.ServerLimits.MaxRequestBodySize = 10485760;
 server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
 server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
+
+server.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/bson",
+        "application/cbor",
+        "application/yaml",
+        "application/xml",
+        "text/plain",
+        "text/html"
+    });
+    options.Providers.Add<BrotliCompressionProvider>();
+}).AddPowerShellRuntime();
+
 
 
 X509Certificate2? x509Certificate = null;

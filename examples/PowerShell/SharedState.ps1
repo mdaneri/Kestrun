@@ -47,6 +47,7 @@ Add-KrListener -Server $server -Port 5000
 # Seed a global counter (Visits) — injected as $Visits in every runspace
 Set-KrSharedState -Server $server -Name 'Visits' -Value @{Count = 0}
 
+Add-KrPowerShellRuntime -Server $server
 # ─────────────────────────────────────────────────────────────────────────────
 # Route: GET /ps/show
 #   • $Visits is already injected as a PS variable

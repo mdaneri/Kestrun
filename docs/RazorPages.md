@@ -40,7 +40,7 @@ During a single HTTP request the pipeline looks like this:
 
 ## 2. Folder & naming convention
 
-```
+```folder
 MyApp/
 └─ Pages/
    ├─ Hello.cshtml         ← Razor markup

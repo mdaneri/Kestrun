@@ -1,8 +1,10 @@
 ﻿using Kestrun;
 using System.Net;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.ResponseCompression;
 
 
-var currentDir = Directory.GetCurrentDirectory(); 
+var currentDir = Directory.GetCurrentDirectory();
 
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
@@ -23,6 +25,36 @@ server.ConfigureListener(
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
+
+server.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/bson",
+        "application/cbor",
+        "application/yaml",
+        "application/xml",
+        "text/plain",
+        "text/html"
+    });
+    options.Providers.Add<BrotliCompressionProvider>();
+}).AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+}).AddPowerShellRuntime().AddFileServer(options =>
+{
+    options.RequestPath = "/assets"; // Set the request path for static files 
+    options.EnableDirectoryBrowsing = true;
+}).AddPowerShellRazorPages().AddHealthChecks();
+
+
 
 server.ApplyConfiguration();
 // 5️⃣ Run!
