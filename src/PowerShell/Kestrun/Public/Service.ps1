@@ -69,13 +69,12 @@ function Add-KrPowerShellRazorPagesRuntime {
         [string]$PathPrefix
     )
     process {
-        $psPrefix = if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
-            $null
+        if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
+            $Server.AddPowerShellRazorPages() | Out-Null
         }
         else {
-            [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)
-        }
-        $Server.AddPowerShellRazorPages($psPrefix) | Out-Null
+            $Server.AddPowerShellRazorPages([Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
+        } 
         # Return the modified server instance
         return $Server
     }

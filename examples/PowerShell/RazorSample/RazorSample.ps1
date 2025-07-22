@@ -46,7 +46,7 @@ $server = New-KrServer -Name 'MyKestrunServer'
 # Listen on port 5000 (HTTP)
 Add-KrListener -Server $server -Port 5000
 
- Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @(
+Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @(
     'text/plain',
     'text/css',
     'application/javascript',
@@ -54,8 +54,9 @@ Add-KrListener -Server $server -Port 5000
     'application/xml',
     'text/html'
 ) | Add-KrCorsPolicy -Name 'AllowAll' -AllowAnyOrigin -AllowAnyMethod -AllowAnyHeader |
-Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing | Add-KrPowerShellRazorPagesRuntime
- 
-#$server.ApplyConfiguration() 
+Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing |
+Add-KrPowerShellRazorPagesRuntime | Out-Null
+
+$server.ApplyConfiguration()
 # Start the server (blocking)
 Start-KrServer -Server $server

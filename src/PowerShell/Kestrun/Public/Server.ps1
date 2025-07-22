@@ -344,7 +344,7 @@ function Start-KrServer {
         foreach ($srv in $Server) {
             if ($PSCmdlet.ShouldProcess("Kestrun server", "Start")) {
                 # Start the Kestrel server
-                Write-Output "Starting Kestrun ..."
+                Write-Host "Starting Kestrun ..."
                 $srv.StartAsync() | Out-Null
                 if (-not $NoWait.IsPresent) {
                     # Intercept Ctrl+C and gracefully stop the Kestrun server

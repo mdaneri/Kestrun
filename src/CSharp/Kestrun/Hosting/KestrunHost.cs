@@ -554,10 +554,10 @@ public class KestrunHost
                 Log.Verbose("Executing PowerShell script...");
                 // Using Task.Run to avoid blocking the thread
                 // This is necessary to prevent deadlocks in the runspace pool
-                var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                 .ConfigureAwait(false);
+                // var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
+                //     .ConfigureAwait(false);
                 //  var psResults = ps.Invoke();
-                // var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
                 Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                 //  var psResults = await Task.Run(() => ps.Invoke());
@@ -801,13 +801,13 @@ public class KestrunHost
     public WebApplication Build()
     {
         if (builder == null) throw new InvalidOperationException("Call CreateBuilder() first.");
-
+        //AddPowerShellRazorPages();
         // 1️⃣  Apply all queued services
         foreach (var configure in _serviceQueue)
         {
             configure(builder.Services);
         }
- 
+
         // 2️⃣  Build the WebApplication
         App = builder.Build();
 
@@ -1155,19 +1155,31 @@ public class KestrunHost
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
 
-        if (cfg == null)
-            return AddPowerShellRazorPages(routePrefix); // no config, use defaults
-
         return AddPowerShellRazorPages(routePrefix, dest =>
             {
-                // simple value properties are fine
-                dest.RootDirectory = cfg.RootDirectory;
+                if (cfg != null)
+                {
+                    // simple value properties are fine
+                    dest.RootDirectory = cfg.RootDirectory;
 
-                // copy conventions one‑by‑one (collection is read‑only)
-                foreach (var c in cfg.Conventions)
-                    dest.Conventions.Add(c);
+                    // copy conventions one‑by‑one (collection is read‑only)
+                    foreach (var c in cfg.Conventions)
+                        dest.Conventions.Add(c);
+                }
             });
     }
+
+    /// <summary>
+    /// Adds PowerShell Razor Pages to the application.
+    /// This middleware allows you to serve Razor Pages using PowerShell scripts.
+    /// </summary>
+    /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public KestrunHost AddPowerShellRazorPages(PathString? routePrefix) =>
+        AddPowerShellRazorPages(routePrefix, (Action<RazorPagesOptions>?)null);
+    public KestrunHost AddPowerShellRazorPages() =>
+        AddPowerShellRazorPages(null, (Action<RazorPagesOptions>?)null);
+
     /// <summary>
     /// Adds PowerShell Razor Pages to the application.
     /// This middleware allows you to serve Razor Pages using PowerShell scripts.

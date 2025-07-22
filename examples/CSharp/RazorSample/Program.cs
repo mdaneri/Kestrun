@@ -40,15 +40,6 @@ server.AddResponseCompression(options =>
     });
     options.Providers.Add<BrotliCompressionProvider>();
 })
-/*.AddCors("sss",options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-})*/
 .AddFileServer(options =>
 {
     options.RequestPath = "/assets"; // Set the request path for static files 

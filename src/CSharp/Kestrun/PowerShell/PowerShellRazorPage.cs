@@ -60,24 +60,32 @@ public static class PowerShellRazorPage
         if (!Directory.Exists(pagesRoot))
         {
             Log.Warning("Pages directory not found: {Path}", pagesRoot);
-         //  throw new DirectoryNotFoundException($"Pages directory not found: {pagesRoot}");
+            //  throw new DirectoryNotFoundException($"Pages directory not found: {pagesRoot}");
         }
 
         // MUST run before MapRazorPages()
         app.Use(async (context, next) =>
         {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Processing PowerShell Razor Page request for {Path}", context.Request.Path);
             var relPath = context.Request.Path.Value?.Trim('/');
             if (string.IsNullOrEmpty(relPath))
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Request path is empty, skipping PowerShell Razor Page processing");
                 await next();
                 return;
             }
-
+            relPath = relPath.Replace('/', Path.DirectorySeparatorChar);
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Transformed request path to relative: {RelPath}", relPath);
             var view = Path.Combine(pagesRoot, relPath + ".cshtml");
             var psfile = view + ".ps1";
 
             if (!File.Exists(view) || !File.Exists(psfile))
             {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("PowerShell Razor Page files not found: {View} or {PsFile}", view, psfile);
                 await next();
                 return;
             }
@@ -88,17 +96,23 @@ public static class PowerShellRazorPage
                 var ss = ps.Runspace.SessionStateProxy;
                 ss.SetVariable("Context", context);
                 ss.SetVariable("Model", null); // ensure it’s null before script runs
-               // ps.AddScript(await File.ReadAllTextAsync(view, context.RequestAborted));
-                 ps.AddScript(await File.ReadAllTextAsync(psfile, context.RequestAborted));
-
-                await ps.InvokeAsync().ConfigureAwait(false);
-
+                                               // ps.AddScript(await File.ReadAllTextAsync(view, context.RequestAborted));
+                ps.AddScript(await File.ReadAllTextAsync(psfile, context.RequestAborted));
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Executing PowerShell script: {ScriptFile}", psfile);
+                var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("PowerShell script returned {Count} results", psResults.Count);
                 var model = ps.Runspace.SessionStateProxy.GetVariable("Model");
                 if (model is not null)
                     context.Items[MODEL_KEY] = model;
-
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("PowerShell Razor Page model set: {Model}", model);
                 if (ps.HadErrors || ps.Streams.Error.Count != 0)
                 {
+                    Log.Error("PowerShell script encountered errors: {ErrorCount}", ps.Streams.Error.Count);
+                    if (Log.IsEnabled(LogEventLevel.Debug))
+                        Log.Debug("PowerShell script errors: {Errors}", BuildError.Text(ps));
                     await BuildError.ResponseAsync(context, ps);
                     return;
                 }
@@ -107,7 +121,10 @@ public static class PowerShellRazorPage
                     Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
                     Log.Verbose(BuildError.Text(ps));
                 }
-                Log.Verbose("PowerShell script completed successfully.");
+                else if (Log.IsEnabled(LogEventLevel.Debug))
+                {
+                    Log.Debug("PowerShell script completed without errors or messages.");
+                }
                 try
                 {
                     await next();                // continue the pipeline
