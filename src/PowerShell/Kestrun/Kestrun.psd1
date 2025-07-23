@@ -109,7 +109,15 @@
         'Add-KrPowerShellRuntime',
         'Add-KrPowerShellRazorPagesRuntime',
         'Add-KrSignalRHub',
-        'Add-KrHealthCheck'
+        'Add-KrHealthCheck',
+        'Write-KrDebugLog', 'Write-KrErrorLog', 'Write-KrFatalLog', 'Write-KrInfoLog',
+        'Write-KrInformationLog', 'Write-KrVerboseLog', 'Write-KrWarningLog',
+        'Close-KrLogger', 'New-KrLevelSwitch', 'New-KrLogger', 'Set-KrLevelSwitch',
+        'Set-KrLogger', 'Set-KrMinimumLevel', 'Start-KrLogger',
+        'Add-KrEnrichFromLogContext', 'Add-KrEnrichWithErrorRecord', 
+        'Add-KrEnrichWithProperty', 'Get-KrJsonFormatter', 'Convert-KrLogFunctions',
+        'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell',
+        'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName'
     )
 
     # Variables to export from this module

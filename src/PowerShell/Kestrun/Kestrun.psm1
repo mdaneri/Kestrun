@@ -94,12 +94,16 @@ $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 # Usage
 Add-AspNetCoreType -Version "net8"
 # Add-AspNetCoreType -Version "net8.0.*"
- 
+
+$assemblies = Get-ChildItem -Path (Join-Path -Path $moduleRootPath -ChildPath "lib") -Filter "*.dll" -File
+foreach ($assembly in $assemblies) {
+    Assert-AssemblyLoaded -AssemblyPath $assembly.FullName
+}
 # Assert that the assembly is loaded
-Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
+#Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
 #Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
 # load private functions
-Get-ChildItem "$($moduleRootPath)/Private/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+Get-ChildItem "$($moduleRootPath)/Private/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # only import public functions
 $sysfuncs = Get-ChildItem Function:
@@ -108,7 +112,7 @@ $sysfuncs = Get-ChildItem Function:
 $sysaliases = Get-ChildItem Alias:
 
 # load public functions
-Get-ChildItem "$($moduleRootPath)/Public/*.ps1" | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse| ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # get functions from memory and compare to existing to find new functions added
 $funcs = Get-ChildItem Function: | Where-Object { $sysfuncs -notcontains $_ }
@@ -122,3 +126,6 @@ if ($funcs) {
         Export-ModuleMember -Function ($funcs.Name)
     }
 }
+
+# Default text formatter for Get-KrFormattedMessage cmdlet
+$global:TextFormatter = [Serilog.Formatting.Display.MessageTemplateTextFormatter]::new('{Message:lj}')

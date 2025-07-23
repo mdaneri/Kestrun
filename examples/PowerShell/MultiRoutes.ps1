@@ -22,7 +22,7 @@ try {
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
 }
-catch { 
+catch {
     Write-Error "Failed to import Kestrun module: $_"
     Write-Error "Ensure the Kestrun module is installed or the path is correct."
     exit 1

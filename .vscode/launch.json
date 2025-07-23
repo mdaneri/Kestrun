@@ -22,6 +22,13 @@
             "script": "${workspaceFolder}/examples/PowerShell/RazorSample/RazorSample.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell/RazorSample"
         },
+         {
+            "name": "PowerShell: Launch LoggingSample.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/Logging/LoggingSample.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/Logging"
+        },
         {
             "name": ".NET Launch CSharp/MultiRoutes",
             "type": "coreclr",

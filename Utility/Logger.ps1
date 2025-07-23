@@ -242,7 +242,7 @@ function Register-KrLogger {
 }
 
 
-function Write-KrLog {
+function Write-KrLog2 {
   <#
     .SYNOPSIS
     Writes a log event to a named logger, with optional exception and structured properties.
@@ -340,6 +340,9 @@ function Write-KrLog {
     # 5️⃣  Dispose scopes in reverse order
     [Array]::Reverse($scopes)
     foreach ($s in $scopes) { $s.Dispose() }
+  }
+  if($PassThru) {
+    return $Message
   }
 }
 
