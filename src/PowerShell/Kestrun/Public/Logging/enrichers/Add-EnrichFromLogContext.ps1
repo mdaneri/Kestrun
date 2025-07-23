@@ -11,7 +11,7 @@ function Add-EnrichFromLogContext {
 	.OUTPUTS
 		Instance of LoggerConfiguration
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichFromLogContext | Add-KrSinkConsole | Start-KrLogger
+		PS> New-KrLogger | Add-EnrichFromLogContext | Add-KrSinkConsole | Register-KrLogger
 	#>
 
 	[Cmdletbinding()]

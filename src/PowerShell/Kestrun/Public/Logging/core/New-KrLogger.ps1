@@ -19,6 +19,7 @@ function New-KrLogger {
 	[CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param()
+
 	if ($PSCmdlet.ShouldProcess("Create new Serilog.LoggerConfiguration")) {
 		return [Serilog.LoggerConfiguration]::New()
 	}

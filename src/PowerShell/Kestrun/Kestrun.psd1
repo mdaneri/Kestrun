@@ -113,10 +113,10 @@
         'Write-KrDebugLog', 'Write-KrErrorLog', 'Write-KrFatalLog', 'Write-KrInfoLog',
         'Write-KrInformationLog', 'Write-KrVerboseLog', 'Write-KrWarningLog',
         'Close-KrLogger', 'New-KrLevelSwitch', 'New-KrLogger', 'Set-KrLevelSwitch',
-        'Set-KrLogger', 'Set-KrMinimumLevel', 'Start-KrLogger',
-        'Add-KrEnrichFromLogContext', 'Add-KrEnrichWithErrorRecord', 
+        'Set-KrDefaultLogger', 'Get-KrDefaultLogger', 'Set-KrMinimumLevel', 'Register-KrLogger',
+        'Add-KrEnrichFromLogContext', 'Add-KrEnrichWithErrorRecord',
         'Add-KrEnrichWithProperty', 'Get-KrJsonFormatter', 'Convert-KrLogFunctions',
-        'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell',
+        'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell', 'Add-KrSinkEventLog',
         'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName'
     )
 

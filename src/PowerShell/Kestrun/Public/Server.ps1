@@ -321,7 +321,7 @@ function New-KrServer {
         $loadedModules = Get-UserImportedModule
         $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
         if ($PSCmdlet.ShouldProcess("Kestrun server '$Name'", "Create new server instance")) {
-            $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths, $null)
+            $server = [Kestrun.KestrunHost]::new($Name, $script:KestrunRoot, [string[]] $modulePaths)
             return $server
         }
     }

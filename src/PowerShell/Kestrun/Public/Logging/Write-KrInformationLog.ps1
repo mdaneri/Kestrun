@@ -6,8 +6,8 @@ function Write-KrInformationLog {
 		Write a log event with the Information level.
 	.PARAMETER MessageTemplate
 		Message template describing the event.
-	.PARAMETER Logger
-		Instance of Serilog.Logger. By default static property [Serilog.Log]::Logger is used.
+	.PARAMETER Name
+		Name of the logger to use. If not specified, the default logger is used.
 	.PARAMETER Exception
 		Exception related to the event.
 	.PARAMETER ErrorRecord
@@ -43,7 +43,7 @@ function Write-KrInformationLog {
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
-		[Serilog.ILogger]$Logger = [Serilog.Log]::Logger,
+		[string]$Name,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -65,7 +65,7 @@ function Write-KrInformationLog {
 		[switch]$PassThru
 	)
 	process {
-		Write-KrLog -LogLevel Information -MessageTemplate $MessageTemplate -Logger $Logger -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
+		Write-KrLog -LogLevel Information -Name $Name -MessageTemplate $MessageTemplate -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
 	}
 }
 

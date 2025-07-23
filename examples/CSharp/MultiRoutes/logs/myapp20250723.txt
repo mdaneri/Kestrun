@@ -1,0 +1,124 @@
+2025-07-23 14:37:19.606 -07:00 [WRN] This is a warning log from PowerShell script
+2025-07-23 14:57:20.418 -07:00 [DBG] KestrunHost constructor called with appName: MyKestrunServer, default logger: false, kestrunRoot: null, modulePathsObj length: 0
+2025-07-23 14:57:20.490 -07:00 [INF] Setting Kestrun root directory: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes
+2025-07-23 14:57:20.493 -07:00 [INF] 🌿 Development module found.
+2025-07-23 14:57:20.494 -07:00 [INF] Found Kestrun module at: C:\Users\mdaneri\Documents\GitHub\Kestrun\src\PowerShell\Kestrun\Kestrun.psm1
+2025-07-23 14:57:20.722 -07:00 [INF] Setting application name: MyKestrunServer
+2025-07-23 14:57:20.724 -07:00 [INF] Current working directory: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes
+2025-07-23 14:57:20.725 -07:00 [DBG] Adding response compression with configuration: System.Action`1[Microsoft.AspNetCore.ResponseCompression.ResponseCompressionOptions]
+2025-07-23 14:57:20.726 -07:00 [DBG] Adding PowerShell runtime with route prefix: null
+2025-07-23 14:57:20.816 -07:00 [DBG] ConfigureListener port=5001, ipAddress=0.0.0.0, protocols="Http1AndHttp2AndHttp3", useConnectionLogging=false, certificate supplied=true
+2025-07-23 14:57:20.819 -07:00 [DBG] ConfigureListener port=5000, ipAddress=0.0.0.0, protocols="Http1", useConnectionLogging=false, certificate supplied=false
+2025-07-23 14:57:20.854 -07:00 [DBG] ApplyConfiguration(options) called
+2025-07-23 14:57:20.856 -07:00 [DBG] CreateRunspacePool() called: null
+2025-07-23 14:57:21.385 -07:00 [INF] Creating runspace pool with max runspaces: 40
+2025-07-23 14:57:21.389 -07:00 [DBG] Initializing RunspacePoolManager: Min=1, Max=40
+2025-07-23 14:57:21.391 -07:00 [DBG] CreateRunspace() - creating new runspace
+2025-07-23 14:57:21.393 -07:00 [DBG] Creating new runspace with InitialSessionState: System.Management.Automation.Runspaces.InitialSessionState
+2025-07-23 14:57:24.217 -07:00 [INF] Opened new Runspace with ThreadOptions="ReuseThread"
+2025-07-23 14:57:24.219 -07:00 [DBG] New runspace created: System.Management.Automation.Runspaces.LocalRunspace
+2025-07-23 14:57:24.220 -07:00 [DBG] Warm-started pool with 1 runspaces
+2025-07-23 14:57:24.246 -07:00 [INF] CWD: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes
+2025-07-23 14:57:24.246 -07:00 [INF] ContentRoot: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes
+2025-07-23 14:57:24.247 -07:00 [INF] Pages Dir: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes\Pages
+2025-07-23 14:57:24.247 -07:00 [WRN] Pages directory does not exist: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes\Pages
+2025-07-23 14:57:24.250 -07:00 [WRN] EndpointDataSource is empty. No endpoints configured.
+2025-07-23 14:57:24.250 -07:00 [INF] Configuration applied successfully.
+2025-07-23 14:57:24.314 -07:00 [DBG] AddRoute called with pattern=/ps/json, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.318 -07:00 [DBG] Building PowerShell delegate, script length=584
+2025-07-23 14:57:24.323 -07:00 [DBG] AddRoute called with pattern=/ps/bson, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.324 -07:00 [DBG] Building PowerShell delegate, script length=476
+2025-07-23 14:57:24.325 -07:00 [DBG] AddRoute called with pattern=/ps/cbor, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.326 -07:00 [DBG] Building PowerShell delegate, script length=465
+2025-07-23 14:57:24.326 -07:00 [DBG] AddRoute called with pattern=/ps/yaml, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.327 -07:00 [DBG] Building PowerShell delegate, script length=515
+2025-07-23 14:57:24.328 -07:00 [DBG] AddRoute called with pattern=/ps/xml, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.329 -07:00 [DBG] Building PowerShell delegate, script length=513
+2025-07-23 14:57:24.329 -07:00 [DBG] AddRoute called with pattern=/ps/text, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.330 -07:00 [DBG] Building PowerShell delegate, script length=548
+2025-07-23 14:57:24.331 -07:00 [DBG] AddRoute called with pattern=/ps/stream/binary, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.334 -07:00 [DBG] Building PowerShell delegate, script length=166
+2025-07-23 14:57:24.334 -07:00 [DBG] AddRoute called with pattern=/ps/stream/text, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.336 -07:00 [DBG] Building PowerShell delegate, script length=164
+2025-07-23 14:57:24.337 -07:00 [DBG] AddRoute called with pattern=/hello-ps, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.338 -07:00 [DBG] Building PowerShell delegate, script length=111
+2025-07-23 14:57:24.339 -07:00 [DBG] AddRoute called with pattern=/hello-cs, language="CSharp", method=["Get"]
+2025-07-23 14:57:24.386 -07:00 [DBG] Building C# delegate, script length=99, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:25.470 -07:00 [DBG] AddRoute called with pattern=/cs/json, language="CSharp", method=["Get"]
+2025-07-23 14:57:25.472 -07:00 [DBG] Building C# delegate, script length=416, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:25.800 -07:00 [DBG] AddRoute called with pattern=/cs/bson, language="CSharp", method=["Get"]
+2025-07-23 14:57:25.801 -07:00 [DBG] Building C# delegate, script length=376, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:26.048 -07:00 [DBG] AddRoute called with pattern=/cs/cbor, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.049 -07:00 [DBG] Building C# delegate, script length=376, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:26.293 -07:00 [DBG] AddRoute called with pattern=/cs/yaml, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.294 -07:00 [DBG] Building C# delegate, script length=582, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:26.517 -07:00 [DBG] AddRoute called with pattern=/cs/xml, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.519 -07:00 [DBG] Building C# delegate, script length=410, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:26.718 -07:00 [DBG] AddRoute called with pattern=/cs/text, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.719 -07:00 [DBG] Building C# delegate, script length=416, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:26.931 -07:00 [DBG] AddRoute called with pattern=/cs/stream/binary, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.932 -07:00 [DBG] Building C# delegate, script length=216, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:27.144 -07:00 [DBG] AddRoute called with pattern=/cs/stream/text, language="CSharp", method=["Get"]
+2025-07-23 14:57:27.145 -07:00 [DBG] Building C# delegate, script length=201, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:27.341 -07:00 [DBG] AddRoute called with pattern=/cs/file, language="CSharp", method=["Get"]
+2025-07-23 14:57:27.342 -07:00 [DBG] Building C# delegate, script length=165, imports=0, refs=0, lang="CSharp12"
+2025-07-23 14:57:27.568 -07:00 [DBG] AddNativeRoute called with pattern=/compiled, httpVerb="Get"
+2025-07-23 14:57:27.571 -07:00 [DBG] AddNativeRoute called with pattern=/compiled, httpVerbs=Get
+2025-07-23 14:57:27.572 -07:00 [DBG] AddNativeRoute called with pattern=/compiled/stream, httpVerb="Get"
+2025-07-23 14:57:27.573 -07:00 [DBG] AddNativeRoute called with pattern=/compiled/stream, httpVerbs=Get
+2025-07-23 14:57:27.574 -07:00 [DBG] StartAsync() called
+2025-07-23 14:57:27.575 -07:00 [DBG] ApplyConfiguration(options) called
+2025-07-23 14:57:27.575 -07:00 [DBG] Configuration already applied, skipping
+2025-07-23 14:57:27.579 -07:00 [DBG] Hosting starting
+2025-07-23 14:57:27.632 -07:00 [DBG] QUIC listener starting with configured endpoint 0.0.0.0:5001.
+2025-07-23 14:57:27.744 -07:00 [INF] Now listening on: https://0.0.0.0:5001
+2025-07-23 14:57:27.746 -07:00 [INF] Now listening on: http://0.0.0.0:5000
+2025-07-23 14:57:27.746 -07:00 [DBG] Loaded hosting startup assembly MultiRoutes
+2025-07-23 14:57:27.748 -07:00 [INF] Application started. Press Ctrl+C to shut down.
+2025-07-23 14:57:27.749 -07:00 [INF] Hosting environment: Production
+2025-07-23 14:57:27.749 -07:00 [INF] Content root path: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes
+2025-07-23 14:57:27.750 -07:00 [DBG] Hosting started
+2025-07-23 14:58:44.951 -07:00 [INF] Application is shutting down...
+2025-07-23 14:58:44.954 -07:00 [DBG] StopAsync() called
+2025-07-23 14:58:44.955 -07:00 [DBG] Hosting stopping
+2025-07-23 14:58:44.989 -07:00 [DBG] QUIC listener aborted.
+System.Net.Quic.QuicException: Operation aborted.
+   at System.Net.Quic.QuicListener.DisposeAsync()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at System.Net.Quic.QuicListener.DisposeAsync()
+   at Microsoft.AspNetCore.Server.Kestrel.Transport.Quic.Internal.QuicConnectionListener.DisposeAsync()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.AspNetCore.Server.Kestrel.Transport.Quic.Internal.QuicConnectionListener.DisposeAsync()
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.TransportManager.ActiveTransport.UnbindAsync(CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.TransportManager.ActiveTransport.UnbindAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.TransportManager.StopTransportsAsync(List`1 transportsToStop, CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.TransportManager.StopTransportsAsync(List`1 transportsToStop, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerImpl.StopAsync(CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerImpl.StopAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Hosting.GenericWebHostService.StopAsync(CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.AspNetCore.Hosting.GenericWebHostService.StopAsync(CancellationToken cancellationToken)
+   at Microsoft.Extensions.Hosting.Internal.Host.ForeachService[T](IEnumerable`1 services, CancellationToken token, Boolean concurrent, Boolean abortOnFirstException, List`1 exceptions, Func`3 operation)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.Extensions.Hosting.Internal.Host.ForeachService[T](IEnumerable`1 services, CancellationToken token, Boolean concurrent, Boolean abortOnFirstException, List`1 exceptions, Func`3 operation)
+   at Microsoft.Extensions.Hosting.Internal.Host.StopAsync(CancellationToken cancellationToken)
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Microsoft.Extensions.Hosting.Internal.Host.StopAsync(CancellationToken cancellationToken)
+   at Kestrun.KestrunHost.StopAsync(CancellationToken cancellationToken) in C:\Users\mdaneri\Documents\GitHub\Kestrun\src\CSharp\Kestrun\Hosting\KestrunHost.cs:line 1619
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[TStateMachine](TStateMachine& stateMachine)
+   at Kestrun.KestrunHost.StopAsync(CancellationToken cancellationToken)
+   at Program.<>c__DisplayClass0_0.<<Main>$>b__3(Object s, ConsoleCancelEventArgs e) in C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes\Program.cs:line 384
+   at System.Console.HandlePosixSignal(PosixSignalContext ctx)
+   at System.Runtime.InteropServices.PosixSignalRegistration.HandlerRoutine(Int32 dwCtrlType)
+--- End of stack trace from previous location ---
+   at System.Net.Quic.QuicListener.AcceptConnectionAsync(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Server.Kestrel.Transport.Quic.Internal.QuicConnectionListener.AcceptAsync(IFeatureCollection features, CancellationToken cancellationToken)
+2025-07-23 14:58:44.997 -07:00 [DBG] Hosting stopped
+2025-07-23 14:58:45.107 -07:00 [DBG] Dispose() called
+2025-07-23 14:58:45.109 -07:00 [DBG] Disposing KestrunRunspacePoolManager: Disposed=false
+2025-07-23 14:58:45.110 -07:00 [INF] Disposing RunspacePoolManager and all pooled runspaces
+2025-07-23 14:58:45.111 -07:00 [DBG] Disposing runspace: System.Management.Automation.Runspaces.LocalRunspace
+2025-07-23 14:58:45.129 -07:00 [INF] RunspacePoolManager disposed

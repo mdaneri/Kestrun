@@ -34,47 +34,46 @@ $server = New-KrServer -Name "MyKestrunServer"
 # Level switch allows you to switch minimum logging level
 $levelSwitch = New-KrLevelSwitch -MinimumLevel Verbose
 
-$l0 = New-KrLogger |
+$l0 = New-KrLogger  |
 Set-KrMinimumLevel -Value Verbose -ToPreference |
 Add-EnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
 Add-EnrichFromLogContext |
 Add-KrSinkPowerShell |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" | 
-Start-KrLogger -PassThru -SetAsDefault
+Register-KrLogger -PassThru -SetAsDefault -Name "DefaultLogger"
 
-Write-KrInfoLog -MessageTemplate 'Some default log'
+Write-KrInformationLog -MessageTemplate 'Some default log'
 
 Close-KrLogger -Logger $l0
 
 # Setup new logger
-$logger1 = New-KrLogger |
+New-KrLogger |
 Set-KrMinimumLevel -Value Verbose |
 Add-EnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
 Add-KrSinkFile -Path ".\logs\test-.txt" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
-Start-KrLogger -PassThru
+Register-KrLogger -Name "Logger1"
 
-$logger2 = Start-KrLogger -FilePath ".\logs\test2-.txt" -Console -PassThru -MinimumLevel Verbose
+Register-KrLogger -FilePath ".\logs\test2-.txt" -Console -MinimumLevel Verbose -Name "Logger2" 
 
 # Write-KrVerboseLog "test verbose"
-Write-KrDebugLog -MessageTemplate "test debug asd" -Logger $logger1
-
-Set-KrLogger -Logger $logger2
-Write-KrInfoLog -MessageTemplate $null
-Write-KrInfoLog -MessageTemplate ''
-Write-KrInfoLog -MessageTemplate 'asd {0} - {1}' -PropertyValues $null, '' -Exception $null
+Write-KrDebugLog -MessageTemplate "test debug asd" -Name "Logger1"
+Set-KrDefaultLogger -Name "Logger2"
+Write-KrInformationLog -MessageTemplate $null
+Write-KrInformationLog -MessageTemplate ''
+Write-KrInformationLog -MessageTemplate 'asd {0} - {1}' -PropertyValues $null, '' -Exception $null
 
 Write-KrDebugLog -MessageTemplate "test debug asdasdsad"
 
-Write-KrWarningLog "test warning" -Logger $logger1
+Write-KrWarningLog "test warning" -Name "Logger1"
 
-Set-KrLogger -Logger $logger1
+Set-KrDefaultLogger -Name "Logger1"
 
-Write-KrInfoLog "test info"
+Write-KrInformationLog "test info"
 
-Write-KrErrorLog -MessageTemplate "test error {asd}, {num}, {@levelSwitch}" -PropertyValues "test1", 123, $levelSwitch -Logger $logger2
+Write-KrErrorLog -MessageTemplate "test error {asd}, {num}, {@levelSwitch}" -PropertyValues "test1", 123, $levelSwitch -Name "Logger2"
 
 try {
     Get-Content -Path 'asd' -ErrorAction Stop
@@ -82,5 +81,16 @@ try {
 catch {
     Write-KrFatalLog -ErrorRecord $_ -MessageTemplate 'Error while reading file!'
 }
+
+
+New-KrLogger |
+Set-KrMinimumLevel -Value Verbose |
+Add-EnrichWithEnvironment |
+Add-EnrichWithExceptionDetail |
+ 
+Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
+Add-KrSinkEventLog  -Source "MyApp" -ManageEventSource  |
+Register-KrLogger -Name "Logger3"
+Write-KrInformationLog -Name "Logger3" -MessageTemplate "test info"
 
 Close-KrLogger

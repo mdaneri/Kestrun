@@ -39,7 +39,7 @@ function Write-KrErrorLog {
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
-		[Serilog.ILogger]$Logger = [Serilog.Log]::Logger,
+		[string]$Name,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -61,6 +61,6 @@ function Write-KrErrorLog {
 		[switch]$PassThru
 	)
 	process {
-		Write-KrLog -LogLevel Error -MessageTemplate $MessageTemplate -Logger $Logger -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
+		Write-KrLog -LogLevel Error -Name $Name -MessageTemplate $MessageTemplate -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
 	}
 }

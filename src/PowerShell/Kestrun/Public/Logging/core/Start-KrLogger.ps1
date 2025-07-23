@@ -1,4 +1,4 @@
-function Start-KrLogger {
+function Register-KrLogger {
 	<#
 	 .SYNOPSIS
 	 Starts the Kestrun logger.
@@ -21,16 +21,18 @@ function Start-KrLogger {
 	.PARAMETER PassThru
 	 If specified, returns the created logger object.
 	.EXAMPLE
-	 Start-KrLogger -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
+	 Register-KrLogger -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
 	 Initializes the Kestrun logger with Debug level, adds console and file sinks, sets the logger as default, and returns the logger object.
 	.EXAMPLE
-	 Start-KrLogger -LoggerConfig $myLoggerConfig -SetAsDefault
+	 Register-KrLogger -LoggerConfig $myLoggerConfig -SetAsDefault
 	 Initializes the Kestrun logger using a pre-configured Serilog logger configuration object and sets it as the default logger.
 	#>
 
 	[CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.ILogger])]
 	param(
+		[Parameter(Mandatory = $true)]
+		[string]$Name,
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'Full')]
 		[Serilog.LoggerConfiguration]$LoggerConfig,
 
@@ -75,14 +77,7 @@ function Start-KrLogger {
 				}
 			}
 		}
-
-		$logger = $LoggerConfig.CreateLogger()
-		# If SetAsDefault is specified, set the logger as the default logger
-		if ($SetAsDefault) {
-			if ($PSCmdlet.ShouldProcess("Set Serilog Logger")) {
-			 	[Serilog.Log]::Logger = $logger
-			}
-		}
+		$logger = [Kestrun.Logging.LoggerConfigurationExtensions]::Register($LoggerConfig,$Name, $SetAsDefault)
 		if ($PassThru) {
 			return $logger
 		}

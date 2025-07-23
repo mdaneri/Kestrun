@@ -179,7 +179,7 @@ KestrunLogConfigurator.Reset();
 powershell
 
 ```powershell
-Reset-KrLogger -Name 'ps'
+ReSet-KrDefaultLogger -Name 'ps'
 ```
 
 This will:
@@ -207,7 +207,7 @@ After `Reset()` you can re-run your `Configure(…)…Register()` calls or (in P
 | **`Update-KrLogger`**<br/>`-Name` *string*<br/>`-ScriptBlock` *{ param(\$cfg) … }*<br/>`[-Default]`                                                                                                                   | Re-builds the logger by replaying its recipe **plus** your script-block delta.                                                                 | n/a                       |
 | **`Get-KrLogger`** `-Name`                                                                                                                                                                                            | Returns the live `ILogger` (or throws).                                                                                                        | n/a                       |
 | **`Test-KrLogger`** `-Name`                                                                                                                                                                                           | `True/False` – does the logger exist?                                                                                                          | n/a                       |
-| **`Reset-KrLogger`** `-Name`                                                                                                                                                                                           | Reset the Logger (or THrow)                                                                                                          | n/a                       |
+| **`ReSet-KrDefaultLogger`** `-Name`                                                                                                                                                                                           | Reset the Logger (or THrow)                                                                                                          | n/a                       |
 
 ---
 

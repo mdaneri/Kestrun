@@ -9,7 +9,7 @@ function Get-JsonFormatter {
 	.OUTPUTS
 		Instance of Serilog.Formatting.Json.JsonFormatter
 	.EXAMPLE
-		PS> New-KrLogger | Add-KrSinkFile -Path 'C:\Data\Log\test.log' -Formatter (Get-JsonFormatter) | Start-KrLogger
+		PS> New-KrLogger | Add-KrSinkFile -Path 'C:\Data\Log\test.log' -Formatter (Get-JsonFormatter) | Register-KrLogger
 	#>
 
 	[Serilog.Formatting.Json.JsonFormatter]::new()

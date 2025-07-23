@@ -74,25 +74,23 @@ public class KestrunHost
     // ── ✦ QUEUE #2 : MIDDLEWARE STAGES ✦ ────────────────────────────────
     private readonly List<Action<IApplicationBuilder>> _middlewareQueue = [];
 
+
     #endregion
 
 
     // Accepts optional module paths (from PowerShell)
     #region Constructor
 
-
-    public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null, Serilog.Core.Logger? logger = null)
+    public KestrunHost(string? appName, string? kestrunRoot = null, string[]? modulePathsObj = null) :
+            this(appName, Log.Logger, kestrunRoot, modulePathsObj)
+    { }
+    public KestrunHost(string? appName, bool sampleLogger, string? kestrunRoot = null, string[]? modulePathsObj = null) :
+               this(appName, sampleLogger ? CreateDefaultLogger() : Log.Logger, kestrunRoot, modulePathsObj)
+    { }
+    public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
     {
         // Initialize Serilog logger if not provided
-        if (logger == null)
-        {
-            using var log = CreateDefaultLogger();
-            Log.Logger = log;
-        }
-        else
-        {
-            Log.Logger = logger;
-        }
+
 
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
@@ -167,14 +165,15 @@ public class KestrunHost
     /// Creates a default Serilog logger with basic configuration.
     /// </summary>
     /// <returns>The configured Serilog logger.</returns>
-    private static Serilog.Core.Logger CreateDefaultLogger()
-        => new LoggerConfiguration()
-            .MinimumLevel.Debug()
-            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .Enrich.FromLogContext()
-            .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
-            .CreateLogger();
-
+    private static Serilog.ILogger CreateDefaultLogger()
+    {
+        Log.Logger = new LoggerConfiguration()
+         .MinimumLevel.Debug()
+         .Enrich.FromLogContext()
+         .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
+         .CreateLogger();
+        return Log.Logger;
+    }
     #endregion
 
     #region Services
@@ -1386,13 +1385,13 @@ public class KestrunHost
                 app.UseRouting();                                    // add routing
                 app.UseEndpoints(e => e.MapRazorPages());            // map pages
 
-                app.Use(async (ctx, next) =>
+             /*   app.Use(async (ctx, next) =>
 {
     var ds = ctx.GetEndpoint();          // null at build time
     Console.WriteLine($"Endpoints now: {ctx.RequestServices
         .GetRequiredService<EndpointDataSource>().Endpoints.Count}");
     await next();
-});
+});*/
 
             }
 
