@@ -1,0 +1,5 @@
+2025-07-23 12:19:19.394 -07:00 [INF] 
+2025-07-23 12:19:21.489 -07:00 [INF] 
+2025-07-23 12:19:24.305 -07:00 [INF] asd null - 
+2025-07-23 12:19:27.707 -07:00 [DBG] test debug asdasdsad
+2025-07-23 12:19:27.713 -07:00 [ERR] test error test1, 123, {"MinimumLevel":"Verbose","$type":"LoggingLevelSwitch"}

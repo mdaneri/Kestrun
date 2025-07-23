@@ -17,7 +17,7 @@ function Add-EnrichWithProperty {
 	.OUTPUTS
 		LoggerConfiguration object allowing method chaining
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichWithProperty -Name ScriptName -Value 'Test' | Add-SinkConsole | Start-KrLogger
+		PS> New-KrLogger | Add-EnrichWithProperty -Name ScriptName -Value 'Test' | Add-KrSinkConsole | Start-KrLogger
 	#>
 
 	[Cmdletbinding()]

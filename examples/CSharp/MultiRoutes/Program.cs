@@ -8,7 +8,8 @@ using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib;   // Only for writing the CSR key
+using Org.BouncyCastle.Utilities.Zlib;
+using Kestrun.Logging;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
 

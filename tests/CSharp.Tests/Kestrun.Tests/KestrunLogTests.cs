@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kestrun;
+using Kestrun.Logging;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;

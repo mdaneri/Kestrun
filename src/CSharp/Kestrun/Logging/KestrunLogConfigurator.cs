@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using Serilog;
 using Serilog.Events;
 
-namespace Kestrun;
+namespace Kestrun.Logging;
 
 /// <summary>
 /// Static façade that orchestrates <see cref="Serilog"/> loggers inside Kestrun.
@@ -55,6 +55,8 @@ public static class KestrunLogConfigurator
     /// Lock object used to ensure that Reset() is thread-safe.
     /// </summary>
     private static readonly object _resetLock = new();
+
+    public static Serilog.Formatting.Display.MessageTemplateTextFormatter TextFormatter { get; } = new("{Message:lj}");
 
     // ------------------------------------------------------------------------
     // Public API

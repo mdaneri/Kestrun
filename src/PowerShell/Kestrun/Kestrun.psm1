@@ -46,7 +46,7 @@ function Add-AspNetCoreType {
     }
     $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
     foreach ($verDir in $versionDirs) {
-     <#   $assemblies = @(
+        <#   $assemblies = @(
             "Microsoft.AspNetCore.dll",
             "Microsoft.AspNetCore.Server.Kestrel.Core.dll",
             "Microsoft.AspNetCore.ResponseCompression.dll",
@@ -95,12 +95,14 @@ $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 Add-AspNetCoreType -Version "net8"
 # Add-AspNetCoreType -Version "net8.0.*"
 
-$assemblies = Get-ChildItem -Path (Join-Path -Path $moduleRootPath -ChildPath "lib") -Filter "*.dll" -File
+ 
+# Assert that the assembly is loaded
+Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
+#Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme.dll")
+$assemblies = Get-ChildItem -Path (Join-Path -Path $moduleRootPath -ChildPath "lib") -Filter "Serilog.*.dll" -File
 foreach ($assembly in $assemblies) {
     Assert-AssemblyLoaded -AssemblyPath $assembly.FullName
 }
-# Assert that the assembly is loaded
-#Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
 #Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
 # load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
@@ -112,7 +114,7 @@ $sysfuncs = Get-ChildItem Function:
 $sysaliases = Get-ChildItem Alias:
 
 # load public functions
-Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse| ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # get functions from memory and compare to existing to find new functions added
 $funcs = Get-ChildItem Function: | Where-Object { $sysfuncs -notcontains $_ }
@@ -126,6 +128,4 @@ if ($funcs) {
         Export-ModuleMember -Function ($funcs.Name)
     }
 }
-
-# Default text formatter for Get-KrFormattedMessage cmdlet
-$global:TextFormatter = [Serilog.Formatting.Display.MessageTemplateTextFormatter]::new('{Message:lj}')
+ 

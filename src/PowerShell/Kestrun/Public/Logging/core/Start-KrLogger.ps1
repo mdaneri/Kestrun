@@ -63,15 +63,15 @@ function Start-KrLogger {
 
 				# If file path was not passed we setup default console sink
 				if ($PowerShell -or -not $PSBoundParameters.ContainsKey('FilePath')) {
-					$LoggerConfig = $LoggerConfig | Add-SinkPowerShell
+					$LoggerConfig = $LoggerConfig | Add-KrSinkPowerShell
 				}
 
 				if ($PSBoundParameters.ContainsKey('Console')) {
-					$LoggerConfig = $LoggerConfig | Add-SinkConsole
+					$LoggerConfig = $LoggerConfig | Add-KrSinkConsole
 				}
 
 				if ($PSBoundParameters.ContainsKey('FilePath')) {
-					$LoggerConfig = $LoggerConfig | Add-SinkFile -Path $FilePath -RollingInterval $FileRollingInterval
+					$LoggerConfig = $LoggerConfig | Add-KrSinkFile -Path $FilePath -RollingInterval $FileRollingInterval
 				}
 			}
 		}

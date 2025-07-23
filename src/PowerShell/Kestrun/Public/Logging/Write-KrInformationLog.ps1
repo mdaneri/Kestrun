@@ -68,3 +68,5 @@ function Write-KrInformationLog {
 		Write-KrLog -LogLevel Information -MessageTemplate $MessageTemplate -Logger $Logger -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
 	}
 }
+
+Set-Alias -Name Write-KrInfoLog -Value Write-KrInformationLog -Force

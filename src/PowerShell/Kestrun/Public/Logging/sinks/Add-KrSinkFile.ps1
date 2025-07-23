@@ -1,54 +1,55 @@
-function Add-SinkFile {
+function Add-KrSinkFile {
 	<#
 	.SYNOPSIS
-		Write log events to the specified file
+	 Adds a file-based logging sink to the logging system.
 	.DESCRIPTION
-		Write log events to the specified file
+	 The Add-KrSinkFile function configures a logging sink that writes log events to a specified file. It supports various options for file management, such as rolling intervals, file size limits, and custom output templates.
 	.PARAMETER LoggerConfig
-		Instance of LoggerConfiguration
+	 The Serilog LoggerConfiguration object to which the file sink will be added.
 	.PARAMETER Path
-		Path to the file.
+	 The file path where log events will be written. This can include rolling file names.
 	.PARAMETER Formatter
-		A formatter, such as JsonFormatter(See Get-JsonFormatter), to convert the log events into text for the file. If control of regular text formatting is required, use Default parameter set.
+	 An optional text formatter for custom log message formatting.
 	.PARAMETER RestrictedToMinimumLevel
-		The minimum level for events passed through the sink. Ignored when LevelSwitch is specified.
+	 The minimum log event level required to write to the file sink. Defaults to Verbose.
 	.PARAMETER OutputTemplate
-		A message template describing the format used to write to the sink.
+	 The output template string for formatting log messages. Defaults to '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{ErrorRecord}{Exception}'.
 	.PARAMETER FormatProvider
-		Supplies culture-specific formatting information, or null.
+	 An optional format provider for customizing message formatting.
 	.PARAMETER FileSizeLimitBytes
-		The approximate maximum size, in bytes, to which a log file will be allowed to grow. For unrestricted growth, pass null. The default is 1 GB. To avoid writing partial events, the last event within the limit will be written in full even if it exceeds the limit.
+	 The maximum size of the log file in bytes before it rolls over. Defaults to 1 GB.
 	.PARAMETER LevelSwitch
-		A switch allowing the pass-through minimum level to be changed at runtime.
+	 An optional LoggingLevelSwitch to dynamically control the logging level.
 	.PARAMETER Buffered
-		Indicates if flushing to the output file can be buffered or not. The default is false.
+	 If set, log events are buffered before being written to the file. Defaults to false.
 	.PARAMETER Shared
-		Allow the log file to be shared by multiple processes. The default is false.
+	 If set, allows multiple processes to write to the same log file. Defaults to false.
 	.PARAMETER FlushToDiskInterval
-		If provided, a full disk flush will be performed periodically at the specified interval.
+	 The interval at which the log file is flushed to disk. Defaults to null (no periodic flushing).
 	.PARAMETER RollingInterval
-		The interval at which logging will roll over to a new file.
+	 The rolling interval for the log file. Defaults to Infinite (no rolling).
 	.PARAMETER RollOnFileSizeLimit
-		If true, a new file will be created when the file size limit is reached. Filenames will have a number appended in the format _NNN, with the first filename given no number.
+	 If set, the log file will roll over when it reaches the size limit, regardless of the rolling interval. Defaults to false.
 	.PARAMETER RetainedFileCountLimit
-		The maximum number of log files that will be retained, including the current log file. For unlimited retention, pass null. The default is 31.
+	 The maximum number of rolled log files to retain. Defaults to 31.
 	.PARAMETER Encoding
-		Character encoding used to write the text file. The default is UTF-8 without BOM.
+	 The encoding used for the log file. Defaults to null (system default).
 	.PARAMETER Hooks
-		Optionally enables hooking into log file lifecycle events.
-	.INPUTS
-		Instance of LoggerConfiguration
-	.OUTPUTS
-		LoggerConfiguration object allowing method chaining
+	 Lifecycle hooks for managing the log file lifecycle. Defaults to null (no hooks).
 	.EXAMPLE
-		PS> New-KrLogger | Add-SinkFile -Path "C:\Logs\test.log" | Start-KrLogger
+	 Add-KrSinkFile -LoggerConfig $config -Path "C:\Logs\app-.txt"
+	 Adds a file sink to the logging system that writes log events to "C:\Logs\app-.txt". The file name will roll over based on the specified rolling interval.
 	.EXAMPLE
-		PS> New-KrLogger | Add-SinkFile -Path "C:\Logs\test-.txt" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' | Start-KrLogger
+	 Add-KrSinkFile -LoggerConfig $config -Path "C:\Logs\app-.txt" -Formatter $formatter
+	 Adds a file sink to the logging system that writes log events to "C:\Logs\app-.txt" using the specified text formatter.
 	.EXAMPLE
-		PS> New-KrLogger | Add-SinkFile -Path 'C:\Data\Log\test.log' -Formatter (Get-JsonFormatter) | Start-KrLogger
+	 Add-KrSinkFile -LoggerConfig $config -Path "C:\Logs\app-.txt" -RollingInterval Day -RetainedFileCountLimit 7
+	 Adds a file sink that rolls over daily and retains the last 7 log files.
+	.NOTES
+	 This function is part of the Kestrun logging infrastructure and should be used to enable file	 logging.
 	#>
-
 	[Cmdletbinding(DefaultParameterSetName = 'Default')]
+	[OutputType([Serilog.LoggerConfiguration])]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Serilog.LoggerConfiguration]$LoggerConfig,
@@ -100,11 +101,10 @@ function Add-SinkFile {
 	)
 
 	process {
-
 		switch ($PSCmdlet.ParameterSetName) {
 			'Default' {
 				$LoggerConfig = [Serilog.FileLoggerConfigurationExtensions]::File($LoggerConfig.WriteTo, 
-					$Path, 
+					$Path,
 					$RestrictedToMinimumLevel,
 					$OutputTemplate,
 					$FormatProvider,
@@ -123,7 +123,7 @@ function Add-SinkFile {
 			'Formatter' {
 				$LoggerConfig = [Serilog.FileLoggerConfigurationExtensions]::File($LoggerConfig.WriteTo, 
 					$Formatter,
-					$Path, 
+					$Path,
 					$RestrictedToMinimumLevel,
 					$FileSizeLimitBytes,
 					$LevelSwitch,
@@ -139,6 +139,6 @@ function Add-SinkFile {
 			}
 		}
 
-		$LoggerConfig
+		return $LoggerConfig
 	}
 }

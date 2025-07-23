@@ -13,7 +13,7 @@ function Add-EnrichWithErrorRecord {
 	.OUTPUTS
 		Instance of LoggerConfiguration
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichWithErrorRecord | Add-SinkPowerShell | Start-KrLogger
+		PS> New-KrLogger | Add-EnrichWithErrorRecord | Add-KrSinkPowerShell | Start-KrLogger
 	#>
 
 	[Cmdletbinding()]

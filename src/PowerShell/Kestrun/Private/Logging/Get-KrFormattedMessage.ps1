@@ -25,7 +25,8 @@ function Get-KrFormattedMessage{
 	{
 		$logEvent = [Serilog.Events.LogEvent]::new([System.DateTimeOffset]::Now, $LogLevel, $Exception, $parsedTemplate, $boundProperties)
 		$strWriter = [System.IO.StringWriter]::new()
-		$global:TextFormatter.Format($logEvent, $strWriter)
+		# Use the global TextFormatter if available, otherwise use the default formatter from Kestrun.Logging
+		[Kestrun.Logging]::TextFormatter.Format($logEvent, $strWriter)
 		$message = $strWriter.ToString()
 		$strWriter.Dispose()
 		$message
