@@ -39,6 +39,9 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;     // extension methods
 //using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 
 namespace Kestrun;
 
@@ -81,13 +84,23 @@ public class KestrunHost
     public KestrunHost(string? appName = null, string? kestrunRoot = null, string[]? modulePathsObj = null, Serilog.Core.Logger? logger = null)
     {
         // Initialize Serilog logger if not provided
-        Log.Logger = logger ?? CreateDefaultLogger();
+        if (logger == null)
+        {
+            using var log = CreateDefaultLogger();
+            Log.Logger = log;
+        }
+        else
+        {
+            Log.Logger = logger;
+        }
+
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
         if (!string.IsNullOrWhiteSpace(kestrunRoot))
         {
             Log.Information("Setting Kestrun root directory: {KestrunRoot}", kestrunRoot);
             Directory.SetCurrentDirectory(kestrunRoot);
+            KestrunRoot = kestrunRoot;
         }
         var kestrunModulePath = string.Empty;
         if (modulePathsObj is null || (modulePathsObj?.Any(p => p.Contains("Kestrun.psm1", StringComparison.Ordinal)) == false))
@@ -191,7 +204,7 @@ public class KestrunHost
 
     #region ListenerOptions
 
-    private List<ListenerOptions>? _listenerOptions;
+    //private List<ListenerOptions>? _listenerOptions;
 
 
     public void ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
@@ -199,8 +212,8 @@ public class KestrunHost
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
 
-        _listenerOptions ??= [];
-        _listenerOptions.Add(new ListenerOptions
+
+        Options.Listeners.Add(new ListenerOptions
         {
             IPAddress = ipAddress ?? IPAddress.Any,
             Port = port,
@@ -734,55 +747,64 @@ public class KestrunHost
                 Log.Debug("Configuration already applied, skipping");
             return; // Already configured
         }
+        try
+        {
 
-        // This method is called to apply the configured options to the Kestrel server.
-        // The actual application of options is done in the Run method.
-        _runspacePool = CreateRunspacePool(Options.MaxRunspaces);
-        if (_runspacePool == null)
-        {
-            throw new InvalidOperationException("Failed to create runspace pool.");
-        }
-
-        //     KestrelServices(builder);
-        builder.WebHost.UseKestrel(opts =>
-        {
-            opts.CopyFromTemplate(Options.ServerOptions);
-        });
-        builder.WebHost.ConfigureKestrel(kestrelOpts =>
-        {
-            // Optionally, handle ApplicationName or other properties as needed
-            if (_listenerOptions != null && _listenerOptions.Count > 0)
+            // This method is called to apply the configured options to the Kestrel server.
+            // The actual application of options is done in the Run method.
+            _runspacePool = CreateRunspacePool(Options.MaxRunspaces);
+            if (_runspacePool == null)
             {
-                _listenerOptions.ForEach(opt =>
+                throw new InvalidOperationException("Failed to create runspace pool.");
+            }
+
+            //     KestrelServices(builder);
+            builder.WebHost.UseKestrel(opts =>
+            {
+                opts.CopyFromTemplate(Options.ServerOptions);
+            });
+            builder.WebHost.ConfigureKestrel(kestrelOpts =>
+            {
+                // Optionally, handle ApplicationName or other properties as needed
+                if (Options.Listeners.Count > 0)
                 {
-                    kestrelOpts.Listen(opt.IPAddress, opt.Port, listenOptions =>
+                    Options.Listeners.ForEach(opt =>
                     {
-                        listenOptions.Protocols = opt.Protocols;
-                        if (opt.UseHttps && opt.X509Certificate != null)
-                            listenOptions.UseHttps(opt.X509Certificate);
-                        if (opt.UseConnectionLogging)
-                            listenOptions.UseConnectionLogging();
+                        kestrelOpts.Listen(opt.IPAddress, opt.Port, listenOptions =>
+                        {
+                            listenOptions.Protocols = opt.Protocols;
+                            if (opt.UseHttps && opt.X509Certificate != null)
+                                listenOptions.UseHttps(opt.X509Certificate);
+                            if (opt.UseConnectionLogging)
+                                listenOptions.UseConnectionLogging();
+                        });
                     });
-                });
-            }
-        });
+                }
+            });
 
 
-        App = Build();
-        var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
+            App = Build();
+            var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
 
-        if (dataSource.Endpoints.Count == 0)
-        {
-            Log.Warning("EndpointDataSource is empty. No endpoints configured.");
-        }
-        else
-        {
-            foreach (var ep in dataSource.Endpoints)
+            if (dataSource.Endpoints.Count == 0)
             {
-                Log.Information("➡️  Endpoint: {DisplayName}", ep.DisplayName);
+                Log.Warning("EndpointDataSource is empty. No endpoints configured.");
             }
+            else
+            {
+                foreach (var ep in dataSource.Endpoints)
+                {
+                    Log.Information("➡️  Endpoint: {DisplayName}", ep.DisplayName);
+                }
+            }
+            _isConfigured = true;
+            Log.Information("Configuration applied successfully.");
         }
-        _isConfigured = true;
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error applying configuration: {Message}", ex.Message);
+            throw new InvalidOperationException("Failed to apply configuration.", ex);
+        }
     }
     #endregion
     #region Builder
@@ -801,7 +823,7 @@ public class KestrunHost
     public WebApplication Build()
     {
         if (builder == null) throw new InvalidOperationException("Call CreateBuilder() first.");
-        //AddPowerShellRazorPages();
+
         // 1️⃣  Apply all queued services
         foreach (var configure in _serviceQueue)
         {
@@ -811,7 +833,23 @@ public class KestrunHost
         // 2️⃣  Build the WebApplication
         App = builder.Build();
 
-        // 3️⃣  Apply all queued middleware stages
+        Log.Information("CWD: {CWD}", Directory.GetCurrentDirectory());
+        Log.Information("ContentRoot: {Root}", App.Environment.ContentRootPath);
+        var pagesDir = Path.Combine(App.Environment.ContentRootPath, "Pages");
+        Log.Information("Pages Dir: {PagesDir}", pagesDir);
+        if (Directory.Exists(pagesDir))
+        {
+            foreach (var file in Directory.GetFiles(pagesDir, "*.*", SearchOption.AllDirectories))
+            {
+                Log.Information("Pages file: {File}", file);
+            }
+        }
+        else
+        {
+            Log.Warning("Pages directory does not exist: {PagesDir}", pagesDir);
+        }
+
+        // 3️⃣  Apply all queued middleware stages
         foreach (var stage in _middlewareQueue)
         {
             stage(App);
@@ -1179,7 +1217,12 @@ public class KestrunHost
         AddPowerShellRazorPages(routePrefix, (Action<RazorPagesOptions>?)null);
     public KestrunHost AddPowerShellRazorPages() =>
         AddPowerShellRazorPages(null, (Action<RazorPagesOptions>?)null);
-
+    // helper: true  ⇢ file contains managed metadata
+    static bool IsManaged(string path)
+    {
+        try { _ = AssemblyName.GetAssemblyName(path); return true; }
+        catch { return false; }          // native ⇒ BadImageFormatException
+    }
     /// <summary>
     /// Adds PowerShell Razor Pages to the application.
     /// This middleware allows you to serve Razor Pages using PowerShell scripts.
@@ -1191,38 +1234,170 @@ public class KestrunHost
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
-        AddService(services =>
+        /*AddService(services =>
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}", routePrefix);
+                Log.Debug("Adding PowerShell Razor Pages to the service with route prefix: {RoutePrefix}", routePrefix);
             var mvc = services.AddRazorPages();
+
+            // ← this line makes the loose .cshtml files discoverable at runtime
+            mvc.AddRazorRuntimeCompilation();
             if (cfg != null)
                 mvc.AddRazorPagesOptions(cfg);
-        });
+        });*/
+
+        AddService(services =>
+                {
+                    var env = builder.Environment;
+                    /*         var csFiles = Directory.GetFiles(Path.Combine(env.ContentRootPath, "Pages", "cs"),
+                                                       "*.cshtml.cs", SearchOption.AllDirectories);
+
+                      var trees = csFiles.Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f)));
+
+                      var refs = AppDomain.CurrentDomain.GetAssemblies()
+                                     .Where(a => !a.IsDynamic && File.Exists(a.Location))
+                                     .Select(a => MetadataReference.CreateFromFile(a.Location));
+
+                      var comp = CSharpCompilation.Create("DynamicPages",
+                                     trees, refs,
+                                     new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+                      using var ms = new MemoryStream();
+                      var emit = comp.Emit(ms);                 // <- returns EmitResult
+
+                      if (!emit.Success)
+                      {
+                          foreach (var d in emit.Diagnostics)
+                              Log.Error(d.ToString());                 // or Console.WriteLine …
+                          return;                                      // abort start-up
+                      }
+                      ms.Position = 0;
+
+                      var bytes = ms.ToArray();
+
+                      // ① write DLL + (optionally) PDB to a temp location
+                      var tmpDir = Path.Combine(Path.GetTempPath(), "KestrunDynamic");
+                      Directory.CreateDirectory(tmpDir);
+
+                      var dllPath = Path.Combine(tmpDir, "DynamicPages.dll");
+                      File.WriteAllBytes(dllPath, bytes);
+
+                      // ② load it so the types are available to MVC
+                      var pagesAsm = Assembly.Load(bytes);
+
+                      // ③ register with MVC & RuntimeCompilation
+                      services.AddRazorPages()
+                              .AddApplicationPart(pagesAsm)                       // exposes PageModels
+                              .AddRazorRuntimeCompilation(o =>
+                                   o.AdditionalReferencePaths.Add(dllPath));      // lets Roslyn find it
+  */
+
+                    services.AddRazorPages().AddRazorRuntimeCompilation();
+
+                    // ── NEW: feed Roslyn every assembly already loaded ──────────
+                    //      var env = builder.Environment;                  // or app.Environment
+                    var pagesRoot = Path.Combine(env.ContentRootPath, "Pages");
+
+                    services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
+                    {
+                        // 1️⃣  everything that’s already loaded and managed
+                        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()
+                                         .Where(a => !a.IsDynamic && IsManaged(a.Location)))
+                            opts.AdditionalReferencePaths.Add(asm.Location);
+
+                        // 2️⃣  managed DLLs from the .NET-8 shared-framework folder
+                        var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location)!;   // e.g. …\dotnet\shared\Microsoft.NETCore.App\8.0.x
+                        foreach (var dll in Directory.EnumerateFiles(coreDir, "*.dll")
+                                                     .Where(IsManaged))
+                            opts.AdditionalReferencePaths.Add(dll);
+
+                        // 3️⃣  (optional) watch your project’s Pages folder so edits hot-reload
+                        var pagesRoot = Path.Combine(builder.Environment.ContentRootPath, "Pages");
+                        if (Directory.Exists(pagesRoot))
+                            opts.FileProviders.Add(new PhysicalFileProvider(pagesRoot));
+                    });
+                });
+
+        // 1️⃣  add everything *before* ApplyConfiguration()
+        /*   AddService(services =>
+           {
+               // ---- dynamic compile of *.cshtml.cs --------------------
+               var env = builder.Environment;
+               var pagesDir = Path.Combine(env.ContentRootPath, "Pages", "cs");
+               var trees = Directory.EnumerateFiles(pagesDir, "*.cshtml.cs", SearchOption.AllDirectories)
+                                       .Select(f => CSharpSyntaxTree.ParseText(File.ReadAllText(f)));
+
+               var refs = AppDomain.CurrentDomain.GetAssemblies()
+                               .Where(a => !a.IsDynamic && File.Exists(a.Location))
+                               .Select(a => MetadataReference.CreateFromFile(a.Location));
+
+               var comp = CSharpCompilation.Create(
+                               "DynamicPages",
+                               trees, refs,
+                               new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+               using var ms = new MemoryStream();
+               var result = comp.Emit(ms);
+
+               if (!result.Success)                       // ← only abort *here* on failure
+               {
+                   foreach (var d in result.Diagnostics)
+                       Log.Error(d.ToString());
+                   throw new InvalidOperationException("Page compilation failed");
+               }
+
+               ms.Position = 0;
+               var pagesAsm = Assembly.Load(ms.ToArray());
+
+               // 2️⃣  register Razor-Pages *and* the dynamic assembly
+               services.AddRazorPages()
+                       .AddApplicationPart(pagesAsm)
+                       .AddRazorRuntimeCompilation(o =>
+                       {
+                           // allow Razor to reference the in-memory assembly again
+                           var tmp = Path.Combine(Path.GetTempPath(), "DynamicPages.dll");
+                           File.WriteAllBytes(tmp, ms.ToArray());      // sync, no ‘await’ needed
+                           o.AdditionalReferencePaths.Add(tmp);
+                       });
+           });
+   */
 
         return Use(app =>
         {
             ArgumentNullException.ThrowIfNull(_runspacePool);
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Adding PowerShell Razor Pages middleware with route prefix: {RoutePrefix}", routePrefix);
-            var web = (WebApplication)app;
+
+
             if (routePrefix.HasValue)
             {
-
-                // Mount the bridge under a sub‑path, e.g. /pspages
-                web.Map(routePrefix.Value, branch =>
+                // ── /ps  (or whatever prefix) ──────────────────────────────
+                app.Map(routePrefix.Value, branch =>
                 {
-                    var webBranch = (WebApplication)branch;
-                    webBranch.UsePowerShellRazorPages(_runspacePool);  // bridge
-                    webBranch.MapRazorPages();                // *.cshtml routes
+                    branch.UsePowerShellRazorPages(_runspacePool);   // bridge
+                    branch.UseRouting();                             // add routing
+                    branch.UseEndpoints(e => e.MapRazorPages());     // map pages
                 });
             }
             else
             {
-                // Mount at root
-                web.UsePowerShellRazorPages(_runspacePool);
-                web.MapRazorPages();
+                // ── mounted at root ────────────────────────────────────────
+                app.UsePowerShellRazorPages(_runspacePool);          // bridge
+                app.UseRouting();                                    // add routing
+                app.UseEndpoints(e => e.MapRazorPages());            // map pages
+
+                app.Use(async (ctx, next) =>
+{
+    var ds = ctx.GetEndpoint();          // null at build time
+    Console.WriteLine($"Endpoints now: {ctx.RequestServices
+        .GetRequiredService<EndpointDataSource>().Endpoints.Count}");
+    await next();
+});
+
             }
+
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("PowerShell Razor Pages middleware added with route prefix: {RoutePrefix}", routePrefix);
         });
     }
 
@@ -1509,9 +1684,9 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
             Log.Debug("Dispose() called");
         _runspacePool?.Dispose();
         _runspacePool = null; // Clear the runspace pool reference
-        _isConfigured = false; // Reset configuration state
-        _listenerOptions?.Clear();
+        _isConfigured = false; // Reset configuration state 
         App = null;
+        Log.CloseAndFlush();
     }
     #endregion
 

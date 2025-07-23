@@ -7,7 +7,7 @@ function Set-KrSharedState {
     Stores a value in the Kestrun global variable table. Variables may be marked
     as read-only to prevent accidental modification.
     If the variable already exists, its value is updated. If it does not exist,
-    it is created. 
+    it is created.
 .PARAMETER Server
     The Kestrun host instance to use for storing the variable.
     This is typically the instance running the Kestrun server.
@@ -18,6 +18,7 @@ function Set-KrSharedState {
 #>
 
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([Kestrun.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
@@ -36,6 +37,9 @@ function Set-KrSharedState {
                 $Value
             )
         }
+        # Return the server instance for chaining
+        # This allows for fluent API usage
+        return $Server
     }
 }
 function Get-KrSharedState {

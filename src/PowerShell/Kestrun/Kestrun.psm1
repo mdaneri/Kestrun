@@ -46,8 +46,9 @@ function Add-AspNetCoreType {
     }
     $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
     foreach ($verDir in $versionDirs) {
-        $assemblies = @(
+     <#   $assemblies = @(
             "Microsoft.AspNetCore.dll",
+            "Microsoft.AspNetCore.Server.Kestrel.Core.dll",
             "Microsoft.AspNetCore.ResponseCompression.dll",
             "Microsoft.AspNetCore.Http.Results.dll",
             "Microsoft.AspNetCore.StaticFiles.dll",
@@ -60,7 +61,13 @@ function Add-AspNetCoreType {
             "Microsoft.AspNetCore.Http.Abstractions.dll",
             "Microsoft.AspNetCore.Antiforgery.dll"
 
-        )
+        )#>$assemblies = @()
+
+        Get-ChildItem -Path $verDir.FullName -Filter "Microsoft.*.dll" | ForEach-Object {
+            if ($assemblies -notcontains $_.Name) {
+                $assemblies += $_.Name
+            }
+        }
         $allFound = $true
         foreach ($asm in $assemblies) {
             $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
@@ -71,7 +78,7 @@ function Add-AspNetCoreType {
             }
         }
         if ($allFound) {
-            foreach ($asm in $assemblies) {
+            foreach ($asm in $assemblies) { 
                 $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
                 Assert-AssemblyLoaded -AssemblyPath $asmPath
             }

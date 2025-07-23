@@ -40,16 +40,18 @@ catch {
     exit 1
 }
 
+# Seed a global counter (Visits) — injected as $Visits in every runspace
+Set-KrSharedState -Server $server -Name 'Visits' -Value @{Count = 0 }
 # Create the server
-$server = New-KrServer -Name 'MyKestrunServer'
+$server = New-KrServer -Name 'MyKestrunServer' |
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Server $server -Port 5000
-
+Add-KrListener -Port 5000 | Add-KrPowerShellRuntime |
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState -Server $server -Name 'Visits' -Value @{Count = 0}
+Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } |
+Enable-KrConfiguration
 
-Add-KrPowerShellRuntime -Server $server
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Route: GET /ps/show
 #   • $Visits is already injected as a PS variable

@@ -22,14 +22,14 @@ namespace Kestrun;
 /// </remarks>
 public class KestrunOptions
 {
- 
+
     /// Gets the Kestrel server options.
     /// </summary>
-    public KestrelServerOptions ServerOptions { get; set; } = new KestrelServerOptions();
+    public KestrelServerOptions ServerOptions { get; }
 
     /// <summary>Provides access to request limit options. Use a hashtable or a KestrelServerLimits instance.</summary>
-    public KestrelServerLimits ServerLimits { get=>ServerOptions.Limits; }
-    
+    public KestrelServerLimits ServerLimits { get => ServerOptions.Limits; }
+
     /// <summary>Application name (optional, for diagnostics).</summary>
     public string? ApplicationName { get; set; }
 
@@ -44,5 +44,21 @@ public class KestrunOptions
     /// </summary>
     public int MinRunspaces { get; set; }
 
+
+    /// <summary>
+    /// List of configured listeners for the Kestrel server.
+    /// Each listener can be configured with its own IP address, port, protocols, and other options.
+    /// </summary>
+    public List<ListenerOptions> Listeners { get; }
+
     // Add more properties as needed for your scenario.
+
+    public KestrunOptions()
+    {
+        // Set default values if needed
+        MinRunspaces = 1; // Default to 1 runspace
+        Listeners = [];
+        ServerOptions = new KestrelServerOptions();
+    }
+   
 }

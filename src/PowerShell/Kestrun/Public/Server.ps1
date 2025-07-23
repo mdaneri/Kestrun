@@ -102,10 +102,12 @@ function Set-KrServerOption {
                 $options.MinRunspaces = $MinRunspaces
             }
         }
+        # Return the updated server instance
+        return $Server
     }
 
 }
-function Set-KrServerLimit{
+function Set-KrServerLimit {
     [CmdletBinding(SupportsShouldProcess = $true)]
     <#
 .SYNOPSIS
@@ -168,7 +170,8 @@ function Set-KrServerLimit{
     Default: 30 seconds.
 
 #>
-
+[CmdletBinding()]
+    [OutputType([Kestrun.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
@@ -224,12 +227,40 @@ function Set-KrServerLimit{
                 $options.ServerLimits.RequestHeadersTimeout = [TimeSpan]::FromSeconds($RequestHeadersTimeoutSeconds)
             }
         }
+        # Return the updated server instance
+        return $Server
     }
 }
-
-
 function Add-KrListener {
+    <#
+.SYNOPSIS
+    Creates a new Kestrun server instance with specified options and listeners.
+.DESCRIPTION
+    This function initializes a new Kestrun server instance, allowing configuration of various options and listeners.
+.PARAMETER Server
+    The Kestrun server instance to configure. This parameter is mandatory and must be a valid server object.
+.PARAMETER Port
+    The port on which the server will listen for incoming requests. This parameter is mandatory.
+.PARAMETER IPAddress
+    The IP address on which the server will listen. Defaults to [System.Net.IPAddress]::Any, which means it will listen on all available network interfaces.
+.PARAMETER CertPath
+    The path to the SSL certificate file. This parameter is mandatory if using HTTPS.
+.PARAMETER CertPassword
+    The password for the SSL certificate, if applicable. This parameter is optional.
+.PARAMETER X509Certificate
+    An X509Certificate2 object representing the SSL certificate. This parameter is mandatory if using HTTPS
+.PARAMETER Protocols
+    The HTTP protocols to use (e.g., Http1, Http2). Defaults to Http1 for HTTP listeners and Http1OrHttp2 for HTTPS listeners.
+.PARAMETER UseConnectionLogging
+    If specified, enables connection logging for the listener. This is useful for debugging and monitoring purposes.
+.EXAMPLE
+    New-KrServer -Name 'MyKestrunServer'
+    Creates a new Kestrun server instance with the specified name.
+.NOTES
+    This function is designed to be used after the server has been configured with routes and listeners.
+#>
     [CmdletBinding(defaultParameterSetName = "NoCert")]
+    [OutputType([Kestrun.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
@@ -237,7 +268,7 @@ function Add-KrListener {
         [Parameter(Mandatory = $true)]
         [int]$Port,
 
-        [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Any,
+        [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Loopback,
         [Parameter(mandatory = $true, ParameterSetName = "CertFile")]
         [string]$CertPath,
 
@@ -273,6 +304,8 @@ function Add-KrListener {
 
 
         $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)
+        # Return the updated server instance
+        return $Server
     }
 }
 
@@ -316,9 +349,6 @@ function Add-KrRoute {
         [System.Reflection.Assembly[]]$ExtraRefs = $null
 
     )
-    begin {
-        $Server.ApplyConfiguration()
-    }
     process {
         if ($PSCmdlet.ParameterSetName -eq "Code") {
             $Server.AddRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
@@ -329,16 +359,69 @@ function Add-KrRoute {
     }
 }
 
-
-
-
-function Start-KrServer {
-    [CmdletBinding(SupportsShouldProcess = $true)]
+<#
+.SYNOPSIS
+    Enables Kestrun server configuration and starts the server.
+.DESCRIPTION
+    This function applies the configuration to the Kestrun server and starts it.
+.PARAMETER Server
+    The Kestrun server instance to configure and start. This parameter is mandatory.
+.PARAMETER Quiet
+    If specified, suppresses output messages during the configuration and startup process.
+.EXAMPLE
+    Enable-KrConfiguration -Server $server
+    Applies the configuration to the specified Kestrun server instance and starts it.
+.NOTES
+    This function is designed to be used after the server has been configured with routes, listeners,
+#>
+function Enable-KrConfiguration {
+    [CmdletBinding()]
+    [OutputType([Kestrun.KestrunHost])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
-        [switch]$NoWait
+        [switch]$Quiet
+    )
+    process {
+        $Server.ApplyConfiguration() | Out-Null
+        if (-not $Quiet.IsPresent) {
+            Write-Host "Kestrun server configuration enabled successfully."
+            Write-Host "Server Name: $($Server.Options.ApplicationName)"
+        }
+        return $Server
+    }
+}
+
+<#
+.SYNOPSIS
+    Starts the Kestrun server and listens for incoming requests.
+.DESCRIPTION
+    This function starts the Kestrun server, allowing it to accept incoming HTTP requests.
+.PARAMETER Server
+    The Kestrun server instance to start. This parameter is mandatory.
+.PARAMETER NoWait
+    If specified, the function will not wait for the server to start and will return immediately.
+.PARAMETER Quiet
+    If specified, suppresses output messages during the startup process.
+.EXAMPLE
+    Start-KrServer -Server $server
+    Starts the specified Kestrun server instance and listens for incoming requests.
+.NOTES
+    This function is designed to be used after the server has been configured and routes have been added.
+    It will block the console until the server is stopped or Ctrl+C is pressed.
+#>
+function Start-KrServer {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Kestrun.KestrunHost]$Server,
+        [Parameter()]
+        [switch]$NoWait,
+        [Parameter()]
+        [switch]$Quiet
     )
     process {
         foreach ($srv in $Server) {
@@ -346,6 +429,29 @@ function Start-KrServer {
                 # Start the Kestrel server
                 Write-Host "Starting Kestrun ..."
                 $srv.StartAsync() | Out-Null
+                if (-not $Quiet.IsPresent) {
+                    Write-Host "Kestrun server started successfully."
+                    foreach ($listener in $srv.Options.Listeners) {
+                        if($listener.X509Certificate){
+                            Write-Host "Listening on https://$($listener.IPAddress):$($listener.Port) with protocols: $($listener.Protocols)"
+                        }
+                        else {
+                            Write-Host "Listening on http://$($listener.IPAddress):$($listener.Port) with protocols: $($listener.Protocols)"
+                        }
+                        if ($listener.X509Certificate) {
+                            Write-Host "Using certificate: $($listener.X509Certificate.Subject)"
+                        }
+                        else {
+                            Write-Host "No certificate configured. Running in HTTP mode."
+                        }
+                        if($listener.UseConnectionLogging) {
+                            Write-Host "Connection logging is enabled."
+                        } else {
+                            Write-Host "Connection logging is disabled."
+                        }
+                    }
+                    Write-Host "Press Ctrl+C to stop the server."
+                }
                 if (-not $NoWait.IsPresent) {
                     # Intercept Ctrl+C and gracefully stop the Kestrun server
                     try {
@@ -364,8 +470,13 @@ function Start-KrServer {
                     }
                     finally {
                         # Ensure the server is stopped on exit
-                        Write-Host "Script exiting. Ensuring server is stopped..."
+                        if (-not $Quiet.IsPresent) {
+                            Write-Host "Stopping Kestrun server..."
+                        }
                         $srv.StopAsync().Wait()
+                        if (-not $Quiet.IsPresent) {
+                            Write-Host "Kestrun server stopped."
+                        }
                     }
                 }
             }

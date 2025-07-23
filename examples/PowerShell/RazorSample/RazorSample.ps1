@@ -40,13 +40,19 @@ catch {
     exit 1
 }
 
+#      .MinimumLevel.Debug()
+#       .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+#      .Enrich.FromLogContext()
+#     .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
+#    .CreateLogger();
+
+
 # Create the server
-$server = New-KrServer -Name 'MyKestrunServer'
-
+$server = New-KrServer -Name 'MyKestrunServer'   |
+Set-KrServerOption -DenyServerHeader |
+Set-KrServerLimit -MaxConcurrentConnections 100 -MaxRequestBodySize 10485760 -MaxRequestHeaderCount 100 -KeepAliveTimeout 120 |
 # Listen on port 5000 (HTTP)
-Add-KrListener -Server $server -Port 5000
-
-Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @(
+Add-KrListener  -Port 5000 | Add-KrResponseCompression  -EnableForHttps -MimeTypes @(
     'text/plain',
     'text/css',
     'application/javascript',
@@ -54,9 +60,24 @@ Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @(
     'application/xml',
     'text/html'
 ) | Add-KrCorsPolicy -Name 'AllowAll' -AllowAnyOrigin -AllowAnyMethod -AllowAnyHeader |
-Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing |
-Add-KrPowerShellRazorPagesRuntime | Out-Null
+Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing | Add-KrPowerShellRuntime  |
+Add-KrPowerShellRazorPagesRuntime | Enable-KrConfiguration
 
-$server.ApplyConfiguration()
+
+Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - Json Response"
+    # Payload
+    $payload = @{
+        Body           = "Hello from PowerShell script! - Json Response"
+        RequestQuery   = $Request.Query
+        RequestHeaders = $Request.Headers
+        RequestMethod  = $Request.Method
+        RequestPath    = $Request.Path
+        # If you want to return the request body, uncomment the next line
+        RequestBody    = $Request.Body
+    }
+    Write-KrJsonResponse -inputObject $payload -statusCode 200
+}
 # Start the server (blocking)
 Start-KrServer -Server $server

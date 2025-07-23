@@ -1,43 +1,40 @@
 @page
 @model RazorSample.Pages.CSharpFormModel
 @{
-    Layout = null;    // remove if you have a shared _Layout you want to use
+  Layout = null; // remove if you have a shared _Layout you want to use
 }
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <title>Contact Form (C#)</title>
 </head>
+
 <body>
   <h1>Contact Form (C#)</h1>
 
   @if (Model.Submitted)
   {
-      <p>
-        Thank you, <strong>@Model.Name</strong>!
-        We’ll email you at <em>@Model.Email</em>.
-      </p>
+    <p>
+      Thank you, <strong>@Model.Name</strong>!
+      We’ll email you at <em>@Model.Email</em>.
+    </p>
   }
   else
   {
-      <form method="post">
-        <div>
-          <label for="Name">Name:</label>
-          <input type="text"
-                 id="Name"
-                 name="Name"
-                 value="@(Model.Name ?? String.Empty)" />
-        </div>
-        <div>
-          <label for="Email">Email:</label>
-          <input type="email"
-                 id="Email"
-                 name="Email"
-                 value="@(Model.Email ?? String.Empty)" />
-        </div>
-        <button type="submit">Submit</button>
-      </form>
+    <form method="post">
+      <div>
+        <label for="Name">Name:</label>
+        <input type="text" id="Name" name="Name" value="@(Model.Name ?? String.Empty)" />
+      </div>
+      <div>
+        <label for="Email">Email:</label>
+        <input type="email" id="Email" name="Email" value="@(Model.Email ?? String.Empty)" />
+      </div>
+      <button type="submit">Submit</button>
+    </form>
   }
 </body>
+
 </html>

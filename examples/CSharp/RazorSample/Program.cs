@@ -17,7 +17,7 @@ server.Options.ServerLimits.MaxRequestBodySize = 10485760;
 server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
 server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
-
+server.Options.ServerLimits.MinRequestBodyDataRate = new Microsoft.AspNetCore.Server.Kestrel.Core.MinDataRate(100, TimeSpan.FromSeconds(10));
 
 // 3. Configure listeners
 server.ConfigureListener(
@@ -44,11 +44,29 @@ server.AddResponseCompression(options =>
 {
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
-}).AddPowerShellRazorPages();
+}).AddPowerShellRazorPages().AddPowerShellRuntime();
 
 
 
 server.ApplyConfiguration();
+
+server.AddRoute("/ps/json",
+            HttpVerb.Get,
+            """
+            Write-Output "Hello from PowerShell script! - Json Response"
+            # Payload
+            $payload = @{
+                Body           = "Hello from PowerShell script! - Json Response"
+                RequestQuery   = $Request.Query
+                RequestHeaders = $Request.Headers
+                RequestMethod  = $Request.Method
+                RequestPath    = $Request.Path
+                # If you want to return the request body, uncomment the next line
+                RequestBody    = $Request.Body
+            }
+            Write-KrJsonResponse -inputObject $payload -statusCode 200
+            """,
+            ScriptLanguage.PowerShell);
 // 5️⃣ Run!
 Console.WriteLine("Open  http://localhost:5000/Hello");
 

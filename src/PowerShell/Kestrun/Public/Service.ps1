@@ -27,13 +27,13 @@ function Add-KrPowerShellRuntime {
         [string]$PathPrefix = $null
     )
     process {
-        $psPrefix = if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
-            $null
+        if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
+            $Server.AddPowerShellRuntime() | Out-Null
         }
         else {
-            [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)
+            $Server.AddPowerShellRuntime( [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null             
         }
-        $Server.AddPowerShellRuntime($psPrefix) | Out-Null
+        
         # Return the modified server instance
         return $Server
     }

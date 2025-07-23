@@ -45,8 +45,8 @@ public static class PowerShellRazorPage
     /// <param name="app">The <see cref="WebApplication"/> pipeline.</param>
     /// <param name="pool">Kestrun’s shared <see cref="KestrunRunspacePoolManager"/>.</param>
     /// <returns><paramref name="app"/> for fluent chaining.</returns>
-    public static WebApplication UsePowerShellRazorPages(
-        this WebApplication app,
+    public static IApplicationBuilder UsePowerShellRazorPages(
+        this IApplicationBuilder app,
         KestrunRunspacePoolManager pool)
     {
         ArgumentNullException.ThrowIfNull(app);
@@ -54,8 +54,8 @@ public static class PowerShellRazorPage
 
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Configuring PowerShell Razor Pages middleware");
-
-        var pagesRoot = Path.Combine(app.Environment.ContentRootPath, "Pages");
+        var env = app.ApplicationServices.GetRequiredService<IHostEnvironment>();
+        var pagesRoot = Path.Combine(env.ContentRootPath, "Pages");
         Log.Information("Using Pages directory: {Path}", pagesRoot);
         if (!Directory.Exists(pagesRoot))
         {
@@ -81,6 +81,16 @@ public static class PowerShellRazorPage
                 Log.Debug("Transformed request path to relative: {RelPath}", relPath);
             var view = Path.Combine(pagesRoot, relPath + ".cshtml");
             var psfile = view + ".ps1";
+            var csfile = view + ".cs";
+            if (File.Exists(csfile))
+            {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Found C# code-behind file: {CsFile}", csfile);
+                // If a C# code-behind exists, we assume it will handle the request
+                // and skip PowerShell processing.
+                await next();
+                return; 
+            }
 
             if (!File.Exists(view) || !File.Exists(psfile))
             {
@@ -152,7 +162,9 @@ public static class PowerShellRazorPage
         });
 
         // static files & routing can be added earlier in pipeline
-        app.MapRazorPages();
+
+        app.UseRouting();
+        app.UseEndpoints(e => e.MapRazorPages());
         return app;
     }
 }

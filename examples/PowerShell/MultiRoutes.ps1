@@ -55,6 +55,9 @@ Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any)
 
 Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
 Add-KrPowerShellRuntime -Server $server
+
+# Enable configuration
+Enable-KrConfiguration -Server $server
  #$server.ApplyConfiguration()
 
 # Set-KrPythonRuntime
