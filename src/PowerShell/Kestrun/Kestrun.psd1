@@ -117,7 +117,8 @@
         'Add-KrEnrichFromLogContext', 'Add-KrEnrichWithErrorRecord',
         'Add-KrEnrichWithProperty', 'Get-KrJsonFormatter', 'Convert-KrLogFunctions',
         'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell', 'Add-KrSinkEventLog',
-        'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName'
+        'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName',
+        'Add-KrSinkSyslogUdp', 'Add-KrSinkSyslogTcp', 'Add-KrSinkSyslogLocal', 'Add-KrSinkHttp'
     )
 
     # Variables to export from this module
@@ -142,7 +143,7 @@
 
             # Tags applied to this module. These help with module discovery in online galleries.
             Tags       = @(
-                'powershell', 'web', 'server', 'http', 'https', 'listener', 'rest', 'api', 
+                'powershell', 'web', 'server', 'http', 'https', 'listener', 'rest', 'api',
                 'websites', 'powershell-core', 'windows', 'unix', 'linux', 'macos', 'cross-platform',
                 'cross-platform', 'file-monitoring', 'multithreaded', 'schedule', 'middleware', 'session',
                 'authentication', 'authorisation', 'arm', 'swagger', 'openapi', 'webserver', 'secrets', 'fim'

@@ -385,7 +385,7 @@ function Enable-KrConfiguration {
         [switch]$Quiet
     )
     process {
-        $Server.ApplyConfiguration() | Out-Null
+        $Server.EnableConfiguration() | Out-Null
         if (-not $Quiet.IsPresent) {
             Write-Host "Kestrun server configuration enabled successfully."
             Write-Host "Server Name: $($Server.Options.ApplicationName)"

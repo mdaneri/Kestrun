@@ -195,7 +195,7 @@ function Write-KrFileResponse {
     try {
         if ($null -ne $Response) {
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
-            Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath" 
+            Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
             if ($ContentDisposition -ne [Kestrun.ContentDispositionType]::NoContentDisposition) {
                 $Response.ContentDisposition.Type = $ContentDisposition.ToString()
             }

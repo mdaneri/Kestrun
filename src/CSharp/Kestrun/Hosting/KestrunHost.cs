@@ -201,10 +201,7 @@ public class KestrunHost
 
     #endregion
 
-    #region ListenerOptions
-
-    //private List<ListenerOptions>? _listenerOptions;
-
+    #region ListenerOptions 
 
     public void ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
     {
@@ -656,7 +653,7 @@ public class KestrunHost
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
         if (App is null)
-            throw new InvalidOperationException("WebApplication is not initialized. Call ApplyConfiguration first.");
+            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
         string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
         App.MapMethods(pattern, methods, async context =>
         {
@@ -688,7 +685,7 @@ public class KestrunHost
             Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Methods}", pattern, language, httpVerbs);
         if (App is null)
             throw new InvalidOperationException(
-                "WebApplication is not initialized. Call ApplyConfiguration first.");
+                "WebApplication is not initialized. Call EnableConfiguration first.");
         if (string.IsNullOrWhiteSpace(scriptBlock))
             throw new ArgumentException("Script block cannot be empty.", nameof(scriptBlock));
 
@@ -735,10 +732,10 @@ public class KestrunHost
 
 
 
-    public void ApplyConfiguration()
+    public void EnableConfiguration()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("ApplyConfiguration(options) called");
+            Log.Debug("EnableConfiguration(options) called");
 
         if (_isConfigured)
         {
@@ -1594,7 +1591,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Run() called");
-        ApplyConfiguration();
+        EnableConfiguration();
 
         App?.Run();
     }
@@ -1603,7 +1600,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("StartAsync() called");
-        ApplyConfiguration();
+        EnableConfiguration();
         if (App != null)
         {
             await App.StartAsync(cancellationToken);

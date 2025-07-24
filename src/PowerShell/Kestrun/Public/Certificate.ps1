@@ -47,7 +47,7 @@ function New-KsSelfSignedCertificate {
 
 # ---------------------------------------------------------------------------
 function New-KsCertificateRequest {
-<#
+    <#
 .SYNOPSIS
     Creates a PEM-encoded CSR (and returns the private key).
 
@@ -87,7 +87,7 @@ function New-KsCertificateRequest {
 
 # ---------------------------------------------------------------------------
 function Import-KsCertificate {
-<#
+    <#
 .SYNOPSIS
     Imports a PFX/PEM certificate file and returns X509Certificate2.
 #>
@@ -98,7 +98,7 @@ function Import-KsCertificate {
         [string] $PrivateKeyPath
     )
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
-    Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
+    Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
     if ($null -eq $Password) {
         return $Kcm::Import($resolvedPath, $PrivateKeyPath)
     }
@@ -107,7 +107,7 @@ function Import-KsCertificate {
 
 # ---------------------------------------------------------------------------
 function Export-KsCertificate {
-<#
+    <#
 .SYNOPSIS
     Exports an X509Certificate2 to PFX or PEM(+key).
 
@@ -127,7 +127,7 @@ function Export-KsCertificate {
         [switch] $IncludePrivateKey
     )
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot
-    Write-KrLog -level "Verbose" -Message "Resolved file path: $resolvedPath"
+    Write-KrVerboseLog -MessageTemplate  "Resolved file path: $resolvedPath"
 
     $fmtEnum = [Kestrun.CertificateManager+ExportFormat]::$Format
     $Kcm::Export($Certificate, $resolvedPath, $fmtEnum, $Password,
@@ -173,7 +173,7 @@ function Test-KsCertificate {
 
 # ---------------------------------------------------------------------------
 function Get-KsCertificatePurpose {
-<#
+    <#
 .SYNOPSIS
     Lists the Enhanced Key Usage values on a certificate.
 #>

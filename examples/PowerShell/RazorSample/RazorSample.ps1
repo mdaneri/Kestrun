@@ -40,12 +40,6 @@ catch {
     exit 1
 }
 
-#      .MinimumLevel.Debug()
-#       .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-#      .Enrich.FromLogContext()
-#     .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
-#    .CreateLogger();
-
 
 # Create the server
 $server = New-KrServer -Name 'MyKestrunServer'   |

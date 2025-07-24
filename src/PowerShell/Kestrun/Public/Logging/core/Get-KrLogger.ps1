@@ -4,9 +4,12 @@ function Get-KrDefaultLogger {
 		Gets the logger for the current session.
 	.DESCRIPTION
 		Gets the specified logger as the current logger for the session.
-
-	.OUTPUTS	
-		Instance of Serilog.ILogger that is currently set as the default logger.
+	.PARAMETER Name
+		The name of the logger to get as the default logger.
+	.OUTPUTS
+		Returns the current default logger instance for the session.
+		When the Name parameter is specified, it returns the name of the default logger.
+		When the Name parameter is not specified, it returns the default logger instance.
 	.EXAMPLE
 		PS> $logger = Get-KrDefaultLogger
 		Retrieves the current default logger instance for the session.
@@ -19,6 +22,12 @@ function Get-KrDefaultLogger {
 	#>
 	[CmdletBinding()]
 	[OutputType([Serilog.ILogger])]
-	param( )
+	param(
+		[Parameter(Mandatory = $false)]
+		[switch]$Name
+	)
+	if ($Name) {
+		return [Kestrun.Logging.LoggerManager]::DefaultLoggerName
+	}
 	return [Kestrun.Logging.LoggerManager]::DefaultLogger
 }

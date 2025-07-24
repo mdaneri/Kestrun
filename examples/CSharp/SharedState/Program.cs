@@ -5,10 +5,17 @@ using System.Net;
 using Kestrun;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
+using Org.BouncyCastle.OpenSsl;
+using System.Collections.Concurrent;
+using Serilog;
+using Kestrun.Logging;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
+new LoggerConfiguration()
+      .MinimumLevel.Debug() 
+      .WriteTo.File("logs/sharedState.log", rollingInterval: RollingInterval.Day)
+      .Register("Audit", setAsDefault: true);
 
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
@@ -27,7 +34,7 @@ server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
 // 3. Configure listeners
 server.ConfigureListener(
-    port: 5002,
+    port: 5000,
     ipAddress: IPAddress.Any,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
@@ -42,7 +49,7 @@ if (!server.SharedState.Set("Visits", sharedVisits))
     Console.WriteLine("Failed to define global variable 'Visits'.");
     Environment.Exit(1);
 }
-server.ApplyConfiguration();
+server.EnableConfiguration();
 // 4. Add routes
 server.AddRoute("/ps/show", HttpVerb.Get,
 """
@@ -80,9 +87,9 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 
     server.SharedState.TryGet("Visits", out Hashtable? visits);
 
-    int visitCount = visits != null && visits["Count"] is int v ? v : 0;
+    int visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;
 
-    if (visits != null && visits["Count"] is int)
+    if (visits != null && visits["Count"] != null)
     {
         res.WriteTextResponse($"Visits so far: {visitCount}", 200);
     }

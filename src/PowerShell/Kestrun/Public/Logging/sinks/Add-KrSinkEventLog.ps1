@@ -55,8 +55,7 @@ function Add-KrSinkEventLog {
 		[Parameter(Mandatory = $false)]
 		[Serilog.Events.LogEventLevel]$RestrictedToMinimumLevel =[Serilog.Events.LogEventLevel]::Verbose,
 		[Parameter(Mandatory = $false)]
-		[Serilog.Sinks.EventLog.IEventIdProvider]$EventIdProvider = $null,
-		[Serilog.Sinks.EventLog.ICategoryProvider]$CategoryProvider = $null
+		[Serilog.Sinks.EventLog.IEventIdProvider]$EventIdProvider = $null 
 	)
 
 	process {
@@ -65,7 +64,6 @@ function Add-KrSinkEventLog {
 		}
 		$LoggerConfig = [Serilog.LoggerConfigurationEventLogExtensions]::EventLog(
 			$LoggerConfig.WriteTo,
-			 
 			$Source,
 			$LogName,
 			$MachineName,
@@ -73,8 +71,7 @@ function Add-KrSinkEventLog {
 			$OutputTemplate,
 			$FormatProvider,
 			$RestrictedToMinimumLevel,
-			$EventIdProvider,
-			$CategoryProvider
+			$EventIdProvider
 		)
 
 		return $LoggerConfig

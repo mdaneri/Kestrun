@@ -101,17 +101,17 @@ if (!Kestrun.CertificateManager.Validate(
 // 3. Add listeners
 server.ConfigureListener(
     port: 5001,
-    ipAddress: IPAddress.Any,
-     x509Certificate: x509Certificate,
+    ipAddress: IPAddress.Loopback,
+    x509Certificate: x509Certificate,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3
 );
 server.ConfigureListener(
     port: 5000,
-    ipAddress: IPAddress.Any,
+    ipAddress: IPAddress.Loopback,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
 
-server.ApplyConfiguration();
+server.EnableConfiguration();
 /*string pattern,
                                     IEnumerable<HttpMethod> httpMethods,
                                     string scriptBlock,
