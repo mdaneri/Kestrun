@@ -481,8 +481,9 @@ public class KestrunHost
                     Log.Debug("PowerShellRunspaceMiddleware started for {Path}", context.Request.Path);
                 // EnsureRunspacePoolOpen(_pool);
                 // Acquire a runspace from the pool and keep it for the whole request
-                using PowerShell ps = PowerShell.Create(_pool.Acquire());
-
+                var runspace = _pool.Acquire();
+                using PowerShell ps = PowerShell.Create();
+                ps.Runspace = runspace;
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
 
@@ -740,9 +741,9 @@ public class KestrunHost
             Log.Debug("EnableScheduling called");
         if (Scheduler == null)
         {
-            var _runspacepool = CreateRunspacePool(Options.MaxSchedulerRunspaces); // example
+            var runspacepool = CreateRunspacePool(Options.MaxSchedulerRunspaces); // example
             var _log = Log.Logger.ForContext<KestrunHost>();
-            Scheduler = new SchedulerService(_runspacepool, _log);
+            Scheduler = new SchedulerService(runspacepool, _log);
         }
         else
         {

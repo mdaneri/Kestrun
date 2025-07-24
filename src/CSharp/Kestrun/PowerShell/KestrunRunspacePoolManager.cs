@@ -59,13 +59,19 @@ public sealed class KestrunRunspacePoolManager : IDisposable
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Acquiring runspace from pool: CurrentCount={Count}, Max={Max}", _count, _max);
 
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(KestrunRunspacePoolManager));
-        }
+        ObjectDisposedException.ThrowIf(_disposed, nameof(KestrunRunspacePoolManager));
 
         if (_stash.TryTake(out var rs))
         {
+            if (rs.RunspaceStateInfo.State != RunspaceState.Opened)
+            {
+                Log.Warning("Runspace from stash is not opened: {State}. Discarding and acquiring a new one.", rs.RunspaceStateInfo.State);
+                // If the runspace is not open, we cannot use it.
+                // Discard and try again
+                rs.Dispose();
+                Interlocked.Decrement(ref _count);
+                return Acquire();
+            }
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Reusing runspace from stash: StashCount={Count}", _stash.Count);
             return rs;

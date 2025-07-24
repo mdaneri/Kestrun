@@ -111,11 +111,12 @@ server.Scheduler?.ScheduleInterval(
            },
            runImmediately: true);*/
 
-server.Scheduler?.ScheduleInterval(
+server.Scheduler?.Schedule(
            name: "heartbeat",
-           interval: TimeSpan.FromSeconds(20),
+           interval: TimeSpan.FromSeconds(10),
            script: System.Management.Automation.ScriptBlock.Create(@"
             Write-Host ""It’s high noon, baby ☀️""
+            Write-krInformationLog  -MessageTemplate ""Heartbeat @ $(Get-Date)""  
             # Your PS work...
         "),
            runImmediately: true);

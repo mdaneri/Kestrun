@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Cronos;
 using System.Management.Automation;
 using Serilog;
+using System.Management.Automation.Runspaces;
 
 public sealed class SchedulerService : IDisposable
 {
@@ -25,11 +26,11 @@ public sealed class SchedulerService : IDisposable
     }
 
     /*────────── C# JOBS ──────────*/
-    public void ScheduleInterval(string name, TimeSpan interval,
+    public void Schedule(string name, TimeSpan interval,
         Func<CancellationToken, Task> job, bool runImmediately = false)
         => ScheduleCore(name, job, cron: null, interval: interval, runImmediately);
 
-    public void ScheduleCron(string name, string cronExpr,
+    public void Schedule(string name, string cronExpr,
         Func<CancellationToken, Task> job, bool runImmediately = false)
     {
         var cron = CronExpression.Parse(cronExpr, CronFormat.IncludeSeconds);
@@ -37,21 +38,21 @@ public sealed class SchedulerService : IDisposable
     }
 
     /*────────── PowerShell JOBS ──────────*/
-    public void ScheduleInterval(string name, TimeSpan interval,
+    public void Schedule(string name, TimeSpan interval,
         ScriptBlock script, bool runImmediately = false)
-        => ScheduleInterval(name, interval, WrapScriptBlock(script), runImmediately);
+        => Schedule(name, interval, WrapScriptBlock(script), runImmediately);
 
-    public void ScheduleCron(string name, string cronExpr,
+    public void Schedule(string name, string cronExpr,
         ScriptBlock script, bool runImmediately = false)
-        => ScheduleCron(name, cronExpr, WrapScriptBlock(script), runImmediately);
+        => Schedule(name, cronExpr, WrapScriptBlock(script), runImmediately);
 
-    public void SchedulePSFileInterval(string name, TimeSpan interval,
+    public void Schedule(string name, TimeSpan interval,
         string filePath, bool runImmediately = false)
-        => ScheduleInterval(name, interval, WrapFile(filePath), runImmediately);
+        => Schedule(name, interval, WrapFile(filePath), runImmediately);
 
-    public void SchedulePSFileCron(string name, string cronExpr,
+    public void Schedule(string name, string cronExpr,
         string filePath, bool runImmediately = false)
-        => ScheduleCron(name, cronExpr, WrapFile(filePath), runImmediately);
+        => Schedule(name, cronExpr, WrapFile(filePath), runImmediately);
 
     /*────────── CONTROL ──────────*/
     public bool Cancel(string name)
@@ -133,10 +134,36 @@ public sealed class SchedulerService : IDisposable
     private Func<CancellationToken, Task> WrapScriptBlock(ScriptBlock script)
         => async ct =>
         {
-            using PowerShell ps = PowerShell.Create(_pool.Acquire());
-            ps.AddScript(script.ToString());
+            try
+            {
+                var runspace = _pool.Acquire();
+                using PowerShell ps = PowerShell.Create();
+                ps.Runspace = runspace;
+                ps.AddScript(script.ToString());
+                try
+                {
+                    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
-            await Task.Factory.FromAsync(ps.BeginInvoke(), ps.EndInvoke);
+                    if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
+                    {
+                        Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
+                        Log.Verbose(BuildError.Text(ps));
+                    }
+                    //await Task.Factory.FromAsync(ps.BeginInvoke(), ps.EndInvoke);
+                }
+                finally
+                {
+                    // Ensure we release the runspace back to the pool
+                    ps.Dispose();
+                    _pool.Release(runspace);
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, "[Scheduler] ScriptBlock execution failed");
+                throw;
+            }
         };
 
     private Func<CancellationToken, Task> WrapFile(string filePath)
@@ -157,5 +184,8 @@ public sealed class SchedulerService : IDisposable
     public void Dispose()
     {
         CancelAll();
+        _pool.Dispose();
+        _log.Information("SchedulerService disposed");
     }
+
 }
