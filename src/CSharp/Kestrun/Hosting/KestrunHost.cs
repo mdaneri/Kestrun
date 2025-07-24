@@ -42,6 +42,7 @@ using Microsoft.AspNetCore.Antiforgery;     // extension methods
 using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Kestrun.Scheduling;
 
 namespace Kestrun;
 
@@ -67,6 +68,7 @@ public class KestrunHost
 
     public SharedStateStore SharedState { get; } = new();
 
+    public SchedulerService? Scheduler { get; private set; }
 
     // ── ✦ QUEUE #1 : SERVICE REGISTRATION ✦ ─────────────────────────────
     private readonly List<Action<IServiceCollection>> _serviceQueue = [];
@@ -732,6 +734,22 @@ public class KestrunHost
 
 
 
+    public void EnableScheduling()
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("EnableScheduling called");
+        if (Scheduler == null)
+        {
+            var _runspacepool = CreateRunspacePool(Options.MaxSchedulerRunspaces); // example
+            var _log = Log.Logger.ForContext<KestrunHost>();
+            Scheduler = new SchedulerService(_runspacepool, _log);
+        }
+        else
+        {
+            Log.Warning("SchedulerService is already configured, skipping.");
+        }
+    }
+
     public void EnableConfiguration()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -792,6 +810,11 @@ public class KestrunHost
                 {
                     Log.Information("➡️  Endpoint: {DisplayName}", ep.DisplayName);
                 }
+            }
+            if (Options.EnableScheduling)
+            {
+                EnableScheduling(); // Enable scheduling if needed
+                Log.Information("Scheduling enabled.");
             }
             _isConfigured = true;
             Log.Information("Configuration applied successfully.");
@@ -1382,13 +1405,13 @@ public class KestrunHost
                 app.UseRouting();                                    // add routing
                 app.UseEndpoints(e => e.MapRazorPages());            // map pages
 
-             /*   app.Use(async (ctx, next) =>
-{
-    var ds = ctx.GetEndpoint();          // null at build time
-    Console.WriteLine($"Endpoints now: {ctx.RequestServices
-        .GetRequiredService<EndpointDataSource>().Endpoints.Count}");
-    await next();
-});*/
+                /*   app.Use(async (ctx, next) =>
+   {
+       var ds = ctx.GetEndpoint();          // null at build time
+       Console.WriteLine($"Endpoints now: {ctx.RequestServices
+           .GetRequiredService<EndpointDataSource>().Endpoints.Count}");
+       await next();
+   });*/
 
             }
 
@@ -1682,6 +1705,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
         _runspacePool = null; // Clear the runspace pool reference
         _isConfigured = false; // Reset configuration state 
         App = null;
+        Scheduler?.Dispose();
         Log.CloseAndFlush();
     }
     #endregion

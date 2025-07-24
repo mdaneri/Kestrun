@@ -83,6 +83,43 @@ public sealed class KestrunRunspacePoolManager : IDisposable
         throw new InvalidOperationException("Run-space limit reached.");
     }
 
+    /// <summary>
+    /// Asynchronously borrow a runspace (waits if none available and at max).
+    /// </summary>
+    public async Task<Runspace> AcquireAsync(CancellationToken cancellationToken = default)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Acquiring runspace (async) from pool: CurrentCount={Count}, Max={Max}", _count, _max);
+
+        while (true)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(KestrunRunspacePoolManager));
+
+            if (_stash.TryTake(out var rs))
+            {
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                    Log.Debug("Reusing runspace from stash (async): StashCount={Count}", _stash.Count);
+                return rs;
+            }
+
+            if (Interlocked.Increment(ref _count) <= _max)
+            {
+                Log.Debug("Creating new runspace (async): TotalCount={Count}", _count);
+                // Runspace creation is synchronous, but we can offload to thread pool
+                return await Task.Run(() => CreateRunspace(), cancellationToken).ConfigureAwait(false);
+            }
+            Interlocked.Decrement(ref _count);
+
+            // Wait for a runspace to be returned
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Waiting for runspace to become available (async)");
+
+            // Use a short delay to poll for availability
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     /// <summary>Return the runspace so the pool can reuse it.</summary>
     public void Release(Runspace rs)
     {

@@ -44,7 +44,13 @@ public class KestrunOptions
     /// </summary>
     public int MinRunspaces { get; set; }
 
+    /// <summary>
+    /// Gets or sets the maximum number of runspaces to use for the scheduler service.
+    /// Defaults to 8.
+    /// </summary>
+    public int MaxSchedulerRunspaces { get; set; }
 
+    public bool EnableScheduling { get; set; }
     /// <summary>
     /// List of configured listeners for the Kestrel server.
     /// Each listener can be configured with its own IP address, port, protocols, and other options.
@@ -59,6 +65,8 @@ public class KestrunOptions
         MinRunspaces = 1; // Default to 1 runspace
         Listeners = [];
         ServerOptions = new KestrelServerOptions();
+        MaxSchedulerRunspaces = 8; // Default max scheduler runspaces
+        EnableScheduling = false; // Default to not enabling scheduling
     }
-   
+
 }
