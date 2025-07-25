@@ -1,6 +1,8 @@
 using System.Management.Automation;
+using System.Reflection;
 using Kestrun;
 using Kestrun.Utilities;
+using Microsoft.CodeAnalysis.CSharp;
 using Serilog;
 using Serilog.Events;
 
@@ -8,96 +10,108 @@ namespace Kestrun.Scheduling;
 
 internal static class JobFactory
 {
-    public static Func<CancellationToken, Task> Create(
-        ScriptLanguage lang,
-        string code,
-        KestrunRunspacePoolManager pool,
-        Serilog.ILogger log)
+
+    internal record JobConfig(
+          ScriptLanguage Language,
+          string Code,
+          Serilog.ILogger Log,
+           KestrunRunspacePoolManager? Pool = null,
+          string[]? ExtraImports = null,
+          Assembly[]? ExtraRefs = null,
+          LanguageVersion LanguageVersion = LanguageVersion.CSharp12
+          );
+    internal static Func<CancellationToken, Task> Create(JobConfig config)
     {
-        return lang switch
+        return config.Language switch
         {
-            ScriptLanguage.PowerShell => PowerShellJob(pool, code, log),
-            ScriptLanguage.CSharp => RoslynJob(code),
-            _ => throw new NotSupportedException($"Language {lang} not supported.")
+            ScriptLanguage.PowerShell =>
+                config.Pool is null
+                    ? throw new InvalidOperationException("PowerShell runspace pool must be provided for PowerShell jobs.")
+                    : PowerShellJob(config),
+            ScriptLanguage.CSharp => RoslynJob(config),
+            _ => throw new NotSupportedException($"Language {config.Language} not supported.")
         };
     }
 
     public static async Task<Func<CancellationToken, Task>> CreateAsync(
-       ScriptLanguage lang,
-       FileInfo fileInfo,
-       KestrunRunspacePoolManager pool,
-       Serilog.ILogger log, CancellationToken ct = default)
+     JobConfig config, FileInfo fileInfo, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(fileInfo);
         if (!fileInfo.Exists)
             throw new FileNotFoundException(fileInfo.FullName);
-        string code = await File.ReadAllTextAsync(fileInfo.FullName, ct);
-        return Create(lang, code, pool, log);
+        var updatedConfig = config with { Code = await File.ReadAllTextAsync(fileInfo.FullName, ct) };
+        if (updatedConfig.Log.IsEnabled(LogEventLevel.Debug))
+            updatedConfig.Log.Debug("Creating job for {File} with language {Lang}", fileInfo.FullName, updatedConfig.Language);
+
+        return JobFactory.Create(updatedConfig);
     }
 
     public static Func<CancellationToken, Task> Create(
-          ScriptLanguage lang,
-          FileInfo fileInfo,
-          KestrunRunspacePoolManager pool,
-          Serilog.ILogger log, CancellationToken ct = default)
+        JobConfig config, FileInfo fileInfo)
     {
-        return CreateAsync(lang, fileInfo, pool, log, ct).GetAwaiter().GetResult();
+        return CreateAsync(config, fileInfo).GetAwaiter().GetResult();
     }
 
 
     /* ----------------  PowerShell  ---------------- */
     private static Func<CancellationToken, Task> PowerShellJob(
-        KestrunRunspacePoolManager pool,
-        string code,
-         Serilog.ILogger log)
+       JobConfig config)
     {
         return async ct =>
         {
-            var runspace = pool.Acquire();
+            if (config.Log.IsEnabled(LogEventLevel.Debug))
+                config.Log.Debug("Building PowerShell delegate, script length={Length}", config.Code?.Length);
+            if (config.Pool is null)
+                throw new InvalidOperationException("PowerShell runspace pool must be provided for PowerShell jobs.");
+            var runspace = config.Pool.Acquire();
             try
             {
                 using PowerShell ps = PowerShell.Create();
                 ps.Runspace = runspace;
-                ps.AddScript(code);
+                ps.AddScript(config.Code);
 
                 //    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
                 using var reg = ct.Register(() => ps.Stop());
 
                 var psResults = await ps.InvokeAsync().WaitAsync(ct).ConfigureAwait(false);
 
-                log.Verbose($"PowerShell script executed with {psResults.Count} results.");
-                if (log.IsEnabled(LogEventLevel.Debug))
+                config.Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
+                if (config.Log.IsEnabled(LogEventLevel.Debug))
                 {
-                    log.Debug("PowerShell script output:");
+                    config.Log.Debug("PowerShell script output:");
                     foreach (var r in psResults.Take(10))      // first 10 only
-                        log.Debug("   • {Result}", r);
+                        config.Log.Debug("   • {Result}", r);
                     if (psResults.Count > 10)
-                        log.Debug("   … {Count} more", psResults.Count - 10);
+                        config.Log.Debug("   … {Count} more", psResults.Count - 10);
                 }
 
                 if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
                 {
-                    log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
-                    log.Verbose(BuildError.Text(ps));
+                    config.Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
+                    config.Log.Verbose(BuildError.Text(ps));
                 }
             }
             catch (Exception ex)
             {
-                log.Error(ex, "[Scheduler] PowerShell job failed – {Preview}", code[..Math.Min(40, code.Length)]);
+                config.Log.Error(ex, "PowerShell job failed - {Preview}", config.Code?[..Math.Min(40, config.Code.Length)]);
                 throw;
             }
             finally
             {
+                if (config.Log.IsEnabled(LogEventLevel.Debug))
+                {
+                    config.Log.Debug("PowerShell job completed, releasing runspace back to pool.");
+                }
                 // Ensure we release the runspace back to the pool                 
-                pool.Release(runspace);
+                config.Pool.Release(runspace);
 
             }
         };
     }
 
     /* ----------------  C# (Roslyn) ---------------- */
-    private static Func<CancellationToken, Task> RoslynJob(string code)
+    private static Func<CancellationToken, Task> RoslynJob(JobConfig config)
     {
-        return RoslynJobFactory.Build(code);   // from previous answer
+        return RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.LanguageVersion);
     }
 }

@@ -42,6 +42,8 @@ Set-KrMinimumLevel -Value Debug  |
 Add-KrSinkFile -Path ".\logs\scheduling.log" -RollingInterval Hour |
 Register-KrLogger -SetAsDefault -Name "DefaultLogger"
 
+Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } 
+
 # 2.  ─── Host & core services ─────────────────────────────────
 $server = New-KrServer -Name 'MyKestrunServer' |
 
@@ -50,7 +52,6 @@ Add-KrListener -Port 5000 |
 # Add run-space runtime & scheduler (8 RS for jobs) 
 Add-KrPowerShellRuntime | Add-KrScheduling   -MaxRunspaces 8 |
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } |
 Enable-KrConfiguration
 # 3.  ─── Scheduled jobs ───────────────────────────────────────
 

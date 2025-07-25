@@ -26,17 +26,15 @@ BeforeAll {
 
 Describe 'Kestrun PowerShell Functions' {
 
-    BeforeAll {
-        $server = New-KrServer -Name 'TestServer'
-    }
+  
 
     AfterAll {
         Remove-Variable Response -Scope Script -ErrorAction SilentlyContinue
     }
 
     It 'Set-KrSharedState defines and retrieves values' {
-        Set-KrSharedState -Server $server -Name 'psTestVar' -Value @(1, 2, 3)
-        (Get-KrSharedState -Server $server -Name 'psTestVar').Count | Should -Be 3
+        Set-KrSharedState   -Name 'psTestVar' -Value @(1, 2, 3)
+        (Get-KrSharedState   -Name 'psTestVar').Count | Should -Be 3
     }
 
  

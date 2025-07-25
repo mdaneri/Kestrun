@@ -13,6 +13,7 @@ using System.IO;
 using System.Collections;
 using System.Text.RegularExpressions;
 using Kestrun.Utilities;
+using static Kestrun.Scheduling.JobFactory;
 
 public sealed record JobInfo(string Name,
                              DateTimeOffset? LastRunAt,
@@ -56,47 +57,55 @@ public sealed class SchedulerService : IDisposable
     /*────────── PowerShell JOBS ──────────*/
     public void Schedule(string name, string cron, ScriptBlock scriptblock, bool runImmediately = false)
     {
-        var job = JobFactory.Create(ScriptLanguage.PowerShell, scriptblock.ToString(), _pool, _log);
+        JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
+        var job = JobFactory.Create(config);
         Schedule(name, cron, job, runImmediately);
     }
     public void Schedule(string name, TimeSpan interval, ScriptBlock scriptblock, bool runImmediately = false)
     {
-        var job = JobFactory.Create(ScriptLanguage.PowerShell, scriptblock.ToString(), _pool, _log);
+        JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
+        var job = JobFactory.Create(config);
         Schedule(name, interval, job, runImmediately);
     }
     public void Schedule(string name, TimeSpan interval, string code, ScriptLanguage lang, bool runImmediately = false)
     {
-        var job = JobFactory.Create(lang, code, _pool, _log);
+        JobConfig config = new(lang, code, _log, _pool);
+        var job = JobFactory.Create(config);
         Schedule(name, interval, job, runImmediately);
     }
 
     public void Schedule(string name, string cron, string code, ScriptLanguage lang, bool runImmediately = false)
     {
-        var job = JobFactory.Create(lang, code, _pool, _log);
+        JobConfig config = new(lang, code, _log, _pool);
+        var job = JobFactory.Create(config);
         Schedule(name, cron, job, runImmediately);
     }
 
     public void Schedule(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
-        var job = JobFactory.Create(lang, fileInfo, _pool, _log);
+        JobConfig config = new(lang, string.Empty, _log, _pool);
+        var job = JobFactory.Create(config, fileInfo);
         Schedule(name, interval, job, runImmediately);
     }
 
     public void Schedule(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
-        var job = JobFactory.Create(lang, fileInfo, _pool, _log);
+        JobConfig config = new(lang, string.Empty, _log, _pool);
+        var job = JobFactory.Create(config, fileInfo);
         Schedule(name, cron, job, runImmediately);
     }
 
     public async Task ScheduleAsync(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
-        var job = await JobFactory.CreateAsync(lang, fileInfo, _pool, _log, ct);
+        JobConfig config = new(lang, string.Empty, _log, _pool);
+        var job = await JobFactory.CreateAsync(config, fileInfo, ct);
         Schedule(name, interval, job, runImmediately);
     }
 
     public async Task ScheduleAsync(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
-        var job = await JobFactory.CreateAsync(lang, fileInfo, _pool, _log, ct);
+        JobConfig config = new(lang, string.Empty, _log, _pool);
+        var job = await JobFactory.CreateAsync(config, fileInfo, ct);
         Schedule(name, cron, job, runImmediately);
     }
     /*────────── CONTROL ──────────*/
@@ -313,7 +322,7 @@ public sealed class SchedulerService : IDisposable
             _log.Error(ex, "[Scheduler] Job '{Name}' failed", task.Name);
         }
     }
-    
+
     public void Dispose()
     {
         CancelAll();

@@ -54,7 +54,7 @@ namespace Kestrun;
 public class KestrunHost : IDisposable
 {
     #region Fields
- 
+
     // Shared state across routes
     private readonly ConcurrentDictionary<string, string> sharedState = new();
     private readonly WebApplicationBuilder builder;
@@ -232,7 +232,7 @@ public class KestrunHost : IDisposable
     #endregion
 
 
-    private RequestDelegate BuildJsDelegate(string code)
+    private RequestDelegate BuildJsDelegate(string code, Serilog.ILogger logger)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Building JavaScript delegate, script length={Length}", code?.Length);
@@ -292,7 +292,7 @@ public class KestrunHost : IDisposable
     // ---------------------------------------------------------------------------
     //  per-route delegate builder
     // ---------------------------------------------------------------------------
-    private RequestDelegate BuildPyDelegate(string code)
+    private RequestDelegate BuildPyDelegate(string code, Serilog.ILogger logger)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Building Python delegate, script length={Length}", code?.Length);
@@ -364,7 +364,7 @@ public class KestrunHost : IDisposable
     #endregion
 
     #region F#
-    private RequestDelegate BuildFsDelegate(string code)
+    private RequestDelegate BuildFsDelegate(string code, Serilog.ILogger logger)
     { // F# scripting not implemented yet
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Building F# delegate, script length={Length}", code?.Length);
@@ -377,8 +377,25 @@ public class KestrunHost : IDisposable
     // ---------------------------------------------------------------------------
     //  C# delegate builder  –  now takes optional imports / references
     // ---------------------------------------------------------------------------
-    public record CsGlobals(KestrunRequest Request, KestrunResponse Response, HttpContext Context, IReadOnlyDictionary<string, object?> Globals);
+    public record CsGlobals {
+        public CsGlobals(IReadOnlyDictionary<string, object?> Globals, KestrunRequest Request, KestrunResponse Response, HttpContext Context)
+        {
+            this.Globals = Globals;
+            this.Request = Request;
+            this.Response = Response;
+            this.Context = Context;
+        }
 
+          public CsGlobals(IReadOnlyDictionary<string, object?> Globals )
+        {
+            this.Globals = Globals; 
+        }
+
+        public IReadOnlyDictionary<string, object?> Globals { get; }
+        public KestrunRequest? Request { get; }
+        public KestrunResponse? Response { get; }
+        public HttpContext? Context { get; }
+    }
     #endregion
 
     #region PowerShell 
@@ -504,14 +521,16 @@ public class KestrunHost : IDisposable
         if (httpVerbs.Count() == 0) httpVerbs = [HttpVerb.Get];
         try
         {
+            var logger = Log.Logger.ForContext("Route", pattern);
             // compile once – return an HttpContext->Task delegate
             var handler = language switch
             {
-                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(scriptBlock),
-                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(scriptBlock, extraImports, extraRefs),
-                ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock), // F# scripting not implemented
-                ScriptLanguage.Python => BuildPyDelegate(scriptBlock),
-                ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
+
+                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(scriptBlock, logger),
+                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(scriptBlock, logger, extraImports, extraRefs),
+                ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock, logger), // F# scripting not implemented
+                ScriptLanguage.Python => BuildPyDelegate(scriptBlock, logger),
+                ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock, logger),
                 _ => throw new NotSupportedException(language.ToString())
             };
             string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];

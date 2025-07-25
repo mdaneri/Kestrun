@@ -42,14 +42,24 @@ host.EnableConfiguration();
 // (A) pure C# heartbeat every 10 s
 
 host.Scheduler.Schedule(
-    "heartbeat",
+    "Native Heartbeat",
     TimeSpan.FromSeconds(10),
     async ct =>
     {
-        Log.Information("💓  Heartbeat (C# Native) at {Now:O}", DateTimeOffset.UtcNow);
+        Log.Information("💓  Heartbeat (C# [Native]) at {Now:O}", DateTimeOffset.UtcNow);
         await Task.Delay(100, ct);
     },
     runImmediately: true);
+
+host.Scheduler.Schedule("Roslyn Heartbeat", TimeSpan.FromSeconds(15), code: """
+    // C# code compiled by Roslyn
+    Serilog.Log.Information("💓  Heartbeat (C# [Roslyn]) at {0:O}", DateTimeOffset.UtcNow);
+""", lang: ScriptLanguage.CSharp, runImmediately: false);
+
+host.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code: """
+    # PowerShell code runs inside the server process
+    Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+""", lang: ScriptLanguage.PowerShell, runImmediately: false);
 
 // (B) PowerShell inline – every minute
 host.Scheduler.Schedule(

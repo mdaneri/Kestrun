@@ -25,11 +25,11 @@ internal static class CSharpDelegateBuilder
     // ── configuration ─────────────────────────────────────────────── 
    // public record CsGlobals(KestrunRequest Request, KestrunResponse Response, HttpContext Context, IReadOnlyDictionary<string, object?> Globals);
     internal static RequestDelegate Build(
-            string code, string[]? extraImports,
+            string code, Serilog.ILogger log, string[]? extraImports,
             Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
 
         // 1. Compose ScriptOptions
@@ -75,13 +75,13 @@ internal static class CSharpDelegateBuilder
         var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings.Length != 0)
         {
-            Log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
+            log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
             foreach (var warning in warnings)
             {
                 var location = warning.Location.IsInSource
                     ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
                     : "";
-                Log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
+                log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
             }
         }
 
@@ -92,7 +92,7 @@ internal static class CSharpDelegateBuilder
             {
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
-                await script.RunAsync(new CsGlobals(krRequest, krResponse, context, allGlobals)).ConfigureAwait(false);
+                await script.RunAsync(new CsGlobals(allGlobals, krRequest, krResponse, context)).ConfigureAwait(false);
 
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {
