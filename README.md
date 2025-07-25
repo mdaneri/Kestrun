@@ -20,13 +20,62 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
 
 ## Features
 
-- 🚀 Fast, cross-platform web server (Kestrel)
-- 🐚 Native PowerShell scripting integration
-- 🔗 Expose PowerShell functions as HTTP endpoints
-- 🔒 Certificate and HTTPS support
-- 📦 Modular architecture: C# libraries, PowerShell modules, and examples
-- 🧪 Comprehensive test suite (xUnit for C#, Pester for PowerShell)
-- 🛠️ CI/CD with GitHub Actions
+✨ Kestrun Features
+	•	🚀 Fast, cross-platform web server
+Powered by ASP.NET Core (Kestrel) with full access to advanced HTTP/2, header compression, and TLS options.
+	•	🐚 Native PowerShell integration
+Routes can be backed by PowerShell scripts with isolated, pooled runspaces and dynamic $Request / $Response variables.
+	•	🧠 Multi-language script routing
+Register HTTP routes using:
+	•	🐚 PowerShell
+	•	🧩 C# scripts (Roslyn compiled with typed globals and shared state)
+	•	🐍 Python (via Python.NET)
+	•	📜 JavaScript (via ClearScript + V8)
+	•	🧪 F# (stubbed for future support)
+	•	📄 Razor Pages backed by PowerShell
+Use .cshtml + .cshtml.ps1 pairs with automatic $Model injection and dynamic rendering via HttpContext.Items["PageModel"].
+	•	📦 Modular architecture
+Combine C# libraries, PowerShell modules, Razor views, static files, and custom handlers into a unified web app.
+	•	🌍 Rich HTTP support
+	•	Routes with query, headers, body support
+	•	Static files with custom headers, Content-Disposition, stream/async send
+	•	Built-in MIME type detection
+	•	Charset and compression negotiation
+	•	🔐 TLS/HTTPS & Certificate support
+	•	Supports X509Certificate2 objects directly
+	•	Fine-grained listener control: Protocols, UseConnectionLogging, HTTP/1.1 & HTTP/2
+	•	Hot-swap of certificate or listener settings
+	•	🧪 Test-friendly architecture
+	•	C#: xUnit + script compilation validation (ValidateCSharpScript)
+	•	PowerShell: Pester-compatible setup for route and module tests
+	•	Script diagnostics: line-numbered errors, detailed exception formatting
+	•	🧬 Shared global state
+A thread-safe, case-insensitive SharedState store for global variables, usable across C#, PowerShell, and Razor.
+	•	🖨️ Flexible response output
+Respond with:
+	•	WriteTextResponse, WriteJsonResponse, WriteXmlResponse, WriteYamlResponse
+	•	WriteFileResponse, WriteBinaryResponse, WriteStreamResponse
+	•	Optional Content-Disposition: inline / attachment; filename=…
+	•	🧵 Thread-safe runspace pooling
+Automatic pooling of PowerShell runspaces with configurable min/max, affinity (PSThreadOptions), and module injection.
+	•	📑 Script validation & compilation error reporting
+C# route validation returns detailed Roslyn diagnostics without throwing (e.g., for editor integration or CI prechecks).
+	•	🧾 Logging with Serilog
+	•	Fluent KestrunLoggerBuilder for per-subsystem loggers
+	•	Named logger registration & retrieval
+	•	Reset/Reload/Dispose support for hot-reload or graceful shutdowns
+	•	Default rolling file logs (logs/kestrun.log)
+	•	🛠️ CI/CD ready
+	•	Build- and run-time configurable
+	•	Works in containerized / headless environments
+	•	Supports Dev/Prod fallback module path detection
+	•	🛡️ Optional Add-ons
+Add via fluent extensions:
+	•	AddAntiforgery() middleware
+	•	AddStaticFiles(), AddDefaultFiles(), AddFileServer()
+	•	AddCors(policy) or AddCorsAllowAll()
+	•	AddSignalR<T>() for real-time hubs
+	•	Ready for Swagger, gRPC, JWT hooks
 
 ## Getting Started
 
