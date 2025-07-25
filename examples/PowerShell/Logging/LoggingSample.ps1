@@ -52,11 +52,11 @@ New-KrLogger |
 Set-KrMinimumLevel -Value Verbose |
 Add-EnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
-Add-KrSinkFile -Path ".\logs\test-.txt" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
+Add-KrSinkFile -Path ".\logs\test-.log" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
 Register-KrLogger -Name "Logger1"
 
-Register-KrLogger -FilePath ".\logs\test2-.txt" -Console -MinimumLevel Verbose -Name "Logger2" 
+Register-KrLogger -FilePath ".\logs\test2-.log" -Console -MinimumLevel Verbose -Name "Logger2" 
 
 # Write-KrVerboseLog "test verbose"
 Write-KrDebugLog -MessageTemplate "test debug asd" -Name "Logger1"

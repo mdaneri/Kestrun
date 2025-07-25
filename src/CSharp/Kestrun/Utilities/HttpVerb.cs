@@ -1,4 +1,4 @@
-namespace Kestrun;
+namespace Kestrun.Utilities;
 
 public enum HttpVerb
 {

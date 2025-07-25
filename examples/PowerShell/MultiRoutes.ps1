@@ -51,7 +51,7 @@ Set-KrServerOption -Server $server  -AllowSynchronousIO  -DenyServerHeader
 Set-KrServerLimit -Server $server  -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
 # Configure the listener (adjust port, cert path, and password)
 Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
-Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any) 
+Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any)
 
 Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
 Add-KrPowerShellRuntime -Server $server

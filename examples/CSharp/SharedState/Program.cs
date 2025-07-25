@@ -9,7 +9,8 @@ using Org.BouncyCastle.OpenSsl;
 using System.Collections.Concurrent;
 using Serilog;
 using Kestrun.Logging;
-using Microsoft.Extensions.Logging;   // Only for writing the CSR key
+using Microsoft.Extensions.Logging;
+using Kestrun.Utilities;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -29,8 +30,7 @@ server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader
 server.Options.ServerLimits.MaxRequestBodySize = 10485760;
 server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
-server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
-server.Options.EnableScheduling = true; // Enable scheduling
+server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120); 
 
 
 // 3. Configure listeners
@@ -100,28 +100,7 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
     }
     await Task.Yield();
 });
-/*
-server.Scheduler?.ScheduleInterval(
-           name: "heartbeat",
-           interval: TimeSpan.FromSeconds(20),
-           job: async ct =>
-           {
-               Log.Information("Heartbeat @ {Now}", DateTimeOffset.Now);
-               await Task.Delay(10, ct); // simulate quick work
-           },
-           runImmediately: true);*/
-
-server.Scheduler?.Schedule(
-           name: "heartbeat",
-           interval: TimeSpan.FromSeconds(10),
-           script: System.Management.Automation.ScriptBlock.Create(@"
-            Write-Host ""It’s high noon, baby ☀️""
-            Write-krInformationLog  -MessageTemplate ""Heartbeat @ $(Get-Date)""  
-            # Your PS work...
-        "),
-           runImmediately: true);
-
-
+ 
 // 5. Start the server
 server.StartAsync().Wait();
 

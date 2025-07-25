@@ -1,4 +1,5 @@
 using Kestrun;
+using Kestrun.Utilities;
 using Xunit;
 
 public class HttpVerbExtensionsTests

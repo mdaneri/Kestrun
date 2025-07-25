@@ -95,16 +95,17 @@ $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 Add-AspNetCoreType -Version "net8"
 # Add-AspNetCoreType -Version "net8.0.*"
 
- 
-# Assert that the assembly is loaded
-Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Kestrun.dll")
-#Assert-AssemblyLoaded (Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Serilog.Sinks.SystemConsole.Themes.ConsoleTheme.dll")
-$assemblies = Get-ChildItem -Path (Join-Path -Path $moduleRootPath -ChildPath "lib") -Filter "Serilog.*.dll" -File
-foreach ($assembly in $assemblies) {
-    Assert-AssemblyLoaded -AssemblyPath $assembly.FullName
-}
-#Assert-AssemblyLoaded (Join-Path -Path $PSHOME -ChildPath "Microsoft.CodeAnalysis.dll")
-# load private functions
+$assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib"
+# Assert that the assembly is loaded and load it if not
+Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
+
+# 1️⃣  Load & register your DLL folders (as before):
+[Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
+
+# 2️⃣  When the runspace or script is finished:
+[Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
+
+# 3️⃣  Load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # only import public functions

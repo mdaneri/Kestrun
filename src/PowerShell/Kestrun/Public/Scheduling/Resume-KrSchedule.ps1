@@ -1,0 +1,34 @@
+function Resume-KrSchedule {
+    <#
+    .SYNOPSIS
+        Resumes a previously-paused schedule.
+    .DESCRIPTION
+        This function resumes a scheduled task that was previously paused.
+    .PARAMETER Name
+        The name of the schedule to resume.
+    .EXAMPLE
+        Resume-KrSchedule -Name 'ps-inline'
+        Resumes the schedule named 'ps-inline'.
+    .OUTPUTS
+        Returns the Kestrun host object after resuming the schedule.
+    .NOTES
+        This function is part of the Kestrun scheduling module.
+    #>
+    [OutputType([Kestrun.KestrunHost])]
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Kestrun.KestrunHost]$Server,
+        [Parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    process {
+        if ($Server.Scheduler.Resume($Name)) {
+            Write-Information "▶️ schedule '$Name' resumed."
+        }
+        else {
+            Write-Warning "No schedule named '$Name' found."
+        }
+        return $Server
+    }
+}

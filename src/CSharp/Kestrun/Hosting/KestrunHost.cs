@@ -19,7 +19,7 @@ using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Kestrun;
+using Kestrun.Utilities;
 using Microsoft.CodeAnalysis;
 using System.Reflection;
 using Microsoft.CodeAnalysis.CSharp;
@@ -46,7 +46,7 @@ using Kestrun.Scheduling;
 
 namespace Kestrun;
 
-public class KestrunHost
+public class KestrunHost : IDisposable
 {
     #region Fields
 
@@ -68,7 +68,7 @@ public class KestrunHost
 
     public SharedStateStore SharedState { get; } = new();
 
-    public SchedulerService? Scheduler { get; private set; }
+    public SchedulerService Scheduler { get; internal set; } = null!; // Initialized in ConfigureServices
 
     // ── ✦ QUEUE #1 : SERVICE REGISTRATION ✦ ─────────────────────────────
     private readonly List<Action<IServiceCollection>> _serviceQueue = [];
@@ -76,7 +76,7 @@ public class KestrunHost
     // ── ✦ QUEUE #2 : MIDDLEWARE STAGES ✦ ────────────────────────────────
     private readonly List<Action<IApplicationBuilder>> _middlewareQueue = [];
 
-
+    private readonly List<Action<KestrunHost>> _featureQueue = [];
     #endregion
 
 
@@ -570,10 +570,20 @@ public class KestrunHost
                 //     .ConfigureAwait(false);
                 //  var psResults = ps.Invoke();
                 var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-
                 Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
+                if (Log.IsEnabled(LogEventLevel.Debug))
+                {
+                    Log.Debug("PowerShell script output:");
+                    foreach (var result in psResults)
+                    {
+                        if (result != null)
+                        {
+                            Log.Debug($"  Result: {result}");
+                        }
+                    }
+                }
                 //  var psResults = await Task.Run(() => ps.Invoke());
-                // Capture errors and output from the runspace 
+                // Capture errors and output from the runspace
                 if (ps.HadErrors || ps.Streams.Error.Count != 0)
                 {
                     await BuildError.ResponseAsync(context, ps);
@@ -734,23 +744,6 @@ public class KestrunHost
     #region Configuration
 
 
-
-    public void EnableScheduling()
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("EnableScheduling called");
-        if (Scheduler == null)
-        {
-            var runspacepool = CreateRunspacePool(Options.MaxSchedulerRunspaces); // example
-            var _log = Log.Logger.ForContext<KestrunHost>();
-            Scheduler = new SchedulerService(runspacepool, _log);
-        }
-        else
-        {
-            Log.Warning("SchedulerService is already configured, skipping.");
-        }
-    }
-
     public void EnableConfiguration()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -812,11 +805,7 @@ public class KestrunHost
                     Log.Information("➡️  Endpoint: {DisplayName}", ep.DisplayName);
                 }
             }
-            if (Options.EnableScheduling)
-            {
-                EnableScheduling(); // Enable scheduling if needed
-                Log.Information("Scheduling enabled.");
-            }
+
             _isConfigured = true;
             Log.Information("Configuration applied successfully.");
         }
@@ -874,6 +863,11 @@ public class KestrunHost
         {
             stage(App);
         }
+
+        foreach (var feature in _featureQueue)
+        {
+            feature(this);
+        }
         // 5️⃣  Terminal endpoint execution 
         return App;
     }
@@ -900,6 +894,42 @@ public class KestrunHost
         _middlewareQueue.Add(stage);
         return this;
     }
+
+    public KestrunHost AddFeature(Action<KestrunHost> feature)
+    {
+        _featureQueue.Add(feature);
+        return this;
+    }
+
+    public KestrunHost AddScheduling(int? MaxRunspaces = null)
+    {
+        if (MaxRunspaces is not null && MaxRunspaces <= 0)
+            throw new ArgumentOutOfRangeException(nameof(MaxRunspaces), "MaxRunspaces must be greater than zero.");
+        return AddFeature(host =>
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("AddScheduling (deferred)");
+
+            if (host.Scheduler is null)
+            {
+                if (MaxRunspaces is not null && MaxRunspaces > 0)
+                {
+                    Log.Information("Setting MaxSchedulerRunspaces to {MaxRunspaces}", MaxRunspaces);
+                    host.Options.MaxSchedulerRunspaces = MaxRunspaces.Value;
+                }
+                Log.Verbose("Creating SchedulerService with MaxSchedulerRunspaces={MaxRunspaces}",
+                    host.Options.MaxSchedulerRunspaces);
+                var pool = host.CreateRunspacePool(host.Options.MaxSchedulerRunspaces);
+                var logger = Log.Logger.ForContext<KestrunHost>();
+                host.Scheduler = new SchedulerService(pool, logger);
+            }
+            else
+            {
+                Log.Warning("SchedulerService already configured; skipping.");
+            }
+        });
+    }
+
 
     /// <summary>
     /// Adds Razor Pages to the application.
@@ -1657,7 +1687,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
 
 
 
-    private KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0)
+    public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("CreateRunspacePool() called: {@MaxRunspaces}", maxRunspaces);
@@ -1671,7 +1701,13 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
         {
             iss.ImportPSModule([p]);
         }
-
+        iss.Variables.Add(
+            new SessionStateVariableEntry(
+                "KestrunHost",
+                this,
+                "The KestrunHost instance"
+            )
+        );
         // Inject global variables into all runspaces
         foreach (var kvp in SharedState.Snapshot())
         {

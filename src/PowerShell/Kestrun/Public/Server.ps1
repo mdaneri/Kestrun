@@ -334,7 +334,7 @@ function Add-KrRoute {
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
-        [Kestrun.HttpVerb[]]$Verbs = @([Kestrun.HttpVerb]::Get),
+        [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
@@ -474,6 +474,7 @@ function Start-KrServer {
                             Write-Host "Stopping Kestrun server..."
                         }
                         $srv.StopAsync().Wait()
+                        $srv.Dispose()
                         if (-not $Quiet.IsPresent) {
                             Write-Host "Kestrun server stopped."
                         }

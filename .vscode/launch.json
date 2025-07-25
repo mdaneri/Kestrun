@@ -22,12 +22,19 @@
             "script": "${workspaceFolder}/examples/PowerShell/RazorSample/RazorSample.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell/RazorSample"
         },
-         {
+        {
             "name": "PowerShell: Launch LoggingSample.ps1",
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}/examples/PowerShell/Logging/LoggingSample.ps1",
             "cwd": "${workspaceFolder}/examples/PowerShell/Logging"
+        },
+        {
+            "name": "PowerShell: Launch Scheduling.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/Scheduling/Scheduling.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/Scheduling"
         },
         {
             "name": ".NET Launch CSharp/MultiRoutes",
@@ -70,6 +77,17 @@
             "program": "${workspaceFolder}/examples/CSharp/RazorSample/bin/Debug/net8.0/RazorSample.dll",
             "args": [],
             "cwd": "${workspaceFolder}/examples/CSharp/RazorSample",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
+        },
+        {
+            "name": ".NET Launch CSharp/Scheduling",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Scheduling",
+            "program": "${workspaceFolder}/examples/CSharp/Scheduling/bin/Debug/net8.0/Scheduling.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/Scheduling",
             "stopAtEntry": false,
             "console": "integratedTerminal"
         }

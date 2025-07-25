@@ -40,6 +40,16 @@
                 "${workspaceFolder}/examples/CSharp/RazorSample/RazorSample.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build Scheduling",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharp/Scheduling/Scheduling.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

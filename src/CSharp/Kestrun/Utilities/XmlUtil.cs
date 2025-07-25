@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 
-namespace Kestrun;
+namespace Kestrun.Utilities;
 
 public static class XmlUtil
 {
