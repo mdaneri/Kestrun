@@ -40,6 +40,11 @@ catch {
     exit 1
 }
 
+New-KrLogger  |
+Set-KrMinimumLevel -Value Debug  |
+Add-KrSinkFile -Path ".\logs\scheduling.log" -RollingInterval Hour |
+Add-KrSinkConsole |
+Register-KrLogger -SetAsDefault -Name "DefaultLogger"
 
 # Create the server
 $server = New-KrServer -Name 'MyKestrunServer'   |

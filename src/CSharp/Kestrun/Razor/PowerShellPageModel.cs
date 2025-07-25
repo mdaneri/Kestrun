@@ -2,13 +2,13 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
 
-namespace Kestrun;
+namespace Kestrun.Razor;
 
 /// <summary>
 /// Base PageModel that exposes whatever the sibling PowerShell script placed
 /// in <c>HttpContext.Items["PageModel"]</c>.
 /// </summary>
-public class PowerShellPageModel : PageModel
+public class PwshKestrunModel : PageModel
 {
     /// <summary>The dynamic object assigned to <c>$Model</c> in PowerShell.</summary>
     public dynamic? Data => HttpContext.Items["PageModel"];

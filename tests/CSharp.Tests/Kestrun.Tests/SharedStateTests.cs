@@ -1,4 +1,5 @@
 using Kestrun;                         // ← contains static SharedState
+using Kestrun.SharedState;
 using Xunit;
 
 public class SharedStateTests
@@ -9,8 +10,8 @@ public class SharedStateTests
     {
         var host = new KestrunHost("TestHost");
 
-        Assert.True(host.SharedState.Set("foo", new List<int> { 1, 2 }));
-        Assert.True(host.SharedState.TryGet("foo", out List<int>? list));
+        Assert.True(SharedStateStore.Set("foo", new List<int> { 1, 2 }));
+        Assert.True(SharedStateStore.TryGet("foo", out List<int>? list));
         Assert.Equal(2, list?.Count);
     }
 
@@ -19,9 +20,9 @@ public class SharedStateTests
     public void CaseInsensitive_Access_Works()
     {
         var host = new KestrunHost("TestHost");
-        host.SharedState.Set("Bar", "baz");
+        SharedStateStore.Set("Bar", "baz");
 
-        Assert.True(host.SharedState.TryGet("bar", out string? val));
+        Assert.True(SharedStateStore.TryGet("bar", out string? val));
         Assert.Equal("baz", val);
     }
 
@@ -32,10 +33,10 @@ public class SharedStateTests
     public void Snapshot_And_KeySnapshot_Work()
     {
         var host = new KestrunHost("TestHost");
-        host.SharedState.Set("snap", "val");
+        SharedStateStore.Set("snap", "val");
 
-        var map = host.SharedState.Snapshot();
-        var keys = host.SharedState.KeySnapshot();
+        var map = SharedStateStore.Snapshot();
+        var keys = SharedStateStore.KeySnapshot();
 
         Assert.True(map.ContainsKey("snap"));
         Assert.Equal("val", map["snap"]);
@@ -47,14 +48,14 @@ public class SharedStateTests
     public void Invalid_Name_Throws()
     {
         var host = new KestrunHost("TestHost");
-        Assert.Throws<ArgumentException>(() => host.SharedState.Set("1bad", "oops"));
-        Assert.Throws<ArgumentException>(() => host.SharedState.Set("bad-name", "oops"));
+        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("1bad", "oops"));
+        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("bad-name", "oops"));
     }
 
     [Fact]
     public void ValueType_Throws()
     {
         var host = new KestrunHost("TestHost");
-        Assert.Throws<ArgumentException>(() => host.SharedState.Set("num", 123)); // int ⇒ value‑type
+        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("num", 123)); // int ⇒ value‑type
     }
 }

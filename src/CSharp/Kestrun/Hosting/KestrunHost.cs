@@ -43,16 +43,18 @@ using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Kestrun.Scheduling;
+using Kestrun.SharedState;
+using Kestrun.Languages;
+using static Kestrun.Languages.CSharpDelegateBuilder;
+using Kestrun.Middleware;
+using Kestrun.Razor;
 
 namespace Kestrun;
 
 public class KestrunHost : IDisposable
 {
     #region Fields
-
-    private const string PS_INSTANCE_KEY = "PS_INSTANCE";
-    private const string KR_REQUEST_KEY = "KR_REQUEST";
-    private const string KR_RESPONSE_KEY = "KR_RESPONSE";
+ 
     // Shared state across routes
     private readonly ConcurrentDictionary<string, string> sharedState = new();
     private readonly WebApplicationBuilder builder;
@@ -66,7 +68,6 @@ public class KestrunHost : IDisposable
     private KestrunRunspacePoolManager? _runspacePool;
     public string? KestrunRoot { get; private set; }
 
-    public SharedStateStore SharedState { get; } = new();
 
     public SchedulerService Scheduler { get; internal set; } = null!; // Initialized in ConfigureServices
 
@@ -377,96 +378,11 @@ public class KestrunHost : IDisposable
     //  C# delegate builder  –  now takes optional imports / references
     // ---------------------------------------------------------------------------
     public record CsGlobals(KestrunRequest Request, KestrunResponse Response, HttpContext Context, IReadOnlyDictionary<string, object?> Globals);
-    private RequestDelegate BuildCsDelegate(
-            string code, string[]? extraImports,
-            Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
-                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
 
-        // 1. Compose ScriptOptions
-        var opts = ScriptOptions.Default
-                   .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
-                   .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
-                   .WithLanguageVersion(languageVersion);
-        extraImports ??= ["Kestrun"];
-        if (!extraImports.Contains("Kestrun"))
-        {
-            var importsList = extraImports.ToList();
-            importsList.Add("Kestrun");
-            extraImports = [.. importsList];
-        }
-        if (extraImports is { Length: > 0 })
-            opts = opts.WithImports(opts.Imports.Concat(extraImports));
-
-        if (extraRefs is { Length: > 0 })
-            opts = opts.WithReferences(opts.MetadataReferences
-                                          .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
-
-        // 1. Inject each global as a top-level script variable
-        var allGlobals = SharedState.Snapshot();
-        if (allGlobals.Count > 0)
-        {
-            var sb = new StringBuilder();
-            foreach (var kvp in allGlobals)
-            {
-                sb.AppendLine(
-                  $"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"];");
-            }
-            code = sb + code;
-        }
-        // 2. Compile once
-        var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
-        var diagnostics = script.Compile();
-
-        // Check for compilation errors
-        if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-            throw new CompilationErrorException("C# route code compilation failed", diagnostics);
-
-        // Log warnings if any (optional - for debugging)
-        var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
-        if (warnings.Length != 0)
-        {
-            Log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
-            foreach (var warning in warnings)
-            {
-                var location = warning.Location.IsInSource
-                    ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
-                    : "";
-                Log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
-            }
-        }
-
-        // 3. Build the per-request delegate
-        return async context =>
-        {
-            try
-            {
-                var krRequest = await KestrunRequest.NewRequest(context);
-                var krResponse = new KestrunResponse(krRequest);
-                await script.RunAsync(new CsGlobals(krRequest, krResponse, context, allGlobals)).ConfigureAwait(false);
-
-                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                {
-                    context.Response.Redirect(krResponse.RedirectUrl);
-                    return;
-                }
-
-                await krResponse.ApplyTo(context.Response).ConfigureAwait(false);
-            }
-            finally
-            {
-                await context.Response.CompleteAsync().ConfigureAwait(false);
-            }
-        };
-    }
     #endregion
 
-    #region PowerShell
-
-
-
+    #region PowerShell 
+    /*
     public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRunspacePoolManager pool)
     {
 
@@ -488,10 +404,10 @@ public class KestrunHost : IDisposable
                 var krResponse = new KestrunResponse(krRequest);
 
                 // keep a reference for any C# code later in the pipeline
-                context.Items[KR_REQUEST_KEY] = krRequest;
-                context.Items[KR_RESPONSE_KEY] = krResponse;
+                context.Items[PowerShellDelegateBuilder.KR_REQUEST_KEY] = krRequest;
+                context.Items[PowerShellDelegateBuilder.KR_RESPONSE_KEY] = krResponse;
                 // Store the PowerShell instance in the context for later use
-                context.Items[PS_INSTANCE_KEY] = ps;
+                context.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
                 Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
                 // Set the PowerShell variables for the request and response
                 var ss = ps.Runspace.SessionStateProxy;
@@ -518,7 +434,7 @@ public class KestrunHost : IDisposable
                             Log.Debug("Disposing PowerShell instance: {InstanceId}", ps.InstanceId);
                         // Dispose the PowerShell instance
                         ps.Dispose();
-                        context.Items.Remove(PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
+                        context.Items.Remove(PowerShellDelegateBuilder.PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                     }
                 }
             }
@@ -528,126 +444,7 @@ public class KestrunHost : IDisposable
             }
         }
     }
-
-
-    private RequestDelegate BuildPsDelegate(string code)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building PowerShell delegate, script length={Length}", code?.Length);
-
-        return async context =>
-        {
-            if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("PS delegate invoked for {Path}", context.Request.Path);
-
-            if (!context.Items.ContainsKey(PS_INSTANCE_KEY))
-            {
-                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-            // Retrieve the PowerShell instance from the context
-            Log.Verbose("Retrieving PowerShell instance from context items.");
-            PowerShell ps = context.Items[PS_INSTANCE_KEY] as PowerShell
-                ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-            if (ps.Runspace == null)
-            {
-                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-            // Ensure the runspace pool is open before executing the script 
-            try
-            {
-                Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
-                var krRequest = context.Items[KR_REQUEST_KEY] as KestrunRequest
-                    ?? throw new InvalidOperationException($"{KR_REQUEST_KEY} key not found in context items.");
-                var krResponse = context.Items[KR_RESPONSE_KEY] as KestrunResponse
-                    ?? throw new InvalidOperationException($"{KR_RESPONSE_KEY} key not found in context items.");
-                ps.AddScript(code);
-                // Execute the PowerShell script block
-                // Using Task.Run to avoid blocking the thread
-                Log.Verbose("Executing PowerShell script...");
-                // Using Task.Run to avoid blocking the thread
-                // This is necessary to prevent deadlocks in the runspace pool
-                // var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                //     .ConfigureAwait(false);
-                //  var psResults = ps.Invoke();
-                var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-                Log.Verbose($"PowerShell script executed with {psResults.Count} results.");
-                if (Log.IsEnabled(LogEventLevel.Debug))
-                {
-                    Log.Debug("PowerShell script output:");
-                    foreach (var result in psResults)
-                    {
-                        if (result != null)
-                        {
-                            Log.Debug($"  Result: {result}");
-                        }
-                    }
-                }
-                //  var psResults = await Task.Run(() => ps.Invoke());
-                // Capture errors and output from the runspace
-                if (ps.HadErrors || ps.Streams.Error.Count != 0)
-                {
-                    await BuildError.ResponseAsync(context, ps);
-                    return;
-                }
-                else if (ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
-                {
-                    Log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
-                    Log.Verbose(BuildError.Text(ps));
-                }
-
-                Log.Verbose("PowerShell script completed successfully.");
-                // If redirect, nothing to return
-                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                {
-                    Log.Verbose($"Redirecting to {krResponse.RedirectUrl}");
-                    context.Response.Redirect(krResponse.RedirectUrl);
-                    return;
-                }
-                Log.Verbose("Applying response to HttpResponse...");
-                // Apply the response to the HttpResponse
-
-                await krResponse.ApplyTo(context.Response);
-                return;
-            }
-            // optional: catch client cancellation to avoid noisy logs
-            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
-            {
-                // client disconnected – nothing to send
-            }
-            catch (Exception ex)
-            {
-                // Log the exception (optional)
-                Log.Error($"Error processing request: {ex.Message}");
-                context.Response.StatusCode = 500; // Internal Server Error
-                context.Response.ContentType = "text/plain; charset=utf-8";
-                await context.Response.WriteAsync("An error occurred while processing your request.");
-            }
-            finally
-            {
-                // CompleteAsync is idempotent – safe to call once more
-                try
-                {
-
-                    Log.Verbose("Completing response for " + context.Request.Path);
-                    await context.Response.CompleteAsync().ConfigureAwait(false);
-
-                }
-                catch (ObjectDisposedException odex)
-                {
-                    // This can happen if the response has already been completed
-                    // or the client has disconnected
-                    Log.Debug(odex, "Response already completed for {Path}", context.Request.Path);
-                }
-
-                catch (InvalidOperationException ioex)
-                {
-                    // This can happen if the response has already been completed
-                    Log.Debug(ioex, "Response already completed for {Path}", context.Request.Path);
-                    // No action needed, as the response is already completed
-                }
-            }
-        };
-    }
+ */
     #endregion
 
 
@@ -710,8 +507,8 @@ public class KestrunHost : IDisposable
             // compile once – return an HttpContext->Task delegate
             var handler = language switch
             {
-                ScriptLanguage.PowerShell => BuildPsDelegate(scriptBlock),
-                ScriptLanguage.CSharp => BuildCsDelegate(scriptBlock, extraImports, extraRefs),
+                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(scriptBlock),
+                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(scriptBlock, extraImports, extraRefs),
                 ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock), // F# scripting not implemented
                 ScriptLanguage.Python => BuildPyDelegate(scriptBlock),
                 ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock),
@@ -1709,7 +1506,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
             )
         );
         // Inject global variables into all runspaces
-        foreach (var kvp in SharedState.Snapshot())
+        foreach (var kvp in SharedStateStore.Snapshot())
         {
             // kvp.Key = "Visits", kvp.Value = 0
             iss.Variables.Add(

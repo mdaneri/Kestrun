@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
+using Kestrun.Utilities;
 
 public class BuildErrorTests
 {

@@ -10,7 +10,8 @@ using System.Collections.Concurrent;
 using Serilog;
 using Kestrun.Logging;
 using Microsoft.Extensions.Logging;
-using Kestrun.Utilities;   // Only for writing the CSR key
+using Kestrun.Utilities;
+using Kestrun.SharedState;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -45,7 +46,7 @@ server.AddPowerShellRuntime();
 var sharedVisits = new Hashtable();
 sharedVisits["Count"] = 0;
 // 3.1 Inject global variable
-if (!server.SharedState.Set("Visits", sharedVisits))
+if (!SharedStateStore.Set("Visits", sharedVisits))
 {
     Console.WriteLine("Failed to define global variable 'Visits'.");
     Environment.Exit(1);
@@ -86,7 +87,7 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 {
     Console.WriteLine("Native C# route hit!");
 
-    server.SharedState.TryGet("Visits", out Hashtable? visits);
+    SharedStateStore.TryGet("Visits", out Hashtable? visits);
 
     int visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;
 

@@ -55,19 +55,26 @@ Enable-KrConfiguration
 # 3.  ─── Scheduled jobs ───────────────────────────────────────
 
 # (A) pure-C# heartbeat every 10 s (through ScriptBlock)
-Register-KrSchedule -Server $server -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock { 
-    Write-KrInformationLog  -MessageTemplate "💓  Heartbeat at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+Register-KrSchedule -Server $server -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock {
+    Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
 }
+
+
+Register-KrSchedule -Server $server -Name "HeartbeatCS" -Interval '00:00:15' -Language CSharp -Code @"
+    // C# code runs inside the server process
+    Serilog.Log.Information("💓  Heartbeat (C#) at {0:O}", DateTimeOffset.UtcNow);
+"@
 
 # (B) inline PS every minute
 Register-KrSchedule -Server $server -Name 'ps-inline' -Cron '0 * * * * *' -ScriptBlock {
     Write-Information "[$([DateTime]::UtcNow.ToString('o'))] 🌙  Inline PS job ran."
+    Write-Information "Runspace Name: $([runspace]::DefaultRunspace.Name)"
     Write-Information "$($Visits['Count']) Visits so far."
 }
 
 # (C) script file nightly 03:00
 Register-KrSchedule -Server $server -Name 'nightly-clean' -Cron '0 0 3 * * *' `
-    -ScriptPath 'Scripts\Cleanup.ps1'
+    -ScriptPath 'Scripts\Cleanup.ps1' -Language PowerShell
 
 # 4.  ─── Routes ───────────────────────────────────────────────
 

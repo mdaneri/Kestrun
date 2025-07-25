@@ -4,24 +4,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Kestrun;
+namespace Kestrun.SharedState;
 
 /// <summary>
 /// Thread‑safe, case‑insensitive global key/value store for reference‑type objects.
 /// </summary>
-public partial class SharedStateStore
+public static partial class SharedStateStore
 {
     // ── configuration ───────────────────────────────────────────────
     private static readonly Regex _validName =
         MyRegex();
 
     // StringComparer.OrdinalIgnoreCase ⇒ 100 % case‑insensitive keys
-    private readonly ConcurrentDictionary<string, object?> _store =
+    private static readonly ConcurrentDictionary<string, object?> _store =
         new(StringComparer.OrdinalIgnoreCase);
 
     // ── public API ──────────────────────────────────────────────────
     /// <summary>Add or overwrite a value (reference‑types only).</summary>
-    public bool Set(string name, object? value)
+    public static bool Set(string name, object? value)
     {
         ValidateName(name);
         ValidateValue(name, value);
@@ -33,7 +33,7 @@ public partial class SharedStateStore
     /// Strongly‑typed fetch. Returns <c>false</c> if the key is missing
     /// or the stored value can’t be cast to <typeparamref name="T"/>.
     /// </summary>
-    public bool TryGet<T>(string name, out T? value)
+    public static bool TryGet<T>(string name, out T? value)
     {
         if (_store.TryGetValue(name, out var raw) && raw is T cast)
         {
@@ -45,16 +45,16 @@ public partial class SharedStateStore
     }
 
     /// <summary>Untyped fetch; <c>null</c> if absent.</summary>
-    public object? Get(string name) =>
+    public static object? Get(string name) =>
         _store.TryGetValue(name, out var val) ? val : null;
 
     /// <summary>Snapshot of *all* current variables (shallow copy).</summary>
-    public IReadOnlyDictionary<string, object?> Snapshot() =>
+    public static IReadOnlyDictionary<string, object?> Snapshot() =>
         _store.ToDictionary(kvp => kvp.Key, kvp => kvp.Value,
                             StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Snapshot of keys only—handy for quick listings.</summary>
-    public IReadOnlyCollection<string> KeySnapshot() =>
+    public static IReadOnlyCollection<string> KeySnapshot() =>
         [.. _store.Keys];
 
     // ── helpers ────────────────────────────────────────────────────

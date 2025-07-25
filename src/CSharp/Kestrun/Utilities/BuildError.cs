@@ -3,7 +3,7 @@ using System.Management.Automation;
 using System.Text;
 using Serilog;
 
-namespace Kestrun;
+namespace Kestrun.Utilities;
 
 /// <summary>
 /// Utilities for formatting PowerShell error streams into HTTP responses.

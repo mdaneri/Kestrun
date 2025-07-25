@@ -18,12 +18,13 @@
 using System;
 using System.IO;
 using System.Management.Automation;
+using Kestrun.Utilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
-namespace Kestrun;
+namespace Kestrun.Razor;
 
 public static class PowerShellRazorPage
 {
@@ -39,7 +40,7 @@ public static class PowerShellRazorPage
     ///   <item><description>Whatever the script assigns to <c>$Model</c>
     ///       is copied to <c>HttpContext.Items["PageModel"]</c></description></item>
     /// </list>
-    /// Razor pages (or a generic <see cref="PowerShellPageModel"/>) can then
+    /// Razor pages (or a generic <see cref="PwshKestrunModel"/>) can then
     /// read that dynamic object.
     /// </summary>
     /// <param name="app">The <see cref="WebApplication"/> pipeline.</param>

@@ -1,6 +1,7 @@
 using System.Management.Automation.Runspaces;
+using Kestrun.Languages;
 using static Kestrun.KestrunHost;
-namespace Kestrun;
+namespace Kestrun.Middleware;
 
 /// <summary>
 /// Extension methods for adding PowerShell runspace middleware.

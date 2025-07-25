@@ -54,30 +54,51 @@ public sealed class SchedulerService : IDisposable
     }
 
     /*────────── PowerShell JOBS ──────────*/
-    public void Schedule(string name, TimeSpan interval,
-        ScriptBlock script, bool runImmediately = false)
-        => Schedule(name, interval, ScriptToJob(script), runImmediately);
+    public void Schedule(string name, string cron, ScriptBlock scriptblock, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(ScriptLanguage.PowerShell, scriptblock.ToString(), _pool, _log);
+        Schedule(name, cron, job, runImmediately);
+    }
+    public void Schedule(string name, TimeSpan interval, ScriptBlock scriptblock, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(ScriptLanguage.PowerShell, scriptblock.ToString(), _pool, _log);
+        Schedule(name, interval, job, runImmediately);
+    }
+    public void Schedule(string name, TimeSpan interval, string code, ScriptLanguage lang, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(lang, code, _pool, _log);
+        Schedule(name, interval, job, runImmediately);
+    }
 
-    public void Schedule(string name, string cronExpr,
-        ScriptBlock script, bool runImmediately = false)
-        => Schedule(name, cronExpr, ScriptToJob(script), runImmediately);
+    public void Schedule(string name, string cron, string code, ScriptLanguage lang, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(lang, code, _pool, _log);
+        Schedule(name, cron, job, runImmediately);
+    }
 
-    public async Task ScheduleAsync(string name, TimeSpan interval,
-        FileInfo fileInfo, bool runImmediately = false, CancellationToken ct = default)
-        => Schedule(name, interval, await ScriptToJobAsync(fileInfo, ct), runImmediately);
+    public void Schedule(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(lang, fileInfo, _pool, _log);
+        Schedule(name, interval, job, runImmediately);
+    }
 
-    public async Task ScheduleAsync(string name, string cronExpr,
-        FileInfo fileInfo, bool runImmediately = false, CancellationToken ct = default)
-        => Schedule(name, cronExpr, await ScriptToJobAsync(fileInfo, ct), runImmediately);
+    public void Schedule(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
+    {
+        var job = JobFactory.Create(lang, fileInfo, _pool, _log);
+        Schedule(name, cron, job, runImmediately);
+    }
 
-    public async Task Schedule(string name, TimeSpan interval,
-        FileInfo fileInfo, bool runImmediately = false, CancellationToken ct = default)
-        => await ScheduleAsync(name, interval, fileInfo, runImmediately, ct);
+    public async Task ScheduleAsync(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
+    {
+        var job = await JobFactory.CreateAsync(lang, fileInfo, _pool, _log, ct);
+        Schedule(name, interval, job, runImmediately);
+    }
 
-    public async Task Schedule(string name, string cronExpr,
-        FileInfo fileInfo, bool runImmediately = false, CancellationToken ct = default)
-        => await ScheduleAsync(name, cronExpr, fileInfo, runImmediately, ct);
-
+    public async Task ScheduleAsync(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
+    {
+        var job = await JobFactory.CreateAsync(lang, fileInfo, _pool, _log, ct);
+        Schedule(name, cron, job, runImmediately);
+    }
     /*────────── CONTROL ──────────*/
     public bool Cancel(string name)
     {
@@ -292,65 +313,76 @@ public sealed class SchedulerService : IDisposable
             _log.Error(ex, "[Scheduler] Job '{Name}' failed", task.Name);
         }
     }
-    private async Task<Func<CancellationToken, Task>> ScriptToJobAsync(FileInfo fileInfo, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(fileInfo);
-        if (!fileInfo.Exists)
-            throw new FileNotFoundException(fileInfo.FullName);
+    /*   private async Task<Func<CancellationToken, Task>> ScriptToJobAsync(FileInfo fileInfo, CancellationToken ct = default)
+       {
+           ArgumentNullException.ThrowIfNull(fileInfo);
+           if (!fileInfo.Exists)
+               throw new FileNotFoundException(fileInfo.FullName);
 
-        string scriptText = await File.ReadAllTextAsync(fileInfo.FullName, ct);
-        return ScriptToJob(scriptText);
-    }
+           string scriptText = await File.ReadAllTextAsync(fileInfo.FullName, ct);
+           return JobFactory.Create(
+               ScriptLanguage.PowerShell,
+               scriptText,
+               _pool,
+               _log);
+          // return ScriptToJob(scriptText);
+       }
 
-    private Func<CancellationToken, Task> ScriptToJob(ScriptBlock scriptBlock)
-    {
-        return ScriptToJob(scriptBlock.ToString());
-    }
-    private Func<CancellationToken, Task> ScriptToJob(string code)
-        => async ct =>
-        {
+       private Func<CancellationToken, Task> ScriptToJob(ScriptBlock scriptBlock)
+       {
+          // return ScriptToJob(scriptBlock.ToString());
 
-            var runspace = _pool.Acquire();
-            try
-            {
-                using PowerShell ps = PowerShell.Create();
-                ps.Runspace = runspace;
-                ps.AddScript(code);
+           return JobFactory.Create(
+               ScriptLanguage.PowerShell,
+               scriptBlock.ToString(),
+               _pool,
+               _log);
+       }*/
+    /* private Func<CancellationToken, Task> ScriptToJob(string code)
+         => async ct =>
+         {
 
-                //    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-                using var reg = ct.Register(() => ps.Stop());
+             var runspace = _pool.Acquire();
+             try
+             {
+                 using PowerShell ps = PowerShell.Create();
+                 ps.Runspace = runspace;
+                 ps.AddScript(code);
 
-                var psResults = await ps.InvokeAsync().WaitAsync(ct).ConfigureAwait(false);
+                 //    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                 using var reg = ct.Register(() => ps.Stop());
 
-                _log.Verbose($"PowerShell script executed with {psResults.Count} results.");
-                if (_log.IsEnabled(LogEventLevel.Debug))
-                {
-                    _log.Debug("PowerShell script output:");
-                    foreach (var r in psResults.Take(10))      // first 10 only
-                        _log.Debug("   • {Result}", r);
-                    if (psResults.Count > 10)
-                        _log.Debug("   … {Count} more", psResults.Count - 10);
-                }
+                 var psResults = await ps.InvokeAsync().WaitAsync(ct).ConfigureAwait(false);
 
-                if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
-                {
-                    _log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
-                    _log.Verbose(BuildError.Text(ps));
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, "[Scheduler] PowerShell job failed – {Preview}", code[..Math.Min(40, code.Length)]);
-                throw;
-            }
-            finally
-            {
-                // Ensure we release the runspace back to the pool                 
-                _pool.Release(runspace);
+                 _log.Verbose($"PowerShell script executed with {psResults.Count} results.");
+                 if (_log.IsEnabled(LogEventLevel.Debug))
+                 {
+                     _log.Debug("PowerShell script output:");
+                     foreach (var r in psResults.Take(10))      // first 10 only
+                         _log.Debug("   • {Result}", r);
+                     if (psResults.Count > 10)
+                         _log.Debug("   … {Count} more", psResults.Count - 10);
+                 }
 
-            }
-        };
+                 if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
+                 {
+                     _log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
+                     _log.Verbose(BuildError.Text(ps));
+                 }
+             }
+             catch (Exception ex)
+             {
+                 _log.Error(ex, "[Scheduler] PowerShell job failed – {Preview}", code[..Math.Min(40, code.Length)]);
+                 throw;
+             }
+             finally
+             {
+                 // Ensure we release the runspace back to the pool                 
+                 _pool.Release(runspace);
 
+             }
+         };
+ */
 
     public void Dispose()
     {

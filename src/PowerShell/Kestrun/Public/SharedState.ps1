@@ -32,7 +32,7 @@ function Set-KrSharedState {
     process {
         if ($PSCmdlet.ShouldProcess("Kestrun shared variable '$Name'", "Set")) {
             # Define or update the variable; throws if it was already read-only
-            $null = $Server.SharedState.Set(
+            $null = [Kestrun.SharedState.SharedStateStore]::Set(
                 $Name,
                 $Value
             )

@@ -2,6 +2,9 @@
 using System.Net;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.ResponseCompression;
+using Kestrun.Utilities;
+// Add the namespace that contains HttpVerb
+ 
 
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -48,7 +51,7 @@ server.AddResponseCompression(options =>
 
 
 
-server.ApplyConfiguration();
+server.EnableConfiguration();
 
 server.AddRoute("/ps/json",
             HttpVerb.Get,
