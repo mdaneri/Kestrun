@@ -313,77 +313,7 @@ public sealed class SchedulerService : IDisposable
             _log.Error(ex, "[Scheduler] Job '{Name}' failed", task.Name);
         }
     }
-    /*   private async Task<Func<CancellationToken, Task>> ScriptToJobAsync(FileInfo fileInfo, CancellationToken ct = default)
-       {
-           ArgumentNullException.ThrowIfNull(fileInfo);
-           if (!fileInfo.Exists)
-               throw new FileNotFoundException(fileInfo.FullName);
-
-           string scriptText = await File.ReadAllTextAsync(fileInfo.FullName, ct);
-           return JobFactory.Create(
-               ScriptLanguage.PowerShell,
-               scriptText,
-               _pool,
-               _log);
-          // return ScriptToJob(scriptText);
-       }
-
-       private Func<CancellationToken, Task> ScriptToJob(ScriptBlock scriptBlock)
-       {
-          // return ScriptToJob(scriptBlock.ToString());
-
-           return JobFactory.Create(
-               ScriptLanguage.PowerShell,
-               scriptBlock.ToString(),
-               _pool,
-               _log);
-       }*/
-    /* private Func<CancellationToken, Task> ScriptToJob(string code)
-         => async ct =>
-         {
-
-             var runspace = _pool.Acquire();
-             try
-             {
-                 using PowerShell ps = PowerShell.Create();
-                 ps.Runspace = runspace;
-                 ps.AddScript(code);
-
-                 //    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-                 using var reg = ct.Register(() => ps.Stop());
-
-                 var psResults = await ps.InvokeAsync().WaitAsync(ct).ConfigureAwait(false);
-
-                 _log.Verbose($"PowerShell script executed with {psResults.Count} results.");
-                 if (_log.IsEnabled(LogEventLevel.Debug))
-                 {
-                     _log.Debug("PowerShell script output:");
-                     foreach (var r in psResults.Take(10))      // first 10 only
-                         _log.Debug("   • {Result}", r);
-                     if (psResults.Count > 10)
-                         _log.Debug("   … {Count} more", psResults.Count - 10);
-                 }
-
-                 if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)
-                 {
-                     _log.Verbose("PowerShell script completed with verbose/debug/warning/info messages.");
-                     _log.Verbose(BuildError.Text(ps));
-                 }
-             }
-             catch (Exception ex)
-             {
-                 _log.Error(ex, "[Scheduler] PowerShell job failed – {Preview}", code[..Math.Min(40, code.Length)]);
-                 throw;
-             }
-             finally
-             {
-                 // Ensure we release the runspace back to the pool                 
-                 _pool.Release(runspace);
-
-             }
-         };
- */
-
+    
     public void Dispose()
     {
         CancelAll();
