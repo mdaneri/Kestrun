@@ -50,6 +50,16 @@
                 "${workspaceFolder}/examples/CSharp/Scheduling/Scheduling.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build BasicAuthHandler",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharp/BasicAuthHandler/BasicAuthHandler.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

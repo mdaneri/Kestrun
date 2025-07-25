@@ -7,7 +7,7 @@
     <!-- Target .NET version -->
     <TargetFramework>net8.0</TargetFramework>
 
-    <LangVersion>12.0</LangVersion>   <!-- or 12.0 / latest -->
+    <LangVersion>12.0</LangVersion>    <!-- or 12.0 / latest -->
 
     <!-- Enable nullable reference types (safer code) -->
     <Nullable>enable</Nullable>
@@ -102,15 +102,23 @@
 
   <!--───────────── NuGet Dependencies ─────────────-->
   <ItemGroup>
+    <!-- Microsoft.AspNetCore -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.7" />
+    
     <!-- Hosting & DI -->
     <PackageReference Include="Cronos" Version="0.11.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.7" /> 
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
+
+
+
 
     <!-- Logging -->
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
@@ -171,7 +179,7 @@
   </Target>
 
   <Target Name="DisplayBuildVersion" AfterTargets="GenerateAssemblyInfo">
-  <Message Text="🌟 Kestrun Build Number: $(BuildNumber)" Importance="High" />
-  <Message Text="💫 InformationalVersion: $(InformationalVersion)" Importance="High" />
-</Target>
+    <Message Text="🌟 Kestrun Build Number: $(BuildNumber)" Importance="High" />
+    <Message Text="💫 InformationalVersion: $(InformationalVersion)" Importance="High" />
+  </Target>
 </Project>

@@ -90,6 +90,17 @@
             "cwd": "${workspaceFolder}/examples/CSharp/Scheduling",
             "stopAtEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": ".NET Launch CSharp/BasicAuthHandler",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build BasicAuthHandler",
+            "program": "${workspaceFolder}/examples/CSharp/BasicAuthHandler/bin/Debug/net8.0/BasicAuthHandler.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/BasicAuthHandler",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }

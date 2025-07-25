@@ -48,6 +48,7 @@ using Kestrun.Languages;
 using static Kestrun.Languages.CSharpDelegateBuilder;
 using Kestrun.Middleware;
 using Kestrun.Razor;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Kestrun;
 
@@ -232,152 +233,15 @@ public class KestrunHost : IDisposable
     #endregion
 
 
-    private RequestDelegate BuildJsDelegate(string code, Serilog.ILogger logger)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building JavaScript delegate, script length={Length}", code?.Length);
-        var engine = new V8ScriptEngine();
-        engine.AddHostType("KestrunResponse", typeof(KestrunResponse));
-        engine.Execute(code);               // script defines global  function handle(ctx, res) { ... }
 
-        return async context =>
-        {
-            if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("JS delegate invoked for {Path}", context.Request.Path);
-
-            var krRequest = await KestrunRequest.NewRequest(context);
-            var krResponse = new KestrunResponse(krRequest);
-            engine.Script.handle(context, krResponse);
-
-            if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                return;
-
-            await krResponse.ApplyTo(context.Response);
-        };
-    }
-
-
-
-    #region Python
-
-
-    static public void ConfigurePythonRuntimePath(string path)
-    {
-        Python.Runtime.Runtime.PythonDLL = path;
-    }
-    // ---------------------------------------------------------------------------
-    //  helpers at class level
-    // ---------------------------------------------------------------------------
-    private static readonly object _pyGate = new();
-    private static bool _pyInit = false;
-
-    private static void EnsurePythonEngine()
-    {
-        if (_pyInit) return;
-
-        lock (_pyGate)
-        {
-            if (_pyInit) return;          // double-check
-
-            // If you need a specific DLL, set Runtime.PythonDLL
-            // or expose it via the PYTHONNET_PYDLL environment variable.
-            // Runtime.PythonDLL = @"C:\Python312\python312.dll";
-
-            PythonEngine.Initialize();        // load CPython once
-            PythonEngine.BeginAllowThreads(); // let other threads run
-            _pyInit = true;
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    //  per-route delegate builder
-    // ---------------------------------------------------------------------------
-    private RequestDelegate BuildPyDelegate(string code, Serilog.ILogger logger)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building Python delegate, script length={Length}", code?.Length);
-        if (string.IsNullOrWhiteSpace(code))
-            throw new ArgumentException("Python script code cannot be empty.", nameof(code));
-        EnsurePythonEngine();                 // one-time init
-
-        // ---------- compile the script once ----------
-        using var gil = Py.GIL();           // we are on the caller's thread
-        using var scope = Py.CreateScope();
-
-        /*  Expect the user script to contain:
-
-                def handle(ctx, res):
-                    # ctx -> ASP.NET HttpContext (proxied)
-                    # res -> KestrunResponse    (proxied)
-                    ...
-
-            Scope.Exec compiles & executes that code once per route.
-        */
-        scope.Exec(code);
-        dynamic pyHandle = scope.Get("handle");
-
-        // ---------- return a RequestDelegate ----------
-        return async context =>
-        {
-            if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("Python delegate invoked for {Path}", context.Request.Path);
-
-            try
-            {
-                using var _ = Py.GIL();       // enter GIL for *this* request
-                var krRequest = await KestrunRequest.NewRequest(context);
-                var krResponse = new KestrunResponse(krRequest);
-
-                // Call the Python handler (Python → .NET marshal is automatic)
-                pyHandle(context, krResponse, context);
-
-                // redirect?
-                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                {
-                    context.Response.Redirect(krResponse.RedirectUrl);
-                    return;                   // finally-block will CompleteAsync
-                }
-
-                // normal response
-                await krResponse.ApplyTo(context.Response).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                // optional logging
-                Log.Error($"Python route error: {ex}");
-                context.Response.StatusCode = 500;
-                context.Response.ContentType = "text/plain; charset=utf-8";
-                await context.Response.WriteAsync(
-                    "Python script failed while processing the request.").ConfigureAwait(false);
-            }
-            finally
-            {
-                // Always flush & close so the client doesn’t hang
-                try { await context.Response.CompleteAsync().ConfigureAwait(false); }
-                catch (ObjectDisposedException) { /* client disconnected */ }
-            }
-        };
-    }
-
-
-
-    #endregion
-
-    #region F#
-    private RequestDelegate BuildFsDelegate(string code, Serilog.ILogger logger)
-    { // F# scripting not implemented yet
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Building F# delegate, script length={Length}", code?.Length);
-        throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");
-    }
-    #endregion
 
     #region C#
 
     // ---------------------------------------------------------------------------
     //  C# delegate builder  –  now takes optional imports / references
     // ---------------------------------------------------------------------------
-    public record CsGlobals {
+    public record CsGlobals
+    {
         public CsGlobals(IReadOnlyDictionary<string, object?> Globals, KestrunRequest Request, KestrunResponse Response, HttpContext Context)
         {
             this.Globals = Globals;
@@ -386,9 +250,9 @@ public class KestrunHost : IDisposable
             this.Context = Context;
         }
 
-          public CsGlobals(IReadOnlyDictionary<string, object?> Globals )
+        public CsGlobals(IReadOnlyDictionary<string, object?> Globals)
         {
-            this.Globals = Globals; 
+            this.Globals = Globals;
         }
 
         public IReadOnlyDictionary<string, object?> Globals { get; }
@@ -398,71 +262,6 @@ public class KestrunHost : IDisposable
     }
     #endregion
 
-    #region PowerShell 
-    /*
-    public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRunspacePoolManager pool)
-    {
-
-        private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
-        private readonly KestrunRunspacePoolManager _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-
-        public async Task InvokeAsync(HttpContext context)
-        {
-            try
-            {
-                if (Log.IsEnabled(LogEventLevel.Debug))
-                    Log.Debug("PowerShellRunspaceMiddleware started for {Path}", context.Request.Path);
-                // EnsureRunspacePoolOpen(_pool);
-                // Acquire a runspace from the pool and keep it for the whole request
-                var runspace = _pool.Acquire();
-                using PowerShell ps = PowerShell.Create();
-                ps.Runspace = runspace;
-                var krRequest = await KestrunRequest.NewRequest(context);
-                var krResponse = new KestrunResponse(krRequest);
-
-                // keep a reference for any C# code later in the pipeline
-                context.Items[PowerShellDelegateBuilder.KR_REQUEST_KEY] = krRequest;
-                context.Items[PowerShellDelegateBuilder.KR_RESPONSE_KEY] = krResponse;
-                // Store the PowerShell instance in the context for later use
-                context.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
-                Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
-                // Set the PowerShell variables for the request and response
-                var ss = ps.Runspace.SessionStateProxy;
-                ss.SetVariable("Context", context);
-                ss.SetVariable("Request", krRequest);
-                ss.SetVariable("Response", krResponse);
-
-                try
-                {
-                    if (Log.IsEnabled(LogEventLevel.Debug))
-                        Log.Debug("PowerShellRunspaceMiddleware - Continuing Pipeline  for {Path}", context.Request.Path);
-                    await _next(context);                // continue the pipeline
-                    if (Log.IsEnabled(LogEventLevel.Debug))
-                        Log.Debug("PowerShellRunspaceMiddleware completed for {Path}", context.Request.Path);
-                }
-                finally
-                {
-                    if (ps != null)
-                    {
-                        if (Log.IsEnabled(LogEventLevel.Debug))
-                            Log.Debug("Returning runspace to pool: {RunspaceId}", ps.Runspace.InstanceId);
-                        _pool.Release(ps.Runspace); // return the runspace to the pool
-                        if (Log.IsEnabled(LogEventLevel.Debug))
-                            Log.Debug("Disposing PowerShell instance: {InstanceId}", ps.InstanceId);
-                        // Dispose the PowerShell instance
-                        ps.Dispose();
-                        context.Items.Remove(PowerShellDelegateBuilder.PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error occurred in PowerShellRunspaceMiddleware");
-            }
-        }
-    }
- */
-    #endregion
 
 
     #region Route
@@ -528,9 +327,9 @@ public class KestrunHost : IDisposable
 
                 ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(scriptBlock, logger),
                 ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(scriptBlock, logger, extraImports, extraRefs),
-                ScriptLanguage.FSharp => BuildFsDelegate(scriptBlock, logger), // F# scripting not implemented
-                ScriptLanguage.Python => BuildPyDelegate(scriptBlock, logger),
-                ScriptLanguage.JavaScript => BuildJsDelegate(scriptBlock, logger),
+                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(scriptBlock, logger), // F# scripting not implemented
+                ScriptLanguage.Python => PyDelegateBuilder.Build(scriptBlock, logger),
+                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(scriptBlock, logger),
                 _ => throw new NotSupportedException(language.ToString())
             };
             string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
@@ -745,7 +544,6 @@ public class KestrunHost : IDisposable
             }
         });
     }
-
 
     /// <summary>
     /// Adds Razor Pages to the application.
@@ -1012,6 +810,7 @@ public class KestrunHost : IDisposable
         // apply only that policy
         return Use(app => app.UseCors(policyName));
     }
+
 
     /// <summary>
     /// Adds a PowerShell runtime to the application.
