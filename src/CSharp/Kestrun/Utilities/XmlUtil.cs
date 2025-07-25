@@ -7,6 +7,9 @@ using System.Xml.Linq;
 
 namespace Kestrun.Utilities;
 
+/// <summary>
+/// Helpers for converting arbitrary objects into <see cref="XElement"/> instances.
+/// </summary>
 public static class XmlUtil
 {
     private static readonly XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";

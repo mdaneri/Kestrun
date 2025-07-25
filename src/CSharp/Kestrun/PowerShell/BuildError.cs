@@ -5,18 +5,26 @@ using Serilog;
 
 namespace Kestrun;
 
+/// <summary>
+/// Utilities for formatting PowerShell error streams into HTTP responses.
+/// </summary>
 public static class BuildError
 {
 
+    /// <summary>
+    /// Convert the current PowerShell error streams to a plain-text <see cref="IResult"/>.
+    /// </summary>
     public static IResult Result(PowerShell ps)
     {
-        // 500 + text body
         return Results.Text(content: Text(ps), statusCode: 500, contentType: "text/plain; charset=utf-8");
     }
 
 
 
-    static public string Text(PowerShell ps)
+    /// <summary>
+    /// Collate all PowerShell streams (error, verbose, warning, etc.) into a single string.
+    /// </summary>
+    public static string Text(PowerShell ps)
     {
         ArgumentNullException.ThrowIfNull(ps);
 
@@ -58,12 +66,15 @@ public static class BuildError
     }
 
     // Helper that writes the error to the response stream
-    static public Task ResponseAsync(HttpContext context, PowerShell ps)
+    /// <summary>
+    /// Write the formatted PowerShell errors directly to the HTTP response.
+    /// </summary>
+    public static Task ResponseAsync(HttpContext context, PowerShell ps)
     {
-        var errText = BuildError.Text(ps);               // plain string
+        var errText = BuildError.Text(ps);
         context.Response.StatusCode = 500;
         context.Response.ContentType = "text/plain; charset=utf-8";
-        return context.Response.WriteAsync(errText);    // returns Task
+        return context.Response.WriteAsync(errText);
     }
 
 }
