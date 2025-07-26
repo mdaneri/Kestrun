@@ -118,7 +118,8 @@
         'Add-KrEnrichWithProperty', 'Get-KrJsonFormatter', 'Convert-KrLogFunctions',
         'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell', 'Add-KrSinkEventLog',
         'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName',
-        'Add-KrSinkSyslogUdp', 'Add-KrSinkSyslogTcp', 'Add-KrSinkSyslogLocal', 'Add-KrSinkHttp'
+        'Add-KrSinkSyslogUdp', 'Add-KrSinkSyslogTcp', 'Add-KrSinkSyslogLocal', 'Add-KrSinkHttp',
+        'Add-Favicon'
     )
 
     # Variables to export from this module

@@ -1103,6 +1103,16 @@ public class KestrunHost : IDisposable
         });
     }
 
+
+    public KestrunHost AddFavicon(string? iconPath = null)
+    {
+        return Use(app =>
+        {  
+            app.UseFavicon(iconPath);
+        });
+    }
+ 
+
     /// <summary>
     /// Copies static file options from one object to another.
     /// </summary>

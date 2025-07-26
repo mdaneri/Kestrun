@@ -98,8 +98,8 @@
   <ItemGroup>
     <!-- README will show on NuGet.org page -->
     <None Include="../../../README.md" Pack="true" PackagePath="\" />
+    <EmbeddedResource Include="Assets\favicon.ico" />
   </ItemGroup>
-
   <!--───────────── NuGet Dependencies ─────────────-->
   <ItemGroup>
     <!-- Microsoft.AspNetCore -->

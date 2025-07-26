@@ -47,7 +47,7 @@ server.AddResponseCompression(options =>
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-}).AddPowerShellRuntime();
+}).AddFavicon().AddPowerShellRuntime();
 
 
 
