@@ -11,6 +11,11 @@
 
     <!-- Enable nullable reference types (safer code) -->
     <Nullable>enable</Nullable>
+    
+    <!-- Enable implicit usings for common namespaces -->
+    <ImplicitUsings>enable</ImplicitUsings> 
+    
+    <EnablePreviewFeatures>False</EnablePreviewFeatures>
 
     <!-- Enable implicit using directives for common namespaces -->
     <ImplicitUsings>enable</ImplicitUsings>

@@ -3,14 +3,18 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 public class BasicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
-    public BasicAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
-                        
-                            UrlEncoder encoder)
-        : base(options, null, encoder) { }
+    private static readonly Serilog.ILogger Log =
+        Serilog.Log.ForContext<BasicAuthHandler>();
+    public BasicAuthHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory loggerFactory,          // <-- ask DI for this
+        UrlEncoder encoder)
+        : base(options, loggerFactory, encoder) { }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

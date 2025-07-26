@@ -10,8 +10,25 @@ using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
 using Org.BouncyCastle.Utilities.Zlib;
 using Kestrun.Logging;
-using Kestrun.Utilities;   // Only for writing the CSR key
+using Kestrun.Utilities;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;   // Only for writing the CSR key
 
+
+
+/*
+$creds   = "admin:s3cr3t"
+$basic   = "Basic " + [Convert]::ToBase64String(
+                       [Text.Encoding]::ASCII.GetBytes($creds))
+$token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+Invoke-RestMethod https://localhost:5001/secure/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001//secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+
+*/
 var currentDir = Directory.GetCurrentDirectory();
 
 // 1️⃣  Audit log: only warnings and above, writes JSON files
@@ -33,6 +50,15 @@ server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
 server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
+const string BasicScheme = "Basic";
+const string JwtScheme = "Bearer";    // or "MyJwt", or whatever label you prefer
+
+string issuer = "KestrunApi";
+string audience = "KestrunClients";
+// 1) 32-byte hex or ascii secret  (use a vault / env var in production)
+const string JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
+byte[] jwtKeyBytes = Convert.FromHexString(JwtKeyHex);
+var jwtKey = new SymmetricSecurityKey(jwtKeyBytes);
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -47,8 +73,33 @@ server.AddResponseCompression(options =>
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-}).AddPowerShellRuntime().AddAuthentication("Basic",  BasicAuthHandler);
+}).AddAuthentication(
+    //  defaultScheme: BasicScheme,          // only matters if you don’t call RequireAuthorization("…")
+    buildSchemes: ab =>
+    {
+        // ←── BASIC ──
+        ab.AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>(BasicScheme, null);
 
+        // ←── JWT ──
+        ab.AddJwtBearer(
+            JwtScheme,
+            configureOptions: opts =>
+            {
+                opts.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = jwtKey,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+            }
+        );
+    }
+).AddPowerShellRuntime();//.AddAuthorization();
 
 
 X509Certificate2? x509Certificate = null;
@@ -121,15 +172,15 @@ server.EnableConfiguration();
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
 server.AddRoute("/secure/hello", HttpVerb.Get, """
-    if (-not $HttpContext.User.Identity.IsAuthenticated) {
+    if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $HttpContext.User.Identity.Name
+    $user = $Context.User.Identity.Name
     $Response.Body = "Welcome, $user! You are authenticated."
     $Response.ContentType = "text/plain"
-""", ScriptLanguage.PowerShell);
+""", ScriptLanguage.PowerShell, [BasicScheme]);
 
 
 server.AddRoute("/secure/hello-cs", HttpVerb.Get, """
@@ -141,29 +192,52 @@ server.AddRoute("/secure/hello-cs", HttpVerb.Get, """
 
     var user = Context.User.Identity.Name;
     Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
-""", ScriptLanguage.CSharp);
+""", ScriptLanguage.CSharp, [JwtScheme]);
 
-// 5. Start the server
-server.StartAsync().Wait();
 
-Console.WriteLine("Kestrun server started. Press Ctrl+C to stop.");
-// drive our “keep alive” loop
-var keepRunning = true;
-Console.CancelKeyPress += (s, e) =>
+
+
+server.AddNativeRoute("/token", HttpVerb.Get, async (req, res) =>
 {
-    // tell Console not to kill process immediately
-    e.Cancel = true;
-    Console.WriteLine("Stopping Kestrun server…");
-    server.StopAsync().Wait();
-    keepRunning = false; // set flag to exit loop 
-};
+    // tiny demo – replace with your real credential check
+    var auth = req.Authorization;
+    if (auth != "Basic YWRtaW46czNjcjN0")
+    {   // “admin:s3cr3t” base64
+        res.WriteErrorResponse("Access denied", 401);
+        return;
+    }
 
-// loop until keepRunning is cleared
-while (keepRunning)
-{
-    Thread.Sleep(1000);
-}
+    var claims = new[]
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, "admin"),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+    };
 
-Console.WriteLine("Server has shut down.");
-server.Dispose();
-Environment.Exit(0); // Force process exit if needed
+    var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
+    var jwt = new JwtSecurityToken(
+                   issuer: issuer,
+                   audience: audience,
+                   claims: claims,
+                   expires: DateTime.UtcNow.AddHours(1),
+                   signingCredentials: creds);
+    try
+    {
+        var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+        res.WriteJsonResponse(new { access_token = token });
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Failed to generate JWT token");
+        res.WriteErrorResponse("Internal Server Error", 500);
+    }
+    await Task.Yield();
+});
+
+await server.RunUntilShutdownAsync(
+    consoleEncoding: Encoding.UTF8,
+    onStarted: () => Console.WriteLine("Server ready 🟢"),
+    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
+
+    )
+);
+

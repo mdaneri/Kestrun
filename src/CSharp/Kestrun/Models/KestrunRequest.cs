@@ -19,6 +19,7 @@ public class KestrunRequest
 
     /// <summary>Raw request body text.</summary>
     public required string Body { get; set; }
+    public string? Authorization { get; private set; }
 
     /// <summary>
     /// Create a <see cref="KestrunRequest"/> from an <see cref="HttpContext"/> by reading the body stream.
@@ -34,6 +35,8 @@ public class KestrunRequest
             Path = context.Request.Path.ToString(),
             Query = context.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
             Headers = context.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
+            Authorization = context.Request.Headers.Authorization.ToString(),
+            // Note: Body is read as a string, not a byte array
             Body = body
         };
     }

@@ -49,7 +49,15 @@ using static Kestrun.Languages.CSharpDelegateBuilder;
 using Kestrun.Middleware;
 using Kestrun.Razor;
 using Microsoft.AspNetCore.Authentication;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net.Quic;
+/*#if NET8_0_OR_GREATER
+[assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
+#endif
+*/
 namespace Kestrun;
 
 public class KestrunHost : IDisposable
@@ -180,30 +188,6 @@ public class KestrunHost : IDisposable
     }
     #endregion
 
-    #region Services
-    private void KestrelServices(WebApplicationBuilder builder)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Configuring Kestrel services");
-        builder = builder ?? throw new ArgumentNullException(nameof(builder));
-
-        // Disable Kestrel's built-in console lifetime management
-        builder.Services.AddSingleton<IHostLifetime, NoopHostLifetime>();
-        try
-        {
-            builder.Services.AddResponseCompression(options =>
-            {
-                options.EnableForHttps = true;
-            });
-            builder.Services.AddRazorPages();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to configure response compression.", ex);
-        }
-    }
-
-    #endregion
 
     #region ListenerOptions 
 
@@ -212,6 +196,11 @@ public class KestrunHost : IDisposable
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
 
+        if (protocols == HttpProtocols.Http1AndHttp2AndHttp3 && !CcUtilities.PreviewFeaturesEnabled())
+        {
+            Log.Warning("Http3 is not supported in this version of Kestrun. Using Http1 and Http2 only.");
+            protocols = HttpProtocols.Http1AndHttp2;
+        }
 
         Options.Listeners.Add(new ListenerOptions
         {
@@ -294,62 +283,203 @@ public class KestrunHost : IDisposable
                                      HttpVerb httpVerbs,
                                        string scriptBlock,
                                        ScriptLanguage language = ScriptLanguage.PowerShell,
-                                       string[]? extraImports = null,
-                                       Assembly[]? extraRefs = null)
+                                     string[]? RequireAuthorization = null)
     {
-        AddRoute(pattern, [httpVerbs], scriptBlock, language, extraImports, extraRefs);
+        AddRoute(new RouteOptions
+        {
+            Pattern = pattern,
+            HttpVerbs = [httpVerbs],
+            ScriptBlock = scriptBlock,
+            Language = language,
+            RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
+        });
+
     }
 
     public void AddRoute(string pattern,
-                                IEnumerable<HttpVerb> httpVerbs,
-                                string scriptBlock,
-                                ScriptLanguage language = ScriptLanguage.PowerShell,
-                                string[]? extraImports = null,
-                                Assembly[]? extraRefs = null)
+                                 IEnumerable<HttpVerb> httpVerbs,
+                                 string scriptBlock,
+                                 ScriptLanguage language = ScriptLanguage.PowerShell,
+                                     string[]? RequireAuthorization = null)
+    {
+        AddRoute(new RouteOptions
+        {
+            Pattern = pattern,
+            HttpVerbs = httpVerbs,
+            ScriptBlock = scriptBlock,
+            Language = language,
+            RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
+        });
+    }
+    public record RouteOptions
+    {
+        public string? Pattern { get; init; }
+        public IEnumerable<HttpVerb> HttpVerbs { get; init; } = [];
+        public string? ScriptBlock { get; init; }
+        public ScriptLanguage Language { get; init; } = ScriptLanguage.PowerShell;
+        public string[]? ExtraImports { get; init; }
+        public Assembly[]? ExtraRefs { get; init; }
+        public string[] RequireAuthorization { get; init; } = []; // Authorization policy name, if any
+        public string CorsPolicyName { get; init; } = string.Empty; // Name of the CORS policy to apply, if any
+        public bool ShortCircuit { get; internal set; } = false; // If true, short-circuit the pipeline after this route
+        public int? ShortCircuitStatusCode { get; internal set; } = null; // Status code to return if short-circuiting
+        public bool AllowAnonymous { get; internal set; }
+        public bool DisableAntiforgery { get; internal set; }
+        public string? RateLimitPolicyName { get; internal set; }
+
+        public record OpenAPIMetadata
+        {
+            public string? Summary { get; init; }
+            public string? Description { get; init; }
+            public string? OperationId { get; init; }
+            public string[] Tags { get; init; } = []; // Comma-separated tags
+            public string? GroupName { get; init; } // Group name for OpenAPI documentation 
+        };
+
+        public OpenAPIMetadata OpenAPI { get; init; } = new OpenAPIMetadata(); // OpenAPI metadata for this route
+    }
+    public void AddRoute(RouteOptions options)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Methods}", pattern, language, httpVerbs);
+            Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
         if (App is null)
             throw new InvalidOperationException(
                 "WebApplication is not initialized. Call EnableConfiguration first.");
-        if (string.IsNullOrWhiteSpace(scriptBlock))
-            throw new ArgumentException("Script block cannot be empty.", nameof(scriptBlock));
-
-        if (string.IsNullOrWhiteSpace(pattern))
-            throw new ArgumentException("Route pattern cannot be empty.", nameof(pattern));
-        if (httpVerbs.Count() == 0) httpVerbs = [HttpVerb.Get];
+        if (string.IsNullOrWhiteSpace(options.Pattern))
+            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+        if (string.IsNullOrWhiteSpace(options.ScriptBlock))
+            throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.ScriptBlock));
+        var routeOptions = options;
+        if (!options.HttpVerbs.Any())
+        {
+            // Create a new RouteOptions with HttpVerbs set to [HttpVerb.Get]
+            routeOptions = options with { HttpVerbs = [HttpVerb.Get] };
+        }
         try
         {
-            var logger = Log.Logger.ForContext("Route", pattern);
+            var logger = Log.Logger.ForContext("Route", routeOptions.Pattern);
             // compile once – return an HttpContext->Task delegate
-            var handler = language switch
+            var handler = options.Language switch
             {
 
-                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(scriptBlock, logger),
-                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(scriptBlock, logger, extraImports, extraRefs),
-                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(scriptBlock, logger), // F# scripting not implemented
-                ScriptLanguage.Python => PyDelegateBuilder.Build(scriptBlock, logger),
-                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(scriptBlock, logger),
-                _ => throw new NotSupportedException(language.ToString())
+                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.ScriptBlock, logger),
+                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.ScriptBlock, logger, options.ExtraImports, options.ExtraRefs),
+                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.ScriptBlock, logger), // F# scripting not implemented
+                ScriptLanguage.Python => PyDelegateBuilder.Build(options.ScriptBlock, logger),
+                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.ScriptBlock, logger),
+                _ => throw new NotSupportedException(options.Language.ToString())
             };
-            string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
-            App.MapMethods(pattern, methods, handler).WithLanguage(language);
+            string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
+            var map = App.MapMethods(options.Pattern, methods, handler).WithLanguage(options.Language);
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+
+            if (options.ShortCircuit)
+            {
+                Log.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
+                if (options.ShortCircuitStatusCode is null)
+                    throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
+                map.ShortCircuit(options.ShortCircuitStatusCode);
+            }
+
+            if (options.AllowAnonymous) // Allow anonymous access to this route
+            {
+                Log.Verbose("Allowing anonymous access for route: {Pattern}", options.Pattern);
+                map.AllowAnonymous();
+            }
+            else
+            {
+                Log.Debug("No anonymous access allowed for route: {Pattern}", options.Pattern);
+            }
+
+            if (options.DisableAntiforgery) // Disable CSRF protection for this route
+            {
+                map.DisableAntiforgery(); // Disable CSRF protection for this route
+                Log.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.RateLimitPolicyName)) // Apply rate limiting policy if specified
+            {
+                Log.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
+                // Ensure RateLimiting is configured in the app
+                map.RequireRateLimiting(options.RateLimitPolicyName);
+            }
+            if (options.RequireAuthorization is { Length: > 0 })
+            {
+                Log.Verbose("Requiring authorization for route: {Pattern} with policies: {Policies}", options.Pattern, string.Join(", ", options.RequireAuthorization));
+                map.RequireAuthorization(new AuthorizeAttribute
+                {
+                    AuthenticationSchemes = string.Join(',', options.RequireAuthorization)
+                });
+            }
+            else
+            {
+                Log.Debug("No authorization required for route: {Pattern}", options.Pattern);
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.CorsPolicyName)) // Apply CORS policy if specified
+            {
+                Log.Verbose("Applying CORS policy: {CorsPolicyName} to route: {Pattern}", options.CorsPolicyName, options.Pattern);
+                // Ensure CORS is configured in the app
+                // apply the route-specific policy
+                map.RequireCors(options.CorsPolicyName);
+            }
+            else
+            {
+                Log.Debug("No CORS policy applied for route: {Pattern}", options.Pattern);
+            }
+
+
+            if (!string.IsNullOrEmpty(options.OpenAPI.OperationId))
+            {
+                Log.Verbose("Adding OpenAPI metadata for route: {Pattern} with OperationId: {OperationId}", options.Pattern, options.OpenAPI.OperationId);
+                // Add OpenAPI metadata if specified
+                map.WithName(options.OpenAPI.OperationId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.OpenAPI.Summary))
+            {
+                Log.Verbose("Adding OpenAPI summary for route: {Pattern} with Summary: {Summary}", options.Pattern, options.OpenAPI.Summary);
+                map.WithSummary(options.OpenAPI.Summary);
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.OpenAPI.Description))
+            {
+                Log.Verbose("Adding OpenAPI description for route: {Pattern} with Description: {Description}", options.Pattern, options.OpenAPI.Description);
+                map.WithDescription(options.OpenAPI.Description);
+            }
+            if (options.OpenAPI.Tags.Length > 0)
+            {
+                Log.Verbose("Adding OpenAPI tags for route: {Pattern} with Tags: {Tags}", options.Pattern, string.Join(", ", options.OpenAPI.Tags));
+                map.WithTags(options.OpenAPI.Tags);
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(options.OpenAPI.GroupName))
+            {
+                Log.Verbose("Adding OpenAPI group name for route: {Pattern} with GroupName: {GroupName}", options.Pattern, options.OpenAPI.GroupName);
+                map.WithGroupName(options.OpenAPI.GroupName);
+            }
+
+            Log.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+            // Add to the feature queue for later processing
+
         }
         catch (CompilationErrorException ex)
         {
             // Log the detailed compilation errors
-            Log.Error($"Failed to add route '{pattern}' due to compilation errors:");
+            Log.Error($"Failed to add route '{options.Pattern}' due to compilation errors:");
             Log.Error(ex.GetDetailedErrorMessage());
 
             // Re-throw with additional context
             throw new InvalidOperationException(
-                $"Failed to compile {language} script for route '{pattern}'. {ex.GetErrors().Count()} error(s) found.",
+                $"Failed to compile {options.Language} script for route '{options.Pattern}'. {ex.GetErrors().Count()} error(s) found.",
                 ex);
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException(
-                $"Failed to add route '{pattern}' with method '{string.Join(", ", httpVerbs)}' using {language}: {ex.Message}",
+                $"Failed to add route '{options.Pattern}' with method '{string.Join(", ", options.HttpVerbs)}' using {options.Language}: {ex.Message}",
                 ex);
         }
     }
@@ -653,6 +783,43 @@ public class KestrunHost : IDisposable
         // Middleware side
         return Use(app => app.UseResponseCompression());
     }
+
+    public KestrunHost AddRateLimiter(RateLimiterOptions cfg)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding rate limiter with configuration: {@Config}", cfg);
+        if (cfg == null)
+            return AddRateLimiter();   // fall back to your “blank” overload
+
+        AddService(services =>
+        {
+            services.AddRateLimiter(opts => opts.CopyFrom(cfg));   // ← single line!
+        });
+
+        return Use(app => app.UseRateLimiter());
+    }
+
+
+    public KestrunHost AddRateLimiter(Action<RateLimiterOptions>? cfg = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
+
+        // Register the rate limiter service
+        AddService(services =>
+        {
+            services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
+        });
+
+        // Apply the middleware
+        return Use(app =>
+        {
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("Registering rate limiter middleware");
+            app.UseRateLimiter();
+        });
+    }
+
 
     /// <summary>
     /// Adds static files to the application.
@@ -1051,14 +1218,6 @@ public class KestrunHost : IDisposable
                 app.UseRouting();                                    // add routing
                 app.UseEndpoints(e => e.MapRazorPages());            // map pages
 
-                /*   app.Use(async (ctx, next) =>
-   {
-       var ds = ctx.GetEndpoint();          // null at build time
-       Console.WriteLine($"Endpoints now: {ctx.RequestServices
-           .GetRequiredService<EndpointDataSource>().Endpoints.Count}");
-       await next();
-   });*/
-
             }
 
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -1107,11 +1266,74 @@ public class KestrunHost : IDisposable
     public KestrunHost AddFavicon(string? iconPath = null)
     {
         return Use(app =>
-        {  
+        {
             app.UseFavicon(iconPath);
         });
     }
- 
+
+
+    public KestrunHost AddAuthentication(
+        string defaultScheme,
+        Action<AuthenticationBuilder> buildPolicy, Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        ArgumentNullException.ThrowIfNull(buildPolicy);
+
+        // ① Add authentication services via DI
+        AddService(services =>
+        {
+            var builder = services.AddAuthentication(defaultScheme);
+            buildPolicy(builder);  // ⬅️ Now you apply the user-supplied schemes here
+
+            if (configureAuthz is null)
+                services.AddAuthorization();                // default options
+            else
+                services.AddAuthorization(configureAuthz);  // caller customises
+        });
+
+        // ② Add middleware to enable auth pipeline
+        return Use(app =>
+        {
+            app.UseAuthentication();
+            app.UseAuthorization(); // optional but useful
+        });
+    }
+
+    public KestrunHost AddAuthentication(
+    Action<AuthenticationBuilder> buildSchemes,            // ← unchanged
+    string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
+    Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        AddService(services =>
+        {
+            var ab = services.AddAuthentication(defaultScheme);
+            buildSchemes(ab);                                  // Basic + JWT here
+
+            // make sure UseAuthorization() can find its services
+            if (configureAuthz is null)
+                services.AddAuthorization();
+            else
+                services.AddAuthorization(configureAuthz);
+        });
+
+        return Use(app =>
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        });
+    }
+
+
+    public KestrunHost AddAuthorization(Action<AuthorizationOptions>? cfg = null)
+    {
+        return AddService(s =>
+        {
+            if (cfg == null)
+                s.AddAuthorization();
+            else
+                s.AddAuthorization(cfg);
+        });
+    }
+
 
     /// <summary>
     /// Copies static file options from one object to another.
@@ -1292,7 +1514,19 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
             Log.Debug("StopAsync() called");
         if (App != null)
         {
-            await App.StopAsync(cancellationToken);
+            try
+            {
+                // Initiate graceful shutdown
+                await App.StopAsync(cancellationToken);
+            }
+            catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
+            {
+                // QUIC exceptions can occur during shutdown, especially if the server is not using QUIC.
+                // We log this as a debug message to avoid cluttering the logs with expected exceptions.
+                // This is a workaround for
+
+                Log.Debug("Ignored QUIC exception during shutdown: {Message}", ex.Message);
+            }
         }
     }
 

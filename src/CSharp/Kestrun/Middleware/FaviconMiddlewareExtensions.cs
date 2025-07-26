@@ -6,7 +6,7 @@ using Serilog;
 using Serilog.Core;
 using System.Reflection;
 
-namespace Kestrun;
+namespace Kestrun.Middleware;
 
 public static class FaviconMiddlewareExtensions
 {

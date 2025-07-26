@@ -10,7 +10,8 @@ using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
 using Org.BouncyCastle.Utilities.Zlib;
 using Kestrun.Logging;
-using Kestrun.Utilities;   // Only for writing the CSR key
+using Kestrun.Utilities;
+using System.Text;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -371,27 +372,10 @@ server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (req, res) =>
 });
 
 
-// 5. Start the server
-server.StartAsync().Wait();
+await server.RunUntilShutdownAsync(
+    consoleEncoding: Encoding.UTF8,
+    onStarted: () => Console.WriteLine("Server ready 🟢"),
+    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
 
-Console.WriteLine("Kestrun server started. Press Ctrl+C to stop.");
-// drive our “keep alive” loop
-var keepRunning = true;
-Console.CancelKeyPress += (s, e) =>
-{
-    // tell Console not to kill process immediately
-    e.Cancel = true;
-    Console.WriteLine("Stopping Kestrun server…");
-    server.StopAsync().Wait();
-    keepRunning = false; // set flag to exit loop 
-};
-
-// loop until keepRunning is cleared
-while (keepRunning)
-{
-    Thread.Sleep(1000);
-}
-
-Console.WriteLine("Server has shut down.");
-server.Dispose();
-Environment.Exit(0); // Force process exit if needed
+    )
+);

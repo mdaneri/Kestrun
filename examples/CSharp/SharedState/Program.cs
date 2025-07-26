@@ -11,7 +11,8 @@ using Serilog;
 using Kestrun.Logging;
 using Microsoft.Extensions.Logging;
 using Kestrun.Utilities;
-using Kestrun.SharedState;   // Only for writing the CSR key
+using Kestrun.SharedState;
+using System.Text;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -31,7 +32,7 @@ server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader
 server.Options.ServerLimits.MaxRequestBodySize = 10485760;
 server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
-server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120); 
+server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
 
 // 3. Configure listeners
@@ -101,28 +102,11 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
     }
     await Task.Yield();
 });
- 
-// 5. Start the server
-server.StartAsync().Wait();
 
-Console.WriteLine("Kestrun server started. Press Ctrl+C to stop.");
-// drive our “keep alive” loop
-var keepRunning = true;
-Console.CancelKeyPress += (s, e) =>
-{
-    // tell Console not to kill process immediately
-    e.Cancel = true;
-    Console.WriteLine("Stopping Kestrun server…");
-    server.StopAsync().Wait();
-    keepRunning = false; // set flag to exit loop 
-};
+await server.RunUntilShutdownAsync(
+    consoleEncoding: Encoding.UTF8,
+    onStarted: () => Console.WriteLine("Server ready 🟢"),
+    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
 
-// loop until keepRunning is cleared
-while (keepRunning)
-{
-    Thread.Sleep(1000);
-}
-
-Console.WriteLine("Server has shut down.");
-server.Dispose();
-Environment.Exit(0); // Force process exit if needed
+    )
+);

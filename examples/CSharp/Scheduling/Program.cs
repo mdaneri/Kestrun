@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Kestrun.Utilities;
 using Kestrun.SharedState;
+using System.Text;
 
 var cwd = Directory.GetCurrentDirectory();
 
@@ -20,28 +21,28 @@ new LoggerConfiguration()
     .Register("Log", setAsDefault: true);
 
 // ───────── 2. Kestrun host
-var host = new KestrunHost("Kestrun+Scheduler", cwd);
+var server = new KestrunHost("Kestrun+Scheduler", cwd);
 
 
 
 // basic Kestrel opts / listener
-host.ConfigureListener(
+server.ConfigureListener(
     port: 5000,
     ipAddress: IPAddress.Loopback,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
     );
 
 // add PowerShell runtime & global counter
-host.AddPowerShellRuntime();
-host.AddScheduling(8); // 8 runspaces for the scheduler
+server.AddPowerShellRuntime();
+server.AddScheduling(8); // 8 runspaces for the scheduler
 // define global variable for visits
 SharedStateStore.Set("Visits", new Hashtable { ["Count"] = 0 });
-host.EnableConfiguration();
+server.EnableConfiguration();
 // ── 3.  define SCHEDULED JOBS  ──
 
 // (A) pure C# heartbeat every 10 s
 
-host.Scheduler.Schedule(
+server.Scheduler.Schedule(
     "Native Heartbeat",
     TimeSpan.FromSeconds(10),
     async ct =>
@@ -51,18 +52,18 @@ host.Scheduler.Schedule(
     },
     runImmediately: true);
 
-host.Scheduler.Schedule("Roslyn Heartbeat", TimeSpan.FromSeconds(15), code: """
+server.Scheduler.Schedule("Roslyn Heartbeat", TimeSpan.FromSeconds(15), code: """
     // C# code compiled by Roslyn
     Serilog.Log.Information("💓  Heartbeat (C# [Roslyn]) at {0:O}", DateTimeOffset.UtcNow);
 """, lang: ScriptLanguage.CSharp, runImmediately: false);
 
-host.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code: """
+server.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code: """
     # PowerShell code runs inside the server process
     Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
 """, lang: ScriptLanguage.PowerShell, runImmediately: false);
 
 // (B) PowerShell inline – every minute
-host.Scheduler.Schedule(
+server.Scheduler.Schedule(
     "ps-inline",
     "0 * * * * *",                          // cron: every minute
     System.Management.Automation.ScriptBlock.Create("""
@@ -74,38 +75,30 @@ host.Scheduler.Schedule(
 
 // (C) PowerShell file – nightly at 03:00
 var cleanupFile = new FileInfo(Path.Combine(cwd, "Scripts", "Cleanup.ps1"));
-host.Scheduler.Schedule(
+server.Scheduler.Schedule(
     "nightly-clean",
     "0 0 3 * * *",                          // 03:00 daily
     cleanupFile, ScriptLanguage.PowerShell);
 // ─────── 4.  ROUTES  ─────────
 
 // increment / show visits (unchanged)
-host.AddRoute("/visit", HttpVerb.Get, """
+server.AddRoute("/visit", HttpVerb.Get, """
     $Visits["Count"]++
     Write-KrTextResponse "🔢 Visits now: $($Visits['Count'])" 200
 """, ScriptLanguage.PowerShell);
 
 // JSON schedule report
-host.AddNativeRoute("/schedule/report", HttpVerb.Get, async (req, res) =>
+server.AddNativeRoute("/schedule/report", HttpVerb.Get, async (req, res) =>
 {
-    var report = host.Scheduler.GetReport();
+    var report = server.Scheduler.GetReport();
     res.WriteJsonResponse(report, 200);
     await Task.Yield();
 });
 
-// ───────── 5.  START  ─────────
-await host.StartAsync();
-Console.WriteLine("Kestrun is running. Hit Ctrl+C to stop.");
+await server.RunUntilShutdownAsync(
+    consoleEncoding: Encoding.UTF8,
+    onStarted: () => Console.WriteLine("Server ready 🟢"),
+    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
 
-// graceful shutdown loop
-var done = new ManualResetEventSlim(false);
-Console.CancelKeyPress += async (_, e) =>
-{
-    e.Cancel = true;
-    Console.WriteLine("Stopping…");
-    await host.StopAsync();
-    done.Set();
-};
-done.Wait();
-host.Dispose();
+    )
+);
