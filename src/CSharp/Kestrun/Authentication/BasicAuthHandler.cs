@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace Kestrun.Authentication;
 
@@ -42,7 +43,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// If the credentials are valid, it creates a ClaimsPrincipal and returns a successful authentication result.
     /// If the credentials are invalid, it returns a failure result.
     /// </remarks>
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         try
         {
@@ -51,7 +52,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
             // Check if the request is secure (HTTPS) if required
             if (Options.RequireHttps && !Request.IsHttps)
-                return Task.FromResult(AuthenticateResult.Fail("HTTPS required"));
+                return Fail("HTTPS required");
 
             // Check if the Authorization header is present
             if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
@@ -63,7 +64,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             // Check if the header is empty
             if (string.IsNullOrEmpty(authHeader.Parameter))
                 return Fail("Missing credentials in Authorization Header");
-
+            Log.Information("Processing Basic Authentication for header: {Context}", Context);
             // Check if the header is too large
             if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024) return Fail("Header too large");
             // Decode the credentials
@@ -92,9 +93,8 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             // Check if username or password is empty
             if (string.IsNullOrEmpty(user))
                 return Fail("Username cannot be empty");
-
-            // Validate the credentials using the provided function
-            if (!Options.ValidateCredentials(user, pass))
+            var valid = await Options.ValidateCredentials(Context, user, pass);
+            if (!valid)
                 return Fail("Invalid credentials");
 
             // If credentials are valid, create claims
@@ -117,7 +117,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
             Options.Logger.Information("Basic auth ticket created for user: {User}", user);
             // Return a successful authentication result
-            return Task.FromResult(AuthenticateResult.Success(ticket));
+            return AuthenticateResult.Success(ticket);
         }
         catch (Exception ex)
         {
@@ -126,12 +126,12 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             return Fail("Exception during authentication");
         }
 
-        Task<AuthenticateResult> Fail(string reason)
+        AuthenticateResult Fail(string reason)
         {
             // Log the failure reason
             Options.Logger.Warning("Basic auth failed: {Reason}", reason);
             // Return a failure result with the reason
-            return Task.FromResult(AuthenticateResult.Fail(reason));
+            return AuthenticateResult.Fail(reason);
         }
     }
 

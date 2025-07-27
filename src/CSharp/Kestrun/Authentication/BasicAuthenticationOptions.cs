@@ -11,7 +11,7 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     public string HeaderName { get; set; } = "Authorization";
 
     /// <summary>Called to validate the raw key string. Return true if valid.</summary>
-    public Func<string, string, bool> ValidateCredentials { get; set; } = (username, password) => false;
+    public Func<HttpContext, string, string, Task<bool>> ValidateCredentials { get; set; } = (context, username, password) => Task.FromResult(false);
 
     public bool Base64Encoded { get; set; } = true;
 
