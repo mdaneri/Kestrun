@@ -1,0 +1,187 @@
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
+
+namespace Kestrun.Authentication;
+
+public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BasicAuthHandler"/> class.
+    /// </summary>
+    /// <param name="options">The options for Basic Authentication.</param>
+    /// <param name="loggerFactory">The logger factory.</param>
+    /// <param name="encoder">The URL encoder.</param>
+    /// <remarks>
+    /// This constructor is used to set up the Basic Authentication handler with the provided options, logger factory, and URL encoder.
+    /// </remarks>
+    public BasicAuthHandler(
+        IOptionsMonitor<BasicAuthenticationOptions> options,
+        ILoggerFactory loggerFactory,
+        UrlEncoder encoder)
+        : base(options, loggerFactory, encoder) { }
+
+
+    /// <summary>
+    /// Handles the authentication process for Basic Authentication.
+    /// </summary>
+    /// <returns>A task representing the authentication result.</returns>
+    /// <remarks>
+    /// This method is called to authenticate a user based on the Basic Authentication scheme.
+    /// </remarks>
+    /// <exception cref="FormatException">Thrown if the Authorization header is not properly formatted.</exception>
+    /// <exception cref="ArgumentNullException">Thrown if the Authorization header is null or empty.</exception>
+    /// <exception cref="Exception">Thrown for any other unexpected errors during authentication.</exception>
+    /// <remarks>
+    /// The method checks for the presence of the Authorization header, decodes it, and validates the credentials.
+    /// </remarks>
+    /// <remarks>
+    /// If the credentials are valid, it creates a ClaimsPrincipal and returns a successful authentication result.
+    /// If the credentials are invalid, it returns a failure result.
+    /// </remarks>
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        try
+        {
+            if (Options.ValidateCredentials is null)
+                return Fail("No credentials validation function provided");
+
+            // Check if the request is secure (HTTPS) if required
+            if (Options.RequireHttps && !Request.IsHttps)
+                return Task.FromResult(AuthenticateResult.Fail("HTTPS required"));
+
+            // Check if the Authorization header is present
+            if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
+                return Fail("Missing Authorization Header");
+
+            var authHeader = AuthenticationHeaderValue.Parse(authHeaderVal.ToString());
+            if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
+                return Fail("Invalid Authorization Scheme");
+            // Check if the header is empty
+            if (string.IsNullOrEmpty(authHeader.Parameter))
+                return Fail("Missing credentials in Authorization Header");
+
+            // Check if the header is too large
+            if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024) return Fail("Header too large");
+            // Decode the credentials
+            string rawCreds;
+            try
+            {
+                // Decode the Base64 encoded credentials if required
+                rawCreds = Options.Base64Encoded
+                  ? Encoding.UTF8.GetString(Convert.FromBase64String(authHeader.Parameter ?? ""))
+                  : authHeader.Parameter ?? string.Empty;
+            }
+            catch (FormatException)
+            {
+                // Log the error and return a failure result
+                Options.Logger.Warning("Invalid Base64 in Authorization header");
+                return Fail("Malformed credentials");
+            }
+            // Use the regex match to extract exactly two groups:
+            var match = Options.SeparatorRegex.Match(rawCreds);
+            if (!match.Success || match.Groups.Count < 3)
+                return Fail("Malformed credentials");
+
+            // Group[1] is username, Group[2] is password:
+            var user = match.Groups[1].Value;
+            var pass = match.Groups[2].Value;
+            // Check if username or password is empty
+            if (string.IsNullOrEmpty(user))
+                return Fail("Username cannot be empty");
+
+            // Validate the credentials using the provided function
+            if (!Options.ValidateCredentials(user, pass))
+                return Fail("Invalid credentials");
+
+            // If credentials are valid, create claims
+            Options.Logger.Information("Basic auth succeeded for user: {User}", user);
+            var claims = new List<Claim> { new(ClaimTypes.Name, user) };
+
+            // If the consumer wired up IssueClaims, invoke it now:
+            if (Options.IssueClaims is not null)
+            {
+                // Call the IssueClaims function to get additional claims
+                var extra = Options.IssueClaims(Context, user);
+                if (extra is not null)
+                    claims.AddRange(extra);
+            }
+            // Create the ClaimsIdentity and ClaimsPrincipal
+            var identity = new ClaimsIdentity(claims, Scheme.Name);
+            // Create the AuthenticationTicket with the principal and scheme name
+            var principal = new ClaimsPrincipal(identity);
+            // Create the authentication ticket
+            var ticket = new AuthenticationTicket(principal, Scheme.Name);
+            Options.Logger.Information("Basic auth ticket created for user: {User}", user);
+            // Return a successful authentication result
+            return Task.FromResult(AuthenticateResult.Success(ticket));
+        }
+        catch (Exception ex)
+        {
+            // Log the exception and return a failure result
+            Options.Logger.Error(ex, "Error processing Authentication");
+            return Fail("Exception during authentication");
+        }
+
+        Task<AuthenticateResult> Fail(string reason)
+        {
+            // Log the failure reason
+            Options.Logger.Warning("Basic auth failed: {Reason}", reason);
+            // Return a failure result with the reason
+            return Task.FromResult(AuthenticateResult.Fail(reason));
+        }
+    }
+
+    /// <summary>
+    /// Handles the challenge response for Basic Authentication.
+    /// </summary>
+    /// <param name="properties">The authentication properties.</param>
+    /// <remarks>
+    /// This method is called to challenge the client for credentials if authentication fails.
+    /// </remarks>
+    /// <remarks>
+    /// If the request is not secure, it does not challenge with WWW-Authenticate.
+    /// </remarks>
+    /// <remarks>
+    /// If the SuppressWwwAuthenticate option is set, it does not add the WWW-Authenticate header.
+    /// </remarks>
+    /// <remarks>
+    /// If the Realm is set, it includes it in the WWW-Authenticate header.
+    /// </remarks>
+    /// <remarks>
+    /// If the request is secure, it adds the WWW-Authenticate header with the Basic scheme.
+    /// </remarks>
+    /// <remarks>
+    /// The response status code is set to 401 Unauthorized.
+    /// </remarks>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the Realm is not set and SuppressWwwAuthenticate is false.</exception>    
+    protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+    {
+        if (!Options.SuppressWwwAuthenticate)
+        {
+            var realm = Options.Realm ?? "Kestrun";
+            Response.Headers.WWWAuthenticate = $"Basic realm=\"{realm}\", charset=\"UTF-8\"";
+        }
+        // If the request is not secure, we don't challenge with WWW-Authenticate
+        Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Handles the forbidden response for Basic Authentication.    
+    /// </summary>
+    /// <param name="properties">The authentication properties.</param>
+    /// <remarks>
+    /// This method is called to handle forbidden responses for Basic Authentication.
+    /// </remarks>
+    protected override Task HandleForbiddenAsync(AuthenticationProperties properties)
+    {
+        Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    }
+}

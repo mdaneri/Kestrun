@@ -75,7 +75,16 @@ server.AddResponseCompression(options =>
     options.Providers.Add<BrotliCompressionProvider>();
 }).AddPowerShellRuntime()
 // ── BASIC (generic helper) ────────────────────────────────────────────
-.AddBasicAuthentication<BasicAuthHandler>(BasicScheme)
+//.AddBasicAuthentication<BasicAuthHandler>(BasicScheme)
+.AddBasicAuthentication(BasicScheme, options =>
+{
+    options.Realm = "My Kestrun Server";
+    options.ValidateCredentials = (username, password) =>
+    {
+        // Replace with your real credential validation logic
+        return username == "admin" && password == "s3cr3t";
+    };
+})
 
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
