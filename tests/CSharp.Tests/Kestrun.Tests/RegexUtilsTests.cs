@@ -1,0 +1,33 @@
+using Kestrun.Utilities;
+using System.Reflection;
+using Xunit;
+
+#pragma warning disable CA1050 // Declare types in namespaces
+public class RegexUtilsTests
+#pragma warning restore CA1050 // Declare types in namespaces
+{
+    private static bool InvokeIsGlobMatch(string input, string pattern, bool ignoreCase = true)
+    {
+        var asm = typeof(SecurityUtilities).Assembly;
+        var t = asm.GetType("Kestrun.Utilities.RegexUtils")!;
+        var method = t.GetMethod("IsGlobMatch", BindingFlags.Public | BindingFlags.Static)!;
+        return (bool)method.Invoke(null, new object[] { input, pattern, ignoreCase })!;
+    }
+
+    [Theory]
+    [InlineData("foo.txt", "*.txt", true)]
+    [InlineData("foo.TXT", "*.txt", true)]
+    [InlineData("bar.log", "*.txt", false)]
+    [InlineData("abc", "a?c", true)]
+    public void IsGlobMatch_Works(string input, string pattern, bool expected)
+    {
+        Assert.Equal(expected, InvokeIsGlobMatch(input, pattern));
+    }
+
+    [Fact]
+    public void IsGlobMatch_CaseSensitive_Works()
+    {
+        Assert.True(InvokeIsGlobMatch("abc", "ABC", ignoreCase: true));
+        Assert.False(InvokeIsGlobMatch("abc", "ABC", ignoreCase: false));
+    }
+}
