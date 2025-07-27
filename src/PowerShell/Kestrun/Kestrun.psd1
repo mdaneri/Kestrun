@@ -80,7 +80,7 @@
         'New-KrServer',
         'Set-KrServerOption',
         'Add-KrListener',
-        'Add-KrRoute',
+        'Add-KrMapRoute',
         'Start-KrServer',
         'Write-KrJsonResponse',
         'Write-KrYamlResponse',

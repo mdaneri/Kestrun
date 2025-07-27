@@ -53,7 +53,7 @@ server.AddResponseCompression(options =>
 
 server.EnableConfiguration();
 
-server.AddRoute("/ps/json",
+server.AddMapRoute("/ps/json",
             HttpVerb.Get,
             """
             Write-Output "Hello from PowerShell script! - Json Response"

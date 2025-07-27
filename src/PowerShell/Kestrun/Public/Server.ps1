@@ -328,7 +328,7 @@ function New-KrServer {
 }
 
 
-function Add-KrRoute {
+function Add-KrMapRoute {
     [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -351,10 +351,10 @@ function Add-KrRoute {
     )
     process {
         if ($PSCmdlet.ParameterSetName -eq "Code") {
-            $Server.AddRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
+            $Server.AddMapRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
         }
         else {
-            $Server.AddRoute($Path, $Verbs, $ScriptBlock.ToString(), [Kestrun.ScriptLanguage]::PowerShell)
+            $Server.AddMapRoute($Path, $Verbs, $ScriptBlock.ToString(), [Kestrun.ScriptLanguage]::PowerShell)
         }
     }
 }

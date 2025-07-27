@@ -63,7 +63,7 @@ Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing | Add-KrPowerSh
 Add-KrPowerShellRazorPagesRuntime | Enable-KrConfiguration
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
     # Payload

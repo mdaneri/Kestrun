@@ -155,7 +155,7 @@ server.EnableConfiguration();
                                     string[]? extraImports = null,
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
-server.AddRoute("/secure/hello", HttpVerb.Get, """
+server.AddMapRoute("/secure/hello", HttpVerb.Get, """
     if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
@@ -167,7 +167,7 @@ server.AddRoute("/secure/hello", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell, [BasicScheme]);
 
 
-server.AddRoute("/secure/hello-cs", HttpVerb.Get, """
+server.AddMapRoute("/secure/hello-cs", HttpVerb.Get, """
     if (!Context.User.Identity.IsAuthenticated)
     {
         Response.WriteErrorResponse("Access denied", 401);

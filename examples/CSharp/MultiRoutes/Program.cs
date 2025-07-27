@@ -121,7 +121,7 @@ server.EnableConfiguration();
                                     string[]? extraImports = null,
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
-server.AddRoute("/ps/json",
+server.AddMapRoute("/ps/json",
             HttpVerb.Get,
             """
             Write-Output "Hello from PowerShell script!" 
@@ -141,7 +141,7 @@ server.AddRoute("/ps/json",
 
 
 
-server.AddRoute("/ps/bson",
+server.AddMapRoute("/ps/bson",
             HttpVerb.Get,
             """
             Write-Output "Hello from PowerShell script! - Bson Response"
@@ -159,7 +159,7 @@ server.AddRoute("/ps/bson",
             """,
             ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/cbor",
+server.AddMapRoute("/ps/cbor",
             HttpVerb.Get,
             """            
             Write-Output "Hello from PowerShell script! - Cbor Response"
@@ -176,7 +176,7 @@ server.AddRoute("/ps/cbor",
             """,
             ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/yaml", HttpVerb.Get, """
+server.AddMapRoute("/ps/yaml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Yaml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -191,7 +191,7 @@ server.AddRoute("/ps/yaml", HttpVerb.Get, """
             Write-KrYamlResponse -inputObject $payload -statusCode 200
         """, Kestrun.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/xml", HttpVerb.Get, """
+server.AddMapRoute("/ps/xml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Xml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -206,7 +206,7 @@ server.AddRoute("/ps/xml", HttpVerb.Get, """
             Write-KrXmlResponse -inputObject $payload -statusCode 200
         """, Kestrun.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/text", HttpVerb.Get, """        
+server.AddMapRoute("/ps/text", HttpVerb.Get, """        
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
@@ -221,29 +221,29 @@ server.AddRoute("/ps/text", HttpVerb.Get, """
             Write-KrTextResponse -inputObject $payload -statusCode 200        
         """, Kestrun.ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/stream/binary", HttpVerb.Get, """        
+server.AddMapRoute("/ps/stream/binary", HttpVerb.Get, """        
                 Write-Output 'Hello from PowerShell script! - stream Binary file Response'
                 Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.bin' -statusCode 200      
             """, Kestrun.ScriptLanguage.PowerShell);
 
 
-server.AddRoute("/ps/stream/text", HttpVerb.Get, """        
+server.AddMapRoute("/ps/stream/text", HttpVerb.Get, """        
                 Write-Output 'Hello from PowerShell script! - stream Text file Response'
                 Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.txt' -statusCode 200      
             """, Kestrun.ScriptLanguage.PowerShell);
 
-server.AddRoute("/hello-ps", HttpVerb.Get, """
+server.AddMapRoute("/hello-ps", HttpVerb.Get, """
             $Response.ContentType = 'text/plain'
             $Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
         """, Kestrun.ScriptLanguage.PowerShell);
 
-server.AddRoute("/hello-cs", HttpVerb.Get, """
+server.AddMapRoute("/hello-cs", HttpVerb.Get, """
             Response.ContentType = "text/plain";
             Response.Body = $"Hello from C# at {DateTime.Now:O}";
         """, Kestrun.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/json", HttpVerb.Get, """
+server.AddMapRoute("/cs/json", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Json Response(From C#)");
             var payload = new
             {
@@ -259,7 +259,7 @@ server.AddRoute("/cs/json", HttpVerb.Get, """
 
         """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/bson",
+server.AddMapRoute("/cs/bson",
             HttpVerb.Get,
             """
             Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
@@ -276,7 +276,7 @@ server.AddRoute("/cs/bson",
             """,
             ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/cbor",
+server.AddMapRoute("/cs/cbor",
             HttpVerb.Get,
             """ 
             Console.WriteLine("Hello from C# script! - Cbor Response(From PowerShell)");
@@ -293,7 +293,7 @@ server.AddRoute("/cs/cbor",
             """,
             ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/yaml", HttpVerb.Get, """
+server.AddMapRoute("/cs/yaml", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Yaml Response(From C#)");
             var payload = new
             {
@@ -311,7 +311,7 @@ server.AddRoute("/cs/yaml", HttpVerb.Get, """
             Response.ContentDisposition.FileName = "response.yaml";
         """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/xml", HttpVerb.Get, """
+server.AddMapRoute("/cs/xml", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Xml Response(From C#)");
             var payload = new
             {
@@ -325,7 +325,7 @@ server.AddRoute("/cs/xml", HttpVerb.Get, """
             Response.WriteXmlResponse( payload,  200);
         """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/text", HttpVerb.Get, """
+server.AddMapRoute("/cs/text", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Text Response(From C#)");
             var payload = new
             {
@@ -342,17 +342,17 @@ server.AddRoute("/cs/text", HttpVerb.Get, """
         """, Kestrun.ScriptLanguage.CSharp);
 
 
-server.AddRoute("/cs/stream/binary", HttpVerb.Get, """        
+server.AddMapRoute("/cs/stream/binary", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Binaryfile Response(From C#)");
                Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
             """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/stream/text", HttpVerb.Get, """        
+server.AddMapRoute("/cs/stream/text", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
                Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
             """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/file", HttpVerb.Get, """
+server.AddMapRoute("/cs/file", HttpVerb.Get, """
                 Console.WriteLine("Hello from C# script! - file Response(From C#)");
                 Response.WriteFileResponse("..\\..\\..\\README.md", null, 200);
 """, Kestrun.ScriptLanguage.CSharp);

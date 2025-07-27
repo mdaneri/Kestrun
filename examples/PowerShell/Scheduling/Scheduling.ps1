@@ -80,13 +80,13 @@ Register-KrSchedule -Server $server -Name 'nightly-clean' -Cron '0 0 3 * * *' `
 # 4.  ─── Routes ───────────────────────────────────────────────
 
 # /visit   (increments Visits)
-Add-KrRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
     $Visits['Count']++
     Write-KrTextResponse "🔢 Visits now: $($Visits['Count'])" 200
 }
 
 # /schedule/report   (JSON snapshot)
-Add-KrRoute -Server $server -Verbs Get -Path '/schedule/report' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path '/schedule/report' -ScriptBlock {
     $report = Get-KrScheduleReport
     Write-KrJsonResponse -InputObject $report -StatusCode 200
 }

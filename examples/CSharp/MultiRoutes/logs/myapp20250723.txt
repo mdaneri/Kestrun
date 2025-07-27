@@ -24,43 +24,43 @@
 2025-07-23 14:57:24.247 -07:00 [WRN] Pages directory does not exist: C:\Users\mdaneri\Documents\GitHub\Kestrun\examples\CSharp\MultiRoutes\Pages
 2025-07-23 14:57:24.250 -07:00 [WRN] EndpointDataSource is empty. No endpoints configured.
 2025-07-23 14:57:24.250 -07:00 [INF] Configuration applied successfully.
-2025-07-23 14:57:24.314 -07:00 [DBG] AddRoute called with pattern=/ps/json, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.314 -07:00 [DBG] AddMapRoute called with pattern=/ps/json, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.318 -07:00 [DBG] Building PowerShell delegate, script length=584
-2025-07-23 14:57:24.323 -07:00 [DBG] AddRoute called with pattern=/ps/bson, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.323 -07:00 [DBG] AddMapRoute called with pattern=/ps/bson, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.324 -07:00 [DBG] Building PowerShell delegate, script length=476
-2025-07-23 14:57:24.325 -07:00 [DBG] AddRoute called with pattern=/ps/cbor, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.325 -07:00 [DBG] AddMapRoute called with pattern=/ps/cbor, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.326 -07:00 [DBG] Building PowerShell delegate, script length=465
-2025-07-23 14:57:24.326 -07:00 [DBG] AddRoute called with pattern=/ps/yaml, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.326 -07:00 [DBG] AddMapRoute called with pattern=/ps/yaml, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.327 -07:00 [DBG] Building PowerShell delegate, script length=515
-2025-07-23 14:57:24.328 -07:00 [DBG] AddRoute called with pattern=/ps/xml, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.328 -07:00 [DBG] AddMapRoute called with pattern=/ps/xml, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.329 -07:00 [DBG] Building PowerShell delegate, script length=513
-2025-07-23 14:57:24.329 -07:00 [DBG] AddRoute called with pattern=/ps/text, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.329 -07:00 [DBG] AddMapRoute called with pattern=/ps/text, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.330 -07:00 [DBG] Building PowerShell delegate, script length=548
-2025-07-23 14:57:24.331 -07:00 [DBG] AddRoute called with pattern=/ps/stream/binary, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.331 -07:00 [DBG] AddMapRoute called with pattern=/ps/stream/binary, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.334 -07:00 [DBG] Building PowerShell delegate, script length=166
-2025-07-23 14:57:24.334 -07:00 [DBG] AddRoute called with pattern=/ps/stream/text, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.334 -07:00 [DBG] AddMapRoute called with pattern=/ps/stream/text, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.336 -07:00 [DBG] Building PowerShell delegate, script length=164
-2025-07-23 14:57:24.337 -07:00 [DBG] AddRoute called with pattern=/hello-ps, language="PowerShell", method=["Get"]
+2025-07-23 14:57:24.337 -07:00 [DBG] AddMapRoute called with pattern=/hello-ps, language="PowerShell", method=["Get"]
 2025-07-23 14:57:24.338 -07:00 [DBG] Building PowerShell delegate, script length=111
-2025-07-23 14:57:24.339 -07:00 [DBG] AddRoute called with pattern=/hello-cs, language="CSharp", method=["Get"]
+2025-07-23 14:57:24.339 -07:00 [DBG] AddMapRoute called with pattern=/hello-cs, language="CSharp", method=["Get"]
 2025-07-23 14:57:24.386 -07:00 [DBG] Building C# delegate, script length=99, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:25.470 -07:00 [DBG] AddRoute called with pattern=/cs/json, language="CSharp", method=["Get"]
+2025-07-23 14:57:25.470 -07:00 [DBG] AddMapRoute called with pattern=/cs/json, language="CSharp", method=["Get"]
 2025-07-23 14:57:25.472 -07:00 [DBG] Building C# delegate, script length=416, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:25.800 -07:00 [DBG] AddRoute called with pattern=/cs/bson, language="CSharp", method=["Get"]
+2025-07-23 14:57:25.800 -07:00 [DBG] AddMapRoute called with pattern=/cs/bson, language="CSharp", method=["Get"]
 2025-07-23 14:57:25.801 -07:00 [DBG] Building C# delegate, script length=376, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:26.048 -07:00 [DBG] AddRoute called with pattern=/cs/cbor, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.048 -07:00 [DBG] AddMapRoute called with pattern=/cs/cbor, language="CSharp", method=["Get"]
 2025-07-23 14:57:26.049 -07:00 [DBG] Building C# delegate, script length=376, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:26.293 -07:00 [DBG] AddRoute called with pattern=/cs/yaml, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.293 -07:00 [DBG] AddMapRoute called with pattern=/cs/yaml, language="CSharp", method=["Get"]
 2025-07-23 14:57:26.294 -07:00 [DBG] Building C# delegate, script length=582, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:26.517 -07:00 [DBG] AddRoute called with pattern=/cs/xml, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.517 -07:00 [DBG] AddMapRoute called with pattern=/cs/xml, language="CSharp", method=["Get"]
 2025-07-23 14:57:26.519 -07:00 [DBG] Building C# delegate, script length=410, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:26.718 -07:00 [DBG] AddRoute called with pattern=/cs/text, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.718 -07:00 [DBG] AddMapRoute called with pattern=/cs/text, language="CSharp", method=["Get"]
 2025-07-23 14:57:26.719 -07:00 [DBG] Building C# delegate, script length=416, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:26.931 -07:00 [DBG] AddRoute called with pattern=/cs/stream/binary, language="CSharp", method=["Get"]
+2025-07-23 14:57:26.931 -07:00 [DBG] AddMapRoute called with pattern=/cs/stream/binary, language="CSharp", method=["Get"]
 2025-07-23 14:57:26.932 -07:00 [DBG] Building C# delegate, script length=216, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:27.144 -07:00 [DBG] AddRoute called with pattern=/cs/stream/text, language="CSharp", method=["Get"]
+2025-07-23 14:57:27.144 -07:00 [DBG] AddMapRoute called with pattern=/cs/stream/text, language="CSharp", method=["Get"]
 2025-07-23 14:57:27.145 -07:00 [DBG] Building C# delegate, script length=201, imports=0, refs=0, lang="CSharp12"
-2025-07-23 14:57:27.341 -07:00 [DBG] AddRoute called with pattern=/cs/file, language="CSharp", method=["Get"]
+2025-07-23 14:57:27.341 -07:00 [DBG] AddMapRoute called with pattern=/cs/file, language="CSharp", method=["Get"]
 2025-07-23 14:57:27.342 -07:00 [DBG] Building C# delegate, script length=165, imports=0, refs=0, lang="CSharp12"
 2025-07-23 14:57:27.568 -07:00 [DBG] AddNativeRoute called with pattern=/compiled, httpVerb="Get"
 2025-07-23 14:57:27.571 -07:00 [DBG] AddNativeRoute called with pattern=/compiled, httpVerbs=Get

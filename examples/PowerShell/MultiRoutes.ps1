@@ -63,7 +63,7 @@ Enable-KrConfiguration -Server $server
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
     # Payload
@@ -80,7 +80,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
 }
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/bson" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/bson" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Bson Response"
     # Payload
@@ -96,7 +96,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/bson" -ScriptBlock {
     Write-KrBsonResponse -inputObject $payload -statusCode 200
 }
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Cbor Response"
     # Payload
@@ -114,7 +114,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
  
  
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Yaml Response" 
     # Payload
@@ -131,7 +131,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
 }
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Xml Response"
     # Payload
@@ -149,7 +149,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
 }
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Text Response"
     # Payload
@@ -166,13 +166,13 @@ Add-KrRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
 }
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/ps/file" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/file" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - file Response"
     Write-KrFileResponse -FilePath "..\..\README.md" -FileDownloadName "README.md" -ContentDisposition Inline -statusCode 200 -ContentType "text/markdown"
 }
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/xml" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/xml" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Xml Response(From PowerShell)");
             var payload = new
@@ -187,7 +187,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/xml" -Language CSharp -Code @"
             Response.WriteXmlResponse( payload,  200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Json Response(From PowerShell)");
             var payload = new
@@ -202,7 +202,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Code @
             Response.WriteJsonResponse( payload,  200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
             var payload = new
@@ -217,7 +217,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @
             Response.WriteBsonResponse( payload,  200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Cbor Response(From PowerShell)");
             var payload = new
@@ -232,7 +232,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @
             Response.WriteCborResponse( payload,  200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Yaml Response(From PowerShell)");
             var payload = new
@@ -247,7 +247,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Code @
             Response.WriteYamlResponse( payload,  200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @"
 
             Console.WriteLine("Hello from C# script! - Text Response(From PowerShell)");
             var payload = new
@@ -263,13 +263,13 @@ Add-KrRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @
 "@
 
 
-Add-KrRoute -Server $server -Verbs Get -Path "/cs/file" -Language CSharp -Code @"
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/file" -Language CSharp -Code @"
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
     Response.WriteFileResponse("..\\..\\README.md", null, 200);
 "@
 
-Add-KrRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {
     $DebugPreference = 'Continue' 
     $VerbosePreference = 'Continue'
 
@@ -287,7 +287,7 @@ Add-KrRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {
 # ------------------------------------------------------------------
 # 1. PowerShell route  ─ /hello-ps
 # ------------------------------------------------------------------
-Add-KrRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
     $Response.ContentType = 'text/plain'
     $Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
 }
@@ -296,7 +296,7 @@ Add-KrRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
 # 2. C# script route  ─ /hello-cs
 #    (wrap the C# source in a here-string *inside* the ScriptBlock)
 # ------------------------------------------------------------------
-Add-KrRoute -Server $server -Verbs Get -Path '/hello-cs' -Language CSharp -Code  @"
+Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-cs' -Language CSharp -Code  @"
 using System;
 Response.ContentType = "text/plain";
 Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
@@ -306,7 +306,7 @@ Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
 # ------------------------------------------------------------------
 # 3. Python script route  ─ /hello-py
 # ------------------------------------------------------------------
-Add-KrRoute -Server $server -Path '/hello-py' -Language Python -Code @"
+Add-KrMapRoute -Server $server -Path '/hello-py' -Language Python -Code @"
 def handle(ctx, res):
     import datetime, platform
     res.ContentType = 'text/plain'
@@ -317,7 +317,7 @@ def handle(ctx, res):
 # ------------------------------------------------------------------
 # 4. JavaScript (Jint) route  ─ /hello-js
 # ------------------------------------------------------------------
-Add-KrRoute -Server $server -Path '/hello-js' -Language JavaScript -Code  @"
+Add-KrMapRoute -Server $server -Path '/hello-js' -Language JavaScript -Code  @"
 Response.ContentType = 'text/plain';
 Response.Body        = `Hello from JavaScript at ${new Date().toISOString()}`;
 "@
@@ -327,7 +327,7 @@ Response.Body        = `Hello from JavaScript at ${new Date().toISOString()}`;
 # 5. (optional) F# script route  ─ /hello-fs
 #     NB: only if BuildFsDelegate is implemented
 # ------------------------------------------------------------------
-Add-KrRoute -Server $server -Path '/hello-fs' -Language FSharp -Code  @"
+Add-KrMapRoute -Server $server -Path '/hello-fs' -Language FSharp -Code  @"
  open System
  Response.ContentType <- "text/plain"
  Response.Body        <- $"Hello from F# at {DateTime.UtcNow:o}"
@@ -337,8 +337,8 @@ Add-KrRoute -Server $server -Path '/hello-fs' -Language FSharp -Code  @"
 
 
 # Add routes
-#$server.AddRoute("/api/echo")
-#$server.AddRoute("/api/store")
+#$server.AddMapRoute("/api/echo")
+#$server.AddMapRoute("/api/store")
 
 # Start the server asynchronously
 Start-KrServer -Server $server

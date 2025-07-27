@@ -54,7 +54,7 @@ if (!SharedStateStore.Set("Visits", sharedVisits))
 }
 server.EnableConfiguration();
 // 4. Add routes
-server.AddRoute("/ps/show", HttpVerb.Get,
+server.AddMapRoute("/ps/show", HttpVerb.Get,
 """
     # $Visits is available      
 
@@ -62,7 +62,7 @@ server.AddRoute("/ps/show", HttpVerb.Get,
 """,
             ScriptLanguage.PowerShell);
 
-server.AddRoute("/ps/visit", HttpVerb.Get,
+server.AddMapRoute("/ps/visit", HttpVerb.Get,
 """
     # increment the injected variable
     $Visits["Count"]++
@@ -70,14 +70,14 @@ server.AddRoute("/ps/visit", HttpVerb.Get,
 """, Kestrun.ScriptLanguage.PowerShell);
 
 
-server.AddRoute("/cs/show", HttpVerb.Get,
+server.AddMapRoute("/cs/show", HttpVerb.Get,
 """
     // $Visits is available
     Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
 """,
 ScriptLanguage.CSharp);
 
-server.AddRoute("/cs/visit", HttpVerb.Get, """
+server.AddMapRoute("/cs/visit", HttpVerb.Get, """
     // increment the injected variable
     Visits["Count"] = ((int)Visits["Count"]) + 1;
 

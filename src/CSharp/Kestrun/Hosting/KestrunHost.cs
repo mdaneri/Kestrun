@@ -279,13 +279,13 @@ public class KestrunHost : IDisposable
         });
     }
 
-    public void AddRoute(string pattern,
+    public void AddMapRoute(string pattern,
                                      HttpVerb httpVerbs,
                                        string scriptBlock,
                                        ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? RequireAuthorization = null)
     {
-        AddRoute(new RouteOptions
+        AddMapRoute(new RouteOptions
         {
             Pattern = pattern,
             HttpVerbs = [httpVerbs],
@@ -296,13 +296,13 @@ public class KestrunHost : IDisposable
 
     }
 
-    public void AddRoute(string pattern,
+    public void AddMapRoute(string pattern,
                                  IEnumerable<HttpVerb> httpVerbs,
                                  string scriptBlock,
                                  ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? RequireAuthorization = null)
     {
-        AddRoute(new RouteOptions
+        AddMapRoute(new RouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
@@ -338,10 +338,10 @@ public class KestrunHost : IDisposable
 
         public OpenAPIMetadata OpenAPI { get; init; } = new OpenAPIMetadata(); // OpenAPI metadata for this route
     }
-    public void AddRoute(RouteOptions options)
+    public void AddMapRoute(RouteOptions options)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("AddRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
+            Log.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
         if (App is null)
             throw new InvalidOperationException(
                 "WebApplication is not initialized. Call EnableConfiguration first.");

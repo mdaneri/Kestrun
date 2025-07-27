@@ -82,7 +82,7 @@ server.Scheduler.Schedule(
 // ─────── 4.  ROUTES  ─────────
 
 // increment / show visits (unchanged)
-server.AddRoute("/visit", HttpVerb.Get, """
+server.AddMapRoute("/visit", HttpVerb.Get, """
     $Visits["Count"]++
     Write-KrTextResponse "🔢 Visits now: $($Visits['Count'])" 200
 """, ScriptLanguage.PowerShell);
