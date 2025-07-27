@@ -17,7 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;   // Only for writing the CSR key
-
+using Kestrun.Hosting;
 
 
 /*
@@ -73,35 +73,19 @@ server.AddResponseCompression(options =>
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-}).AddAuthentication(
-    //  defaultScheme: BasicScheme,          // only matters if you don’t call RequireAuthorization("…")
-    buildSchemes: ab =>
-    {
-        // ←── BASIC ──
-        ab.AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>(BasicScheme, null);
+}).AddPowerShellRuntime()
+// ── BASIC (generic helper) ────────────────────────────────────────────
+.AddBasicAuthentication<BasicAuthHandler>(BasicScheme)
 
-        // ←── JWT ──
-        ab.AddJwtBearer(
-            JwtScheme,
-            configureOptions: opts =>
-            {
-                opts.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = issuer,
-                    ValidateAudience = true,
-                    ValidAudience = audience,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = jwtKey,
-                    ClockSkew = TimeSpan.FromMinutes(1)
-                };
-            }
-        );
-    }
-).AddPowerShellRuntime();//.AddAuthorization();
+// ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
+.AddJwtBearerAuthentication(
+    scheme: JwtScheme,
+    issuer: issuer,
+    audience: audience,
+    validationKey: jwtKey,
+    validAlgorithms: [SecurityAlgorithms.HmacSha256]);
 
-
+ 
 X509Certificate2? x509Certificate = null;
 
 if (File.Exists("./devcert.pfx"))
