@@ -2,7 +2,9 @@ using Kestrun;
 using Kestrun.Utilities;
 using Xunit;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class HttpVerbExtensionsTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     [Theory]
     [InlineData(HttpVerb.Get, "GET")]

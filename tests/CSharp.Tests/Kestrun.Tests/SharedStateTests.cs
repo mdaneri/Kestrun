@@ -2,7 +2,9 @@ using Kestrun;                         // ← contains static SharedState
 using Kestrun.SharedState;
 using Xunit;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class SharedStateTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     // ── happy‑path basics ────────────────────────────────────────────
     [Fact]

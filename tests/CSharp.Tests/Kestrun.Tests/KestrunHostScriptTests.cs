@@ -1,7 +1,9 @@
 using Kestrun;
 using Xunit;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class KestrunHostScriptTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     [Fact]
     public void IsCSharpScriptValid_ReturnsTrueForValid()

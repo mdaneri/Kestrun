@@ -5,7 +5,9 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class KestrunResponseTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     private static KestrunResponse NewRes() =>
         new(new KestrunRequest

@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using Xunit;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class XmlUtilTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     [Fact]
     public void ToXml_Null_ReturnsNilElement()

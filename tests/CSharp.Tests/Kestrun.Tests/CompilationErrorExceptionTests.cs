@@ -3,7 +3,9 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Xunit;
 
+#pragma warning disable CA1050 // Declare types in namespaces
 public class CompilationErrorExceptionTests
+#pragma warning restore CA1050 // Declare types in namespaces
 {
     private static Diagnostic MakeDiag(string msg, DiagnosticSeverity severity)
     {
