@@ -1,5 +1,6 @@
 using System.Management.Automation;
 using Kestrun.Languages;
+using Kestrun.Scripting;
 using Serilog;
 using Serilog.Events;
 

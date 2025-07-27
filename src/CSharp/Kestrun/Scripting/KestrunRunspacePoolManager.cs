@@ -6,7 +6,7 @@ using System.Threading;
 using Serilog;
 using Serilog.Events;
 
-namespace Kestrun;
+namespace Kestrun.Scripting;
 
 public sealed class KestrunRunspacePoolManager : IDisposable
 {

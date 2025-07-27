@@ -1,5 +1,6 @@
 using Kestrun;
 using Kestrun.Scheduling;
+using Kestrun.Scripting;
 using Serilog;
 using System;
 using System.Linq;

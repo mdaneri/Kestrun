@@ -1,6 +1,7 @@
 using System.Management.Automation;
 using System.Reflection;
 using Kestrun;
+using Kestrun.Scripting;
 using Kestrun.Utilities;
 using Microsoft.CodeAnalysis.CSharp;
 using Serilog;

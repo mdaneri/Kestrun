@@ -1,5 +1,6 @@
 using System.Management.Automation.Runspaces;
 using Kestrun.Languages;
+using Kestrun.Scripting;
 using static Kestrun.KestrunHost;
 namespace Kestrun.Middleware;
 

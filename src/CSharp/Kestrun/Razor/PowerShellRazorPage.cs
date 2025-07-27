@@ -18,6 +18,7 @@
 using System;
 using System.IO;
 using System.Management.Automation;
+using Kestrun.Scripting;
 using Kestrun.Utilities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;

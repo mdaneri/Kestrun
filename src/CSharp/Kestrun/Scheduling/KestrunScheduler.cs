@@ -14,6 +14,7 @@ using System.Collections;
 using System.Text.RegularExpressions;
 using Kestrun.Utilities;
 using static Kestrun.Scheduling.JobFactory;
+using Kestrun.Scripting;
 
 public sealed record JobInfo(string Name,
                              DateTimeOffset? LastRunAt,

@@ -54,6 +54,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Quic;
+using Kestrun.Scripting;
 /*#if NET8_0_OR_GREATER
 [assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
 #endif

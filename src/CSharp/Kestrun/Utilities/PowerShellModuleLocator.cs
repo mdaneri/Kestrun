@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Serilog;
 using Serilog.Events;
-namespace Kestrun;
+namespace Kestrun.Utilities;
 
 public static class PowerShellModuleLocator
 {
