@@ -42,7 +42,7 @@ catch {
 
 New-KrLogger  |
 Set-KrMinimumLevel -Value Debug  |
-Add-KrSinkFile -Path ".\logs\scheduling.log" -RollingInterval Hour |
+Add-KrSinkFile -Path ".\logs\razor.log" -RollingInterval Hour |
 Add-KrSinkConsole |
 Register-KrLogger -SetAsDefault -Name "DefaultLogger"
 
@@ -69,12 +69,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Json Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     }
     Write-KrJsonResponse -inputObject $payload -statusCode 200
 }

@@ -9,10 +9,18 @@ param()
 #>
 
 try {
+    # Get the path of the current script
+    # This allows the script to be run from any location
     $ScriptPath = (Split-Path -Parent -Path $MyInvocation.MyCommand.Path)
     # Determine the script path and Kestrun module path
-    $examplesPath = (Split-Path -Parent ($ScriptPath))
+    $powerShellExamplesPath = (Split-Path -Parent ($ScriptPath))
+    # Determine the script path and Kestrun module path
+    $examplesPath = (Split-Path -Parent ($powerShellExamplesPath))
+    # Get the parent directory of the examples path
+    # This is useful for locating the Kestrun module
     $kestrunPath = Split-Path -Parent -Path $examplesPath
+    # Construct the path to the Kestrun module
+    # This assumes the Kestrun module is located in the src/PowerShell/Kestr
     $kestrunModulePath = "$kestrunPath/src/PowerShell/Kestrun/Kestrun.psm1"
     # Import the Kestrun module from the source path if it exists, otherwise from installed modules
     if (Test-Path -Path $kestrunModulePath -PathType Leaf) {
@@ -50,15 +58,15 @@ Set-KrServerOption -Server $server  -AllowSynchronousIO  -DenyServerHeader
  
 Set-KrServerLimit -Server $server  -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
 # Configure the listener (adjust port, cert path, and password)
-Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Any) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
-Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Any)
+Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Loopback) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
+Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Loopback)
 
 Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
 Add-KrPowerShellRuntime -Server $server
 
 # Enable configuration
 Enable-KrConfiguration -Server $server
- #$server.ApplyConfiguration()
+#$server.ApplyConfiguration()
 
 # Set-KrPythonRuntime
 
@@ -69,12 +77,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Json Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     }
     Write-KrJsonResponse -inputObject $payload -statusCode 200
 }
@@ -86,12 +94,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/bson" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Bson Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     }
     Write-KrBsonResponse -inputObject $payload -statusCode 200
 }
@@ -102,12 +110,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Cbor Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     }
     Write-KrCborResponse -inputObject $payload -statusCode 200
 }
@@ -120,12 +128,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Yaml Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     } 
     Write-KrYamlResponse -inputObject $payload -statusCode 200
 }
@@ -137,12 +145,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/xml" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Xml Response"
-        RequestQuery   = $Request.Query
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.Query
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
 
     }
     Write-KrXmlResponse -inputObject $payload -statusCode 200
@@ -155,12 +163,12 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/text" -ScriptBlock {
     # Payload
     $payload = @{
         Body           = "Hello from PowerShell script! - Text Response"
-        RequestQuery   = $Request.RequestQuery
-        RequestHeaders = $Request.Headers
-        RequestMethod  = $Request.Method
-        RequestPath    = $Request.Path
+        RequestQuery   = $Context.Request.RequestQuery
+        RequestHeaders = $Context.Request.Headers
+        RequestMethod  = $Context.Request.Method
+        RequestPath    = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Request.Body
+        RequestBody    = $Context.Request.Body
     } | Format-Table | Out-String
     Write-KrTextResponse -inputObject $payload -statusCode 200
 }
@@ -178,13 +186,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/xml" -Language CSharp -Code
             var payload = new
             {
                 Body = "Hello from C# script! - Xml Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteXmlResponse( payload,  200);
+            Context.Response.WriteXmlResponse( payload,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Code @"
@@ -193,13 +201,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Cod
             var payload = new
             {
                 Body = "Hello from C# script! - Json Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteJsonResponse( payload,  200);
+            Context.Response.WriteJsonResponse( payload,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @"
@@ -208,13 +216,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Cod
             var payload = new
             {
                 Body = "Hello from C# script! - Bson Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteBsonResponse( payload,  200);
+            Context.Response.WriteBsonResponse( payload,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @"
@@ -223,13 +231,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Cod
             var payload = new
             {
                 Body = "Hello from C# script! - Cbor Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteCborResponse( payload,  200);
+            Context.Response.WriteCborResponse( payload,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Code @"
@@ -238,13 +246,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/yaml" -Language CSharp -Cod
             var payload = new
             {
                 Body = "Hello from C# script! - Yaml Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteYamlResponse( payload,  200);
+            Context.Response.WriteYamlResponse( payload,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Code @"
@@ -253,20 +261,20 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/text" -Language CSharp -Cod
             var payload = new
             {
                 Body = "Hello from C# script! - Text Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteTextResponse( payload,  200);
+            Context.Response.WriteTextResponse( payload,  200);
 "@
 
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/file" -Language CSharp -Code @"
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
-    Response.WriteFileResponse("..\\..\\README.md", null, 200);
+    Context.Response.WriteFileResponse("..\\..\\README.md", null, 200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {
@@ -288,8 +296,8 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/messagestream" -ScriptBlock {
 # 1. PowerShell route  ─ /hello-ps
 # ------------------------------------------------------------------
 Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
-    $Response.ContentType = 'text/plain'
-    $Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
+    $Context.Response.ContentType = 'text/plain'
+    $Context.Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
 }
 
 # ------------------------------------------------------------------
@@ -298,8 +306,8 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
 # ------------------------------------------------------------------
 Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-cs' -Language CSharp -Code  @"
 using System;
-Response.ContentType = "text/plain";
-Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
+Context.Response.ContentType = "text/plain";
+Context.Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
 "@
  
 <#

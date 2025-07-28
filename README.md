@@ -27,7 +27,7 @@ Features
   Powered by **ASP.NET Core (Kestrel)** with full access to advanced HTTP/2, header compression, and TLS options.
 
 - **🐚 Native PowerShell integration**  
-  Routes can be backed by PowerShell scripts with isolated, pooled **runspaces** and dynamic `$Request` / `$Response` variables.
+  Routes can be backed by PowerShell scripts with isolated, pooled **runspaces** and dynamic `$Context.Request` / `$Context.Response` variables.
 
 - **🧠 Multi-language script routing**  
   Register HTTP routes using:

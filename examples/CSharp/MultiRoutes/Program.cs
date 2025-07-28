@@ -127,12 +127,12 @@ server.AddMapRoute("/ps/json",
             Write-Output "Hello from PowerShell script!" 
             $payload = @{
                 Body           = "Hello from PowerShell script! - Json Response(From C#)"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body 
+                RequestBody    = $Context.Request.Body 
             }
             Write-KrWarningLog -name "audit" -PropertyValues $payload  -MessageTemplate "This is a warning log from PowerShell script"
             Write-KrJsonResponse -InputObject $payload -StatusCode 200
@@ -148,12 +148,12 @@ server.AddMapRoute("/ps/bson",
             # Payload
             $payload = @{
                 Body           = "Hello from PowerShell script! - Bson Response"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body
+                RequestBody    = $Context.Request.Body
             }
             Write-KrBsonResponse -inputObject $payload -statusCode 200
             """,
@@ -165,12 +165,12 @@ server.AddMapRoute("/ps/cbor",
             Write-Output "Hello from PowerShell script! - Cbor Response"
             $payload = @{
                 Body           = "Hello from PowerShell script! - Cbor Response"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body
+                RequestBody    = $Context.Request.Body
             }
             Write-KrCborResponse -inputObject $payload -statusCode 200
             """,
@@ -180,12 +180,12 @@ server.AddMapRoute("/ps/yaml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Yaml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body 
+                RequestBody    = $Context.Request.Body 
                 
             } 
             Write-KrYamlResponse -inputObject $payload -statusCode 200
@@ -195,12 +195,12 @@ server.AddMapRoute("/ps/xml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Xml Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body 
+                RequestBody    = $Context.Request.Body 
                 
             } 
             Write-KrXmlResponse -inputObject $payload -statusCode 200
@@ -210,12 +210,12 @@ server.AddMapRoute("/ps/text", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
             $payload = @{
                 Body           = "Hello from PowerShell script!"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body 
+                RequestBody    = $Context.Request.Body 
                 
             } |Format-Table| Out-String
             Write-KrTextResponse -inputObject $payload -statusCode 200        
@@ -233,13 +233,13 @@ server.AddMapRoute("/ps/stream/text", HttpVerb.Get, """
             """, Kestrun.ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/hello-ps", HttpVerb.Get, """
-            $Response.ContentType = 'text/plain'
-            $Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
+            $Context.Response.ContentType = 'text/plain'
+            $Context.Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
         """, Kestrun.ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/hello-cs", HttpVerb.Get, """
-            Response.ContentType = "text/plain";
-            Response.Body = $"Hello from C# at {DateTime.Now:O}";
+            Context.Response.ContentType = "text/plain";
+            Context.Response.Body = $"Hello from C# at {DateTime.Now:O}";
         """, Kestrun.ScriptLanguage.CSharp);
 
 
@@ -248,14 +248,14 @@ server.AddMapRoute("/cs/json", HttpVerb.Get, """
             var payload = new
             {
                 Body = "Hello from C# script! - Json Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
 
-            Response.WriteJsonResponse( payload,  200);
+            Context.Response.WriteJsonResponse( payload,  200);
 
         """, Kestrun.ScriptLanguage.CSharp);
 
@@ -266,13 +266,13 @@ server.AddMapRoute("/cs/bson",
             var payload = new
             {
                 Body = "Hello from C# script! - Bson Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteBsonResponse( payload,  200);
+            Context.Response.WriteBsonResponse( payload,  200);
             """,
             ScriptLanguage.CSharp);
 
@@ -283,13 +283,13 @@ server.AddMapRoute("/cs/cbor",
             var payload = new
             {
                 Body = "Hello from C# script! - Cbor Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteCborResponse( payload,  200);
+            Context.Response.WriteCborResponse( payload,  200);
             """,
             ScriptLanguage.CSharp);
 
@@ -298,17 +298,17 @@ server.AddMapRoute("/cs/yaml", HttpVerb.Get, """
             var payload = new
             {
                 Body = "Hello from C# script! - Yaml Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
 
-            Response.WriteYamlResponse( payload,  200,
+            Context.Response.WriteYamlResponse( payload,  200,
                 contentType: "text/yaml" );
-            Response.ContentDisposition.Type = ContentDispositionType.Inline;
-            Response.ContentDisposition.FileName = "response.yaml";
+            Context.Response.ContentDisposition.Type = ContentDispositionType.Inline;
+            Context.Response.ContentDisposition.FileName = "response.yaml";
         """, Kestrun.ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/xml", HttpVerb.Get, """
@@ -316,13 +316,13 @@ server.AddMapRoute("/cs/xml", HttpVerb.Get, """
             var payload = new
             {
                 Body = "Hello from C# script! - Yaml Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
-            Response.WriteXmlResponse( payload,  200);
+            Context.Response.WriteXmlResponse( payload,  200);
         """, Kestrun.ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/text", HttpVerb.Get, """
@@ -330,44 +330,44 @@ server.AddMapRoute("/cs/text", HttpVerb.Get, """
             var payload = new
             {
                 Body = "Hello from C# script! - Text Response",
-                RequestQuery = Request.Query,
-                RequestHeaders = Request.Headers,
-                RequestMethod = Request.Method,
-                RequestPath = Request.Path,
-                RequestBody = Request.Body
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
             };
 
-            Response.WriteTextResponse( payload,  200);
+            Context.Response.WriteTextResponse( payload,  200);
 
         """, Kestrun.ScriptLanguage.CSharp);
 
 
 server.AddMapRoute("/cs/stream/binary", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Binaryfile Response(From C#)");
-               Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
+              Context.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
             """, Kestrun.ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/stream/text", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
-               Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
+               Context.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
             """, Kestrun.ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/file", HttpVerb.Get, """
                 Console.WriteLine("Hello from C# script! - file Response(From C#)");
-                Response.WriteFileResponse("..\\..\\..\\README.md", null, 200);
+                Context.Response.WriteFileResponse("..\\..\\..\\README.md", null, 200);
 """, Kestrun.ScriptLanguage.CSharp);
 
 
 
-server.AddNativeRoute("/compiled", HttpVerb.Get, async (req, res) =>
+server.AddNativeRoute("/compiled", HttpVerb.Get, async (ctx) =>
 {
-    res.WriteJsonResponse(new { ok = true, message = "Native C# works!" });
+    ctx.Response.WriteJsonResponse(new { ok = true, message = "Native C# works!" });
     await Task.Yield();
 });
 
-server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (req, res) =>
+server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (ctx) =>
 {
-    res.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
+    ctx.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
     await Task.Yield();
 });
 

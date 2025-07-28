@@ -27,7 +27,7 @@ $basic   = "Basic " + [Convert]::ToBase64String(
                        [Text.Encoding]::ASCII.GetBytes($creds))
 $token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001//secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
 */
 var currentDir = Directory.GetCurrentDirectory();
@@ -222,38 +222,38 @@ server.EnableConfiguration();
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
 server.AddMapRoute("/secure/hello", HttpVerb.Get, """
-    if (-not $Context.User.Identity.IsAuthenticated) {
+    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $Context.User.Identity.Name
-    $Response.Body = "Welcome, $user! You are authenticated."
-    $Response.ContentType = "text/plain"
+    $user = $Context.HttpContext.User.Identity.Name
+    $Context.Response.Body = "Welcome, $user! You are authenticated."
+    $Context.Response.ContentType = "text/plain"
 """, ScriptLanguage.PowerShell, [BasicScheme]);
 
 
 server.AddMapRoute("/secure/hello-cs", HttpVerb.Get, """
-    if (!Context.User.Identity.IsAuthenticated)
+    if (!Context.HttpContext.User.Identity.IsAuthenticated)
     {
-        Response.WriteErrorResponse("Access denied", 401);
+        Context.Response.WriteErrorResponse("Access denied", 401);
         return;
     }
 
-    var user = Context.User.Identity.Name;
-    Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
+    var user = Context.HttpContext.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
 
 
-server.AddNativeRoute("/token", HttpVerb.Get, async (req, res) =>
+server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
 {
     // tiny demo – replace with your real credential check
-    var auth = req.Authorization;
+    var auth = ctx.Request.Authorization;
     if (auth != "Basic YWRtaW46czNjcjN0")
     {   // “admin:s3cr3t” base64
-        res.WriteErrorResponse("Access denied", 401);
+        ctx.Response.WriteErrorResponse("Access denied", 401);
         return;
     }
 
@@ -273,12 +273,12 @@ server.AddNativeRoute("/token", HttpVerb.Get, async (req, res) =>
     try
     {
         var token = new JwtSecurityTokenHandler().WriteToken(jwt);
-        res.WriteJsonResponse(new { access_token = token });
+        ctx.Response.WriteJsonResponse(new { access_token = token });
     }
     catch (Exception ex)
     {
         Log.Error(ex, "Failed to generate JWT token");
-        res.WriteErrorResponse("Internal Server Error", 500);
+        ctx.Response.WriteErrorResponse("Internal Server Error", 500);
     }
     await Task.Yield();
 });

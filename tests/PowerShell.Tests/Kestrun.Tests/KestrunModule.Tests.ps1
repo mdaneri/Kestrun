@@ -45,7 +45,7 @@ Describe 'Kestrun PowerShell Functions' {
 
     <# It 'Write-KrTextResponse calls method on Response object' {
         $called = $null
-        $Response = [pscustomobject]@{
+        $Context.Response = [pscustomobject]@{
             WriteTextResponse = { param($o, $s, $c) $called = "$o|$s|$c" }
         }
         Write-KrTextResponse -InputObject 'hi' -StatusCode 201 -ContentType 'text/plain'

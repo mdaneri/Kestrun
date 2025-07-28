@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using System.Text;
+using Kestrun.Hosting;
 using Kestrun.SharedState;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -92,7 +93,8 @@ internal static class CSharpDelegateBuilder
             {
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
-                await script.RunAsync(new CsGlobals(allGlobals, krRequest, krResponse, context)).ConfigureAwait(false);
+                var Context = new KestrunContext(krRequest, krResponse, context);
+                await script.RunAsync(new CsGlobals(allGlobals, Context)).ConfigureAwait(false);
 
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {

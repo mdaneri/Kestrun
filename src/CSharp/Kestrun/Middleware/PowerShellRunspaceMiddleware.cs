@@ -1,4 +1,5 @@
 using System.Management.Automation;
+using Kestrun.Hosting;
 using Kestrun.Languages;
 using Kestrun.Scripting;
 using Serilog;
@@ -29,12 +30,15 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             context.Items[PowerShellDelegateBuilder.KR_RESPONSE_KEY] = krResponse;
             // Store the PowerShell instance in the context for later use
             context.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
+
+            KestrunContext kestrunContext = new(krRequest, krResponse, context);
+
+            if (Log.IsEnabled(LogEventLevel.Debug))
+                Log.Debug("PowerShellRunspaceMiddleware - Setting KestrunContext in HttpContext.Items for {Path}", context.Request.Path);   
             Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
             // Set the PowerShell variables for the request and response
             var ss = ps.Runspace.SessionStateProxy;
-            ss.SetVariable("Context", context);
-            ss.SetVariable("Request", krRequest);
-            ss.SetVariable("Response", krResponse);
+            ss.SetVariable("Context", kestrunContext);
 
             try
             {

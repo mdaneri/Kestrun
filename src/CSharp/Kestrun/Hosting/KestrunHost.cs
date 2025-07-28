@@ -55,6 +55,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Quic;
 using Kestrun.Scripting;
+using Kestrun.Hosting;
 /*#if NET8_0_OR_GREATER
 [assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
 #endif
@@ -231,31 +232,28 @@ public class KestrunHost : IDisposable
     //  C# delegate builder  –  now takes optional imports / references
     // ---------------------------------------------------------------------------
     public record CsGlobals
-    {
-        public CsGlobals(IReadOnlyDictionary<string, object?> Globals, KestrunRequest Request, KestrunResponse Response, HttpContext Context)
-        {
-            this.Globals = Globals;
-            this.Request = Request;
-            this.Response = Response;
-            this.Context = Context;
-        }
+    { 
 
         public CsGlobals(IReadOnlyDictionary<string, object?> Globals)
         {
             this.Globals = Globals;
         }
 
+        public CsGlobals(IReadOnlyDictionary<string, object?> Globals, KestrunContext krcontext) : this(Globals)
+        {
+            Context = krcontext;
+        }
+
         public IReadOnlyDictionary<string, object?> Globals { get; }
-        public KestrunRequest? Request { get; }
-        public KestrunResponse? Response { get; }
-        public HttpContext? Context { get; }
+     
+        public KestrunContext? Context { get; }
     }
     #endregion
 
 
 
     #region Route
-    public delegate Task KestrunHandler(KestrunRequest req, KestrunResponse res);
+    public delegate Task KestrunHandler(KestrunContext Context);
 
     public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler)
     {
@@ -275,7 +273,8 @@ public class KestrunHost : IDisposable
         {
             var req = await KestrunRequest.NewRequest(context);
             var res = new KestrunResponse(req);
-            await handler(req, res);
+            KestrunContext kestrunContext = new(req, res, context);
+            await handler(kestrunContext);
             await res.ApplyTo(context.Response);
         });
     }
@@ -286,7 +285,7 @@ public class KestrunHost : IDisposable
                                        ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? RequireAuthorization = null)
     {
-        AddMapRoute(new RouteOptions
+        AddMapRoute(new Hosting.MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = [httpVerbs],
@@ -303,7 +302,7 @@ public class KestrunHost : IDisposable
                                  ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? RequireAuthorization = null)
     {
-        AddMapRoute(new RouteOptions
+        AddMapRoute(new Hosting.MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
@@ -312,34 +311,7 @@ public class KestrunHost : IDisposable
             RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
         });
     }
-    public record RouteOptions
-    {
-        public string? Pattern { get; init; }
-        public IEnumerable<HttpVerb> HttpVerbs { get; init; } = [];
-        public string? ScriptBlock { get; init; }
-        public ScriptLanguage Language { get; init; } = ScriptLanguage.PowerShell;
-        public string[]? ExtraImports { get; init; }
-        public Assembly[]? ExtraRefs { get; init; }
-        public string[] RequireAuthorization { get; init; } = []; // Authorization policy name, if any
-        public string CorsPolicyName { get; init; } = string.Empty; // Name of the CORS policy to apply, if any
-        public bool ShortCircuit { get; internal set; } = false; // If true, short-circuit the pipeline after this route
-        public int? ShortCircuitStatusCode { get; internal set; } = null; // Status code to return if short-circuiting
-        public bool AllowAnonymous { get; internal set; }
-        public bool DisableAntiforgery { get; internal set; }
-        public string? RateLimitPolicyName { get; internal set; }
-
-        public record OpenAPIMetadata
-        {
-            public string? Summary { get; init; }
-            public string? Description { get; init; }
-            public string? OperationId { get; init; }
-            public string[] Tags { get; init; } = []; // Comma-separated tags
-            public string? GroupName { get; init; } // Group name for OpenAPI documentation 
-        };
-
-        public OpenAPIMetadata OpenAPI { get; init; } = new OpenAPIMetadata(); // OpenAPI metadata for this route
-    }
-    public void AddMapRoute(RouteOptions options)
+       public void AddMapRoute(Hosting.MapRouteOptions options)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);

@@ -73,7 +73,7 @@ server.AddMapRoute("/ps/visit", HttpVerb.Get,
 server.AddMapRoute("/cs/show", HttpVerb.Get,
 """
     // $Visits is available
-    Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
+    Context.Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
 """,
 ScriptLanguage.CSharp);
 
@@ -81,10 +81,10 @@ server.AddMapRoute("/cs/visit", HttpVerb.Get, """
     // increment the injected variable
     Visits["Count"] = ((int)Visits["Count"]) + 1;
 
-    Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
+     Context.Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
 """, Kestrun.ScriptLanguage.CSharp);
 
-server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
+server.AddNativeRoute("/raw", HttpVerb.Get, async (ctx) =>
 {
     Console.WriteLine("Native C# route hit!");
 
@@ -94,11 +94,11 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (req, res) =>
 
     if (visits != null && visits["Count"] != null)
     {
-        res.WriteTextResponse($"Visits so far: {visitCount}", 200);
+        ctx.Response.WriteTextResponse($"Visits so far: {visitCount}", 200);
     }
     else
     {
-        res.WriteErrorResponse("Visits variable not found or invalid.", 500);
+        ctx.Response.WriteErrorResponse("Visits variable not found or invalid.", 500);
     }
     await Task.Yield();
 });

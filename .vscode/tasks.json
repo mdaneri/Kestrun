@@ -60,6 +60,16 @@
                 "${workspaceFolder}/examples/CSharp/BasicAuthHandler/BasicAuthHandler.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build Kestrun library",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/CSharp/Kestrun/Kestrun.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

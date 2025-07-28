@@ -21,7 +21,7 @@ function Write-KrJsonResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
+    if ($null -ne $Context.Response) {
         $serializerSettings = [Newtonsoft.Json.JsonSerializerSettings]::new()
         $serializerSettings.Formatting = if ($Compress) { [Newtonsoft.Json.Formatting]::None } else { [Newtonsoft.Json.Formatting]::Indented }
         $serializerSettings.ContractResolver = [Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver]::new()
@@ -30,8 +30,8 @@ function Write-KrJsonResponse {
         $serializerSettings.DefaultValueHandling = [Newtonsoft.Json.DefaultValueHandling]::Ignore
         $serializerSettings.MaxDepth = $Depth
         $serializerSettings.DateFormatHandling = [Newtonsoft.Json.DateFormatHandling]::IsoDateFormat
-        # Call the C# method on the $Response object
-        $Response.WriteJsonResponse($InputObject, $serializerSettings, $StatusCode, $ContentType)
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteJsonResponse($InputObject, $serializerSettings, $StatusCode, $ContentType)
     }
 }
 
@@ -53,9 +53,9 @@ function Write-KrYamlResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteYamlResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteYamlResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -76,9 +76,9 @@ function Write-KrTextResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteTextResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteTextResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -99,9 +99,9 @@ function Write-KrXmlResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteXmlResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteXmlResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -131,9 +131,9 @@ function Write-KrBsonResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteBsonResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteBsonResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -162,9 +162,9 @@ function Write-KrCborResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteCborResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteCborResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -193,19 +193,19 @@ function Write-KrFileResponse {
     )
 
     try {
-        if ($null -ne $Response) {
+        if ($null -ne $Context.Response) {
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
             Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
             if ($ContentDisposition -ne [Kestrun.ContentDispositionType]::NoContentDisposition) {
-                $Response.ContentDisposition.Type = $ContentDisposition.ToString()
+                $Context.Response.ContentDisposition.Type = $ContentDisposition.ToString()
             }
 
             if (!([string]::IsNullOrEmpty($FileDownloadName))) {
-                $Response.ContentDisposition.FileName = $FileDownloadName
+                $Context.Response.ContentDisposition.FileName = $FileDownloadName
             }
 
-            # Call the C# method on the $Response object
-            $Response.WriteFileResponse($resolvedPath, $ContentType, $StatusCode)
+            # Call the C# method on the $Context.Response object
+            $Context.Response.WriteFileResponse($resolvedPath, $ContentType, $StatusCode)
             Write-Information "File response written for $FilePath with download name $FileDownloadName"
         }
     }
@@ -228,9 +228,9 @@ function Write-KrRedirectResponse {
         [Parameter()]
         [string]$Message
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteRedirectResponse($Url, $Message)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteRedirectResponse($Url, $Message)
     }
 }
  
@@ -252,9 +252,9 @@ function Write-KrBinaryResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteBinaryResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteBinaryResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -275,9 +275,9 @@ function Write-KrStreamResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteStreamResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteStreamResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -288,9 +288,9 @@ function Write-KrResponse {
         [Parameter()]
         [int]$StatusCode = 200
     )
-    if ($null -ne $Response) {
-        # Call the C# method on the $Response object
-        $Response.WriteResponse($InputObject, $StatusCode, $ContentType)
+    if ($null -ne $Context.Response) {
+        # Call the C# method on the $Context.Response object
+        $Context.Response.WriteResponse($InputObject, $StatusCode, $ContentType)
     }
 }
 
@@ -317,7 +317,7 @@ function Write-KrErrorResponse {
     )
 
     if ($PSCmdlet.ParameterSetName -eq "Message") {
-        $Response.WriteErrorResponse(
+        $Context.Response.WriteErrorResponse(
             $Message,
             $StatusCode,
             $ContentType,
@@ -325,7 +325,7 @@ function Write-KrErrorResponse {
         )
     }
     else {
-        $Response.WriteErrorResponse(
+        $Context.Response.WriteErrorResponse(
             $Exception,
             $StatusCode,
             $ContentType,

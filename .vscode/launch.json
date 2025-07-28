@@ -5,8 +5,8 @@
             "name": "PowerShell: Launch MultiRoutes.ps1",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/examples/PowerShell/MultiRoutes.ps1",
-            "cwd": "${workspaceFolder}/examples/PowerShell"
+            "script": "${workspaceFolder}/examples/PowerShell/MultiRoutes/MultiRoutes.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/MultiRoutes"
         },
         {
             "name": "PowerShell: Launch SharedState.ps1",

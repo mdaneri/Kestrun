@@ -154,11 +154,11 @@ New-KrLogger -Name "ps" -Level Debug |
 
 # 2. Write to it anywhere in your PS routes
 Write-KrLog -Name "ps" -Level Information `
-    -Message "Handled {Method} {Path}" -Args $Request.Method, $Request.Path
+    -Message "Handled {Method} {Path}" -Args $Context.Request.Method, $Context.Request.Path
 
 Write-KrLog -Name "ps" -Level Information `
             -Message "Handled {Method} {Path}" `
-            -Arguments $Request.Method, $Request.Path `
+            -Arguments $Context.Request.Method, $Context.Request.Path `
             -Properties @{ CorrelationId = $cid }
 ```
 

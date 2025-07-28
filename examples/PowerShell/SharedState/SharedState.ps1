@@ -40,15 +40,19 @@ catch {
     exit 1
 }
 
+New-KrLogger  |
+Set-KrMinimumLevel -Value Debug  |
+Add-KrSinkFile -Path ".\logs\sharedState.log" -RollingInterval Hour |
+Add-KrSinkConsole |
+Register-KrLogger -SetAsDefault -Name "DefaultLogger"
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState -Server $server -Name 'Visits' -Value @{Count = 0 }
+Set-KrSharedState  -Name 'Visits' -Value @{Count = 0 }
 # Create the server
 $server = New-KrServer -Name 'MyKestrunServer' |
 
 # Listen on port 5000 (HTTP)
 Add-KrListener -Port 5000 | Add-KrPowerShellRuntime |
-# Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } |
+
 Enable-KrConfiguration
 
 
@@ -81,7 +85,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
 # ─────────────────────────────────────────────────────────────────────────────
 Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/show' -Code @'
     // $Visits is available
-    Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
+    Context.Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
 '@ -Language CSharp
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +97,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/visit' -Code @'
     // increment the injected variable
     Visits["Count"] = ((int)Visits["Count"]) + 1;
 
-    Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
+    Context.Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
 '@ -Language CSharp
 
 Add-KrMapRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {

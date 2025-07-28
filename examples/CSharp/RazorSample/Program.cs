@@ -4,11 +4,18 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.ResponseCompression;
 using Kestrun.Utilities;
 // Add the namespace that contains HttpVerb
- 
+using System.Text;
+using Serilog;
+using Kestrun.Logging;
 
+
+Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Debug()
+        .WriteTo.Console()
+        .WriteTo.File("logs/razor.log", rollingInterval: RollingInterval.Day)
+        .Register("Audit", setAsDefault: true);
 
 var currentDir = Directory.GetCurrentDirectory();
-
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
 
@@ -42,12 +49,12 @@ server.AddResponseCompression(options =>
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-})
+}).AddPowerShellRuntime()
 .AddFileServer(options =>
 {
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
-}).AddPowerShellRazorPages().AddPowerShellRuntime();
+}).AddPowerShellRazorPages();
 
 
 
@@ -60,12 +67,12 @@ server.AddMapRoute("/ps/json",
             # Payload
             $payload = @{
                 Body           = "Hello from PowerShell script! - Json Response"
-                RequestQuery   = $Request.Query
-                RequestHeaders = $Request.Headers
-                RequestMethod  = $Request.Method
-                RequestPath    = $Request.Path
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
                 # If you want to return the request body, uncomment the next line
-                RequestBody    = $Request.Body
+                RequestBody    = $Context.Request.Body
             }
             Write-KrJsonResponse -inputObject $payload -statusCode 200
             """,

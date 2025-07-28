@@ -41,14 +41,9 @@ internal static class PowerShellDelegateBuilder
                 var krResponse = context.Items[KR_RESPONSE_KEY] as KestrunResponse
                     ?? throw new InvalidOperationException($"{KR_RESPONSE_KEY} key not found in context items.");
                 ps.AddScript(code);
-                // Execute the PowerShell script block
-                // Using Task.Run to avoid blocking the thread
+                // Execute the PowerShell script block 
                 log.Verbose("Executing PowerShell script...");
-                // Using Task.Run to avoid blocking the thread
-                // This is necessary to prevent deadlocks in the runspace pool
-                // var psResults = await Task.Run(() => ps.Invoke())               // no pool dead-lock
-                //     .ConfigureAwait(false);
-                //  var psResults = ps.Invoke();
+          
                 var psResults = await ps.InvokeAsync().ConfigureAwait(false);
                 log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                 if (log.IsEnabled(LogEventLevel.Debug))
