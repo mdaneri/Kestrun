@@ -217,17 +217,24 @@ public static class CertificateManager
             // — PFX/PKCS#12 with embedded key — 
             case ".pfx":
             case ".p12":
-                // Uses the X509Certificate2(byte[], ReadOnlySpan<char>, flags) ctor
-                return new X509Certificate2(
-                    File.ReadAllBytes(certPath),
-                    password,
-                    flags
-                );
+#if NET9_0_OR_GREATER
+                // .NET 9+ path using X509CertificateLoader.LoadPkcs12FromFile
+
+                return X509CertificateLoader.LoadPkcs12FromFile(certPath, password, flags, Pkcs12LoaderLimits.Defaults);
+#else
+                // legacy .NET 8 or earlier path, using X509Certificate2 ctor
+                return new X509Certificate2(File.ReadAllBytes(certPath), password, flags);
+#endif
 
             // — DER-encoded public cert — 
             case ".cer":
             case ".der":
+#if NET9_0_OR_GREATER
+                return X509CertificateLoader.LoadCertificateFromFile(certPath);
+#else
                 return new X509Certificate2(File.ReadAllBytes(certPath));
+                 
+#endif
 
             // — PEM (.pem/.crt): cert alone or cert+key, encrypted or not — 
             case ".pem":
@@ -296,8 +303,16 @@ public static class CertificateManager
                        .Trim();
         byte[] der = Convert.FromBase64String(b64);
 
-        // 5) Return the X509Certificate2
+        // 5) Return the X509Certificate2 
+
+#if NET9_0_OR_GREATER
+        return X509CertificateLoader.LoadCertificate(der);
+#else
+        // .NET 8 or earlier path, using X509Certificate2 ctor
+        // Note: this will not work in .NET 9+ due to the new X509CertificateLoader API
+        //       which requires a byte array or a file path.
         return new X509Certificate2(der);
+#endif
     }
 
     public static X509Certificate2 Import(
@@ -599,8 +614,23 @@ public static class CertificateManager
 
         using var ms = new MemoryStream();
         store.Save(ms, [], new SecureRandom());
-        return new X509Certificate2(ms.ToArray(), (string?)null,
-            flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0));
+        var raw = ms.ToArray();
+
+#if NET9_0_OR_GREATER
+        return X509CertificateLoader.LoadPkcs12(
+            raw,
+            password: default,
+            keyStorageFlags: flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0),
+            loaderLimits: Pkcs12LoaderLimits.Defaults
+        );
+#else
+        return new X509Certificate2(
+            raw,
+            (string?)null,
+            flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0)
+        );
+
+#endif
     }
 
 

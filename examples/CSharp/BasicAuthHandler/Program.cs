@@ -190,7 +190,6 @@ if (File.Exists("./devcert.pfx"))
 else
 {
     // Create a new self-signed certificate
-
     x509Certificate = Kestrun.CertificateManager.NewSelfSigned(
       new Kestrun.CertificateManager.SelfSignedOptions(
           DnsNames: ["localhost", "127.0.0.1"],

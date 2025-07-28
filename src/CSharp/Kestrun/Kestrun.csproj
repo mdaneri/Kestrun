@@ -5,16 +5,16 @@
   <!--───────────── Global Build Configuration ─────────────-->
   <PropertyGroup>
     <!-- Target .NET version -->
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
 
-    <LangVersion>12.0</LangVersion>    <!-- or 12.0 / latest -->
+    <LangVersion>latest</LangVersion>    <!-- or 12.0 / latest -->
 
     <!-- Enable nullable reference types (safer code) -->
     <Nullable>enable</Nullable>
-    
+
     <!-- Enable implicit usings for common namespaces -->
-    <ImplicitUsings>enable</ImplicitUsings> 
-    
+    <ImplicitUsings>enable</ImplicitUsings>
+
     <EnablePreviewFeatures>False</EnablePreviewFeatures>
 
     <!-- Enable implicit using directives for common namespaces -->
@@ -106,29 +106,58 @@
     <EmbeddedResource Include="Assets\favicon.ico" />
   </ItemGroup>
   <!--───────────── NuGet Dependencies ─────────────-->
-  <ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+
+
     <!-- Microsoft.AspNetCore -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" Version="2.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />    
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.*" /> 
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.*" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.7" />
-    
+    <!-- <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" Version="2.3.0" />-->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.18" />
+
     <!-- Hosting & DI -->
-    <PackageReference Include="Cronos" Version="0.11.0" />
+
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
 
+  </ItemGroup>
 
-
-
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
     <!-- Logging -->
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+
+
+    <!-- Microsoft.AspNetCore -->
+    <!-- <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Core" Version="2.3.0" />-->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.7" />
+
+    <!-- Hosting & DI -->
+
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.7" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Logging -->
+    <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Exceptions" Version="8.4.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
@@ -149,6 +178,7 @@
     -->
 
     <!-- Utilities -->
+    <PackageReference Include="Cronos" Version="0.11.0" />
     <PackageReference Include="PeterO.Cbor" Version="4.5.5" />
     <PackageReference Include="MongoDB.Bson" Version="3.4.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -162,7 +192,7 @@
     <ItemGroup>
       <KestrunOutputFiles Include="$(OutputPath)*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyPowerShellModuleOnPublish" AfterTargets="Publish">
@@ -180,7 +210,7 @@
   </Target>
   <Target Name="CustomClean" AfterTargets="Clean">
     <!-- Clean PowerShell lib directory -->
-    <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib" />
+    <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib\$(TargetFramework)" />
     <!-- Clean publish directory -->
     <RemoveDir Directories="$(ProjectRoot)\publish" />
   </Target>

@@ -31,10 +31,10 @@ function Add-AspNetCoreType {
     #>
     param (
         [Parameter()]
-        [ValidateSet("net8", "net9", "net10")]
-        [string]$Version = "net8"
+        [ValidateSet("net8.0", "net9.0", "net10.0")]
+        [string]$Version = "net8.0"
     )
-    $versionNumber = $Version.Substring(3)
+    $versionNumber = $Version -replace 'net(\d+).*', '$1'
     $dotnetPath = (Get-Command -Name "dotnet" -ErrorAction Stop).Source
     $dotnetDir = Split-Path -Path $dotnetPath -Parent
     if (-not $dotnetDir) {
@@ -91,11 +91,16 @@ function Add-AspNetCoreType {
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
 # root path
 $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
+if ($PSVersionTable.PSVersion.Minor -lt 6) {
+    $netVersion = "net8.0"
+}else{
+    $netVersion = "net9.0"
+}
 # Usage
-Add-AspNetCoreType -Version "net8"
+Add-AspNetCoreType -Version $netVersion
 # Add-AspNetCoreType -Version "net8.0.*"
 
-$assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib"
+$assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
 # Assert that the assembly is loaded and load it if not
 Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
 

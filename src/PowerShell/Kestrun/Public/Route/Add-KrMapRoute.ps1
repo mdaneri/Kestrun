@@ -31,11 +31,11 @@ function Add-KrMapRoute {
         if ($PSCmdlet.ParameterSetName -eq "Code") {
             #  $Server.AddMapRoute($Path, $Verbs, $Code, $Language, $ExtraImports, $ExtraRefs)
             $options.Language = $Language
-            $options.ScriptBlock = $Code
+            $options.Code = $Code
         }
         else {
             $options.Language = [Kestrun.ScriptLanguage]::PowerShell
-            $options.ScriptBlock = $ScriptBlock.ToString()
+            $options.Code = $ScriptBlock.ToString()
         }
         $Server.AddMapRoute($options)
     }
