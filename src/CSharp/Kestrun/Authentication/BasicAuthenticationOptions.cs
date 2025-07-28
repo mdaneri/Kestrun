@@ -35,4 +35,9 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public Func<HttpContext, string, IEnumerable<Claim>>? IssueClaims { get; set; }
 
+
+    public ScriptLanguage Language { get; set; } = ScriptLanguage.Native;
+
+    public string? Code { get; set; }
+
 }

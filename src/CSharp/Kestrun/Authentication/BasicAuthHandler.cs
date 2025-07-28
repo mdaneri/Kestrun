@@ -1,7 +1,11 @@
+using System.Management.Automation;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using Kestrun.Hosting;
+using Kestrun.Languages;
+using Kestrun.SharedState;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -183,5 +187,93 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     {
         Response.StatusCode = StatusCodes.Status403Forbidden;
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Authenticates the user using PowerShell script.
+    /// This method is used to validate the username and password against a PowerShell script.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <param name="username">The username to validate.</param>
+    /// <param name="password">The password to validate.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static async ValueTask<bool> AuthenticatePowerShellAsync(string code, HttpContext context, string username, string password)
+    {
+        try
+        {
+            if (!context.Items.ContainsKey("PS_INSTANCE"))
+            {
+                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                Log.Warning("Username is null or empty.");
+                return false;
+            }
+            if (string.IsNullOrEmpty(code))
+            {
+                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
+            }
+
+            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
+                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
+            if (ps.Runspace == null)
+            {
+                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+
+            ps.AddScript(code, useLocalScope: true)
+            .AddParameter("username", username)
+            .AddParameter("password", password);
+            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+
+            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
+            {
+                Log.Error("PowerShell script did not return a valid boolean result.");
+                return false;
+            }
+            Log.Information("Basic authentication result for {Username}: {IsValid}", username, isValid);
+            return isValid;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during Basic authentication for {Username}", username);
+            return false;
+        }
+    }
+
+
+    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(string code)
+      => async (ctx, user, pass) =>
+      {
+          //ctx.Items["PS_AUTH_CODE"] = code;
+          return await AuthenticatePowerShellAsync(code, ctx, user, pass);
+      };
+
+    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(string code)
+    {
+        var script = CSharpDelegateBuilder.Compile(code, Serilog.Log.ForContext<BasicAuthHandler>(), null, null,
+        new Dictionary<string, object?>
+            {
+                { "username", "" },
+                { "password", "" }
+            });
+
+        return async (ctx, user, pass) =>
+        {
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                { "username", user },
+                { "password", pass }
+            });
+            var result = await script.RunAsync(globals).ConfigureAwait(false);
+            return result.ReturnValue is true;
+        };
     }
 }

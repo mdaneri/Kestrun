@@ -26,7 +26,9 @@ $creds   = "admin:s3cr3t"
 $basic   = "Basic " + [Convert]::ToBase64String(
                        [Text.Encoding]::ASCII.GetBytes($creds))
 $token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
-Invoke-RestMethod https://localhost:5001/secure/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
 */
@@ -51,7 +53,9 @@ server.Options.ServerLimits.MaxConcurrentConnections = 100;
 server.Options.ServerLimits.MaxRequestHeaderCount = 100;
 server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 
-const string BasicScheme = "Basic";
+const string BasicPowershellScheme = "PowershellBasic";
+const string BasicNativeScheme = "NativeBasic";
+const string BasicCSharpScheme = "CSharpBasic";
 const string JwtScheme = "Bearer";    // or "MyJwt", or whatever label you prefer
 
 string issuer = "KestrunApi";
@@ -61,17 +65,7 @@ const string JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5
 byte[] jwtKeyBytes = Convert.FromHexString(JwtKeyHex);
 var jwtKey = new SymmetricSecurityKey(jwtKeyBytes);
 
-var code = """
-              param(
-                    [string]$Username,
-                    [string]$Password
-                )
-              if ($Username -eq 'admin' -and $Password -eq 's3cr3t') {
-                  return $true
-              } else {
-                  return $false
-              }
-""";
+// 2. Add services
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -89,59 +83,45 @@ server.AddResponseCompression(options =>
 }).AddPowerShellRuntime()
 // ── BASIC (generic helper) ──────────────────────────────────────────── 
 
-.AddBasicAuthentication(BasicScheme, options =>
+.AddBasicAuthentication(BasicPowershellScheme, opts =>
 {
-    options.Realm = "My Kestrun Server";
-    options.ValidateCredentials = async (context, username, password) =>
-    {
-        try
-        {
-            if (!context.Items.ContainsKey("PS_INSTANCE"))
-            {
-                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
-                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-            if (ps.Runspace == null)
-            {
-                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
+    opts.Realm = "Power-Kestrun";
 
+    opts.Code = """
+    param(
+        [string]$Username,
+        [string]$Password
+    )
+    if ($Username -eq 'admin' -and $Password -eq 's3cr3t') {
+        return $true
+    } else {
+        return $false
+    }
+    """;
+    opts.Language = ScriptLanguage.PowerShell;
+    opts.Base64Encoded = true;            // default anyway
+    opts.RequireHttps = false;           // example
 
-            ps.AddScript(code, useLocalScope: true)
-            .AddParameter("username", username)
-            .AddParameter("password", password);
-            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-
-            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
-            {
-                Log.Error("PowerShell script did not return a valid boolean result.");
-                return false;
-            }
-            Log.Information("Basic authentication result for {Username}: {IsValid}", username, isValid);
-            return isValid;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error during Basic authentication for {Username}", username);
-            return false;
-        }
-    };
 })
-
-/*
-.AddBasicAuthentication(BasicScheme, options =>
+.AddBasicAuthentication(BasicNativeScheme, opts =>
 {
-    options.Realm = "My Kestrun Server";
-    options.ValidateCredentials = async (context, username, password) =>
+    opts.Realm = "Native-Kestrun";
+    opts.ValidateCredentials = async (context, username, password) =>
     {
         // pretend we did some async work:
         await Task.Yield();
         // Replace with your real credential validation logic
         return username == "admin" && password == "s3cr3t";
     };
+}).AddBasicAuthentication(BasicCSharpScheme, opts =>
+{
+    opts.Realm = "CSharp-Kestrun";
+    opts.Code = """     
+        return username == "admin" && password == "s3cr3t";
+    """;
+    opts.Language = ScriptLanguage.CSharp;
 })
-*/
+
 
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
@@ -221,16 +201,39 @@ server.EnableConfiguration();
                                     string[]? extraImports = null,
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
-server.AddMapRoute("/secure/hello", HttpVerb.Get, """
+server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
     if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
     $user = $Context.HttpContext.User.Identity.Name
-    $Context.Response.Body = "Welcome, $user! You are authenticated."
+    $Context.Response.Body = "Welcome, $user! You are authenticated by Powershell Code."
     $Context.Response.ContentType = "text/plain"
-""", ScriptLanguage.PowerShell, [BasicScheme]);
+""", ScriptLanguage.PowerShell, [BasicPowershellScheme]);
+
+server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
+    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+    }
+
+    $user = $Context.HttpContext.User.Identity.Name
+    $Context.Response.Body = "Welcome, $user! You are authenticated by Roselyn C# Code."
+    $Context.Response.ContentType = "text/plain"
+""", ScriptLanguage.PowerShell, [BasicCSharpScheme]);
+
+
+server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
+    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+    }
+
+    $user = $Context.HttpContext.User.Identity.Name
+    $Context.Response.Body = "Welcome, $user! You are authenticated by Native C# code."
+    $Context.Response.ContentType = "text/plain"
+""", ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
 server.AddMapRoute("/secure/hello-cs", HttpVerb.Get, """

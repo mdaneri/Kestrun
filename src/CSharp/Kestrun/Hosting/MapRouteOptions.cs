@@ -8,7 +8,7 @@ public record MapRouteOptions
 {
     public string? Pattern { get; init; }
     public IEnumerable<HttpVerb> HttpVerbs { get; init; } = [];
-    public string? ScriptBlock { get; init; }
+    public string? Code { get; init; }
     public ScriptLanguage Language { get; init; } = ScriptLanguage.PowerShell;
     public string[]? ExtraImports { get; init; }
     public Assembly[]? ExtraRefs { get; init; }

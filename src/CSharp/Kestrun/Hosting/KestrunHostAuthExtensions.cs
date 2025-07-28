@@ -44,8 +44,36 @@ public static class KestrunHostAuthExtensions
                 ab.AddScheme<BasicAuthenticationOptions, BasicAuthHandler>(
                     authenticationScheme: scheme,
                     displayName: "Basic Authentication",
-                    configureOptions: configure ?? (_ => { })
-                );
+                     configureOptions: opts =>
+                    {
+                        // let caller mutate everything first
+                        configure?.Invoke(opts);
+
+                        // ── SPECIAL POWER-SHELL PATH ────────────────────
+                        if (opts.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.Code))
+                        {
+                            // push the script block into HttpContext.Items
+                            //  opts.ValidateCredentials = async (ctx, user, pass) =>
+                            // {
+                            /*      ctx.Items["PS_AUTH_CODE"] = opts.Code;   // <- expose script
+                                  return await BasicAuthHandler
+                                      .AuthenticatePowerShellAsync(ctx, user, pass)
+                                      .ConfigureAwait(false);*/
+
+                            opts.ValidateCredentials = BasicAuthHandler
+                        .BuildPsValidator(opts.Code);
+                            //    };
+                        }
+                        else   // ── C# pathway ─────────────────────────────────
+                        if (opts.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.Code))
+                        {
+                            opts.ValidateCredentials = BasicAuthHandler
+                                .BuildCsValidator(opts.Code);
+                        }
+                    });
+
             },
             configureAuthz: configureAuthz
         );
@@ -247,4 +275,3 @@ public static class KestrunHostAuthExtensions
         );
     }
 }
- 

@@ -5,6 +5,7 @@ namespace Kestrun;
 /// </summary>
 public enum ScriptLanguage
 {
+    Native,          // No scripting, just native C# code
     PowerShell,
     CSharp,
     FSharp,

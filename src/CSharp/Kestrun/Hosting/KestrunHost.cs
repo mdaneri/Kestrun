@@ -228,26 +228,7 @@ public class KestrunHost : IDisposable
 
     #region C#
 
-    // ---------------------------------------------------------------------------
-    //  C# delegate builder  –  now takes optional imports / references
-    // ---------------------------------------------------------------------------
-    public record CsGlobals
-    { 
 
-        public CsGlobals(IReadOnlyDictionary<string, object?> Globals)
-        {
-            this.Globals = Globals;
-        }
-
-        public CsGlobals(IReadOnlyDictionary<string, object?> Globals, KestrunContext krcontext) : this(Globals)
-        {
-            Context = krcontext;
-        }
-
-        public IReadOnlyDictionary<string, object?> Globals { get; }
-     
-        public KestrunContext? Context { get; }
-    }
     #endregion
 
 
@@ -289,7 +270,7 @@ public class KestrunHost : IDisposable
         {
             Pattern = pattern,
             HttpVerbs = [httpVerbs],
-            ScriptBlock = scriptBlock,
+            Code = scriptBlock,
             Language = language,
             RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
         });
@@ -306,7 +287,7 @@ public class KestrunHost : IDisposable
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
-            ScriptBlock = scriptBlock,
+            Code = scriptBlock,
             Language = language,
             RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
         });
@@ -320,8 +301,8 @@ public class KestrunHost : IDisposable
                 "WebApplication is not initialized. Call EnableConfiguration first.");
         if (string.IsNullOrWhiteSpace(options.Pattern))
             throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
-        if (string.IsNullOrWhiteSpace(options.ScriptBlock))
-            throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.ScriptBlock));
+        if (string.IsNullOrWhiteSpace(options.Code))
+            throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.Code));
         var routeOptions = options;
         if (!options.HttpVerbs.Any())
         {
@@ -335,11 +316,11 @@ public class KestrunHost : IDisposable
             var handler = options.Language switch
             {
 
-                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.ScriptBlock, logger),
-                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.ScriptBlock, logger, options.ExtraImports, options.ExtraRefs),
-                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.ScriptBlock, logger), // F# scripting not implemented
-                ScriptLanguage.Python => PyDelegateBuilder.Build(options.ScriptBlock, logger),
-                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.ScriptBlock, logger),
+                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.Code, logger),
+                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.Code, logger, options.ExtraImports, options.ExtraRefs),
+                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.Code, logger), // F# scripting not implemented
+                ScriptLanguage.Python => PyDelegateBuilder.Build(options.Code, logger),
+                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.Code, logger),
                 _ => throw new NotSupportedException(options.Language.ToString())
             };
             string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
