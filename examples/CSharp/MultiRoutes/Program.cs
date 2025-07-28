@@ -22,9 +22,8 @@ Log.Logger = new LoggerConfiguration()
         .WriteTo.File("logs/multiroute.log", rollingInterval: RollingInterval.Day)
         .Register("Audit", setAsDefault: true);
 
-// 1. Create server
-var server = new KestrunHost("MyKestrunServer", currentDir);
-
+// 1. Create server 
+var server = KestrunHostManager.Create("Kestrun MultiRoutes", currentDir);
 // Set Kestrel options
 server.Options.ServerOptions.AllowSynchronousIO = false;
 server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader

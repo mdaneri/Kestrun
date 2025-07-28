@@ -45,8 +45,7 @@ Log.Logger = new LoggerConfiguration()
         .Register("default", setAsDefault: true);
 
 // 1. Create server
-var server = new KestrunHost("MyKestrunServer", currentDir);
-
+var server = KestrunHostManager.Create("Kestrun Authentication", currentDir);
 // Set Kestrel options
 server.Options.ServerOptions.AllowSynchronousIO = false;
 server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader

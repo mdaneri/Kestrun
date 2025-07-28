@@ -2,7 +2,7 @@
 function Add-KrMapRoute {
     [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
@@ -21,6 +21,8 @@ function Add-KrMapRoute {
 
     )
     process {
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
 
         $options = [Kestrun.Hosting.MapRouteOptions]::new()
         $options.HttpVerbs = $Verbs

@@ -21,17 +21,19 @@ function Add-KrPowerShellRuntime {
     [CmdletBinding()]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [string]$PathPrefix = $null
     )
     process {
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
         if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
             $Server.AddPowerShellRuntime() | Out-Null
         }
         else {
-            $Server.AddPowerShellRuntime( [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null             
+            $Server.AddPowerShellRuntime( [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
         }
 
         # Return the modified server instance

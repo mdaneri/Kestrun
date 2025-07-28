@@ -21,20 +21,21 @@ new LoggerConfiguration()
     .Register("Log", setAsDefault: true);
 
 // ───────── 2. Kestrun host
-var server = new KestrunHost("Kestrun+Scheduler", cwd);
+var server = KestrunHostManager.Create("Kestrun+Scheduler", cwd).
 
 
 
 // basic Kestrel opts / listener
-server.ConfigureListener(
+ ConfigureListener(
     port: 5000,
     ipAddress: IPAddress.Loopback,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
     );
 
 // add PowerShell runtime & global counter
-server.AddPowerShellRuntime();
-server.AddScheduling(8); // 8 runspaces for the scheduler
+server.AddPowerShellRuntime().
+
+AddScheduling(8); // 8 runspaces for the scheduler
 // define global variable for visits
 SharedStateStore.Set("Visits", new Hashtable { ["Count"] = 0 });
 server.EnableConfiguration();

@@ -45,7 +45,7 @@ if (Test-Path "$ScriptPath\devcert.pfx" ) {
 else {
     $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
     Export-KsCertificate -Certificate $cert `
-        -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+     -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
 
 if (-not (Test-KsCertificate -Certificate $cert )) {
@@ -54,24 +54,24 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
 }
 
 # Example usage:
-Set-KrServerOption -Server $server  -AllowSynchronousIO  -DenyServerHeader
+Set-KrServerOption -AllowSynchronousIO -DenyServerHeader
  
-Set-KrServerLimit -Server $server  -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
+Set-KrServerLimit -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
 # Configure the listener (adjust port, cert path, and password)
-Add-KrListener -Server $server -Port 5001 -IPAddress ([IPAddress]::Loopback) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
-Add-KrListener -Server $server -Port 5000 -IPAddress ([IPAddress]::Loopback)
+Add-KrListener -Port 5001 -IPAddress ([IPAddress]::Loopback) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
+Add-KrListener -Port 5000 -IPAddress ([IPAddress]::Loopback)
 
-Add-KrResponseCompression -Server $server -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
-Add-KrPowerShellRuntime -Server $server
+Add-KrResponseCompression -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
+Add-KrPowerShellRuntime
 
 # Enable configuration
-Enable-KrConfiguration -Server $server
+Enable-KrConfiguration
 #$server.ApplyConfiguration()
 
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/ps/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
     # Payload

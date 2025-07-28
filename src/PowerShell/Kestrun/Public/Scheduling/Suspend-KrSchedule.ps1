@@ -16,7 +16,7 @@ function Suspend-KrSchedule {
     #>
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter(Mandatory = $true)]
         [string]$Name

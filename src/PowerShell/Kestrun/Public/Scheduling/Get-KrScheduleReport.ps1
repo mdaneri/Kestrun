@@ -34,7 +34,8 @@ function Get-KrScheduleReport {
                $Server = $KestrunHost
            }
            else {
-               throw "Server parameter is mandatory."
+    # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
            }
         }
     }

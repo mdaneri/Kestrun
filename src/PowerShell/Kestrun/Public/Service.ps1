@@ -23,7 +23,7 @@ function Add-KrPowerShellRazorPagesRuntime {
     [CmdletBinding()]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [string]$PathPrefix
@@ -68,7 +68,7 @@ function Add-KrRazorPageService {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
@@ -149,7 +149,7 @@ function Add-KrResponseCompression {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
@@ -165,6 +165,8 @@ function Add-KrResponseCompression {
         # [Microsoft.AspNetCore.ResponseCompression.ICompressionProvider[]]$Providers = @()
     )
     process {
+         # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
         if ($PSCmdlet.ParameterSetName -eq 'Items') {
             $Options = [Microsoft.AspNetCore.ResponseCompression.ResponseCompressionOptions]::new()
             if ($null -ne $MimeTypes -and $MimeTypes.Count -gt 0) {
@@ -227,7 +229,7 @@ function Add-KrStaticFilesService {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
@@ -324,7 +326,7 @@ function Add-KrCorsPolicy {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true)]
@@ -409,7 +411,7 @@ function Add-KrAntiforgery {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
@@ -484,7 +486,7 @@ function Add-KrDefaultFile {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
@@ -557,7 +559,7 @@ function Add-KrFileServer {
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]

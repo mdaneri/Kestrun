@@ -81,7 +81,7 @@ function Register-KrSchedule {
     [CmdletBinding(DefaultParameterSetName = 'IntervalScriptBlock', SupportsShouldProcess)]
     [OutputType([Kestrun.Scheduling.JobInfo])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [Parameter(Mandatory)]

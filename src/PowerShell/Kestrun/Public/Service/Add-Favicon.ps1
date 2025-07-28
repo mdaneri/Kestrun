@@ -22,12 +22,15 @@ function Add-Favicon {
     [CmdletBinding()]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
         [string]$IconPath = $null
     )
     process { 
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+
         $Server.AddFavicon($IconPath) | Out-Null
         # Return the modified server instance
         return $Server

@@ -21,12 +21,14 @@ function Add-KrScheduling {
     [CmdletBinding()]
     [OutputType([Kestrun.KestrunHost])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
         [int]$MaxRunspaces
     )
     process {
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
         if ($MaxRunspaces -eq 0) {
             $Server.AddScheduling() | Out-Null
         }

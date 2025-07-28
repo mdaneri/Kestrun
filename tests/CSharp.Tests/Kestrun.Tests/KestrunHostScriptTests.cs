@@ -8,7 +8,7 @@ public class KestrunHostScriptTests
     [Fact]
     public void IsCSharpScriptValid_ReturnsTrueForValid()
     {
-        var host = new KestrunHost("TestHost");
+        var host = KestrunHostManager.Create("TestHost");
         bool valid = host.IsCSharpScriptValid("System.Console.WriteLine(\"hi\");");
         Assert.True(valid);
     }
@@ -16,7 +16,7 @@ public class KestrunHostScriptTests
     [Fact]
     public void IsCSharpScriptValid_ReturnsFalseForInvalid()
     {
-        var host = new KestrunHost("TestHost");
+        var host = KestrunHostManager.Create("TestHost");
         bool valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
         Assert.False(valid);
     }
@@ -24,7 +24,7 @@ public class KestrunHostScriptTests
     [Fact]
     public void GetCSharpScriptErrors_ReturnsMessage()
     {
-        var host = new KestrunHost("TestHost");
+        var host = KestrunHostManager.Create("TestHost");
         var msg = host.GetCSharpScriptErrors("System.Console.Writeline(\"hi\");");
         Assert.NotNull(msg);
     }

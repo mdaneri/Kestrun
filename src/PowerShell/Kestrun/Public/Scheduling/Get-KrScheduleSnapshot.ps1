@@ -31,7 +31,7 @@ function Get-KrScheduleSnapshot {
     [OutputType([Kestrun.Scheduling.JobInfo[]])]
     [OutputType([Hashtable])]
     param(
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [string[]]$Name,
         [string]$TimeZoneId,
