@@ -1,9 +1,15 @@
+using System.Management.Automation;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Encodings.Web;
+using Kestrun.Hosting;
+using Kestrun.Languages;
+using Kestrun.SharedState;
 using Kestrun.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Serilog;
 
 namespace Kestrun.Authentication;
 
@@ -16,7 +22,7 @@ public class ApiKeyAuthHandler
         UrlEncoder encoder)
         : base(options, logger, encoder) { }
 
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         try
         {
@@ -47,16 +53,18 @@ public class ApiKeyAuthHandler
                 return Fail("Missing API Key");
 
             var providedKey = values.ToString();
-
+            var providedKeyBytes = Encoding.UTF8.GetBytes(providedKey);
             // ⑤ Now validate
             bool valid = false;
-            if (Options.ValidateKey is not null)
+
+            if (!string.IsNullOrWhiteSpace(Options.ExpectedKey))
             {
-                valid = Options.ValidateKey(providedKey);
+
+                valid = SecurityUtilities.FixedTimeEquals(providedKeyBytes, Options.ExpectedKeyBytes);
             }
-            else if (!string.IsNullOrEmpty(Options.ExpectedKey))
+            else if (Options.ValidateKeyAsync is not null)
             {
-                valid = SecurityUtilities.FixedTimeEquals(providedKey, Options.ExpectedKey);
+                valid = await Options.ValidateKeyAsync(Context, providedKey, providedKeyBytes);
             }
             else
             {
@@ -86,7 +94,7 @@ public class ApiKeyAuthHandler
             Options.Logger.Information("API Key authentication succeeded for identity: {Username}", username);
 
             // ⑥ Return success
-            return Task.FromResult(AuthenticateResult.Success(ticket));
+            return AuthenticateResult.Success(ticket);
         }
         catch (Exception ex)
         {
@@ -94,10 +102,10 @@ public class ApiKeyAuthHandler
             return Fail("Error processing API Key");
         }
     }
-    Task<AuthenticateResult> Fail(string reason)
+    AuthenticateResult Fail(string reason)
     {
         Options.Logger.Warning("API Key authentication failed: {Reason}", reason);
-        return Task.FromResult(AuthenticateResult.Fail(reason));
+        return AuthenticateResult.Fail(reason);
     }
 
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
@@ -116,5 +124,82 @@ public class ApiKeyAuthHandler
         Response.StatusCode = StatusCodes.Status401Unauthorized;
         return Task.CompletedTask;
     }
+    public static async ValueTask<bool> ValidatePowerShellKeyAsync(string? code, HttpContext context, string providedKey)
+    {
+        try
+        {
+            if (!context.Items.ContainsKey("PS_INSTANCE"))
+            {
+                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
 
+            if (string.IsNullOrWhiteSpace(providedKey))
+            {
+                Log.Warning("API Key is null or empty.");
+                return false;
+            }
+            if (string.IsNullOrEmpty(code))
+            {
+                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
+            }
+
+            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
+                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
+            if (ps.Runspace == null)
+            {
+                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+
+            ps.AddScript(code, useLocalScope: true)
+            .AddParameter("providedKey", providedKey);
+            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+
+            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
+            {
+                Log.Error("PowerShell script did not return a valid boolean result.");
+                return false;
+            }
+            Log.Information("Basic authentication result for {ProvidedKey}: {IsValid}", providedKey, isValid);
+            return isValid;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during Basic authentication for {ProvidedKey}", providedKey);
+            return false;
+        }
+    }
+
+
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
+      => async (ctx, providedKey, providedKeyBytes) =>
+      {
+          //ctx.Items["PS_AUTH_CODE"] = code;
+          return await ValidatePowerShellKeyAsync(codeSettings.Code, ctx, providedKey);
+      };
+
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
+    {
+        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<ApiKeyAuthHandler>(),
+            codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        new Dictionary<string, object?>
+            {
+                { "providedKey", string.Empty },
+                { "providedKeyBytes", Array.Empty<byte>() }
+            });
+
+        return async (ctx, providedKey, providedKeyBytes) =>
+        {
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                { "providedKey", providedKey },
+                { "providedKeyBytes", providedKeyBytes }
+            });
+            var result = await script.RunAsync(globals).ConfigureAwait(false);
+            return result.ReturnValue is true;
+        };
+    }
 }

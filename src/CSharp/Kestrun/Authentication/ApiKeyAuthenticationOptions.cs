@@ -1,10 +1,13 @@
 
+using System.Reflection;
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication;
 
 namespace Kestrun.Authentication;
+
 public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
-{    
+{
     /// <summary>
     /// Name of the header to look for the API key.
     /// </summary>
@@ -36,13 +39,14 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// <para>Use this for simple scenarios where you have a known key.</para>
     /// </summary>
     public string? ExpectedKey { get; set; }
+    public byte[]? ExpectedKeyBytes => ExpectedKey is not null ? Encoding.UTF8.GetBytes(ExpectedKey) : null;
 
     /// <summary>
     /// Called to validate the raw key string. Return true if valid.
     /// <para>This is called for every request, so it should be fast.</para>
     /// </summary>
-    public Func<string, bool> ValidateKey { get; set; } = _ => false;
-
+    //public Func<string, bool> ValidateKey { get; set; } = _ => false;
+    public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (context, key, keyBytes) => Task.FromResult(false);
     /// <summary>
     /// Logger for this authentication scheme.
     /// <para>Defaults to Serilog's global logger.</para>
@@ -82,4 +86,16 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public ApiKeyChallengeFormat ChallengeHeaderFormat { get; set; } = ApiKeyChallengeFormat.ApiKeyHeader;
 
+
+    /// <summary>
+    /// Settings for the authentication code, if using a script.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to specify the language, code, and additional imports/refs.
+    /// </remarks>
+    public AuthenticationCodeSettings CodeSettings { get; set; } = new();
+ 
+
 }
+
+ 

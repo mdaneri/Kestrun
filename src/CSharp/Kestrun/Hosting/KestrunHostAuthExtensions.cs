@@ -50,27 +50,20 @@ public static class KestrunHostAuthExtensions
                         configure?.Invoke(opts);
 
                         // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.Code))
+                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
                         {
-                            // push the script block into HttpContext.Items
-                            //  opts.ValidateCredentials = async (ctx, user, pass) =>
-                            // {
-                            /*      ctx.Items["PS_AUTH_CODE"] = opts.Code;   // <- expose script
-                                  return await BasicAuthHandler
-                                      .AuthenticatePowerShellAsync(ctx, user, pass)
-                                      .ConfigureAwait(false);*/
-
-                            opts.ValidateCredentials = BasicAuthHandler
-                        .BuildPsValidator(opts.Code);
-                            //    };
+                            // Build the PowerShell script validator
+                            // This will be used to validate credentials
+                            opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.CodeSettings);
                         }
                         else   // ── C# pathway ─────────────────────────────────
-                        if (opts.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.Code))
+                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
                         {
-                            opts.ValidateCredentials = BasicAuthHandler
-                                .BuildCsValidator(opts.Code);
+                            // Build the C# script validator
+                            // This will be used to validate credentials
+                            opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.CodeSettings);
                         }
                     });
 
@@ -236,8 +229,29 @@ public static class KestrunHostAuthExtensions
                 ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
                     authenticationScheme: scheme,
                     displayName: "API Key",
-                    configureOptions: configure ?? (_ => { })
-                );
+                    configureOptions: opts =>
+                    {
+                        // let caller mutate everything first
+                        configure?.Invoke(opts);
+
+                        // ── SPECIAL POWER-SHELL PATH ────────────────────
+                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the PowerShell script validator
+                            // This will be used to validate credentials
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
+                        }
+                        else   // ── C# pathway ─────────────────────────────────
+                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the C# script validator
+                            // This will be used to validate credentials
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                        }
+                    });
+
             },
             configureAuthz: configureAuthz
         );

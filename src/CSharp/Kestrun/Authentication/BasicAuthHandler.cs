@@ -198,7 +198,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <param name="password">The password to validate.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static async ValueTask<bool> AuthenticatePowerShellAsync(string code, HttpContext context, string username, string password)
+    public static async ValueTask<bool> AuthenticatePowerShellAsync(string? code, HttpContext context, string username, string password)
     {
         try
         {
@@ -209,7 +209,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
             if (string.IsNullOrWhiteSpace(username))
             {
-                Log.Warning("Username is null or empty.");
+                Log.Warning("Username  is null or empty.");
                 return false;
             }
             if (string.IsNullOrEmpty(code))
@@ -246,16 +246,16 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     }
 
 
-    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(string code)
+    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
       => async (ctx, user, pass) =>
       {
-          //ctx.Items["PS_AUTH_CODE"] = code;
-          return await AuthenticatePowerShellAsync(code, ctx, user, pass);
+          return await AuthenticatePowerShellAsync(codeSettings.Code, ctx, user, pass);
       };
 
-    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(string code)
+    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
     {
-        var script = CSharpDelegateBuilder.Compile(code, Serilog.Log.ForContext<BasicAuthHandler>(), null, null,
+        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {
                 { "username", "" },

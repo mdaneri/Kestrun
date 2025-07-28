@@ -236,35 +236,60 @@ public class KestrunHost : IDisposable
     #region Route
     public delegate Task KestrunHandler(KestrunContext Context);
 
-    public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler)
+    public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("AddNativeRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
-        AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler);
+        AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
     }
 
-    public void AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler)
+    public void AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
-        if (App is null)
-            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
-        string[] methods = [.. httpVerbs.Select(v => v.ToMethodString())];
-        App.MapMethods(pattern, methods, async context =>
+
+        AddNativeRoute(new MapRouteOptions
         {
-            var req = await KestrunRequest.NewRequest(context);
-            var res = new KestrunResponse(req);
-            KestrunContext kestrunContext = new(req, res, context);
-            await handler(kestrunContext);
-            await res.ApplyTo(context.Response);
-        });
+            Pattern = pattern,
+            HttpVerbs = httpVerbs,
+            Language = ScriptLanguage.Native,
+            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
+        }, handler);
+
     }
 
-    public void AddMapRoute(string pattern,
-                                     HttpVerb httpVerbs,
-                                       string scriptBlock,
-                                       ScriptLanguage language = ScriptLanguage.PowerShell,
-                                     string[]? RequireAuthorization = null)
+    public void AddNativeRoute(MapRouteOptions options, KestrunHandler handler)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("AddNativeRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
+        // Ensure the WebApplication is initialized
+        if (App is null)
+            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
+
+        // Validate options
+        if (string.IsNullOrWhiteSpace(options.Pattern))
+            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+
+        string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
+        var map = App.MapMethods(options.Pattern, methods, async context =>
+           {
+               var req = await KestrunRequest.NewRequest(context);
+               var res = new KestrunResponse(req);
+               KestrunContext kestrunContext = new(req, res, context);
+               await handler(kestrunContext);
+               await res.ApplyTo(context.Response);
+           });
+
+        AddMapOptions(map, options);
+
+        Log.Information("Added native route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+        // Add to the feature queue for later processing
+        _featureQueue.Add(host => host.AddMapRoute(options));
+    }
+
+
+    public void AddMapRoute(string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
+                                     string[]? requireAuthorization = null)
     {
         AddMapRoute(new Hosting.MapRouteOptions
         {
@@ -272,7 +297,7 @@ public class KestrunHost : IDisposable
             HttpVerbs = [httpVerbs],
             Code = scriptBlock,
             Language = language,
-            RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
+            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
         });
 
     }
@@ -281,26 +306,31 @@ public class KestrunHost : IDisposable
                                  IEnumerable<HttpVerb> httpVerbs,
                                  string scriptBlock,
                                  ScriptLanguage language = ScriptLanguage.PowerShell,
-                                     string[]? RequireAuthorization = null)
+                                     string[]? requireAuthorization = null)
     {
-        AddMapRoute(new Hosting.MapRouteOptions
+        AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
             Code = scriptBlock,
             Language = language,
-            RequireAuthorization = RequireAuthorization ?? [] // No authorization by default
+            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
         });
     }
-       public void AddMapRoute(Hosting.MapRouteOptions options)
+    public void AddMapRoute(MapRouteOptions options)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
+
+        // Ensure the WebApplication is initialized
         if (App is null)
-            throw new InvalidOperationException(
-                "WebApplication is not initialized. Call EnableConfiguration first.");
+            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
+
+        // Validate options
         if (string.IsNullOrWhiteSpace(options.Pattern))
             throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+
+        // Validate code
         if (string.IsNullOrWhiteSpace(options.Code))
             throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.Code));
         var routeOptions = options;
@@ -328,92 +358,7 @@ public class KestrunHost : IDisposable
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
 
-            if (options.ShortCircuit)
-            {
-                Log.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
-                if (options.ShortCircuitStatusCode is null)
-                    throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
-                map.ShortCircuit(options.ShortCircuitStatusCode);
-            }
-
-            if (options.AllowAnonymous) // Allow anonymous access to this route
-            {
-                Log.Verbose("Allowing anonymous access for route: {Pattern}", options.Pattern);
-                map.AllowAnonymous();
-            }
-            else
-            {
-                Log.Debug("No anonymous access allowed for route: {Pattern}", options.Pattern);
-            }
-
-            if (options.DisableAntiforgery) // Disable CSRF protection for this route
-            {
-                map.DisableAntiforgery(); // Disable CSRF protection for this route
-                Log.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
-            }
-
-            if (!string.IsNullOrWhiteSpace(options.RateLimitPolicyName)) // Apply rate limiting policy if specified
-            {
-                Log.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
-                // Ensure RateLimiting is configured in the app
-                map.RequireRateLimiting(options.RateLimitPolicyName);
-            }
-            if (options.RequireAuthorization is { Length: > 0 })
-            {
-                Log.Verbose("Requiring authorization for route: {Pattern} with policies: {Policies}", options.Pattern, string.Join(", ", options.RequireAuthorization));
-                map.RequireAuthorization(new AuthorizeAttribute
-                {
-                    AuthenticationSchemes = string.Join(',', options.RequireAuthorization)
-                });
-            }
-            else
-            {
-                Log.Debug("No authorization required for route: {Pattern}", options.Pattern);
-            }
-
-            if (!string.IsNullOrWhiteSpace(options.CorsPolicyName)) // Apply CORS policy if specified
-            {
-                Log.Verbose("Applying CORS policy: {CorsPolicyName} to route: {Pattern}", options.CorsPolicyName, options.Pattern);
-                // Ensure CORS is configured in the app
-                // apply the route-specific policy
-                map.RequireCors(options.CorsPolicyName);
-            }
-            else
-            {
-                Log.Debug("No CORS policy applied for route: {Pattern}", options.Pattern);
-            }
-
-
-            if (!string.IsNullOrEmpty(options.OpenAPI.OperationId))
-            {
-                Log.Verbose("Adding OpenAPI metadata for route: {Pattern} with OperationId: {OperationId}", options.Pattern, options.OpenAPI.OperationId);
-                // Add OpenAPI metadata if specified
-                map.WithName(options.OpenAPI.OperationId);
-            }
-
-            if (!string.IsNullOrWhiteSpace(options.OpenAPI.Summary))
-            {
-                Log.Verbose("Adding OpenAPI summary for route: {Pattern} with Summary: {Summary}", options.Pattern, options.OpenAPI.Summary);
-                map.WithSummary(options.OpenAPI.Summary);
-            }
-
-            if (!string.IsNullOrWhiteSpace(options.OpenAPI.Description))
-            {
-                Log.Verbose("Adding OpenAPI description for route: {Pattern} with Description: {Description}", options.Pattern, options.OpenAPI.Description);
-                map.WithDescription(options.OpenAPI.Description);
-            }
-            if (options.OpenAPI.Tags.Length > 0)
-            {
-                Log.Verbose("Adding OpenAPI tags for route: {Pattern} with Tags: {Tags}", options.Pattern, string.Join(", ", options.OpenAPI.Tags));
-                map.WithTags(options.OpenAPI.Tags);
-            }
-
-
-            if (!string.IsNullOrWhiteSpace(options.OpenAPI.GroupName))
-            {
-                Log.Verbose("Adding OpenAPI group name for route: {Pattern} with GroupName: {GroupName}", options.Pattern, options.OpenAPI.GroupName);
-                map.WithGroupName(options.OpenAPI.GroupName);
-            }
+            AddMapOptions(map, options);
 
             Log.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
             // Add to the feature queue for later processing
@@ -438,6 +383,96 @@ public class KestrunHost : IDisposable
         }
     }
 
+
+    private void AddMapOptions(IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (options.ShortCircuit)
+        {
+            Log.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
+            if (options.ShortCircuitStatusCode is null)
+                throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
+            map.ShortCircuit(options.ShortCircuitStatusCode);
+        }
+
+        if (options.AllowAnonymous) // Allow anonymous access to this route
+        {
+            Log.Verbose("Allowing anonymous access for route: {Pattern}", options.Pattern);
+            map.AllowAnonymous();
+        }
+        else
+        {
+            Log.Debug("No anonymous access allowed for route: {Pattern}", options.Pattern);
+        }
+
+        if (options.DisableAntiforgery) // Disable CSRF protection for this route
+        {
+            map.DisableAntiforgery(); // Disable CSRF protection for this route
+            Log.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.RateLimitPolicyName)) // Apply rate limiting policy if specified
+        {
+            Log.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
+            // Ensure RateLimiting is configured in the app
+            map.RequireRateLimiting(options.RateLimitPolicyName);
+        }
+        if (options.RequireAuthorization is { Length: > 0 })
+        {
+            Log.Verbose("Requiring authorization for route: {Pattern} with policies: {Policies}", options.Pattern, string.Join(", ", options.RequireAuthorization));
+            map.RequireAuthorization(new AuthorizeAttribute
+            {
+                AuthenticationSchemes = string.Join(',', options.RequireAuthorization)
+            });
+        }
+        else
+        {
+            Log.Debug("No authorization required for route: {Pattern}", options.Pattern);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.CorsPolicyName)) // Apply CORS policy if specified
+        {
+            Log.Verbose("Applying CORS policy: {CorsPolicyName} to route: {Pattern}", options.CorsPolicyName, options.Pattern);
+            // Ensure CORS is configured in the app
+            // apply the route-specific policy
+            map.RequireCors(options.CorsPolicyName);
+        }
+        else
+        {
+            Log.Debug("No CORS policy applied for route: {Pattern}", options.Pattern);
+        }
+
+
+        if (!string.IsNullOrEmpty(options.OpenAPI.OperationId))
+        {
+            Log.Verbose("Adding OpenAPI metadata for route: {Pattern} with OperationId: {OperationId}", options.Pattern, options.OpenAPI.OperationId);
+            // Add OpenAPI metadata if specified
+            map.WithName(options.OpenAPI.OperationId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.OpenAPI.Summary))
+        {
+            Log.Verbose("Adding OpenAPI summary for route: {Pattern} with Summary: {Summary}", options.Pattern, options.OpenAPI.Summary);
+            map.WithSummary(options.OpenAPI.Summary);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.OpenAPI.Description))
+        {
+            Log.Verbose("Adding OpenAPI description for route: {Pattern} with Description: {Description}", options.Pattern, options.OpenAPI.Description);
+            map.WithDescription(options.OpenAPI.Description);
+        }
+        if (options.OpenAPI.Tags.Length > 0)
+        {
+            Log.Verbose("Adding OpenAPI tags for route: {Pattern} with Tags: {Tags}", options.Pattern, string.Join(", ", options.OpenAPI.Tags));
+            map.WithTags(options.OpenAPI.Tags);
+        }
+
+
+        if (!string.IsNullOrWhiteSpace(options.OpenAPI.GroupName))
+        {
+            Log.Verbose("Adding OpenAPI group name for route: {Pattern} with GroupName: {GroupName}", options.Pattern, options.OpenAPI.GroupName);
+            map.WithGroupName(options.OpenAPI.GroupName);
+        }
+    }
 
     #endregion
     #region Configuration

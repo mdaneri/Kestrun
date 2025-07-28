@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
@@ -36,8 +37,12 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     public Func<HttpContext, string, IEnumerable<Claim>>? IssueClaims { get; set; }
 
 
-    public ScriptLanguage Language { get; set; } = ScriptLanguage.Native;
-
-    public string? Code { get; set; }
-
+    /// <summary>
+    /// Settings for the authentication code, if using a script.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to specify the language, code, and additional imports/refs.
+    /// </remarks>
+    public AuthenticationCodeSettings CodeSettings { get; set; } = new();
 }
+

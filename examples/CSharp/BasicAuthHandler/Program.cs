@@ -19,6 +19,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;   // Only for writing the CSR key
 using Kestrun.Hosting;
 using System.Management.Automation;
+using Kestrun.Authentication;
 
 
 /*
@@ -30,7 +31,9 @@ Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-
+Invoke-RestMethod https://localhost:5001/secure/key/native/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 */
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -56,8 +59,10 @@ server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 const string BasicPowershellScheme = "PowershellBasic";
 const string BasicNativeScheme = "NativeBasic";
 const string BasicCSharpScheme = "CSharpBasic";
-const string JwtScheme = "Bearer";    // or "MyJwt", or whatever label you prefer
-
+const string JwtScheme = "Bearer";
+const string ApiKeySimple = "ApiKeySimple";
+const string ApiKeyPowerShell = "ApiKeyPowerShell";
+const string ApiKeyCSharp = "ApiKeyCSharp";
 string issuer = "KestrunApi";
 string audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
@@ -87,18 +92,21 @@ server.AddResponseCompression(options =>
 {
     opts.Realm = "Power-Kestrun";
 
-    opts.Code = """
-    param(
-        [string]$Username,
-        [string]$Password
-    )
-    if ($Username -eq 'admin' -and $Password -eq 's3cr3t') {
-        return $true
-    } else {
-        return $false
-    }
-    """;
-    opts.Language = ScriptLanguage.PowerShell;
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.PowerShell,
+        Code = """
+            param(
+                [string]$Username,
+                [string]$Password
+            )
+            if ($Username -eq 'admin' -and $Password -eq 's3cr3t') {
+                return $true
+            } else {
+                return $false
+            }
+        """
+    };
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
 
@@ -116,12 +124,49 @@ server.AddResponseCompression(options =>
 }).AddBasicAuthentication(BasicCSharpScheme, opts =>
 {
     opts.Realm = "CSharp-Kestrun";
-    opts.Code = """     
-        return username == "admin" && password == "s3cr3t";
-    """;
-    opts.Language = ScriptLanguage.CSharp;
-})
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.CSharp,
 
+        Code = """     
+        return username == "admin" && password == "s3cr3t";
+    """
+    };
+}).AddApiKeyAuthentication(ApiKeySimple, opts =>
+{
+    opts.HeaderName = "X-Api-Key";
+    opts.ExpectedKey = "my-secret-api-key";
+}).AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
+{
+    opts.HeaderName = "X-Api-Key";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.PowerShell,
+        Code = """
+    param(
+        [string]$ProvidedKey
+    )
+    if ($ProvidedKey -eq 'my-secret-api-key') {
+        return $true
+    } else {
+        return $false
+    }
+    """
+    };
+}).AddApiKeyAuthentication(ApiKeyCSharp, opts =>
+{
+    opts.HeaderName = "X-Api-Key";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.CSharp,
+        Code = """
+    return Kestrun.Utilities.SecurityUtilities.FixedTimeEquals(providedKeyBytes, Encoding.UTF8.GetBytes("my-secret-api-key"));
+    // or use a simple string comparison:  
+    // return providedKey == "my-secret-api-key";
+    """,
+        ExtraImports = ["System.Text"]
+    };
+})
 
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
@@ -208,8 +253,7 @@ server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
     }
 
     $user = $Context.HttpContext.User.Identity.Name
-    $Context.Response.Body = "Welcome, $user! You are authenticated by Powershell Code."
-    $Context.Response.ContentType = "text/plain"
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicPowershellScheme]);
 
 server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
@@ -219,8 +263,7 @@ server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
     }
 
     $user = $Context.HttpContext.User.Identity.Name
-    $Context.Response.Body = "Welcome, $user! You are authenticated by Roselyn C# Code."
-    $Context.Response.ContentType = "text/plain"
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicCSharpScheme]);
 
 
@@ -231,8 +274,7 @@ server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
     }
 
     $user = $Context.HttpContext.User.Identity.Name
-    $Context.Response.Body = "Welcome, $user! You are authenticated by Native C# code."
-    $Context.Response.ContentType = "text/plain"
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native C# code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
@@ -247,6 +289,44 @@ server.AddMapRoute("/secure/hello-cs", HttpVerb.Get, """
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
+
+server.AddNativeRoute("/secure/key/native/hello", HttpVerb.Get, async (ctx) =>
+{
+    if (ctx.HttpContext.User?.Identity == null || !ctx.HttpContext.User.Identity.IsAuthenticated)
+    {
+        ctx.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = ctx.HttpContext.User.Identity.Name;
+    ctx.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by Native C# code.", 200);
+    await Task.Yield();
+}, [ApiKeySimple]);
+
+
+server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
+    if (!Context.HttpContext.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = Context.HttpContext.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
+""", ScriptLanguage.CSharp, [ApiKeyCSharp]);
+
+
+
+server.AddMapRoute("/secure/key/ps/hello", HttpVerb.Get, """
+    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+    }
+
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code."
+    
+""", ScriptLanguage.PowerShell, [ApiKeyPowerShell]);
 
 
 
