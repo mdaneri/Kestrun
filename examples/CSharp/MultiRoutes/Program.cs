@@ -205,6 +205,21 @@ server.AddMapRoute("/ps/xml", HttpVerb.Get, """
             Write-KrXmlResponse -inputObject $payload -statusCode 200
         """, Kestrun.ScriptLanguage.PowerShell);
 
+server.AddMapRoute("/ps/csv", HttpVerb.Get, """
+            Write-Output "Hello from PowerShell script! - Csv Response(From C#)" 
+            $payload = @{
+                Body           = "Hello from PowerShell script!"
+                RequestQuery   = $Context.Request.Query
+                RequestHeaders = $Context.Request.Headers
+                RequestMethod  = $Context.Request.Method
+                RequestPath    = $Context.Request.Path
+                # If you want to return the request body, uncomment the next line
+                RequestBody    = $Context.Request.Body 
+                
+            } 
+            Write-KrCsvResponse -inputObject $payload -statusCode 200
+        """, Kestrun.ScriptLanguage.PowerShell);
+
 server.AddMapRoute("/ps/text", HttpVerb.Get, """        
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
             $payload = @{
@@ -261,7 +276,7 @@ server.AddMapRoute("/cs/json", HttpVerb.Get, """
 server.AddMapRoute("/cs/bson",
             HttpVerb.Get,
             """
-            Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
+            Console.WriteLine("Hello from C# script! - Bson Response(From C#)");
             var payload = new
             {
                 Body = "Hello from C# script! - Bson Response",
@@ -274,6 +289,24 @@ server.AddMapRoute("/cs/bson",
             Context.Response.WriteBsonResponse( payload,  200);
             """,
             ScriptLanguage.CSharp);
+
+server.AddMapRoute("/cs/csv",
+            HttpVerb.Get,
+            """
+            Console.WriteLine("Hello from C# script! - Csv Response(From C#)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Bson Response",
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
+            };
+            Context.Response.WriteCsvResponse( payload,  200);
+            """,
+            ScriptLanguage.CSharp);
+
 
 server.AddMapRoute("/cs/cbor",
             HttpVerb.Get,
@@ -360,14 +393,13 @@ server.AddMapRoute("/cs/file", HttpVerb.Get, """
 
 server.AddNativeRoute("/compiled", HttpVerb.Get, async (ctx) =>
 {
-    ctx.Response.WriteJsonResponse(new { ok = true, message = "Native C# works!" });
-    await Task.Yield();
+    await ctx.Response.WriteJsonResponseAsync(new { ok = true, message = "Native C# works!" });
 });
 
 server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (ctx) =>
 {
     ctx.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
-    await Task.Yield();
+    await Task.CompletedTask; // Ensure the method is async
 });
 
 

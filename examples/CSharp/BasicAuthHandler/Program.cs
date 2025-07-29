@@ -292,13 +292,13 @@ server.AddNativeRoute("/secure/key/native/hello", HttpVerb.Get, async (ctx) =>
 {
     if (ctx.HttpContext.User?.Identity == null || !ctx.HttpContext.User.Identity.IsAuthenticated)
     {
-        ctx.Response.WriteErrorResponse("Access denied", 401);
+        await ctx.Response.WriteErrorResponseAsync("Access denied", 401);
         return;
     }
 
     var user = ctx.HttpContext.User.Identity.Name;
-    ctx.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by Native C# code.", 200);
-    await Task.Yield();
+    await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated by Native C# code.", 200);
+
 }, [ApiKeySimple]);
 
 
@@ -354,14 +354,13 @@ server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
     try
     {
         var token = new JwtSecurityTokenHandler().WriteToken(jwt);
-        ctx.Response.WriteJsonResponse(new { access_token = token });
+        await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
     }
     catch (Exception ex)
     {
         Log.Error(ex, "Failed to generate JWT token");
-        ctx.Response.WriteErrorResponse("Internal Server Error", 500);
+        await ctx.Response.WriteErrorResponseAsync("Internal Server Error", 500);
     }
-    await Task.Yield();
 });
 
 await server.RunUntilShutdownAsync(

@@ -92,8 +92,7 @@ server.AddMapRoute("/visit", HttpVerb.Get, """
 server.AddNativeRoute("/schedule/report", HttpVerb.Get, async (ctx) =>
 {
     var report = server.Scheduler.GetReport();
-    ctx.Response.WriteJsonResponse(report, 200);
-    await Task.Yield();
+    await ctx.Response.WriteJsonResponseAsync(report, 200);
 });
 
 await server.RunUntilShutdownAsync(

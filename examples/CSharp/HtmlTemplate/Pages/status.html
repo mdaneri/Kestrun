@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Server Status</title>
+</head>
+<body>
+  <h1>Status for {{ServerName}}</h1>
+  <ul>
+    <li>Path: {{Request.Path}}</li>
+    <li>Method: {{Request.Method}}</li>
+    <li>Time: {{Timestamp}}</li>
+    <li>Hits: {{Visits.Count}}</li>
+  </ul>
+</body>
+</html>

@@ -35,9 +35,13 @@ catch {
     Write-Error "Ensure the Kestrun module is installed or the path is correct."
     exit 1
 }
+$logger = New-KrLogger  |
+Set-KrMinimumLevel -Value Debug  |
+Add-KrSinkFile -Path ".\logs\MultiRoutes.log" -RollingInterval Hour |
+Add-KrSinkConsole |
+Register-KrLogger   -Name "DefaultLogger" -PassThru -SetAsDefault
 
-
-$server = New-KrServer -Name "MyKestrunServer"
+$server = New-KrServer -Name "Kestrun MultiRoutes"
 
 if (Test-Path "$ScriptPath\devcert.pfx" ) {
     $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
@@ -53,6 +57,57 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
     exit 1
 }
 
+$data=@"
+[
+  {
+    "OrderId": 1001,
+    "Customer": "Alice Johnson",
+    "Product": "Kestrel Hoodie",
+    "Quantity": 2,
+    "UnitPrice": 39.95,
+    "OrderTimestamp": "2025-07-29T13:42:00Z",
+    "Shipped": true
+  },
+  {
+    "OrderId": 1002,
+    "Customer": "Boris Chen",
+    "Product": "Powershell Mug",
+    "Quantity": 1,
+    "UnitPrice": 14.50,
+    "OrderTimestamp": "2025-07-29T13:53:00Z",
+    "Shipped": true
+  },
+  {
+    "OrderId": 1003,
+    "Customer": "Catalina Gómez",
+    "Product": "Async Await Sticker",
+    "Quantity": 10,
+    "UnitPrice": 1.25,
+    "OrderTimestamp": "2025-07-29T14:04:00Z",
+    "Shipped": false
+  },
+  {
+    "OrderId": 1004,
+    "Customer": "Dmitri Novak",
+    "Product": "CsvHelper Guidebook",
+    "Quantity": 3,
+    "UnitPrice": 24.00,
+    "OrderTimestamp": "2025-07-29T14:12:00Z",
+    "Shipped": false
+  },
+  {
+    "OrderId": 1005,
+    "Customer": "Emily O’Connor",
+    "Product": "Kestrun Laptop Skin",
+    "Quantity": 1,
+    "UnitPrice": 17.75,
+    "OrderTimestamp": "2025-07-29T14:18:00Z",
+    "Shipped": true
+  }
+]
+"@|ConvertFrom-Json
+
+Set-KrSharedState -Name 'Orders' -Value $data
 # Example usage:
 Set-KrServerOption -AllowSynchronousIO -DenyServerHeader
  
@@ -75,16 +130,7 @@ Add-KrMapRoute -Verbs Get -Path "/ps/json" -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
     # Payload
-    $payload = @{
-        Body           = "Hello from PowerShell script! - Json Response"
-        RequestQuery   = $Context.Request.Query
-        RequestHeaders = $Context.Request.Headers
-        RequestMethod  = $Context.Request.Method
-        RequestPath    = $Context.Request.Path
-        # If you want to return the request body, uncomment the next line
-        RequestBody    = $Context.Request.Body
-    }
-    Write-KrJsonResponse -inputObject $payload -statusCode 200
+    Write-KrJsonResponse -InputObject $Orders -StatusCode 200
 }
 
 
@@ -119,7 +165,13 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/cbor" -ScriptBlock {
     }
     Write-KrCborResponse -inputObject $payload -statusCode 200
 }
- 
+
+Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/csv" -ScriptBlock {
+
+    Write-Output "Hello from PowerShell script! - Csv Response"
+    
+    Write-KrCsvResponse -inputObject $Orders -statusCode 200
+}
  
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/yaml" -ScriptBlock {
@@ -207,7 +259,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/json" -Language CSharp -Cod
                 RequestPath = Context.Request.Path,
                 RequestBody = Context.Request.Body
             };
-            Context.Response.WriteJsonResponse( payload,  200);
+            Context.Response.WriteJsonResponse( Orders,  200);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Code @"
@@ -223,6 +275,22 @@ Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/bson" -Language CSharp -Cod
                 RequestBody = Context.Request.Body
             };
             Context.Response.WriteBsonResponse( payload,  200);
+"@
+
+
+Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/csv" -Language CSharp -Code @"
+
+            Console.WriteLine("Hello from C# script! - Csv Response(From PowerShell)");
+            var payload = new
+            {
+                Body = "Hello from C# script! - Csv Response",
+                RequestQuery = Context.Request.Query,
+                RequestHeaders = Context.Request.Headers,
+                RequestMethod = Context.Request.Method,
+                RequestPath = Context.Request.Path,
+                RequestBody = Context.Request.Body
+            };
+            Context.Response.WriteCsvResponse(Orders);
 "@
 
 Add-KrMapRoute -Server $server -Verbs Get -Path "/cs/cbor" -Language CSharp -Code @"
@@ -305,7 +373,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-ps' -ScriptBlock {
 #    (wrap the C# source in a here-string *inside* the ScriptBlock)
 # ------------------------------------------------------------------
 Add-KrMapRoute -Server $server -Verbs Get -Path '/hello-cs' -Language CSharp -Code  @"
-using System;
+ 
 Context.Response.ContentType = "text/plain";
 Context.Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
 "@

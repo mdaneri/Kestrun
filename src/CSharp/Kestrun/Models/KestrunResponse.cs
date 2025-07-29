@@ -14,6 +14,12 @@ using Microsoft.AspNetCore.WebUtilities;
 using System.Net;
 using MongoDB.Bson;
 using Kestrun.Utilities;
+using System.Collections;
+using CsvHelper.Configuration;
+using System.Globalization;
+using CsvHelper;
+using YamlDotNet.Core.Events;
+using System.Reflection;
 namespace Kestrun;
 
 public enum ContentDispositionType
@@ -183,17 +189,17 @@ public class KestrunResponse
 
     public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
     {
-        WriteJsonResponse(inputObject, depth: 10, compress: false, statusCode: statusCode);
+        WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode).GetAwaiter().GetResult();
+    }
+
+    public async Task WriteJsonResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK)
+    {
+        await WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode);
     }
 
     public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing JSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
-
-        Body = JsonConvert.SerializeObject(inputObject, serializerSettings);
-        ContentType = string.IsNullOrEmpty(contentType) ? $"application/json; charset={Encoding.WebName}" : contentType;
-        StatusCode = statusCode;
+        WriteJsonResponseAsync(inputObject, serializerSettings, statusCode, contentType).GetAwaiter().GetResult();
     }
 
     public async Task WriteJsonResponseAsync(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
@@ -204,79 +210,9 @@ public class KestrunResponse
         ContentType = string.IsNullOrEmpty(contentType) ? $"application/json; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
-
-    /// <summary>
-    /// Writes a CBOR response (binary, efficient, not human-readable).
-    /// </summary>
-    public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing CBOR response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
-
-        // Serialize to CBOR using PeterO.Cbor
-        byte[] cborBytes = inputObject != null
-            ? PeterO.Cbor.CBORObject.FromObject(inputObject).EncodeToBytes()
-            : [];
-        Body = cborBytes;
-        ContentType = string.IsNullOrEmpty(contentType) ? "application/cbor" : contentType;
-        StatusCode = statusCode;
-    }
-
-
-
-    public void WriteBsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing BSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
-
-        // Serialize to BSON (as byte[])
-        Body = inputObject != null ? inputObject.ToBson() : [];
-        ContentType = string.IsNullOrEmpty(contentType) ? "application/bson" : contentType;
-        StatusCode = statusCode;
-    }
-
-    public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
-    {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing response, StatusCode={StatusCode}", statusCode);
-
-        Body = inputObject;
-        ContentType = DetermineContentType(string.Empty, "text/plain"); // Ensure ContentType is set based on Accept header
-
-        if (ContentType.Contains("json"))
-        {
-            WriteJsonResponse(inputObject: inputObject, statusCode: statusCode);
-        }
-        else if (ContentType.Contains("yaml") || ContentType.Contains("yml"))
-        {
-            WriteYamlResponse(inputObject: inputObject, statusCode: statusCode);
-        }
-        else if (ContentType.Contains("xml"))
-        {
-            WriteXmlResponse(inputObject: inputObject, statusCode: statusCode);
-        }
-        else
-        {
-            WriteTextResponse(inputObject: inputObject, statusCode: statusCode);
-        }
-    }
-
     public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing JSON response, StatusCode={StatusCode}, ContentType={ContentType}, Depth={Depth}, Compress={Compress}",
-                statusCode, contentType, depth, compress);
-
-        var serializerSettings = new JsonSerializerSettings
-        {
-            Formatting = compress ? Formatting.None : Formatting.Indented,
-            ContractResolver = new CamelCasePropertyNamesContractResolver(),
-            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-            NullValueHandling = NullValueHandling.Ignore,
-            DefaultValueHandling = DefaultValueHandling.Ignore,
-            MaxDepth = depth
-        };
-        WriteJsonResponse(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
+        WriteJsonResponseAsync(inputObject, depth, compress, statusCode, contentType).GetAwaiter().GetResult();
     }
 
     public async Task WriteJsonResponseAsync(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
@@ -296,15 +232,142 @@ public class KestrunResponse
         };
         await WriteJsonResponseAsync(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
     }
-    
-    public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    /// <summary>
+    /// Writes a CBOR response (binary, efficient, not human-readable).
+    /// </summary>
+    public async Task WriteCborResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing YAML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+            Log.Debug("Writing CBOR response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
-        Body = YamlHelper.ToYaml(inputObject);
-        ContentType = string.IsNullOrEmpty(contentType) ? $"application/yaml; charset={Encoding.WebName}" : contentType;
+        // Serialize to CBOR using PeterO.Cbor
+        Body = await Task.Run(() => inputObject != null
+            ? PeterO.Cbor.CBORObject.FromObject(inputObject).EncodeToBytes()
+            : []);
+        ContentType = string.IsNullOrEmpty(contentType) ? "application/cbor" : contentType;
         StatusCode = statusCode;
+    }
+
+    public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        WriteCborResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
+    }
+
+    public async Task WriteBsonResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing BSON response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+        // Serialize to BSON (as byte[])
+        Body = await Task.Run(() => inputObject != null ? inputObject.ToBson() : []);
+        ContentType = string.IsNullOrEmpty(contentType) ? "application/bson" : contentType;
+        StatusCode = statusCode;
+    }
+
+    public void WriteBsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        WriteBsonResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
+    }
+
+    public async Task WriteResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing response, StatusCode={StatusCode}", statusCode);
+
+        Body = inputObject;
+        ContentType = DetermineContentType(string.Empty, "text/plain"); // Ensure ContentType is set based on Accept header
+
+        if (ContentType.Contains("json"))
+        {
+            await WriteJsonResponseAsync(inputObject: inputObject, statusCode: statusCode);
+        }
+        else if (ContentType.Contains("yaml") || ContentType.Contains("yml"))
+        {
+            await WriteYamlResponseAsync(inputObject: inputObject, statusCode: statusCode);
+        }
+        else if (ContentType.Contains("xml"))
+        {
+            await WriteXmlResponseAsync(inputObject: inputObject, statusCode: statusCode);
+        }
+        else
+        {
+            await WriteTextResponseAsync(inputObject: inputObject, statusCode: statusCode);
+        }
+    }
+
+    public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
+    {
+        WriteResponseAsync(inputObject, statusCode).GetAwaiter().GetResult();
+    }
+
+    public void WriteCsvResponse(
+            object? inputObject,
+            int statusCode = StatusCodes.Status200OK,
+            string? contentType = null,
+            CsvConfiguration? config = null)
+    {
+        Action<CsvConfiguration>? tweaker = null;
+
+        if (config is not null)
+        {
+            tweaker = target =>
+            {
+                foreach (var prop in typeof(CsvConfiguration)
+                     .GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (prop.CanRead && prop.CanWrite)
+                    {
+                        var value = prop.GetValue(config);
+                        prop.SetValue(target, value);
+                    }
+                }
+            };
+        }
+        WriteCsvResponseAsync(inputObject, statusCode, contentType, tweaker).GetAwaiter().GetResult();
+    }
+
+    public async Task WriteCsvResponseAsync(
+        object? inputObject,
+        int statusCode = StatusCodes.Status200OK,
+        string? contentType = null,
+        Action<CsvConfiguration>? tweak = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing CSV response (async), StatusCode={StatusCode}, ContentType={ContentType}",
+                      statusCode, contentType);
+
+        // Serialize inside a background task so heavy reflection never blocks the caller
+        Body = await Task.Run(() =>
+        {
+            var cfg = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true,
+                NewLine = Environment.NewLine
+            };
+            tweak?.Invoke(cfg);                         // let the caller flirt with the config
+
+            using var sw = new StringWriter();
+            using var csv = new CsvWriter(sw, cfg);
+
+            // CsvHelper insists on an enumerable; wrap single objects so it stays happy
+            if (inputObject is IEnumerable records && inputObject is not string)
+                csv.WriteRecords(records);              // whole collections (IEnumerable<T>)
+            else if (inputObject is not null)
+                csv.WriteRecords([inputObject]); // lone POCO
+            else
+                csv.WriteHeader<object>();              // nothing? write only headers for an empty file
+
+            return sw.ToString();
+        }).ConfigureAwait(false);
+
+        ContentType = string.IsNullOrEmpty(contentType)
+            ? $"text/csv; charset={Encoding.WebName}"
+            : contentType;
+        StatusCode = statusCode;
+    }
+    public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        WriteYamlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
     }
 
     public async Task WriteYamlResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
@@ -319,14 +382,7 @@ public class KestrunResponse
 
     public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing XML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
-
-        XElement xml = XmlUtil.ToXml("Response", inputObject);
-
-        Body = xml.ToString(SaveOptions.DisableFormatting);
-        ContentType = string.IsNullOrEmpty(contentType) ? $"application/xml; charset={Encoding.WebName}" : contentType;
-        StatusCode = statusCode;
+        WriteXmlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
     }
 
     public async Task WriteXmlResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
@@ -341,16 +397,7 @@ public class KestrunResponse
     }
     public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
-
-        if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing text response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
-
-        if (inputObject is null)
-            throw new ArgumentNullException(nameof(inputObject), "Input object cannot be null for text response.");
-
-        Body = inputObject?.ToString() ?? string.Empty;
-        ContentType = string.IsNullOrEmpty(contentType) ? $"text/plain; charset={Encoding.WebName}" : contentType;
-        StatusCode = statusCode;
+        WriteTextResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
     }
 
     public async Task WriteTextResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
@@ -395,6 +442,7 @@ public class KestrunResponse
         }
 
     }
+
     public void WriteBinaryResponse(byte[] data, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -403,7 +451,6 @@ public class KestrunResponse
         ContentType = contentType;
         StatusCode = statusCode;
     }
-
     public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -435,7 +482,7 @@ public class KestrunResponse
     /// Write an error response with a custom message.
     /// Chooses JSON/YAML/XML/plain-text based on override → Accept → default JSON.
     /// </summary>
-    public void WriteErrorResponse(
+    public async Task WriteErrorResponseAsync(
         string message,
         int statusCode = StatusCodes.Status500InternalServerError,
         string? contentType = null,
@@ -462,14 +509,23 @@ public class KestrunResponse
             Method = Request?.Method
         };
 
-        WriteFormattedErrorResponse(payload, contentType);
+        await WriteFormattedErrorResponseAsync(payload, contentType);
+    }
+
+    public void WriteErrorResponse(
+      string message,
+      int statusCode = StatusCodes.Status500InternalServerError,
+      string? contentType = null,
+      string? details = null)
+    {
+        WriteErrorResponseAsync(message, statusCode, contentType, details).GetAwaiter().GetResult();
     }
 
     /// <summary>
     /// Write an error response based on an exception.
     /// Chooses JSON/YAML/XML/plain-text based on override → Accept → default JSON.
     /// </summary>
-    public void WriteErrorResponse(
+    public async Task WriteErrorResponseAsync(
         Exception ex,
         int statusCode = StatusCodes.Status500InternalServerError,
         string? contentType = null,
@@ -496,14 +552,21 @@ public class KestrunResponse
             Method = Request?.Method
         };
 
-        WriteFormattedErrorResponse(payload, contentType);
+        await WriteFormattedErrorResponseAsync(payload, contentType);
     }
-
+    public void WriteErrorResponse(
+            Exception ex,
+            int statusCode = StatusCodes.Status500InternalServerError,
+            string? contentType = null,
+            bool includeStack = true)
+    {
+        WriteErrorResponseAsync(ex, statusCode, contentType, includeStack).GetAwaiter().GetResult();
+    }
 
     /// <summary>
     /// Internal dispatcher: serializes the payload according to the chosen content-type.
     /// </summary>
-    private void WriteFormattedErrorResponse(ErrorPayload payload, string? contentType = null)
+    private async Task WriteFormattedErrorResponseAsync(ErrorPayload payload, string? contentType = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Writing formatted error response, ContentType={ContentType}, Status={Status}", contentType, payload.Status);
@@ -515,15 +578,15 @@ public class KestrunResponse
         }
         if (contentType.Contains("json"))
         {
-            WriteJsonResponse(payload, payload.Status);
+            await WriteJsonResponseAsync(payload, payload.Status);
         }
         else if (contentType.Contains("yaml") || contentType.Contains("yml"))
         {
-            WriteYamlResponse(payload, payload.Status);
+            await WriteYamlResponseAsync(payload, payload.Status);
         }
         else if (contentType.Contains("xml"))
         {
-            WriteXmlResponse(payload, payload.Status);
+            await WriteXmlResponseAsync(payload, payload.Status);
         }
         else
         {
@@ -545,9 +608,95 @@ public class KestrunResponse
                 lines.Add("StackTrace:\n" + payload.StackTrace);
 
             var text = string.Join("\n", lines);
-            WriteTextResponse(text, payload.Status, "text/plain");
+            await WriteTextResponseAsync(text, payload.Status, "text/plain");
         }
     }
+
+    #endregion
+    #region HTML Response Helpers 
+    /// <summary>
+    /// One-pass scanner from before.
+    /// </summary>
+    private static string RenderInlineTemplate(string template, IReadOnlyDictionary<string, object?> vars)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Rendering inline template, TemplateLength={TemplateLength}, VarsCount={VarsCount}", template.Length, vars.Count);
+        var sb = new StringBuilder(template.Length);
+        for (int i = 0; i < template.Length; i++)
+        {
+            if (template[i] == '{' && i + 1 < template.Length && template[i + 1] == '{')
+            {
+                int start = i + 2;
+                int end = template.IndexOf("}}", start, StringComparison.Ordinal);
+                if (end > start)
+                {
+                    var key = template[start..end].Trim();
+                    if (vars.TryGetValue(key, out var val) && val is not null)
+                        sb.Append(val);
+                    i = end + 1;
+                    continue;
+                }
+            }
+            sb.Append(template[i]);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Renders the given HTML string (already in memory) with placeholders and writes it.
+    /// </summary>
+    public async Task WriteHtmlResponseAsync(
+        string htmlTemplate,
+        IReadOnlyDictionary<string, object?> vars,
+        int statusCode = 200)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing HTML response (async), StatusCode={StatusCode}, TemplateLength={TemplateLength}", statusCode, htmlTemplate.Length);
+        var html = RenderInlineTemplate(htmlTemplate, vars);
+        await WriteTextResponseAsync(html, statusCode, "text/html");
+    }
+
+    /// <summary>
+    /// Reads an .html file, merges in placeholders, and writes it.
+    /// </summary>
+    public async Task WriteHtmlResponseFromFileAsync(
+        string htmlFilePath,
+        IReadOnlyDictionary<string, object?> vars,
+        int statusCode = 200)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing HTML response from file (async), FilePath={FilePath}, StatusCode={StatusCode}", htmlFilePath, statusCode);
+        if (!File.Exists(htmlFilePath))
+        {
+            WriteTextResponse($"<!-- File not found: {htmlFilePath} -->", 404, "text/html");
+            return;
+        }
+
+        var template = await File.ReadAllTextAsync(htmlFilePath);
+        var html = RenderInlineTemplate(template, vars);
+        await WriteTextResponseAsync(html, statusCode, "text/html");
+    }
+
+
+    public void WriteHtmlResponse(
+        string htmlTemplate,
+        IReadOnlyDictionary<string, object?> vars,
+        int statusCode = 200)
+    {
+        WriteHtmlResponseAsync(htmlTemplate, vars, statusCode).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Reads an .html file, merges in placeholders, and writes it.
+    /// </summary>
+    public void WriteHtmlResponseFromFile(
+        string htmlFilePath,
+        IReadOnlyDictionary<string, object?> vars,
+        int statusCode = 200)
+    {
+        WriteHtmlResponseFromFileAsync(htmlFilePath, vars, statusCode).GetAwaiter().GetResult();
+    }
+
     #endregion
 
     #region Apply to HttpResponse

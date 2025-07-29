@@ -93,13 +93,12 @@ server.AddNativeRoute("/raw", HttpVerb.Get, async (ctx) =>
 
     if (visits != null && visits["Count"] != null)
     {
-        ctx.Response.WriteTextResponse($"Visits so far: {visitCount}", 200);
+        await ctx.Response.WriteTextResponseAsync($"Visits so far: {visitCount}", 200);
     }
     else
     {
-        ctx.Response.WriteErrorResponse("Visits variable not found or invalid.", 500);
+        await ctx.Response.WriteErrorResponseAsync("Visits variable not found or invalid.", 500);
     }
-    await Task.Yield();
 });
 
 await server.RunUntilShutdownAsync(

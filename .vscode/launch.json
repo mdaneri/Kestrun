@@ -37,6 +37,13 @@
             "cwd": "${workspaceFolder}/examples/PowerShell/Scheduling"
         },
         {
+            "name": "PowerShell: Launch HtmlTemplate.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/HtmlTemplate/HtmlTemplate.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/HtmlTemplate"
+        },
+        {
             "name": ".NET Launch CSharp/MultiRoutes",
             "type": "coreclr",
             "request": "launch",
@@ -99,6 +106,18 @@
             "program": "${workspaceFolder}/examples/CSharp/BasicAuthHandler/bin/Debug/net8.0/BasicAuthHandler.dll",
             "args": [],
             "cwd": "${workspaceFolder}/examples/CSharp/BasicAuthHandler",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
+        }
+        ,
+        {
+            "name": ".NET Launch CSharp/HtmlTemplate",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build HtmlTemplate",
+            "program": "${workspaceFolder}/examples/CSharp/HtmlTemplate/bin/Debug/net8.0/HtmlTemplate.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/examples/CSharp/HtmlTemplate",
             "stopAtEntry": false,
             "console": "integratedTerminal"
         }

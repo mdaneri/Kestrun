@@ -70,6 +70,16 @@
                 "${workspaceFolder}/src/CSharp/Kestrun/Kestrun.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build HtmlTemplate",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/examples/CSharp/HtmlTemplate/HtmlTemplate.csproj"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

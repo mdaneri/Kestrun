@@ -244,19 +244,19 @@ public class KestrunHost : IDisposable
     #region Route
     public delegate Task KestrunHandler(KestrunContext Context);
 
-    public void AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
+    public IEndpointConventionBuilder AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
-        AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
+        return AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
     }
 
-    public void AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
+    public IEndpointConventionBuilder AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
 
-        AddNativeRoute(new MapRouteOptions
+        return AddNativeRoute(new MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
@@ -266,7 +266,7 @@ public class KestrunHost : IDisposable
 
     }
 
-    public void AddNativeRoute(MapRouteOptions options, KestrunHandler handler)
+    public IEndpointConventionBuilder AddNativeRoute(MapRouteOptions options, KestrunHandler handler)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("AddNativeRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
@@ -293,13 +293,14 @@ public class KestrunHost : IDisposable
         _Logger.Information("Added native route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
         // Add to the feature queue for later processing
         _featureQueue.Add(host => host.AddMapRoute(options));
+        return map;
     }
 
 
-    public void AddMapRoute(string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
+    public IEndpointConventionBuilder AddMapRoute(string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? requireAuthorization = null)
     {
-        AddMapRoute(new Hosting.MapRouteOptions
+        return AddMapRoute(new Hosting.MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = [httpVerbs],
@@ -310,13 +311,13 @@ public class KestrunHost : IDisposable
 
     }
 
-    public void AddMapRoute(string pattern,
-                                 IEnumerable<HttpVerb> httpVerbs,
-                                 string scriptBlock,
-                                 ScriptLanguage language = ScriptLanguage.PowerShell,
-                                     string[]? requireAuthorization = null)
+    public IEndpointConventionBuilder AddMapRoute(string pattern,
+                                IEnumerable<HttpVerb> httpVerbs,
+                                string scriptBlock,
+                                ScriptLanguage language = ScriptLanguage.PowerShell,
+                                string[]? requireAuthorization = null)
     {
-        AddMapRoute(new MapRouteOptions
+        return AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
@@ -325,7 +326,7 @@ public class KestrunHost : IDisposable
             RequireAuthorization = requireAuthorization ?? [] // No authorization by default
         });
     }
-    public void AddMapRoute(MapRouteOptions options)
+    public IEndpointConventionBuilder AddMapRoute(MapRouteOptions options)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
@@ -369,6 +370,7 @@ public class KestrunHost : IDisposable
             AddMapOptions(map, options);
 
             _Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+            return map;
             // Add to the feature queue for later processing
 
         }
@@ -481,43 +483,53 @@ public class KestrunHost : IDisposable
             map.WithGroupName(options.OpenAPI.GroupName);
         }
     }
-    public KestrunHost AddHtmlTemplateRoute(string pattern, string htmlFilePath)
+
+
+    public IEndpointConventionBuilder AddHtmlTemplateRoute(string pattern, string htmlFilePath, string[]? requireAuthorization = null)
     {
-        // ① Read the file once at startup (avoid disk I/O per request)
-        var template = File.ReadAllText(htmlFilePath);
-
-        AddNativeRoute(pattern, HttpVerb.Get, async (ctx) =>
+        return AddHtmlTemplateRoute(new MapRouteOptions
         {
-            // ② Build your variables map
-            var vars = new Dictionary<string, object?>()
-            {
-                ["Request.Path"] = ctx.Request.Path,
-                ["Request.Method"] = ctx.Request.Method,
-                ["QueryString"] = ctx.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString()),
-                ["Form"] = ctx.Request.Form,
-                ["Cookies"] = ctx.Request.Cookies,
-                ["Headers"] = ctx.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()),
-                ["UserAgent"] = ctx.Request.Headers["User-Agent"].ToString(),
-                ["ServerSoftware"] = "Kestrun/" + Options.ApplicationName,
-                ["ServerVersion"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
-                ["ServerOS"] = Environment.OSVersion.ToString(),
-                ["ServerArch"] = Environment.Is64BitOperatingSystem ? "x64" : "x86",
-                ["ServerIP"] = ctx.HttpContext.Connection.LocalIpAddress?.ToString() ?? "unknown",
-                ["ServerPort"] = ctx.HttpContext.Connection.LocalPort,
-                ["ServerName"] = Environment.MachineName,
-                ["Timestamp"] = DateTimeOffset.UtcNow.ToString("O")
-            };
-            // merge shared state
-            foreach (var kv in SharedStateStore.Snapshot())
-                vars[kv.Key] = kv.Value;
+            Pattern = pattern,
+            HttpVerbs = [HttpVerb.Get],
+            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
+        }, htmlFilePath);
+    }
 
-            // ③ Render in one pass
-            var html = HtmlTemplateHelper.RenderInlineTemplate(template, vars);
+    public IEndpointConventionBuilder AddHtmlTemplateRoute(MapRouteOptions options, string htmlFilePath)
+    {
 
-            // ④ Send it
-            await ctx.Response.WriteTextResponseAsync(html, 200, "text/html");
-        });
-        return this;
+        if (_Logger.IsEnabled(LogEventLevel.Debug))
+            _Logger.Debug("Adding HTML template route: {Pattern}", options.Pattern);
+        
+        if (options.HttpVerbs.Count() != 0 &&
+            (options.HttpVerbs.Count() > 1 || options.HttpVerbs.First() != HttpVerb.Get))
+        {
+            _Logger.Error("HTML template routes only support GET requests. Provided HTTP verbs: {HttpVerbs}", string.Join(", ", options.HttpVerbs));
+            throw new ArgumentException("HTML template routes only support GET requests.", nameof(options.HttpVerbs));
+        }
+        if (string.IsNullOrWhiteSpace(htmlFilePath) || !File.Exists(htmlFilePath))
+        {
+            _Logger.Error("HTML file path is null, empty, or does not exist: {HtmlFilePath}", htmlFilePath);
+            throw new FileNotFoundException("HTML file not found.", htmlFilePath);
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Pattern))
+        {
+            _Logger.Error("Pattern cannot be null or empty.");
+            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+        }
+
+        var map = AddNativeRoute(options.Pattern, HttpVerb.Get, async (ctx) =>
+          {
+              // ② Build your variables map
+              var vars = new Dictionary<string, object?>();
+              VariablesMap.GetVariablesMap(ctx, ref vars);
+
+              await ctx.Response.WriteHtmlResponseFromFileAsync(htmlFilePath, vars, ctx.Response.StatusCode);
+          });
+
+        AddMapOptions(map, options);
+        return map;
     }
 
     #endregion

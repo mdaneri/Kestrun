@@ -1,40 +1,4 @@
-<#
-.SYNOPSIS
-    Writes an object to the HTTP response body as JSON.
-
-.DESCRIPTION
-    Serializes the provided object to JSON using Newtonsoft.Json and writes it
-    to the current HTTP response. The caller can specify the HTTP status code,
-    serialization depth and formatting options.
-#>
-function Write-KrJsonResponse {
-    param(
-        [Parameter(Mandatory = $true)]
-        [object]$InputObject,
-        [Parameter()]
-        [int]$StatusCode = 200,
-        [Parameter()]
-        [ValidateRange(0, 100)]
-        [int]$Depth = 10,
-        [Parameter()]
-        [bool]$Compress = $false,
-        [Parameter()]
-        [string]$ContentType
-    )
-    if ($null -ne $Context.Response) {
-        $serializerSettings = [Newtonsoft.Json.JsonSerializerSettings]::new()
-        $serializerSettings.Formatting = if ($Compress) { [Newtonsoft.Json.Formatting]::None } else { [Newtonsoft.Json.Formatting]::Indented }
-        $serializerSettings.ContractResolver = [Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver]::new()
-        $serializerSettings.ReferenceLoopHandling = [Newtonsoft.Json.ReferenceLoopHandling]::Ignore
-        $serializerSettings.NullValueHandling = [Newtonsoft.Json.NullValueHandling]::Ignore
-        $serializerSettings.DefaultValueHandling = [Newtonsoft.Json.DefaultValueHandling]::Ignore
-        $serializerSettings.MaxDepth = $Depth
-        $serializerSettings.DateFormatHandling = [Newtonsoft.Json.DateFormatHandling]::IsoDateFormat
-        # Call the C# method on the $Context.Response object
-        $Context.Response.WriteJsonResponse($InputObject, $serializerSettings, $StatusCode, $ContentType)
-    }
-}
-
+ 
 
 <#
 .SYNOPSIS
@@ -59,28 +23,7 @@ function Write-KrYamlResponse {
     }
 }
 
-<#
-.SYNOPSIS
-    Writes plain text to the HTTP response body.
 
-.DESCRIPTION
-    Sends a raw text payload to the client and optionally sets the HTTP status
-    code and content type.
-#>
-function Write-KrTextResponse {
-    param(
-        [Parameter(Mandatory = $true)]
-        [object]$InputObject,
-        [Parameter()]
-        [int]$StatusCode = 200,
-        [Parameter()]
-        [string]$ContentType
-    )
-    if ($null -ne $Context.Response) {
-        # Call the C# method on the $Context.Response object
-        $Context.Response.WriteTextResponse($InputObject, $StatusCode, $ContentType)
-    }
-}
 
 <#
 .SYNOPSIS
