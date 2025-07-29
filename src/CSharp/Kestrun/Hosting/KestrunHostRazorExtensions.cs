@@ -221,4 +221,55 @@ public static class KestrunHostRazorExtensions
                 host._Logger.Debug("PowerShell Razor Pages middleware added with route prefix: {RoutePrefix}", routePrefix);
         });
     }
+
+
+    
+    /// <summary>
+    /// Adds Razor Pages to the application.
+    /// </summary>
+    /// <param name="cfg">The configuration options for Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public static KestrunHost AddRazorPages(this KestrunHost host,RazorPagesOptions? cfg)
+    {
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            host._Logger.Debug("Adding Razor Pages from source: {Source}", cfg);
+
+        if (cfg == null)
+            return host.AddRazorPages(); // no config, use defaults
+
+        return host.AddRazorPages(dest =>
+            {
+                // simple value properties are fine
+                dest.RootDirectory = cfg.RootDirectory;
+
+                // copy conventions one‑by‑one (collection is read‑only)
+                foreach (var c in cfg.Conventions)
+                    dest.Conventions.Add(c);
+            });
+    }
+
+    /// <summary>
+    /// Adds Razor Pages to the application.
+    /// This overload allows you to specify configuration options.
+    /// If you need to configure Razor Pages options, use the other overload.
+    /// </summary>
+    /// <param name="cfg">The configuration options for Razor Pages.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+    public static KestrunHost AddRazorPages(this KestrunHost host,Action<RazorPagesOptions>? cfg = null)
+    {
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            host._Logger.Debug("Adding Razor Pages with configuration: {Config}", cfg);
+        return host.AddService(services =>
+        {
+            var mvc = services.AddRazorPages();         // returns IMvcBuilder
+
+            if (cfg != null)
+                mvc.AddRazorPagesOptions(cfg);          // ← the correct extension
+                                                        //  —OR—
+                                                        // services.Configure(cfg);                 // also works
+        })
+         // optional: automatically map Razor endpoints after Build()
+         .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
+    }
+
 }

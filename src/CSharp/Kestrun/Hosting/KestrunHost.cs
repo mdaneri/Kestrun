@@ -741,55 +741,7 @@ public class KestrunHost : IDisposable
             }
         });
     }
-
-    /// <summary>
-    /// Adds Razor Pages to the application.
-    /// </summary>
-    /// <param name="cfg">The configuration options for Razor Pages.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddRazorPages(RazorPagesOptions? cfg)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding Razor Pages from source: {Source}", cfg);
-
-        if (cfg == null)
-            return AddRazorPages(); // no config, use defaults
-
-        return AddRazorPages(dest =>
-            {
-                // simple value properties are fine
-                dest.RootDirectory = cfg.RootDirectory;
-
-                // copy conventions one‑by‑one (collection is read‑only)
-                foreach (var c in cfg.Conventions)
-                    dest.Conventions.Add(c);
-            });
-    }
-
-    /// <summary>
-    /// Adds Razor Pages to the application.
-    /// This overload allows you to specify configuration options.
-    /// If you need to configure Razor Pages options, use the other overload.
-    /// </summary>
-    /// <param name="cfg">The configuration options for Razor Pages.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddRazorPages(Action<RazorPagesOptions>? cfg = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding Razor Pages with configuration: {Config}", cfg);
-        return AddService(services =>
-        {
-            var mvc = services.AddRazorPages();         // returns IMvcBuilder
-
-            if (cfg != null)
-                mvc.AddRazorPagesOptions(cfg);          // ← the correct extension
-                                                        //  —OR—
-                                                        // services.Configure(cfg);                 // also works
-        })
-         // optional: automatically map Razor endpoints after Build()
-         .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
-    }
-
+ 
     /// <summary>
     /// Adds MVC / API controllers to the application.
     /// </summary>
