@@ -9,8 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Python.Runtime;
 using Serilog;
-using Serilog.Events;
-using static Kestrun.KestrunHost;
+using Serilog.Events; 
 
 namespace Kestrun.Languages;
 // ---------------------------------------------------------------------------

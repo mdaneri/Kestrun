@@ -7,6 +7,7 @@ using Kestrun.Utilities;
 using System.Text;
 using Serilog;
 using Kestrun.Logging;
+using Kestrun.Hosting;
 
 
 Log.Logger = new LoggerConfiguration()

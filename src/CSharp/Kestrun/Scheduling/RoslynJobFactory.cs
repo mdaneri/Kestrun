@@ -7,8 +7,7 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Scripting;
 using Serilog.Events;
 using System.Reflection;
-using System.Text;
-using static Kestrun.KestrunHost;
+using System.Text; 
 
 namespace Kestrun.Scheduling;
 

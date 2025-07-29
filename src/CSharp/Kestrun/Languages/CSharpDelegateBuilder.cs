@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Serilog;
 using Serilog.Events;
-using static Kestrun.KestrunHost;
 
 namespace Kestrun.Languages;
 

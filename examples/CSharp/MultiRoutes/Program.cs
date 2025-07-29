@@ -11,7 +11,8 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Org.BouncyCastle.Utilities.Zlib;
 using Kestrun.Logging;
 using Kestrun.Utilities;
-using System.Text;   // Only for writing the CSR key
+using System.Text;
+using Kestrun.Hosting;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
 

@@ -1,4 +1,5 @@
 using Kestrun;                         // ← contains static SharedState
+using Kestrun.Hosting;
 using Kestrun.SharedState;
 using Xunit;
 

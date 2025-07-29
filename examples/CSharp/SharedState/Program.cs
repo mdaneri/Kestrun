@@ -12,7 +12,8 @@ using Kestrun.Logging;
 using Microsoft.Extensions.Logging;
 using Kestrun.Utilities;
 using Kestrun.SharedState;
-using System.Text;   // Only for writing the CSR key
+using System.Text;
+using Kestrun.Hosting;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
