@@ -196,6 +196,15 @@ public class KestrunResponse
         StatusCode = statusCode;
     }
 
+    public async Task WriteJsonResponseAsync(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing JSON response (async), StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+        Body = await Task.Run(() => JsonConvert.SerializeObject(inputObject, serializerSettings));
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/json; charset={Encoding.WebName}" : contentType;
+        StatusCode = statusCode;
+    }
+
     /// <summary>
     /// Writes a CBOR response (binary, efficient, not human-readable).
     /// </summary>
@@ -270,12 +279,40 @@ public class KestrunResponse
         WriteJsonResponse(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
     }
 
+    public async Task WriteJsonResponseAsync(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing JSON response (async), StatusCode={StatusCode}, ContentType={ContentType}, Depth={Depth}, Compress={Compress}",
+                statusCode, contentType, depth, compress);
+
+        var serializerSettings = new JsonSerializerSettings
+        {
+            Formatting = compress ? Formatting.None : Formatting.Indented,
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Ignore,
+            MaxDepth = depth
+        };
+        await WriteJsonResponseAsync(inputObject, serializerSettings: serializerSettings, statusCode: statusCode, contentType: contentType);
+    }
+    
     public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
             Log.Debug("Writing YAML response, StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
 
         Body = YamlHelper.ToYaml(inputObject);
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/yaml; charset={Encoding.WebName}" : contentType;
+        StatusCode = statusCode;
+    }
+
+    public async Task WriteYamlResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing YAML response (async), StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+        Body = await Task.Run(() => YamlHelper.ToYaml(inputObject));
         ContentType = string.IsNullOrEmpty(contentType) ? $"application/yaml; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
@@ -292,6 +329,16 @@ public class KestrunResponse
         StatusCode = statusCode;
     }
 
+    public async Task WriteXmlResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing XML response (async), StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+        XElement xml = await Task.Run(() => XmlUtil.ToXml("Response", inputObject));
+        Body = await Task.Run(() => xml.ToString(SaveOptions.DisableFormatting));
+        ContentType = string.IsNullOrEmpty(contentType) ? $"application/xml; charset={Encoding.WebName}" : contentType;
+        StatusCode = statusCode;
+    }
     public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
     {
 
@@ -302,6 +349,19 @@ public class KestrunResponse
             throw new ArgumentNullException(nameof(inputObject), "Input object cannot be null for text response.");
 
         Body = inputObject?.ToString() ?? string.Empty;
+        ContentType = string.IsNullOrEmpty(contentType) ? $"text/plain; charset={Encoding.WebName}" : contentType;
+        StatusCode = statusCode;
+    }
+
+    public async Task WriteTextResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
+    {
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Writing text response (async), StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
+
+        if (inputObject is null)
+            throw new ArgumentNullException(nameof(inputObject), "Input object cannot be null for text response.");
+
+        Body = await Task.Run(() => inputObject?.ToString() ?? string.Empty);
         ContentType = string.IsNullOrEmpty(contentType) ? $"text/plain; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
     }
@@ -342,7 +402,6 @@ public class KestrunResponse
         Body = data ?? throw new ArgumentNullException(nameof(data), "Data cannot be null for binary response.");
         ContentType = contentType;
         StatusCode = statusCode;
-        //       Headers["Content-Length"] = data.Length.ToString();
     }
 
     public void WriteStreamResponse(Stream stream, int statusCode = StatusCodes.Status200OK, string contentType = "application/octet-stream")
@@ -352,7 +411,6 @@ public class KestrunResponse
         Body = stream;
         ContentType = contentType;
         StatusCode = statusCode;
-        //      Headers["Content-Length"] = stream.Length.ToString();
     }
     #endregion
 

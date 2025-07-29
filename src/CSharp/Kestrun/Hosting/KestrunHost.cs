@@ -481,6 +481,44 @@ public class KestrunHost : IDisposable
             map.WithGroupName(options.OpenAPI.GroupName);
         }
     }
+    public KestrunHost AddHtmlTemplateRoute(string pattern, string htmlFilePath)
+    {
+        // ① Read the file once at startup (avoid disk I/O per request)
+        var template = File.ReadAllText(htmlFilePath);
+
+        AddNativeRoute(pattern, HttpVerb.Get, async (ctx) =>
+        {
+            // ② Build your variables map
+            var vars = new Dictionary<string, object?>()
+            {
+                ["Request.Path"] = ctx.Request.Path,
+                ["Request.Method"] = ctx.Request.Method,
+                ["QueryString"] = ctx.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString()),
+                ["Form"] = ctx.Request.Form,
+                ["Cookies"] = ctx.Request.Cookies,
+                ["Headers"] = ctx.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString()),
+                ["UserAgent"] = ctx.Request.Headers["User-Agent"].ToString(),
+                ["ServerSoftware"] = "Kestrun/" + Options.ApplicationName,
+                ["ServerVersion"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown",
+                ["ServerOS"] = Environment.OSVersion.ToString(),
+                ["ServerArch"] = Environment.Is64BitOperatingSystem ? "x64" : "x86",
+                ["ServerIP"] = ctx.HttpContext.Connection.LocalIpAddress?.ToString() ?? "unknown",
+                ["ServerPort"] = ctx.HttpContext.Connection.LocalPort,
+                ["ServerName"] = Environment.MachineName,
+                ["Timestamp"] = DateTimeOffset.UtcNow.ToString("O")
+            };
+            // merge shared state
+            foreach (var kv in SharedStateStore.Snapshot())
+                vars[kv.Key] = kv.Value;
+
+            // ③ Render in one pass
+            var html = HtmlTemplateHelper.RenderInlineTemplate(template, vars);
+
+            // ④ Send it
+            await ctx.Response.WriteTextResponseAsync(html, 200, "text/html");
+        });
+        return this;
+    }
 
     #endregion
     #region Configuration
