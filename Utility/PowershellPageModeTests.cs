@@ -11,7 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Xunit;
 using Kestrun;
 
-namespace Kestrun.Tests
+namespace KestrunTests;
 {
     public class PowerShellRazorPageTests
     {

@@ -1,6 +1,6 @@
 using Kestrun;
 
-namespace Kestrun;
+namespace Kestrun.Scripting;
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Delegate,
              AllowMultiple = false)]

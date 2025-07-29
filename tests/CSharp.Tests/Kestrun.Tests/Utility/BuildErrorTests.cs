@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Xunit;
 using Kestrun.Utilities;
 
-#pragma warning disable CA1050 // Declare types in namespaces
+namespace KestrunTests.Utility;
 public class BuildErrorTests
-#pragma warning restore CA1050 // Declare types in namespaces
+
 {
     [Fact]
     public void Text_ReturnsFormattedErrors()

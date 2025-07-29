@@ -229,6 +229,11 @@ public class KestrunHost : IDisposable
         ConfigureListener(port: port, ipAddress: ipAddress, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
     }
 
+    public void ConfigureListener(int port, bool useConnectionLogging = false)
+    {
+        ConfigureListener(port: port, ipAddress: null, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
+    }
+
     #endregion
 
 
@@ -500,7 +505,7 @@ public class KestrunHost : IDisposable
 
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("Adding HTML template route: {Pattern}", options.Pattern);
-        
+
         if (options.HttpVerbs.Count() != 0 &&
             (options.HttpVerbs.Count() > 1 || options.HttpVerbs.First() != HttpVerb.Get))
         {

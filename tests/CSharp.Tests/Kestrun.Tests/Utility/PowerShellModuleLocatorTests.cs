@@ -3,9 +3,9 @@ using System.IO;
 using System.Reflection;
 using Xunit;
 
-#pragma warning disable CA1050 // Declare types in namespaces
+namespace KestrunTests.Utility;
 public class PowerShellModuleLocatorTests
-#pragma warning restore CA1050 // Declare types in namespaces
+
 {
     [Fact]
     public void FindFileUpwards_FindsFile()

@@ -2,9 +2,9 @@ using Kestrun.Utilities;
 using System.Reflection;
 using Xunit;
 
-#pragma warning disable CA1050 // Declare types in namespaces
+namespace KestrunTests;
 public class RegexUtilsTests
-#pragma warning restore CA1050 // Declare types in namespaces
+
 {
     private static bool InvokeIsGlobMatch(string input, string pattern, bool ignoreCase = true)
     {

@@ -1,9 +1,9 @@
 using Kestrun.Utilities;
 using Xunit;
 
-#pragma warning disable CA1050 // Declare types in namespaces
+namespace KestrunTests.Utility;
 public class SecurityUtilitiesTests
-#pragma warning restore CA1050 // Declare types in namespaces
+
 {
     [Fact]
     public void FixedTimeEquals_ByteArrays_Equal_ReturnsTrue()

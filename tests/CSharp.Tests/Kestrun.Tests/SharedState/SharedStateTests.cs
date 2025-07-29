@@ -2,15 +2,16 @@ using Kestrun;                         // ← contains static SharedState
 using Kestrun.SharedState;
 using Xunit;
 
-#pragma warning disable CA1050 // Declare types in namespaces
+namespace KestrunTests.SharedState;
+
 public class SharedStateTests
-#pragma warning restore CA1050 // Declare types in namespaces
+
 {
     // ── happy‑path basics ────────────────────────────────────────────
     [Fact]
     public void Set_And_TryGet_Work()
     {
-        var host = KestrunHostManager.Create("TestHost");
+        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
 
         Assert.True(SharedStateStore.Set("foo", new List<int> { 1, 2 }));
         Assert.True(SharedStateStore.TryGet("foo", out List<int>? list));
@@ -21,7 +22,7 @@ public class SharedStateTests
     [Fact]
     public void CaseInsensitive_Access_Works()
     {
-        var host = KestrunHostManager.Create("TestHost");
+        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         SharedStateStore.Set("Bar", "baz");
 
         Assert.True(SharedStateStore.TryGet("bar", out string? val));
@@ -34,7 +35,7 @@ public class SharedStateTests
     [Fact]
     public void Snapshot_And_KeySnapshot_Work()
     {
-        var host = KestrunHostManager.Create("TestHost");
+        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         SharedStateStore.Set("snap", "val");
 
         var map = SharedStateStore.Snapshot();
@@ -49,7 +50,7 @@ public class SharedStateTests
     [Fact]
     public void Invalid_Name_Throws()
     {
-        var host = KestrunHostManager.Create("TestHost");
+        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         Assert.Throws<ArgumentException>(() => SharedStateStore.Set("1bad", "oops"));
         Assert.Throws<ArgumentException>(() => SharedStateStore.Set("bad-name", "oops"));
     }
@@ -57,7 +58,7 @@ public class SharedStateTests
     [Fact]
     public void ValueType_Throws()
     {
-        var host = KestrunHostManager.Create("TestHost");
+        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         Assert.Throws<ArgumentException>(() => SharedStateStore.Set("num", 123)); // int ⇒ value‑type
     }
 }
