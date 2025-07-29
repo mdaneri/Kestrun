@@ -25,7 +25,9 @@ function Start-KrServer {
         [Parameter()]
         [switch]$NoWait,
         [Parameter()]
-        [switch]$Quiet
+        [switch]$Quiet,
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
@@ -79,8 +81,10 @@ function Start-KrServer {
                     if (-not $Quiet.IsPresent) {
                         Write-Host "Stopping Kestrun server..."
                     }
-                    $Server.StopAsync().Wait()
-                    $Server.Dispose()
+                    [Kestrun.KestrunHostManager]::StopAsync($Server.ApplicationName).Wait()
+                    #$Server.StopAsync().Wait()
+                    [Kestrun.KestrunHostManager]::Destroy($Server.ApplicationName)
+                    #$Server.Dispose()
                     if (-not $Quiet.IsPresent) {
                         Write-Host "Kestrun server stopped."
                     }

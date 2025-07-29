@@ -93,7 +93,8 @@ $script:KestrunRoot = $MyInvocation.PSScriptRoot
 $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 if ($PSVersionTable.PSVersion.Minor -lt 6) {
     $netVersion = "net8.0"
-}else{
+}
+else {
     $netVersion = "net9.0"
 }
 # Usage
@@ -134,4 +135,9 @@ if ($funcs) {
         Export-ModuleMember -Function ($funcs.Name)
     }
 }
- 
+
+if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
+    # Set the Kestrun root path for the host manager
+    [Kestrun.KestrunHostManager]::SetKestrunRoot($script:KestrunRoot)
+}
+# Ensure that the Kestrun host manager is destroyed to clean up resources.

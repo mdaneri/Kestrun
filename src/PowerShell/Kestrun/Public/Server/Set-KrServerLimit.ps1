@@ -61,7 +61,7 @@ function Set-KrServerLimit {
     Default: 30 seconds.
 
 #>
-[CmdletBinding()]
+    [CmdletBinding()]
     [OutputType([Kestrun.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -76,7 +76,9 @@ function Set-KrServerLimit {
         [long]$MaxResponseBufferSize  , # Default is  65,536 bytes (64 KB).
         [Microsoft.AspNetCore.Server.Kestrel.Core.MinDataRate]$MinRequestBodyDataRate , # Defaults to 240 bytes/second with a 5 second grace period.
         [Microsoft.AspNetCore.Server.Kestrel.Core.MinDataRate]$MinResponseDataRate, # Defaults to 240 bytes/second with a 5 second grace period.
-        [int]$RequestHeadersTimeoutSeconds # Default is 30 seconds.
+        [int]$RequestHeadersTimeoutSeconds, # Default is 30 seconds.
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
@@ -120,7 +122,11 @@ function Set-KrServerLimit {
                 $options.ServerLimits.RequestHeadersTimeout = [TimeSpan]::FromSeconds($RequestHeadersTimeoutSeconds)
             }
         }
-        # Return the updated server instance
-        return $Server
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
+
     }
 }

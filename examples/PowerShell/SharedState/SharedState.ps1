@@ -40,20 +40,20 @@ catch {
     exit 1
 }
 
-New-KrLogger  |
+$logger = New-KrLogger  |
 Set-KrMinimumLevel -Value Debug  |
 Add-KrSinkFile -Path ".\logs\sharedState.log" -RollingInterval Hour |
 Add-KrSinkConsole |
-Register-KrLogger -SetAsDefault -Name "DefaultLogger"
+Register-KrLogger   -Name "DefaultLogger" -PassThru -SetAsDefault
 # Seed a global counter (Visits) — injected as $Visits in every runspace
 Set-KrSharedState  -Name 'Visits' -Value @{Count = 0 }
 # Create the server
-$server = New-KrServer -Name 'MyKestrunServer' |
+$server = New-KrServer -Name 'MyKestrunServer'   -Logger $logger -PassThru
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 | Add-KrPowerShellRuntime |
+Add-KrListener -Port 5000 -PassThru| Add-KrPowerShellRuntime -PassThru|
 
-Enable-KrConfiguration
+Enable-KrConfiguration -PassThru
 
 
 # ─────────────────────────────────────────────────────────────────────────────

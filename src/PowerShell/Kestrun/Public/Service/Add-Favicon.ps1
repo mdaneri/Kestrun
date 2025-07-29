@@ -25,14 +25,22 @@ function Add-Favicon {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
-        [string]$IconPath = $null
+        [string]$IconPath = $null,
+
+        [Parameter()]
+        [switch]$PassThru
     )
     process { 
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
         $Server.AddFavicon($IconPath) | Out-Null
-        # Return the modified server instance
-        return $Server
+        
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
+
     }
 }

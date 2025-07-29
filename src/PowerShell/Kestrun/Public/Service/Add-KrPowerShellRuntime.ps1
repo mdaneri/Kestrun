@@ -24,7 +24,11 @@ function Add-KrPowerShellRuntime {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
 
-        [string]$PathPrefix = $null
+        [Parameter()]
+        [string]$PathPrefix = $null,
+
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
@@ -36,7 +40,11 @@ function Add-KrPowerShellRuntime {
             $Server.AddPowerShellRuntime( [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
         }
 
-        # Return the modified server instance
-        return $Server
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
+
     }
 }

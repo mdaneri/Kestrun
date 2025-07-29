@@ -21,7 +21,7 @@ new LoggerConfiguration()
     .Register("Log", setAsDefault: true);
 
 // ───────── 2. Kestrun host
-var server = KestrunHostManager.Create("Kestrun+Scheduler", cwd).
+var server = new KestrunHost("Kestrun+Scheduler",cwd).
 
 
 

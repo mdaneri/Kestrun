@@ -22,7 +22,9 @@ function Enable-KrConfiguration {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
         [Parameter()]
-        [switch]$Quiet
+        [switch]$Quiet,
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
@@ -32,6 +34,10 @@ function Enable-KrConfiguration {
             Write-Host "Kestrun server configuration enabled successfully."
             Write-Host "Server Name: $($Server.Options.ApplicationName)"
         }
-        return $Server
+
+        if ($PassThru.IsPresent) { # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
     }
 }

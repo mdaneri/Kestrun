@@ -50,7 +50,11 @@ function Add-KrListener {
         [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]$Protocols,
 
         [Parameter()]
-        [switch]$UseConnectionLogging
+        [switch]$UseConnectionLogging,
+
+        [Parameter()]
+        [switch]$passThru
+        
     )
 
     process {
@@ -73,7 +77,9 @@ function Add-KrListener {
 
 
         $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)| Out-Null
-        # Return the updated server instance
-        return $Server
+        if($passThru.IsPresent) {
+            # Return the modified server instance
+            return $Server
+        }
     }
 }

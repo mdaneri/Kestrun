@@ -21,14 +21,21 @@ function New-KrServer {
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Name,
         [Parameter()]
-        [Serilog.ILogger]$Logger = [Serilog.Log]::Logger
+        [Serilog.ILogger]$Logger = [Serilog.Log]::Logger,
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         $loadedModules = Get-UserImportedModule
         $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
         if ($PSCmdlet.ShouldProcess("Kestrun server '$Name'", "Create new server instance")) { 
-            $server = [Kestrun.KestrunHostManager]::Create($Name, $Logger, $script:KestrunRoot, [string[]] $modulePaths)
-            return $server
+            $server = [Kestrun.KestrunHostManager]::Create($Name, $Logger, [string[]] $modulePaths) 
+            if ($PassThru.IsPresent) {
+                # if the PassThru switch is specified, return the server instance
+                # Return the modified server instance
+                return $Server
+            }
+
         }
     }
 }

@@ -67,12 +67,14 @@ function Set-KrServerOption {
         [switch]$AllowHostHeaderOverride,
         [switch]$DisableStringReuse,
         [int]$MaxRunspaces,
-        [int]$MinRunspaces = 1
+        [int]$MinRunspaces = 1,
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
+
         if ($PSCmdlet.ShouldProcess("Kestrun server options", "Set server options")) {
             $options = $Server.Options
             if ($null -eq $options) {
@@ -104,8 +106,12 @@ function Set-KrServerOption {
                 $options.MinRunspaces = $MinRunspaces
             }
         }
-        # Return the updated server instance
-        return $Server
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
+
     }
 
 }

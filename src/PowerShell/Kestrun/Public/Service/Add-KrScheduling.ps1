@@ -23,8 +23,12 @@ function Add-KrScheduling {
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.KestrunHost]$Server,
+
         [Parameter()]
-        [int]$MaxRunspaces
+        [int]$MaxRunspaces,
+
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         # Ensure the server instance is resolved
@@ -36,7 +40,11 @@ function Add-KrScheduling {
             $Server.AddScheduling($MaxRunspaces) | Out-Null
         }
 
-        # Return the modified server instance
-        return $Server
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
+
     }
 }

@@ -37,22 +37,22 @@ catch {
 
 
 
-New-KrLogger  |
+$logger = New-KrLogger  |
 Set-KrMinimumLevel -Value Debug  |
 Add-KrSinkFile -Path ".\logs\scheduling.log" -RollingInterval Hour |
-Register-KrLogger -SetAsDefault -Name "DefaultLogger"
+Register-KrLogger -SetAsDefault -Name "DefaultLogger" -PassThru
 
 Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } 
 
 # 2.  ─── Host & core services ─────────────────────────────────
-$server = New-KrServer -Name 'MyKestrunServer' |
+$server = New-KrServer -Name 'MyKestrunServer' -Logger $logger 
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 |
+Add-KrListener -Port 5000 -PassThru |
 # Add run-space runtime & scheduler (8 RS for jobs) 
-Add-KrPowerShellRuntime | Add-KrScheduling   -MaxRunspaces 8 |
+Add-KrPowerShellRuntime -PassThru | Add-KrScheduling   -MaxRunspaces 8 -PassThru |
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Enable-KrConfiguration
+Enable-KrConfiguration -passThru 
 # 3.  ─── Scheduled jobs ───────────────────────────────────────
 
 # (A) pure-C# heartbeat every 10 s (through ScriptBlock)

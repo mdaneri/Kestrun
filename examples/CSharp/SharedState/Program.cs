@@ -23,7 +23,7 @@ new LoggerConfiguration()
 
 // 1. Create server 
 
-var server = KestrunHostManager.Create("Kestrun SharedState", currentDir);
+var server = new KestrunHost("Kestrun SharedState", currentDir);
 // Set Kestrel options
 server.Options.ServerOptions.AllowSynchronousIO = false;
 server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader

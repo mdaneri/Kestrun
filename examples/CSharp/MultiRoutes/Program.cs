@@ -23,7 +23,7 @@ Log.Logger = new LoggerConfiguration()
         .Register("Audit", setAsDefault: true);
 
 // 1. Create server 
-var server = KestrunHostManager.Create("Kestrun MultiRoutes", currentDir);
+var server = new KestrunHost("Kestrun MultiRoutes", currentDir);
 // Set Kestrel options
 server.Options.ServerOptions.AllowSynchronousIO = false;
 server.Options.ServerOptions.AddServerHeader = false; // DenyServerHeader

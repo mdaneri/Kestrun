@@ -28,15 +28,18 @@ function Get-KrScheduleReport {
         [string]$TimeZoneId,
         [switch]$AsHashtable
     )
-    begin{
+    begin {
         if (-not $Server) {
-           if ($KestrunHost) {
-               $Server = $KestrunHost
-           }
-           else {
-    # Ensure the server instance is resolved
-        $Server = Resolve-KestrunServer -Server $Server
-           }
+            if ($KestrunHost) {
+                Write-KrInfoLog "No server specified, using global KestrunHost variable.($KestrunHost)"
+                # If no server is specified, use the global $KestrunHost variable
+                # This is useful for scripts that run in the context of a Kestrun server
+                $Server = $KestrunHost
+            }
+            else {
+                # Ensure the server instance is resolved
+                $Server = Resolve-KestrunServer -Server $Server
+            }
         }
     }
     process {
