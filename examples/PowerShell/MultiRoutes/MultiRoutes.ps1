@@ -119,14 +119,25 @@ Add-KrListener -Port 5000 -IPAddress ([IPAddress]::Loopback)
 Add-KrResponseCompression -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
 Add-KrPowerShellRuntime
 
+ 
+
+Add-KrBasicAuthentication -Name 'BasicAuth'  -Language PowerShell -Code @'
+param($username, $password)
+write-KrInformationLog -MessageTemplate "Basic Authentication: User {0} is trying to authenticate." -PropertyValues $username
+if ($username -eq "admin" -and $password -eq "password") {
+    $true
+} else {
+    $false
+}
+'@
+
 # Enable configuration
 Enable-KrConfiguration
-#$server.ApplyConfiguration()
 
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrMapRoute -Verbs Get -Path "/ps/json" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/ps/json" -Authorization 'BasicAuth' -ScriptBlock {
 
     Write-Output "Hello from PowerShell script! - Json Response"
     # Payload

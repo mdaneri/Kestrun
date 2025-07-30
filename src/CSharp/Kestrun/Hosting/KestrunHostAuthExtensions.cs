@@ -73,6 +73,48 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz
         );
     }
+    public static KestrunHost AddBasicAuthentication(
+        this KestrunHost host,
+        string scheme,
+        BasicAuthenticationOptions configure,
+        Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            host._Logger.Debug("Adding Basic Authentication with scheme: {Scheme}", scheme);
+        ArgumentNullException.ThrowIfNull(scheme);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        return host.AddBasicAuthentication(
+            scheme: scheme,
+            configure: opts =>
+            {
+
+                // Copy properties from the provided configure object
+                opts.CodeSettings = configure.CodeSettings;
+                opts.ValidateCredentials = configure.ValidateCredentials;
+
+                // ── SPECIAL POWER-SHELL PATH ────────────────────
+                if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
+                    !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                {
+                    // Build the PowerShell script validator
+                    // This will be used to validate credentials
+                    opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.CodeSettings);
+                }
+                else   // ── C# pathway ─────────────────────────────────
+                if (opts.CodeSettings.Language is ScriptLanguage.CSharp
+                    && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                {
+                    // Build the C# script validator
+                    // This will be used to validate credentials
+                    opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.CodeSettings);
+                }
+            },
+            configureAuthz: configureAuthz
+        );
+
+    }
+
 
     /// <summary>
     /// Adds JWT Bearer authentication to the Kestrun host.
