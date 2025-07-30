@@ -183,6 +183,7 @@
     <PackageReference Include="PeterO.Cbor" Version="4.5.5" />
     <PackageReference Include="MongoDB.Bson" Version="3.4.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
     <!-- Source Link for debugging  

@@ -183,15 +183,16 @@ public static class KestrunHostAuthExtensions
     public static KestrunHost AddJwtBearerAuthentication(
       this KestrunHost host,
       string scheme,
-      string? issuer,
-      string? audience,
-      SecurityKey validationKey,
-      string[]? validAlgorithms = null,
-      bool validateIssuer = true,
-      bool validateAudience = true,
-      bool validateLifetime = true,
-      bool validateSigningKey = true,
-      TimeSpan? clockSkew = null,
+      /* string? issuer,
+       string? audience,
+       SecurityKey validationKey,
+       string[]? validAlgorithms = null,
+       bool validateIssuer = true,
+       bool validateAudience = true,
+       bool validateLifetime = true,
+       bool validateSigningKey = true,
+       TimeSpan? clockSkew = null,*/
+      TokenValidationParameters validationParameters,
       Action<JwtBearerOptions>? configureJwt = null,
       Action<AuthorizationOptions>? configureAuthz = null)
     {
@@ -201,21 +202,22 @@ public static class KestrunHostAuthExtensions
             {
                 ab.AddJwtBearer(scheme, opts =>
                 {
-                    opts.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = validateIssuer,
-                        ValidIssuer = issuer,
+                    /* opts.TokenValidationParameters = new TokenValidationParameters
+                     {
+                         ValidateIssuer = validateIssuer,
+                         ValidIssuer = issuer,
 
-                        ValidateAudience = validateAudience,
-                        ValidAudience = audience,
+                         ValidateAudience = validateAudience,
+                         ValidAudience = audience,
 
-                        ValidateLifetime = validateLifetime,
-                        ValidateIssuerSigningKey = validateSigningKey,
-                        IssuerSigningKey = validationKey,
-                        ClockSkew = clockSkew ?? TimeSpan.FromMinutes(1),
+                         ValidateLifetime = validateLifetime,
+                         ValidateIssuerSigningKey = validateSigningKey,
+                         IssuerSigningKey = validationKey,
+                         ClockSkew = clockSkew ?? TimeSpan.FromMinutes(1),
 
-                        ValidAlgorithms = validAlgorithms
-                    };
+                         ValidAlgorithms = validAlgorithms
+                     };*/
+                    opts.TokenValidationParameters = validationParameters;
 
                     configureJwt?.Invoke(opts);
                 });

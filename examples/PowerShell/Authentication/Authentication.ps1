@@ -112,10 +112,17 @@ Add-KrApiKeyAuthentication -Name $ApiKeyPowerShell -AllowInsecureHttp -HeaderNam
 
 
 Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X-Api-Key" -csCode @"
-return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
-     // or use a simple string comparison:
-     //return providedKey == "my-secret-api-key";
+    return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
+    // or use a simple string comparison:
+    //return providedKey == "my-secret-api-key";
 "@
+
+$JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
+$jwtKeyBytes = ([Convert]::FromHexString($JwtKeyHex))
+$jwtSecurityKey = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($jwtKeyBytes)
+Add-KrJwtBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudience $audience `
+    -IssuerSigningKey $jwtSecurityKey -ValidAlgorithms @([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256) `
+    -ClockSkew (New-TimeSpan -Minutes 5) `
 
 
 # Enable configuration
@@ -150,25 +157,32 @@ Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -Authorization $ApiKe
  
 
 Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -Authorization $ApiKeyPowerShell -ScriptBlock {
-    # if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
-    Write-KrErrorResponse -Message "Access denied by me" -StatusCode 401
-    #     return
-    #  }
+ 
 
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
 }
  
 Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -Authorization $ApiKeyCSharp -ScriptBlock {
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+ 
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
 }
  
 
+
+Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -Authorization $JwtScheme -ScriptBlock {
+
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
+}
+
+
+Add-KrMapRoute -Verbs Get -Path "/token" -Authorization $JwtScheme -ScriptBlock {
+
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
+}
 
 # Start the server asynchronously
 Start-KrServer -Server $server

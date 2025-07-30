@@ -37,7 +37,7 @@ Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificat
 Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
-Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 */
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -164,8 +164,8 @@ server.AddResponseCompression(options =>
     {
         Language = ScriptLanguage.CSharp,
         Code = """
-    return Utilities.SecurityUtilities.FixedTimeEquals(providedKeyBytes, Encoding.UTF8.GetBytes("my-secret-api-key"));
-    // or use a simple string comparison:  
+    return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
+    // or use a simple string comparison: // or use a simple string comparison:  
     // return providedKey == "my-secret-api-key";
     """,
         ExtraImports = ["System.Text"]
@@ -175,10 +175,22 @@ server.AddResponseCompression(options =>
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
-    issuer: issuer,
-    audience: audience,
-    validationKey: jwtKey,
-    validAlgorithms: [SecurityAlgorithms.HmacSha256]);
+    validationParameters: new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = issuer,
+        ValidateAudience = true,
+        ValidAudience = audience,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = jwtKey,
+        ClockSkew = TimeSpan.FromMinutes(1), // default 5 minutes
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+    });
+// issuer: issuer,
+//audience: audience,
+//validationKey: jwtKey,
+//validAlgorithms: [SecurityAlgorithms.HmacSha256]);
 
 
 X509Certificate2? x509Certificate = null;
@@ -325,18 +337,18 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
- 
- 
+
+
 
 server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
 {
     // tiny demo – replace with your real credential check
-    var auth = ctx.Request.Authorization;
-    if (auth != "Basic YWRtaW46czNjcjN0")
-    {   // “admin:s3cr3t” base64
-        ctx.Response.WriteErrorResponse("Access denied", 401);
-        return;
-    }
+    /*    var auth = ctx.Request.Authorization;
+        if (auth != "Basic YWRtaW46czNjcjN0")
+        {   // “admin:s3cr3t” base64
+            ctx.Response.WriteErrorResponse("Access denied", 401);
+            return;
+        }*/
 
     var claims = new[]
     {
@@ -344,16 +356,17 @@ server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
     };
 
-    var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
-    var jwt = new JwtSecurityToken(
-                   issuer: issuer,
-                   audience: audience,
-                   claims: claims,
-                   expires: DateTime.UtcNow.AddHours(1),
-                   signingCredentials: creds);
+    var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256); 
     try
     {
-        var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+        //  var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+
+        var token = Kestrun.Security.JwtGenerator.GenerateJwt(claims: claims,
+                issuer: issuer,
+                audience: audience,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: creds
+            );
         await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
     }
     catch (Exception ex)
@@ -361,7 +374,7 @@ server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
         Log.Error(ex, "Failed to generate JWT token");
         await ctx.Response.WriteErrorResponseAsync("Internal Server Error", 500);
     }
-});
+}, [BasicNativeScheme]);
 
 await server.RunUntilShutdownAsync(
     consoleEncoding: Encoding.UTF8,

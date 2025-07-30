@@ -1,9 +1,9 @@
-namespace Kestrun.Scheduling;
-
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Cronos;
+
+namespace Kestrun.Scheduling;
 
 /// <summary>
 /// Represents a scheduled task with its configuration and state.

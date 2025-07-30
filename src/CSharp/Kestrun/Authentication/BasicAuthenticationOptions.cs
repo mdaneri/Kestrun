@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace Kestrun.Authentication;
 
-public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, ICloneable
+public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions 
 {
     /// <summary>HTTP header to read the key from.</summary>
     /// <remarks>Defaults to "Authorization".</remarks>
@@ -45,21 +45,6 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     /// </remarks>
     public AuthenticationCodeSettings CodeSettings { get; set; } = new();
 
-     public object Clone()
-    {
-        return new BasicAuthenticationOptions
-        {
-            HeaderName = this.HeaderName,
-            ValidateCredentials = this.ValidateCredentials,
-            Base64Encoded = this.Base64Encoded,
-            SeparatorRegex = new Regex(this.SeparatorRegex.ToString(), this.SeparatorRegex.Options),
-            Realm = this.Realm,
-            Logger = this.Logger,
-            RequireHttps = this.RequireHttps,
-            SuppressWwwAuthenticate = this.SuppressWwwAuthenticate,
-            IssueClaims = this.IssueClaims,
-            CodeSettings = this.CodeSettings is not null ? this.CodeSettings.Copy() : new AuthenticationCodeSettings()
-        };
-    }
+ 
 }
 
