@@ -49,7 +49,7 @@ if (Test-Path "$ScriptPath\devcert.pfx" ) {
 else {
     $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
     Export-KsCertificate -Certificate $cert `
-     -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+        -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
 
 if (-not (Test-KsCertificate -Certificate $cert )) {
@@ -57,7 +57,7 @@ if (-not (Test-KsCertificate -Certificate $cert )) {
     exit 1
 }
 
-$data=@"
+$data = @"
 [
   {
     "OrderId": 1001,
@@ -105,7 +105,7 @@ $data=@"
     "Shipped": true
   }
 ]
-"@|ConvertFrom-Json
+"@| ConvertFrom-Json
 
 Set-KrSharedState -Name 'Orders' -Value $data
 # Example usage:
@@ -121,15 +121,16 @@ Add-KrPowerShellRuntime
 
  
 
-Add-KrBasicAuthentication -Name 'BasicAuth'  -Language PowerShell -Code @'
-param($username, $password)
-write-KrInformationLog -MessageTemplate "Basic Authentication: User {0} is trying to authenticate." -PropertyValues $username
-if ($username -eq "admin" -and $password -eq "password") {
-    $true
-} else {
-    $false
+Add-KrBasicAuthentication -Name 'BasicAuth' -ScriptBlock {
+    param($username, $password)
+    write-KrInformationLog -MessageTemplate "Basic Authentication: User {0} is trying to authenticate." -PropertyValues $username
+    if ($username -eq "admin" -and $password -eq "password") {
+        $true
+    }
+    else {
+        $false
+    }
 }
-'@
 
 # Enable configuration
 Enable-KrConfiguration

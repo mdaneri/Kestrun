@@ -34,7 +34,7 @@ function Add-Favicon {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddDefaultFavicon($Server, $IconPath)  | Out-Null
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddFavicon($Server, $IconPath)  | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

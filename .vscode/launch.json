@@ -44,6 +44,13 @@
             "cwd": "${workspaceFolder}/examples/PowerShell/HtmlTemplate"
         },
         {
+            "name": "PowerShell: Launch Authentication.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/examples/PowerShell/Authentication/Authentication.ps1",
+            "cwd": "${workspaceFolder}/examples/PowerShell/Authentication"
+        },
+        {
             "name": ".NET Launch CSharp/MultiRoutes",
             "type": "coreclr",
             "request": "launch",
@@ -108,8 +115,7 @@
             "cwd": "${workspaceFolder}/examples/CSharp/BasicAuthHandler",
             "stopAtEntry": false,
             "console": "integratedTerminal"
-        }
-        ,
+        },
         {
             "name": ".NET Launch CSharp/HtmlTemplate",
             "type": "coreclr",

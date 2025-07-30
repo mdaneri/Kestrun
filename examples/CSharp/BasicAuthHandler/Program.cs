@@ -101,7 +101,7 @@ server.AddResponseCompression(options =>
                 [string]$Username,
                 [string]$Password
             )
-            if ($Username -eq 'admin' -and $Password -eq 's3cr3t') {
+            if ($Username -eq 'admin' -and $Password -eq 'password') {
                 return $true
             } else {
                 return $false
@@ -117,10 +117,11 @@ server.AddResponseCompression(options =>
     opts.Realm = "Native-Kestrun";
     opts.ValidateCredentials = async (context, username, password) =>
     {
+        Log.Information("Validating credentials for {Username}", username);
         // pretend we did some async work:
         await Task.Yield();
         // Replace with your real credential validation logic
-        return username == "admin" && password == "s3cr3t";
+        return username == "admin" && password == "password";
     };
 }).AddBasicAuthentication(BasicCSharpScheme, opts =>
 {
@@ -129,8 +130,8 @@ server.AddResponseCompression(options =>
     {
         Language = ScriptLanguage.CSharp,
 
-        Code = """     
-        return username == "admin" && password == "s3cr3t";
+        Code = """      
+        return username == "admin" && password == "password";
     """
     };
 }).AddApiKeyAuthentication(ApiKeySimple, opts =>

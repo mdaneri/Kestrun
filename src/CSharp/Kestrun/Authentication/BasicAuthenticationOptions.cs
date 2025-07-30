@@ -19,7 +19,7 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     public Regex SeparatorRegex { get; set; } = MyRegex();
 
 
-    public string? Realm { get; set; } = "Kestrun";
+    public string Realm { get; set; } = "Kestrun";
 
     [GeneratedRegex("^([^:]*):(.*)$", RegexOptions.Compiled)]
     private static partial Regex MyRegex();

@@ -12,12 +12,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// Name of the header to look for the API key.
     /// </summary>
     public string HeaderName { get; set; } = "X-Api-Key";
-
-    /// <summary>
-    /// Name of the authentication scheme.
-    /// </summary>
-    public string SchemeName { get; set; } = "ApiKey";
-
+ 
     /// <summary>
     /// Other headers to try if the primary one is missing.
     /// <para>Defaults to empty.</para>

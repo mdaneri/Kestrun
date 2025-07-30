@@ -81,18 +81,25 @@ public static class KestrunHostAuthExtensions
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding Basic Authentication with scheme: {Scheme}", scheme);
+        // Ensure the scheme is not null
+        ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(scheme);
         ArgumentNullException.ThrowIfNull(configure);
-
         return host.AddBasicAuthentication(
             scheme: scheme,
             configure: opts =>
             {
-
+                // Copy properties from the provided configure object                
+                opts.HeaderName = configure.HeaderName;
+                opts.Base64Encoded = configure.Base64Encoded;
+                if (configure.SeparatorRegex is not null)
+                    opts.SeparatorRegex = new Regex(configure.SeparatorRegex.ToString(), configure.SeparatorRegex.Options);
+                opts.Realm = configure.Realm;
+                opts.RequireHttps = configure.RequireHttps;
+                opts.SuppressWwwAuthenticate = configure.SuppressWwwAuthenticate;
+                opts.Logger = configure.Logger;
                 // Copy properties from the provided configure object
                 opts.CodeSettings = configure.CodeSettings;
-                opts.ValidateCredentials = configure.ValidateCredentials;
-
                 // ── SPECIAL POWER-SHELL PATH ────────────────────
                 if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
                     !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
@@ -301,6 +308,61 @@ public static class KestrunHostAuthExtensions
         );
     }
 
+
+    public static KestrunHost AddApiKeyAuthentication(
+    this KestrunHost host,
+    string scheme,
+    ApiKeyAuthenticationOptions configure,
+    Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            host._Logger.Debug("Adding API Key Authentication with scheme: {Scheme}", scheme);
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(scheme);
+        ArgumentNullException.ThrowIfNull(configure);
+        return host.AddAuthentication(
+            defaultScheme: scheme,
+            buildSchemes: ab =>
+            {
+                // ← TOptions == ApiKeyAuthenticationOptions
+                //    THandler == ApiKeyAuthHandler
+                ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
+                    authenticationScheme: scheme,
+                    displayName: "API Key",
+                    configureOptions: opts =>
+                    {
+                        // let caller mutate everything first
+                        opts.ExpectedKey = configure.ExpectedKey;
+                        opts.HeaderName = configure.HeaderName;
+                        opts.AdditionalHeaderNames = configure.AdditionalHeaderNames;
+                        opts.AllowQueryStringFallback = configure.AllowQueryStringFallback;
+                        opts.Logger = configure.Logger;
+                        opts.RequireHttps = configure.RequireHttps;
+                        opts.EmitChallengeHeader = configure.EmitChallengeHeader;
+                        opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;
+
+                        // ── SPECIAL POWER-SHELL PATH ────────────────────
+                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the PowerShell script validator
+                            // This will be used to validate credentials
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
+                        }
+                        else   // ── C# pathway ─────────────────────────────────
+                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the C# script validator
+                            // This will be used to validate credentials
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                        }
+                    });
+
+            },
+            configureAuthz: configureAuthz
+        );
+    }
 
 
     public static KestrunHost AddOpenIdConnectAuthentication(
