@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Kestrun.Hosting;
 using Kestrun.Languages;
+using Kestrun.Models;
 using Kestrun.SharedState;
 using Kestrun.Utilities;
 using Microsoft.AspNetCore.Authentication;

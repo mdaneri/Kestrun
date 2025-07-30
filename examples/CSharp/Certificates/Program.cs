@@ -6,6 +6,11 @@ using System.Security.Cryptography.X509Certificates;
 using Kestrun;
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
 using Org.BouncyCastle.Asn1.X509;
+using Kestrun.Utilities;
+using Kestrun.Scripting;
+using Kestrun.Certificates;
+using Kestrun.Logging;
+using Kestrun.Hosting;  
 
 class Program
 {

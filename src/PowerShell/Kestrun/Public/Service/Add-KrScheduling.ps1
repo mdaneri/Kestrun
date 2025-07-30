@@ -19,10 +19,10 @@ function Add-KrScheduling {
         This cmdlet is used to register a scheduling service with the Kestrun server, allowing you to manage scheduled tasks and jobs.
     #>
     [CmdletBinding()]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter()]
         [int]$MaxRunspaces,
@@ -33,7 +33,9 @@ function Add-KrScheduling {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+        
         if ($MaxRunspaces -eq 0) {
+            # If MaxRunspaces is 0, use the default configuration
             $Server.AddScheduling() | Out-Null
         }
         else {

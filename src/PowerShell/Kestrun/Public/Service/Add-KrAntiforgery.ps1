@@ -28,10 +28,10 @@ function Add-KrAntiforgery {
     https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.antiforgery.antiforgeryoptions?view=aspnetcore-8.0
  #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions]$Options,
@@ -67,8 +67,12 @@ function Add-KrAntiforgery {
                 $Options.SuppressXFrameOptionsHeader = $true
             }
         } 
-        $Server.AddAntiforgery($Options) | Out-Null
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
         
+        # Add the Antiforgery service to the server
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddAntiforgery($Server, $Options) | Out-Null
+
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance

@@ -1,7 +1,3 @@
-
-# Short alias to save typing
-$Kcm = [Kestrun.CertificateManager]
-
 # ---------------------------------------------------------------------------
 function New-KsSelfSignedCertificate {
     <#
@@ -30,9 +26,9 @@ function New-KsSelfSignedCertificate {
         [switch]    $Exportable
     )
 
-    $opts = [Kestrun.CertificateManager+SelfSignedOptions]::new(
+    $opts = [Kestrun.Certificates.CertificateManager+SelfSignedOptions]::new(
         $DnsName,
-        [Kestrun.CertificateManager+KeyType]::$KeyType,
+        [Kestrun.Certificates.CertificateManager+KeyType]::$KeyType,
         $KeyLength,
         $null,      # purposes
         $ValidDays,
@@ -41,7 +37,7 @@ function New-KsSelfSignedCertificate {
     )
 
     if ($PSCmdlet.ShouldProcess("Create self-signed certificate for $($DnsName -join ', ')")) {
-        return $Kcm::NewSelfSigned($opts)
+        return [Kestrun.Certificates.CertificateManager]::NewSelfSigned($opts)
     }
 }
 
@@ -70,9 +66,9 @@ function New-KsCertificateRequest {
         [string]   $CommonName
     )
 
-    $opts = [Kestrun.CertificateManager+CsrOptions]::new(
+    $opts = [Kestrun.Certificates.CertificateManager+CsrOptions]::new(
         $DnsName,
-        [Kestrun.CertificateManager+KeyType]::$KeyType,
+        [Kestrun.Certificates.CertificateManager+KeyType]::$KeyType,
         $KeyLength,
         $Country,
         $Org,
@@ -81,7 +77,7 @@ function New-KsCertificateRequest {
     )
 
     if ($PSCmdlet.ShouldProcess("Create certificate request for $($DnsName -join ', ')")) {
-        return $Kcm::NewCertificateRequest($opts)
+        return [Kestrun.Certificates.CertificateManager]::NewCertificateRequest($opts)
     }
 }
 
@@ -100,9 +96,9 @@ function Import-KsCertificate {
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
     Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
     if ($null -eq $Password) {
-        return $Kcm::Import($resolvedPath, $PrivateKeyPath)
+        return [Kestrun.Certificates.CertificateManager]::Import($resolvedPath, $PrivateKeyPath)
     }
-    return $Kcm::Import($resolvedPath, $Password, $PrivateKeyPath)
+    return [Kestrun.Certificates.CertificateManager]::Import($resolvedPath, $Password, $PrivateKeyPath)
 }
 
 # ---------------------------------------------------------------------------
@@ -129,8 +125,8 @@ function Export-KsCertificate {
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot
     Write-KrVerboseLog -MessageTemplate  "Resolved file path: $resolvedPath"
 
-    $fmtEnum = [Kestrun.CertificateManager+ExportFormat]::$Format
-    $Kcm::Export($Certificate, $resolvedPath, $fmtEnum, $Password,
+    $fmtEnum = [Kestrun.Certificates.CertificateManager+ExportFormat]::$Format
+    [Kestrun.Certificates.CertificateManager]::Export($Certificate, $resolvedPath, $fmtEnum, $Password,
         $IncludePrivateKey.IsPresent)
 }
 
@@ -163,7 +159,7 @@ function Test-KsCertificate {
     }
     else { $null }
 
-    return $Kcm::Validate($Certificate,
+    return [Kestrun.Certificates.CertificateManager]::Validate($Certificate,
         $CheckRevocation.IsPresent,
         $AllowWeakAlgorithms.IsPresent,
         $DenySelfSigned.IsPresent,
@@ -183,6 +179,6 @@ function Get-KsCertificatePurpose {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate
     )
 
-    return $Kcm::GetPurposes($Certificate)
+    return [Kestrun.Certificates.CertificateManager]::GetPurposes($Certificate)
 }
  

@@ -1,6 +1,7 @@
 using System.Management.Automation;
 using Kestrun.Hosting;
 using Kestrun.Languages;
+using Kestrun.Models;
 using Kestrun.Scripting;
 using Serilog;
 using Serilog.Events;

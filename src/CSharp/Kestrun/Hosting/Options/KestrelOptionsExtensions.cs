@@ -1,6 +1,6 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-namespace Kestrun.Hosting;
+namespace Kestrun.Hosting.Options;
 
 public static class KestrelOptionsExtensions
 {

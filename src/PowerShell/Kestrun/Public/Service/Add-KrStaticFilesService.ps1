@@ -33,10 +33,10 @@ function Add-KrStaticFilesService {
     ContentTypeProvider and ContentTypeProviderOptions are not supported yet.
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.Builder.StaticFileOptions]$Options,
@@ -84,8 +84,11 @@ function Add-KrStaticFilesService {
                 $Options.RedirectToAppendTrailingSlash = $true
             }
         }
-
-        $Server.AddStaticFiles($Options) | Out-Null
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+        
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddStaticFiles($Server, $Options) | Out-Null
+        # Add the static file service to the server
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

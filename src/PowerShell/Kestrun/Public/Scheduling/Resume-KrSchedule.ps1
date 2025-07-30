@@ -14,15 +14,21 @@ function Resume-KrSchedule {
     .NOTES
         This function is part of the Kestrun scheduling module.
     #>
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [Parameter(Mandatory = $true)]
         [string]$Name
     )
 
     process {
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+        if (-not $Server.Scheduler) {
+            throw "SchedulerService is not enabled."
+        }
+
         if ($Server.Scheduler.Resume($Name)) {
             Write-Information "▶️ schedule '$Name' resumed."
         }

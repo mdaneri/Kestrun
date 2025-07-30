@@ -1,4 +1,4 @@
-namespace Kestrun;
+namespace Kestrun.Models;
 
 /// <summary>
 /// Lightweight representation of an incoming HTTP request.

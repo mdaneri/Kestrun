@@ -56,6 +56,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Quic;
 using Kestrun.Scripting;
 using Kestrun.Hosting;
+using Microsoft.AspNetCore.Http.Features;
+using Kestrun.Hosting.Options;
 /*#if NET8_0_OR_GREATER
 [assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
 #endif
@@ -72,7 +74,19 @@ public class KestrunHost : IDisposable
 
     internal WebApplicationBuilder Builder => builder;
 
-    private WebApplication? App;
+    private WebApplication? _app;
+
+    internal WebApplication App
+    {
+        get
+        {
+            if (_app == null)
+            {
+                throw new InvalidOperationException("WebApplication is not built yet. Call Build() first.");
+            }
+            return _app;
+        }
+    }
 
     public string ApplicationName => Options.ApplicationName ?? "KestrunApp";
 
@@ -106,6 +120,8 @@ public class KestrunHost : IDisposable
     private readonly List<Action<IApplicationBuilder>> _middlewareQueue = [];
 
     private readonly List<Action<KestrunHost>> _featureQueue = [];
+
+    internal  List<Action<KestrunHost>> FeatureQueue => _featureQueue;
     #endregion
 
 
@@ -262,295 +278,8 @@ public class KestrunHost : IDisposable
 
 
     #region Route
-    public delegate Task KestrunHandler(KestrunContext Context);
-
-    public IEndpointConventionBuilder AddNativeRoute(string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
-        return AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
-    }
-
-    public IEndpointConventionBuilder AddNativeRoute(string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
-
-        return AddNativeRoute(new MapRouteOptions
-        {
-            Pattern = pattern,
-            HttpVerbs = httpVerbs,
-            Language = ScriptLanguage.Native,
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
-        }, handler);
-
-    }
-
-    public IEndpointConventionBuilder AddNativeRoute(MapRouteOptions options, KestrunHandler handler)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("AddNativeRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
-        // Ensure the WebApplication is initialized
-        if (App is null)
-            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
-
-        // Validate options
-        if (string.IsNullOrWhiteSpace(options.Pattern))
-            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
-
-        string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
-        var map = App.MapMethods(options.Pattern, methods, async context =>
-           {
-               var req = await KestrunRequest.NewRequest(context);
-               var res = new KestrunResponse(req);
-               KestrunContext kestrunContext = new(req, res, context);
-               await handler(kestrunContext);
-               await res.ApplyTo(context.Response);
-           });
-
-        AddMapOptions(map, options);
-
-        _Logger.Information("Added native route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
-        // Add to the feature queue for later processing
-        _featureQueue.Add(host => host.AddMapRoute(options));
-        return map;
-    }
-
-
-    public IEndpointConventionBuilder AddMapRoute(string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
-                                     string[]? requireAuthorization = null)
-    {
-        return AddMapRoute(new Hosting.MapRouteOptions
-        {
-            Pattern = pattern,
-            HttpVerbs = [httpVerbs],
-            Code = scriptBlock,
-            Language = language,
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
-        });
-
-    }
-
-    public IEndpointConventionBuilder AddMapRoute(string pattern,
-                                IEnumerable<HttpVerb> httpVerbs,
-                                string scriptBlock,
-                                ScriptLanguage language = ScriptLanguage.PowerShell,
-                                string[]? requireAuthorization = null)
-    {
-        return AddMapRoute(new MapRouteOptions
-        {
-            Pattern = pattern,
-            HttpVerbs = httpVerbs,
-            Code = scriptBlock,
-            Language = language,
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
-        });
-    }
-    public IEndpointConventionBuilder AddMapRoute(MapRouteOptions options)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
-
-        // Ensure the WebApplication is initialized
-        if (App is null)
-            throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
-
-        // Validate options
-        if (string.IsNullOrWhiteSpace(options.Pattern))
-            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
-
-        // Validate code
-        if (string.IsNullOrWhiteSpace(options.Code))
-            throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.Code));
-        var routeOptions = options;
-        if (!options.HttpVerbs.Any())
-        {
-            // Create a new RouteOptions with HttpVerbs set to [HttpVerb.Get]
-            routeOptions = options with { HttpVerbs = [HttpVerb.Get] };
-        }
-        try
-        {
-            var logger = Log.Logger.ForContext("Route", routeOptions.Pattern);
-            // compile once – return an HttpContext->Task delegate
-            var handler = options.Language switch
-            {
-
-                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.Code, logger),
-                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.Code, logger, options.ExtraImports, options.ExtraRefs),
-                ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.Code, logger), // F# scripting not implemented
-                ScriptLanguage.Python => PyDelegateBuilder.Build(options.Code, logger),
-                ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.Code, logger),
-                _ => throw new NotSupportedException(options.Language.ToString())
-            };
-            string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
-            var map = App.MapMethods(options.Pattern, methods, handler).WithLanguage(options.Language);
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
-
-            AddMapOptions(map, options);
-
-            _Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
-            return map;
-            // Add to the feature queue for later processing
-
-        }
-        catch (CompilationErrorException ex)
-        {
-            // Log the detailed compilation errors
-            _Logger.Error($"Failed to add route '{options.Pattern}' due to compilation errors:");
-            _Logger.Error(ex.GetDetailedErrorMessage());
-
-            // Re-throw with additional context
-            throw new InvalidOperationException(
-                $"Failed to compile {options.Language} script for route '{options.Pattern}'. {ex.GetErrors().Count()} error(s) found.",
-                ex);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException(
-                $"Failed to add route '{options.Pattern}' with method '{string.Join(", ", options.HttpVerbs)}' using {options.Language}: {ex.Message}",
-                ex);
-        }
-    }
-
-
-    private void AddMapOptions(IEndpointConventionBuilder map, MapRouteOptions options)
-    {
-        if (options.ShortCircuit)
-        {
-            _Logger.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
-            if (options.ShortCircuitStatusCode is null)
-                throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
-            map.ShortCircuit(options.ShortCircuitStatusCode);
-        }
-
-        if (options.AllowAnonymous) // Allow anonymous access to this route
-        {
-            _Logger.Verbose("Allowing anonymous access for route: {Pattern}", options.Pattern);
-            map.AllowAnonymous();
-        }
-        else
-        {
-            _Logger.Debug("No anonymous access allowed for route: {Pattern}", options.Pattern);
-        }
-
-        if (options.DisableAntiforgery) // Disable CSRF protection for this route
-        {
-            map.DisableAntiforgery(); // Disable CSRF protection for this route
-            _Logger.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.RateLimitPolicyName)) // Apply rate limiting policy if specified
-        {
-            _Logger.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
-            // Ensure RateLimiting is configured in the app
-            map.RequireRateLimiting(options.RateLimitPolicyName);
-        }
-        if (options.RequireAuthorization is { Length: > 0 })
-        {
-            _Logger.Verbose("Requiring authorization for route: {Pattern} with policies: {Policies}", options.Pattern, string.Join(", ", options.RequireAuthorization));
-            map.RequireAuthorization(new AuthorizeAttribute
-            {
-                AuthenticationSchemes = string.Join(',', options.RequireAuthorization)
-            });
-        }
-        else
-        {
-            _Logger.Debug("No authorization required for route: {Pattern}", options.Pattern);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.CorsPolicyName)) // Apply CORS policy if specified
-        {
-            _Logger.Verbose("Applying CORS policy: {CorsPolicyName} to route: {Pattern}", options.CorsPolicyName, options.Pattern);
-            // Ensure CORS is configured in the app
-            // apply the route-specific policy
-            map.RequireCors(options.CorsPolicyName);
-        }
-        else
-        {
-            _Logger.Debug("No CORS policy applied for route: {Pattern}", options.Pattern);
-        }
-
-
-        if (!string.IsNullOrEmpty(options.OpenAPI.OperationId))
-        {
-            _Logger.Verbose("Adding OpenAPI metadata for route: {Pattern} with OperationId: {OperationId}", options.Pattern, options.OpenAPI.OperationId);
-            // Add OpenAPI metadata if specified
-            map.WithName(options.OpenAPI.OperationId);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.OpenAPI.Summary))
-        {
-            _Logger.Verbose("Adding OpenAPI summary for route: {Pattern} with Summary: {Summary}", options.Pattern, options.OpenAPI.Summary);
-            map.WithSummary(options.OpenAPI.Summary);
-        }
-
-        if (!string.IsNullOrWhiteSpace(options.OpenAPI.Description))
-        {
-            _Logger.Verbose("Adding OpenAPI description for route: {Pattern} with Description: {Description}", options.Pattern, options.OpenAPI.Description);
-            map.WithDescription(options.OpenAPI.Description);
-        }
-        if (options.OpenAPI.Tags.Length > 0)
-        {
-            _Logger.Verbose("Adding OpenAPI tags for route: {Pattern} with Tags: {Tags}", options.Pattern, string.Join(", ", options.OpenAPI.Tags));
-            map.WithTags(options.OpenAPI.Tags);
-        }
-
-
-        if (!string.IsNullOrWhiteSpace(options.OpenAPI.GroupName))
-        {
-            _Logger.Verbose("Adding OpenAPI group name for route: {Pattern} with GroupName: {GroupName}", options.Pattern, options.OpenAPI.GroupName);
-            map.WithGroupName(options.OpenAPI.GroupName);
-        }
-    }
-
-
-    public IEndpointConventionBuilder AddHtmlTemplateRoute(string pattern, string htmlFilePath, string[]? requireAuthorization = null)
-    {
-        return AddHtmlTemplateRoute(new MapRouteOptions
-        {
-            Pattern = pattern,
-            HttpVerbs = [HttpVerb.Get],
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
-        }, htmlFilePath);
-    }
-
-    public IEndpointConventionBuilder AddHtmlTemplateRoute(MapRouteOptions options, string htmlFilePath)
-    {
-
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding HTML template route: {Pattern}", options.Pattern);
-
-        if (options.HttpVerbs.Count() != 0 &&
-            (options.HttpVerbs.Count() > 1 || options.HttpVerbs.First() != HttpVerb.Get))
-        {
-            _Logger.Error("HTML template routes only support GET requests. Provided HTTP verbs: {HttpVerbs}", string.Join(", ", options.HttpVerbs));
-            throw new ArgumentException("HTML template routes only support GET requests.", nameof(options.HttpVerbs));
-        }
-        if (string.IsNullOrWhiteSpace(htmlFilePath) || !File.Exists(htmlFilePath))
-        {
-            _Logger.Error("HTML file path is null, empty, or does not exist: {HtmlFilePath}", htmlFilePath);
-            throw new FileNotFoundException("HTML file not found.", htmlFilePath);
-        }
-
-        if (string.IsNullOrWhiteSpace(options.Pattern))
-        {
-            _Logger.Error("Pattern cannot be null or empty.");
-            throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
-        }
-
-        var map = AddNativeRoute(options.Pattern, HttpVerb.Get, async (ctx) =>
-          {
-              // ② Build your variables map
-              var vars = new Dictionary<string, object?>();
-              VariablesMap.GetVariablesMap(ctx, ref vars);
-
-              await ctx.Response.WriteHtmlResponseFromFileAsync(htmlFilePath, vars, ctx.Response.StatusCode);
-          });
-
-        AddMapOptions(map, options);
-        return map;
-    }
+    
+ 
 
     #endregion
     #region Configuration
@@ -603,8 +332,8 @@ public class KestrunHost : IDisposable
             });
 
 
-            App = Build();
-            var dataSource = App.Services.GetRequiredService<EndpointDataSource>();
+            _app = Build();
+            var dataSource = _app.Services.GetRequiredService<EndpointDataSource>();
 
             if (dataSource.Endpoints.Count == 0)
             {
@@ -652,11 +381,11 @@ public class KestrunHost : IDisposable
         }
 
         // 2️⃣  Build the WebApplication
-        App = builder.Build();
+        _app = builder.Build();
 
         _Logger.Information("CWD: {CWD}", Directory.GetCurrentDirectory());
-        _Logger.Information("ContentRoot: {Root}", App.Environment.ContentRootPath);
-        var pagesDir = Path.Combine(App.Environment.ContentRootPath, "Pages");
+        _Logger.Information("ContentRoot: {Root}", _app.Environment.ContentRootPath);
+        var pagesDir = Path.Combine(_app.Environment.ContentRootPath, "Pages");
         _Logger.Information("Pages Dir: {PagesDir}", pagesDir);
         if (Directory.Exists(pagesDir))
         {
@@ -673,7 +402,7 @@ public class KestrunHost : IDisposable
         // 3️⃣  Apply all queued middleware stages
         foreach (var stage in _middlewareQueue)
         {
-            stage(App);
+            stage(_app);
         }
 
         foreach (var feature in _featureQueue)
@@ -681,7 +410,7 @@ public class KestrunHost : IDisposable
             feature(this);
         }
         // 5️⃣  Terminal endpoint execution 
-        return App;
+        return _app;
     }
 
     /// <summary>
@@ -756,246 +485,7 @@ public class KestrunHost : IDisposable
         });
     }
 
-    /// <summary>
-    /// Adds response compression to the application.
-    /// This overload allows you to specify configuration options.
-    /// </summary>
-    /// <param name="options">The configuration options for response compression.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddResponseCompression(ResponseCompressionOptions? options)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding response compression with options: {@Options}", options);
-        if (options == null)
-            return AddResponseCompression(); // no options, use defaults
-
-        // delegate shim – re‑use the existing pipeline
-        return AddResponseCompression(o =>
-        {
-            o.EnableForHttps = options.EnableForHttps;
-            o.MimeTypes = options.MimeTypes;
-            o.ExcludedMimeTypes = options.ExcludedMimeTypes;
-            // copy provider lists, levels, etc. if you expose them
-            foreach (var p in options.Providers) o.Providers.Add(p);
-        });
-    }
-
-    /// <summary>
-    /// Adds response compression to the application.
-    /// This overload allows you to specify configuration options.
-    /// </summary>
-    /// <param name="cfg">The configuration options for response compression.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddResponseCompression(Action<ResponseCompressionOptions>? cfg = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding response compression with configuration: {Config}", cfg);
-        // Service side
-        AddService(services =>
-        {
-            if (cfg == null)
-                services.AddResponseCompression();
-            else
-                services.AddResponseCompression(cfg);
-        });
-
-        // Middleware side
-        return Use(app => app.UseResponseCompression());
-    }
-
-    public KestrunHost AddRateLimiter(RateLimiterOptions cfg)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding rate limiter with configuration: {@Config}", cfg);
-        if (cfg == null)
-            return AddRateLimiter();   // fall back to your “blank” overload
-
-        AddService(services =>
-        {
-            services.AddRateLimiter(opts => opts.CopyFrom(cfg));   // ← single line!
-        });
-
-        return Use(app => app.UseRateLimiter());
-    }
-
-
-    public KestrunHost AddRateLimiter(Action<RateLimiterOptions>? cfg = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
-
-        // Register the rate limiter service
-        AddService(services =>
-        {
-            services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
-        });
-
-        // Apply the middleware
-        return Use(app =>
-        {
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("Registering rate limiter middleware");
-            app.UseRateLimiter();
-        });
-    }
-
-
-    /// <summary>
-    /// Adds static files to the application.
-    /// This overload allows you to specify configuration options.
-    /// </summary>
-    /// <param name="cfg">The static file options to configure.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddStaticFiles(Action<StaticFileOptions>? cfg = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding static files with configuration: {Config}", cfg);
-
-        return Use(app =>
-        {
-            if (cfg == null)
-                app.UseStaticFiles();
-            else
-            {
-                var options = new StaticFileOptions();
-                cfg(options);
-
-                app.UseStaticFiles(options);
-            }
-        });
-    }
-
-    /// <summary>
-    /// Adds static files to the application.
-    /// This overload allows you to specify configuration options.
-    /// </summary>
-    /// <param name="options">The static file options to configure.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddStaticFiles(StaticFileOptions options)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding static files with options: {@Options}", options);
-
-        if (options == null)
-            return AddStaticFiles(); // no options, use defaults
-
-        // reuse the delegate overload so the pipeline logic stays in one place
-        return AddStaticFiles(o =>
-        {
-            // copy only the properties callers are likely to set 
-            CopyStaticFileOptions(options, o);
-
-        });
-    }
-
-    /// <summary>
-    /// Adds antiforgery protection to the application.
-    /// This overload allows you to specify configuration options.
-    /// </summary>
-    /// <param name="options">The antiforgery options to configure.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddAntiforgery(AntiforgeryOptions? options)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding Antiforgery with configuration: {@Config}", options);
-
-        if (options == null)
-            return AddAntiforgery(); // no config, use defaults
-
-        // Delegate to the Action-based overload
-        return AddAntiforgery(cfg =>
-        {
-            cfg.Cookie = options.Cookie;
-            cfg.FormFieldName = options.FormFieldName;
-            cfg.HeaderName = options.HeaderName;
-            cfg.SuppressXFrameOptionsHeader = options.SuppressXFrameOptionsHeader;
-        });
-    }
-
-    /// <summary>
-    /// Adds antiforgery protection to the application.
-    /// </summary>
-    /// <param name="setupAction">An optional action to configure the antiforgery options.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddAntiforgery(Action<AntiforgeryOptions>? setupAction = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding Antiforgery with configuration: {@Config}", setupAction);
-        // Service side
-        AddService(services =>
-        {
-            if (setupAction == null)
-                services.AddAntiforgery();
-            else
-                services.AddAntiforgery(setupAction);
-        });
-
-        // Middleware side
-        return Use(app => app.UseAntiforgery());
-    }
-
-
-    /// <summary>
-    /// Adds a CORS policy that allows all origins, methods, and headers.
-    /// </summary>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddCorsAllowAll() =>
-        AddCors("AllowAll", b => b.AllowAnyOrigin()
-                                  .AllowAnyMethod()
-                                  .AllowAnyHeader());
-
-    /// <summary>
-    /// Registers a named CORS policy that was already composed with a
-    /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
-    /// </summary>
-    /// <param name="policyName">The name to store/apply the policy under.</param>
-    /// <param name="builder">
-    ///     A fully‑configured <see cref="CorsPolicyBuilder"/>.
-    ///     Callers typically chain <c>.WithOrigins()</c>, <c>.WithMethods()</c>,
-    ///     etc. before passing it here.
-    /// </param>
-    public KestrunHost AddCors(string policyName, CorsPolicyBuilder builder)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
-        ArgumentNullException.ThrowIfNull(builder);
-
-        // 1️⃣ Service‑time registration
-        AddService(services =>
-        {
-            services.AddCors(options =>
-            {
-                options.AddPolicy(policyName, builder.Build());
-            });
-        });
-
-        // 2️⃣ Middleware‑time application
-        return Use(app => app.UseCors(policyName));
-    }
-
-    /// <summary>
-    /// Registers a named CORS policy that was already composed with a
-    /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
-    /// </summary>
-    /// <param name="policyName">The name to store/apply the policy under.</param>
-    /// <param name="buildPolicy">An action to configure the CORS policy.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    /// <exception cref="ArgumentException">Thrown when the policy name is null or whitespace.</exception>
-    public KestrunHost AddCors(string policyName, Action<CorsPolicyBuilder> buildPolicy)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding CORS policy: {PolicyName}", policyName);
-        if (string.IsNullOrWhiteSpace(policyName))
-            throw new ArgumentException("Policy name required.", nameof(policyName));
-        ArgumentNullException.ThrowIfNull(buildPolicy);
-
-        AddService(s =>
-        {
-            s.AddCors(o => o.AddPolicy(policyName, buildPolicy));
-        });
-
-        // apply only that policy
-        return Use(app => app.UseCors(policyName));
-    }
+     
 
 
     /// <summary>
@@ -1032,227 +522,10 @@ public class KestrunHost : IDisposable
     }
 
  
-    /// <summary>
-    /// Adds default files middleware to the application.
-    /// This middleware serves default files like index.html when a directory is requested.
-    /// </summary>
-    /// <param name="cfg">Configuration options for the default files middleware.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddDefaultFiles(DefaultFilesOptions? cfg)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding Default Files with configuration: {@Config}", cfg);
+    
 
-        if (cfg == null)
-            return AddDefaultFiles(); // no config, use defaults
-
-        // Convert DefaultFilesOptions to an Action<DefaultFilesOptions>
-        return AddDefaultFiles(options =>
-        {
-            CopyDefaultFilesOptions(cfg, options);
-        });
-    }
-
-    /// <summary>
-    /// Adds default files middleware to the application.
-    /// This middleware serves default files like index.html when a directory is requested.
-    /// </summary>
-    /// <param name="cfg">Configuration options for the default files middleware.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddDefaultFiles(Action<DefaultFilesOptions>? cfg = null)
-    {
-        return Use(app =>
-        {
-            var options = new DefaultFilesOptions();
-            cfg?.Invoke(options);
-            app.UseDefaultFiles(options);
-        });
-    }
-
-
-    public KestrunHost AddFavicon(string? iconPath = null)
-    {
-        return Use(app =>
-        {
-            app.UseFavicon(iconPath);
-        });
-    }
-
-
-    public KestrunHost AddAuthentication(
-        string defaultScheme,
-        Action<AuthenticationBuilder> buildPolicy, Action<AuthorizationOptions>? configureAuthz = null)
-    {
-        ArgumentNullException.ThrowIfNull(buildPolicy);
-
-        // ① Add authentication services via DI
-        AddService(services =>
-        {
-            var builder = services.AddAuthentication(defaultScheme);
-            buildPolicy(builder);  // ⬅️ Now you apply the user-supplied schemes here
-
-            if (configureAuthz is null)
-                services.AddAuthorization();                // default options
-            else
-                services.AddAuthorization(configureAuthz);  // caller customises
-        });
-
-        // ② Add middleware to enable auth pipeline
-        return Use(app =>
-        {
-            app.UseAuthentication();
-            app.UseAuthorization(); // optional but useful
-        });
-    }
-
-    public KestrunHost AddAuthentication(
-    Action<AuthenticationBuilder> buildSchemes,            // ← unchanged
-    string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
-    Action<AuthorizationOptions>? configureAuthz = null)
-    {
-        AddService(services =>
-        {
-            var ab = services.AddAuthentication(defaultScheme);
-            buildSchemes(ab);                                  // Basic + JWT here
-
-            // make sure UseAuthorization() can find its services
-            if (configureAuthz is null)
-                services.AddAuthorization();
-            else
-                services.AddAuthorization(configureAuthz);
-        });
-
-        return Use(app =>
-        {
-            app.UseAuthentication();
-            app.UseAuthorization();
-        });
-    }
-
-
-    public KestrunHost AddAuthorization(Action<AuthorizationOptions>? cfg = null)
-    {
-        return AddService(s =>
-        {
-            if (cfg == null)
-                s.AddAuthorization();
-            else
-                s.AddAuthorization(cfg);
-        });
-    }
-
-
-    /// <summary>
-    /// Copies static file options from one object to another.
-    /// </summary>
-    /// <param name="src">The source static file options.</param>
-    /// <param name="dest">The destination static file options.</param>
-    /// <remarks>
-    /// This method copies properties from the source static file options to the destination static file options.
-    /// </remarks>
-    private static void CopyStaticFileOptions(StaticFileOptions? src, StaticFileOptions dest)
-    {
-        // If no source, return a new empty options object
-        if (src == null || dest == null) return;
-        // Copy properties from source to destination
-        dest.ContentTypeProvider = src.ContentTypeProvider;
-        dest.OnPrepareResponse = src.OnPrepareResponse;
-        dest.ServeUnknownFileTypes = src.ServeUnknownFileTypes;
-        dest.DefaultContentType = src.DefaultContentType;
-        dest.FileProvider = src.FileProvider;
-        dest.RequestPath = src.RequestPath;
-        dest.RedirectToAppendTrailingSlash = src.RedirectToAppendTrailingSlash;
-        dest.HttpsCompression = src.HttpsCompression;
-    }
-
-    /// <summary>
-    /// Copies default files options from one object to another.
-    /// This method is used to ensure that the default files options are correctly configured.
-    /// </summary>
-    /// <param name="src">The source default files options.</param>
-    /// <param name="dest">The destination default files options.</param>
-    /// <remarks>
-    /// This method copies properties from the source default files options to the destination default files options.   
-    /// </remarks>
-    private static void CopyDefaultFilesOptions(DefaultFilesOptions? src, DefaultFilesOptions dest)
-    {
-        // If no source, return a new empty options object
-        if (src == null || dest == null) return;
-        // Copy properties from source to destination 
-        dest.DefaultFileNames.Clear();
-        foreach (var name in src.DefaultFileNames)
-            dest.DefaultFileNames.Add(name);
-        dest.FileProvider = src.FileProvider;
-        dest.RequestPath = src.RequestPath;
-        dest.RedirectToAppendTrailingSlash = src.RedirectToAppendTrailingSlash;
-    }
-
-    /// <summary>
-    /// Adds a file server middleware to the application.   
-    /// This middleware serves static files and default files from a specified file provider.
-    /// </summary>
-    /// <param name="cfg">Configuration options for the file server middleware.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    /// </remarks>
-    /// This method allows you to configure the file server options such as enabling default files, directory browsing,
-    /// and setting the file provider and request path.
-    /// </remarks>
-    public KestrunHost AddFileServer(FileServerOptions? cfg)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
-        if (cfg == null)
-            return AddFileServer(); // no config, use defaults
-
-        // Convert FileServerOptions to an Action<FileServerOptions>
-        return AddFileServer(options =>
-        {
-            options.EnableDefaultFiles = cfg.EnableDefaultFiles;
-            options.EnableDirectoryBrowsing = cfg.EnableDirectoryBrowsing;
-            options.FileProvider = cfg.FileProvider;
-            options.RequestPath = cfg.RequestPath;
-            options.RedirectToAppendTrailingSlash = cfg.RedirectToAppendTrailingSlash;
-            CopyDefaultFilesOptions(cfg.DefaultFilesOptions, options.DefaultFilesOptions);
-            if (cfg.DirectoryBrowserOptions != null)
-            {
-                options.DirectoryBrowserOptions.FileProvider = cfg.DirectoryBrowserOptions.FileProvider;
-                options.DirectoryBrowserOptions.RequestPath = cfg.DirectoryBrowserOptions.RequestPath;
-                options.DirectoryBrowserOptions.RedirectToAppendTrailingSlash = cfg.DirectoryBrowserOptions.RedirectToAppendTrailingSlash;
-            }
-
-            CopyStaticFileOptions(cfg.StaticFileOptions, options.StaticFileOptions);
-        });
-    }
-
-    /// <summary>
-    /// Adds a file server middleware to the application.
-    /// This middleware serves static files and default files from a specified file provider.
-    /// </summary>
-    /// <param name="cfg">Configuration options for the file server middleware.</param>
-    /// <returns>The current KestrunHost instance.</returns>
-    public KestrunHost AddFileServer(Action<FileServerOptions>? cfg = null)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
-        return Use(app =>
-        {
-            var options = new FileServerOptions();
-            cfg?.Invoke(options);
-            app.UseFileServer(options);
-        });
-    }
-
-
-    /*
-public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
-    {
-        return AddService(s =>
-        {
-            s.AddAuthentication("Bearer")
-             .AddJwtBearer("Bearer", cfg);
-        })
-        .Use(app => app.UseAuthentication());   // auth middleware
-    }*/
+   
+ 
 
     // ② SignalR
     public KestrunHost AddSignalR<T>(string path) where T : Hub
@@ -1301,7 +574,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
             _Logger.Debug("Run() called");
         EnableConfiguration();
 
-        App?.Run();
+        _app?.Run();
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -1309,9 +582,9 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("StartAsync() called");
         EnableConfiguration();
-        if (App != null)
+        if (_app != null)
         {
-            await App.StartAsync(cancellationToken);
+            await _app.StartAsync(cancellationToken);
         }
     }
 
@@ -1319,12 +592,12 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("StopAsync() called");
-        if (App != null)
+        if (_app != null)
         {
             try
             {
                 // Initiate graceful shutdown
-                await App.StopAsync(cancellationToken);
+                await _app.StopAsync(cancellationToken);
             }
             catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
             {
@@ -1342,7 +615,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("Stop() called");
         // This initiates a graceful shutdown.
-        App?.Lifetime.StopApplication();
+        _app?.Lifetime.StopApplication();
     }
 
     #endregion
@@ -1407,7 +680,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
         _runspacePool?.Dispose();
         _runspacePool = null; // Clear the runspace pool reference
         _isConfigured = false; // Reset configuration state 
-        App = null;
+        _app = null;
         Scheduler?.Dispose();
         //  Log.CloseAndFlush(); 
         (_Logger as IDisposable)?.Dispose();
@@ -1415,121 +688,7 @@ public KestrunHost AddJwtAuth(Action<JwtBearerOptions> cfg)
     #endregion
 
     #region Script Validation
-
-    /// <summary>
-    /// Validates a C# script and returns compilation diagnostics without throwing exceptions.
-    /// Useful for testing scripts before adding routes.
-    /// </summary>
-    /// <param name="code">The C# script code to validate</param>
-    /// <param name="extraImports">Optional additional imports</param>
-    /// <param name="extraRefs">Optional additional assembly references</param>
-    /// <param name="languageVersion">C# language version to use</param>
-    /// <returns>Compilation diagnostics including errors and warnings</returns>
-    public ImmutableArray<Diagnostic> ValidateCSharpScript(
-        string? code,
-        string[]? extraImports = null,
-        Assembly[]? extraRefs = null,
-        LanguageVersion languageVersion = LanguageVersion.CSharp12)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("ValidateCSharpScript() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
-                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
-        try
-        {
-            // Use the same script options as BuildCsDelegate
-            var opts = ScriptOptions.Default
-                       .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
-                       .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
-                       .WithLanguageVersion(languageVersion);
-
-            if (extraImports is { Length: > 0 })
-                opts = opts.WithImports(opts.Imports.Concat(extraImports));
-
-            if (extraRefs is { Length: > 0 })
-                opts = opts.WithReferences(opts.MetadataReferences
-                                              .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
-
-            var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
-            return script.Compile();
-        }
-        catch (Exception ex)
-        {
-            // If there's an exception during script creation, create a synthetic diagnostic
-            var diagnostic = Diagnostic.Create(
-                new DiagnosticDescriptor(
-                    "KESTRUN001",
-                    "Script validation error",
-                    "Script validation failed: {0}",
-                    "Compilation",
-                    DiagnosticSeverity.Error,
-                    true),
-                Location.None,
-                ex.Message);
-
-            return ImmutableArray.Create(diagnostic);
-        }
-    }
-
-    /// <summary>
-    /// Checks if a C# script has compilation errors.
-    /// </summary>
-    /// <param name="code">The C# script code to check</param>
-    /// <param name="extraImports">Optional additional imports</param>
-    /// <param name="extraRefs">Optional additional assembly references</param>
-    /// <param name="languageVersion">C# language version to use</param>
-    /// <returns>True if the script compiles without errors, false otherwise</returns>
-    public bool IsCSharpScriptValid(
-        string code,
-        string[]? extraImports = null,
-        Assembly[]? extraRefs = null,
-        LanguageVersion languageVersion = LanguageVersion.CSharp12)
-    {
-        var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
-        return !diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error);
-    }
-
-    /// <summary>
-    /// Gets formatted error information for a C# script.
-    /// </summary>
-    /// <param name="code">The C# script code to check</param>
-    /// <param name="extraImports">Optional additional imports</param>
-    /// <param name="extraRefs">Optional additional assembly references</param>
-    /// <param name="languageVersion">C# language version to use</param>
-    /// <returns>Formatted error message, or null if no errors</returns>
-    public string? GetCSharpScriptErrors(
-        string code,
-        string[]? extraImports = null,
-        Assembly[]? extraRefs = null,
-        LanguageVersion languageVersion = LanguageVersion.CSharp12)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("GetCSharpScriptErrors() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
-                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
-
-        var diagnostics = ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
-        var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-
-        if (errors.Length == 0)
-            return null;
-
-        try
-        {
-            // Create a temporary exception to format the errors
-            var tempException = new CompilationErrorException("Script validation errors:", diagnostics);
-            return tempException.GetDetailedErrorMessage();
-        }
-        catch
-        {
-            // Fallback formatting if exception creation fails
-            var sb = new StringBuilder();
-            sb.AppendLine($"Script has {errors.Length} compilation error(s):");
-            for (int i = 0; i < errors.Length; i++)
-            {
-                sb.AppendLine($"  {i + 1}. {errors[i].GetMessage()}");
-            }
-            return sb.ToString();
-        }
-    }
+ 
 
     #endregion
 }

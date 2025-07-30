@@ -3,7 +3,7 @@ using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-namespace Kestrun;
+namespace Kestrun.Hosting.Options;
 
 /// <summary>
 /// Configuration for an individual Kestrel listener.

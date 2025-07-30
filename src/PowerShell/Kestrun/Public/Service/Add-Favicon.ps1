@@ -20,22 +20,22 @@ function Add-Favicon {
     If no icon path is specified, the default embedded favicon will be used.
  #>
     [CmdletBinding()]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [string]$IconPath = $null,
 
         [Parameter()]
         [switch]$PassThru
     )
-    process { 
+    process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        $Server.AddFavicon($IconPath) | Out-Null
-        
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddDefaultFavicon($Server, $IconPath)  | Out-Null
+
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance

@@ -20,7 +20,8 @@ using System.Globalization;
 using CsvHelper;
 using YamlDotNet.Core.Events;
 using System.Reflection;
-namespace Kestrun;
+
+namespace Kestrun.Models;
 
 public enum ContentDispositionType
 {

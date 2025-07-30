@@ -24,11 +24,11 @@ function Get-KrScheduleReport {
     [OutputType([Hashtable])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [string]$TimeZoneId,
         [switch]$AsHashtable
     )
-    begin {
+    process {
         if (-not $Server) {
             if ($KestrunHost) {
                 Write-KrInfoLog "No server specified, using global KestrunHost variable.($KestrunHost)"
@@ -41,8 +41,10 @@ function Get-KrScheduleReport {
                 $Server = Resolve-KestrunServer -Server $Server
             }
         }
-    }
-    process {
+        if (-not $Server.Scheduler) {
+            throw "SchedulerService is not enabled."
+        }
+        
         $tz = if ($TimeZoneId) {
             [TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneId)
         }

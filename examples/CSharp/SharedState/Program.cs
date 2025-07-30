@@ -7,13 +7,13 @@ using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;
 using System.Collections.Concurrent;
-using Serilog;
-using Kestrun.Logging;
-using Microsoft.Extensions.Logging;
+using Serilog; 
 using Kestrun.Utilities;
+using Kestrun.Scripting; 
+using Kestrun.Logging;
+using Kestrun.Hosting;
 using Kestrun.SharedState;
 using System.Text;
-using Kestrun.Hosting;   // Only for writing the CSR key
 
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -67,7 +67,7 @@ server.AddMapRoute("/ps/visit", HttpVerb.Get,
     # increment the injected variable
     $Visits["Count"]++
     Write-KrTextResponse -inputObject "Runspace: $(([runspace]::DefaultRunspace).Name) - Incremented Visits(type:$($Visits.GetType().Name)) to $($Visits["Count"])" -statusCode 200
-""", Kestrun.ScriptLanguage.PowerShell);
+""", ScriptLanguage.PowerShell);
 
 
 server.AddMapRoute("/cs/show", HttpVerb.Get,
@@ -82,7 +82,7 @@ server.AddMapRoute("/cs/visit", HttpVerb.Get, """
     Visits["Count"] = ((int)Visits["Count"]) + 1;
 
      Context.Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
-""", Kestrun.ScriptLanguage.CSharp);
+""", ScriptLanguage.CSharp);
 
 server.AddNativeRoute("/raw", HttpVerb.Get, async (ctx) =>
 {

@@ -12,7 +12,7 @@ using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Collections;
-namespace Kestrun;
+namespace Kestrun.Hosting.Options;
 
 /// <summary>
 /// Simple options class for configuring Kestrel server settings.

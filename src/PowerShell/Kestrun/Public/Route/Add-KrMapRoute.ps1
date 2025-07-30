@@ -45,7 +45,7 @@ function Add-KrMapRoute {
     [OutputType([Microsoft.AspNetCore.Builder.RouteHandlerBuilder])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter()]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
@@ -60,7 +60,7 @@ function Add-KrMapRoute {
         [string]$Code,
 
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
-        [Kestrun.ScriptLanguage]$Language,
+        [Kestrun.Scripting.ScriptLanguage]$Language,
 
         [Parameter()]
         [string[]]$Authorization = $null,
@@ -79,7 +79,7 @@ function Add-KrMapRoute {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        $options = [Kestrun.Hosting.MapRouteOptions]::new()
+        $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
         $options.HttpVerbs = $Verbs
         $options.Pattern = $Path
         $options.ExtraImports = $ExtraImports
@@ -91,13 +91,14 @@ function Add-KrMapRoute {
             $options.Code = $Code
         }
         else {
-            $options.Language = [Kestrun.ScriptLanguage]::PowerShell
+            $options.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
             $options.Code = $ScriptBlock.ToString()
         }
-        $map = $Server.AddMapRoute($options)
+
+        $map = [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $options)
 
         if ($PassThru) {
-           return $map
+            return $map
         }
     }
 }

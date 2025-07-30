@@ -2,6 +2,7 @@ using System;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Xunit;
 using Kestrun.Hosting;
+using Kestrun.Hosting.Options;
 
 namespace KestrunTests.Hosting;
 

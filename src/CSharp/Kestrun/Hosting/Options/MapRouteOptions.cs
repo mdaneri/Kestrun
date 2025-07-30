@@ -1,9 +1,9 @@
 
 using System.Reflection;
+using Kestrun.Scripting;
 using Kestrun.Utilities;
 
-namespace Kestrun.Hosting;
-
+namespace Kestrun.Hosting.Options;
 public record MapRouteOptions
 {
     public string? Pattern { get; init; }

@@ -1,5 +1,7 @@
 
 
+using Kestrun.Models;
+
 namespace Kestrun.Hosting;
 
 public sealed record KestrunContext(

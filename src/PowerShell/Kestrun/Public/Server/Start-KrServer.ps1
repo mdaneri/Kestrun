@@ -21,7 +21,7 @@ function Start-KrServer {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [Parameter()]
         [switch]$NoWait,
         [Parameter()]
@@ -32,6 +32,7 @@ function Start-KrServer {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+        
         if ($PSCmdlet.ShouldProcess("Kestrun server", "Start")) {
             # Start the Kestrel server
             Write-Host "Starting Kestrun ..."

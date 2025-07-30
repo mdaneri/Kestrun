@@ -8,10 +8,12 @@ using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib;
-using Kestrun.Logging;
+using Org.BouncyCastle.Utilities.Zlib; 
+using System.Text; 
 using Kestrun.Utilities;
-using System.Text;
+using Kestrun.Scripting;
+using Kestrun.Certificates;
+using Kestrun.Logging;
 using Kestrun.Hosting;   // Only for writing the CSR key
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -66,26 +68,26 @@ else
 {
     // Create a new self-signed certificate
 
-    x509Certificate = Kestrun.CertificateManager.NewSelfSigned(
-      new Kestrun.CertificateManager.SelfSignedOptions(
+    x509Certificate = CertificateManager.NewSelfSigned(
+      new CertificateManager.SelfSignedOptions(
           DnsNames: ["localhost", "127.0.0.1"],
-          KeyType: Kestrun.CertificateManager.KeyType.Rsa,
+          KeyType: CertificateManager.KeyType.Rsa,
           KeyLength: 2048,
           ValidDays: 30,
           Exportable: true
       )
   );
     // Export the certificate to a file
-    Kestrun.CertificateManager.Export(
+    CertificateManager.Export(
         x509Certificate,
         "./devcert.pfx",
-        Kestrun.CertificateManager.ExportFormat.Pfx,
+        CertificateManager.ExportFormat.Pfx,
         "p@ss".AsSpan()
     );
 
 }
 
-if (!Kestrun.CertificateManager.Validate(
+if (!CertificateManager.Validate(
     x509Certificate,
     checkRevocation: false,
     allowWeakAlgorithms: false,
@@ -189,7 +191,7 @@ server.AddMapRoute("/ps/yaml", HttpVerb.Get, """
                 
             } 
             Write-KrYamlResponse -inputObject $payload -statusCode 200
-        """, Kestrun.ScriptLanguage.PowerShell);
+        """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/ps/xml", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Xml Response(From C#)" 
@@ -204,7 +206,7 @@ server.AddMapRoute("/ps/xml", HttpVerb.Get, """
                 
             } 
             Write-KrXmlResponse -inputObject $payload -statusCode 200
-        """, Kestrun.ScriptLanguage.PowerShell);
+        """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/ps/csv", HttpVerb.Get, """
             Write-Output "Hello from PowerShell script! - Csv Response(From C#)" 
@@ -219,7 +221,7 @@ server.AddMapRoute("/ps/csv", HttpVerb.Get, """
                 
             } 
             Write-KrCsvResponse -inputObject $payload -statusCode 200
-        """, Kestrun.ScriptLanguage.PowerShell);
+        """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/ps/text", HttpVerb.Get, """        
             Write-Output "Hello from PowerShell script! - Text Response(From C#)" 
@@ -234,28 +236,28 @@ server.AddMapRoute("/ps/text", HttpVerb.Get, """
                 
             } |Format-Table| Out-String
             Write-KrTextResponse -inputObject $payload -statusCode 200        
-        """, Kestrun.ScriptLanguage.PowerShell);
+        """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/ps/stream/binary", HttpVerb.Get, """        
                 Write-Output 'Hello from PowerShell script! - stream Binary file Response'
                 Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.bin' -statusCode 200      
-            """, Kestrun.ScriptLanguage.PowerShell);
+            """, ScriptLanguage.PowerShell);
 
 
 server.AddMapRoute("/ps/stream/text", HttpVerb.Get, """        
                 Write-Output 'Hello from PowerShell script! - stream Text file Response'
                 Write-KrFileResponse -FilePath '../Files/LargeFiles/2GB.txt' -statusCode 200      
-            """, Kestrun.ScriptLanguage.PowerShell);
+            """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/hello-ps", HttpVerb.Get, """
             $Context.Response.ContentType = 'text/plain'
             $Context.Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
-        """, Kestrun.ScriptLanguage.PowerShell);
+        """, ScriptLanguage.PowerShell);
 
 server.AddMapRoute("/hello-cs", HttpVerb.Get, """
             Context.Response.ContentType = "text/plain";
             Context.Response.Body = $"Hello from C# at {DateTime.Now:O}";
-        """, Kestrun.ScriptLanguage.CSharp);
+        """, ScriptLanguage.CSharp);
 
 
 server.AddMapRoute("/cs/json", HttpVerb.Get, """
@@ -272,7 +274,7 @@ server.AddMapRoute("/cs/json", HttpVerb.Get, """
 
             Context.Response.WriteJsonResponse( payload,  200);
 
-        """, Kestrun.ScriptLanguage.CSharp);
+        """, ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/bson",
             HttpVerb.Get,
@@ -342,7 +344,7 @@ server.AddMapRoute("/cs/yaml", HttpVerb.Get, """
                 contentType: "text/yaml" );
             Context.Response.ContentDisposition.Type = ContentDispositionType.Inline;
             Context.Response.ContentDisposition.FileName = "response.yaml";
-        """, Kestrun.ScriptLanguage.CSharp);
+        """, ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/xml", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Xml Response(From C#)");
@@ -356,7 +358,7 @@ server.AddMapRoute("/cs/xml", HttpVerb.Get, """
                 RequestBody = Context.Request.Body
             };
             Context.Response.WriteXmlResponse( payload,  200);
-        """, Kestrun.ScriptLanguage.CSharp);
+        """, ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/text", HttpVerb.Get, """
             Console.WriteLine("Hello from C# script! - Text Response(From C#)");
@@ -372,23 +374,23 @@ server.AddMapRoute("/cs/text", HttpVerb.Get, """
 
             Context.Response.WriteTextResponse( payload,  200);
 
-        """, Kestrun.ScriptLanguage.CSharp);
+        """, ScriptLanguage.CSharp);
 
 
 server.AddMapRoute("/cs/stream/binary", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Binaryfile Response(From C#)");
               Context.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
-            """, Kestrun.ScriptLanguage.CSharp);
+            """, ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/stream/text", HttpVerb.Get, """        
                 Console.WriteLine("Hello from C# script! - stream Text file Response(From C#)");
                Context.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.txt", contentType: "text/plain", statusCode: 200);
-            """, Kestrun.ScriptLanguage.CSharp);
+            """, ScriptLanguage.CSharp);
 
 server.AddMapRoute("/cs/file", HttpVerb.Get, """
                 Console.WriteLine("Hello from C# script! - file Response(From C#)");
                 Context.Response.WriteFileResponse("..\\..\\..\\README.md", null, 200);
-""", Kestrun.ScriptLanguage.CSharp);
+""", ScriptLanguage.CSharp);
 
 
 

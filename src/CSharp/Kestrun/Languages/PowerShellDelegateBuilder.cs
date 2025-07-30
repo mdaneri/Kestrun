@@ -1,4 +1,5 @@
 using System.Management.Automation;
+using Kestrun.Models;
 using Kestrun.Utilities;
 using Serilog;
 using Serilog.Events;

@@ -31,10 +31,10 @@ function Add-KrFileServer {
 
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.Builder.FileServerOptions]$Options,
@@ -73,7 +73,11 @@ function Add-KrFileServer {
                 $Options.RedirectToAppendTrailingSlash = $true
             }
         }
-        $Server.AddFileServer($Options) | Out-Null
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+        # Add the file server to the server
+        # Use the KestrunHostStaticFilesExtensions to add the file server
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddFileServer($Server, $Options) | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

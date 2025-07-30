@@ -1,4 +1,5 @@
 using Kestrun;
+using Kestrun.Scripting;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Xunit;

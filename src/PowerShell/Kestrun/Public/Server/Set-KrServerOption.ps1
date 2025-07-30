@@ -59,7 +59,7 @@ function Set-KrServerOption {
 
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [switch]$AllowSynchronousIO,
         [switch]$DisableResponseHeaderCompression ,
         [switch]$DenyServerHeader,

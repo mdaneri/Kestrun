@@ -62,10 +62,10 @@ function Set-KrServerLimit {
 
 #>
     [CmdletBinding()]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [long]$MaxRequestBodySize , # Default is 30,000,000 
         [int]$MaxConcurrentConnections ,
         [int]$MaxRequestHeaderCount , # Default is 100 
@@ -83,6 +83,7 @@ function Set-KrServerLimit {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+        
         if ($PSCmdlet.ShouldProcess("Kestrun server Limits", "Set server limits")) {
             $options = $Server.Options
             if ($null -eq $options) {
@@ -122,6 +123,7 @@ function Set-KrServerLimit {
                 $options.ServerLimits.RequestHeadersTimeout = [TimeSpan]::FromSeconds($RequestHeadersTimeoutSeconds)
             }
         }
+
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance

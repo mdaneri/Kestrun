@@ -6,9 +6,7 @@ function Add-KrPowerShellRuntime {
     This cmdlet allows you to register a PowerShell runtime with the Kestrun server.
     It can be used to execute PowerShell scripts and commands in the context of the Kestrun server.
 .PARAMETER Server
-    The Kestrun server instance to which the PowerShell runtime will be added.
-.PARAMETER PathPrefix
-    An optional path prefix for the PowerShell runtime. If specified, the PowerShell runtime will be served under this path.
+    The Kestrun server instance to which the PowerShell runtime will be added. 
 .EXAMPLE
     $server | Add-KrPowerShellRuntime -PathPrefix '/ps'
     This example adds PowerShell runtime support to the server, with a path prefix of '/ps'.
@@ -19,13 +17,10 @@ function Add-KrPowerShellRuntime {
     This cmdlet is used to register a PowerShell runtime with the Kestrun server, allowing you to execute PowerShell scripts and commands in the context of the Kestrun server.
 #>
     [CmdletBinding()]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
-
-        [Parameter()]
-        [string]$PathPrefix = $null,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter()]
         [switch]$PassThru
@@ -33,12 +28,8 @@ function Add-KrPowerShellRuntime {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
-            $Server.AddPowerShellRuntime() | Out-Null
-        }
-        else {
-            $Server.AddPowerShellRuntime( [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
-        }
+ 
+        $Server.AddPowerShellRuntime() | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

@@ -8,17 +8,19 @@ using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib;
-using Kestrun.Logging;
-using Kestrun.Utilities;
+using Org.BouncyCastle.Utilities.Zlib; 
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;   // Only for writing the CSR key
+using System.IdentityModel.Tokens.Jwt; 
+using System.Management.Automation; 
+using Kestrun.Certificates;
+using Kestrun.Logging;
+using Kestrun.Utilities;
+using Kestrun.Scripting;
 using Kestrun.Hosting;
-using System.Management.Automation;
 using Kestrun.Authentication;
 
 
@@ -159,7 +161,7 @@ server.AddResponseCompression(options =>
     {
         Language = ScriptLanguage.CSharp,
         Code = """
-    return Kestrun.Utilities.SecurityUtilities.FixedTimeEquals(providedKeyBytes, Encoding.UTF8.GetBytes("my-secret-api-key"));
+    return Utilities.SecurityUtilities.FixedTimeEquals(providedKeyBytes, Encoding.UTF8.GetBytes("my-secret-api-key"));
     // or use a simple string comparison:  
     // return providedKey == "my-secret-api-key";
     """,
@@ -189,26 +191,26 @@ if (File.Exists("./devcert.pfx"))
 else
 {
     // Create a new self-signed certificate
-    x509Certificate = Kestrun.CertificateManager.NewSelfSigned(
-      new Kestrun.CertificateManager.SelfSignedOptions(
+    x509Certificate = CertificateManager.NewSelfSigned(
+      new CertificateManager.SelfSignedOptions(
           DnsNames: ["localhost", "127.0.0.1"],
-          KeyType: Kestrun.CertificateManager.KeyType.Rsa,
+          KeyType: CertificateManager.KeyType.Rsa,
           KeyLength: 2048,
           ValidDays: 30,
           Exportable: true
       )
   );
     // Export the certificate to a file
-    Kestrun.CertificateManager.Export(
+    CertificateManager.Export(
         x509Certificate,
         "./devcert.pfx",
-        Kestrun.CertificateManager.ExportFormat.Pfx,
+        CertificateManager.ExportFormat.Pfx,
         "p@ss".AsSpan()
     );
 
 }
 
-if (!Kestrun.CertificateManager.Validate(
+if (!CertificateManager.Validate(
     x509Certificate,
     checkRevocation: false,
     allowWeakAlgorithms: false,

@@ -27,10 +27,10 @@ function Add-KrListener {
     This function is designed to be used after the server has been configured with routes and listeners.
 #>
     [CmdletBinding(defaultParameterSetName = "NoCert")]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true)]
         [int]$Port,
@@ -60,6 +60,8 @@ function Add-KrListener {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+
+        # Validate parameters based on the parameter set
         if ($null -eq $Protocols) {
             if ($PSCmdlet.ParameterSetName -eq "NoCert") {
                 $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1

@@ -26,10 +26,10 @@ function Add-KrRazorPageService {
     This cmdlet is used to register Razor Pages with the Kestrun server, allowing you to serve dynamic web pages using Razor syntax.
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.Mvc.RazorPages.RazorPagesOptions]$Options,
@@ -54,9 +54,10 @@ function Add-KrRazorPageService {
                     $Options.Conventions.Add($c)
                 }
             }
-        }
-        # Add Razor Pages service to the server
-        $Server.AddRazorPages($Options) | Out-Null
+        }# Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+
+        [Kestrun.Hosting.KestrunHostRazorExtensions]::AddRazorPages($Server, $Options) | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

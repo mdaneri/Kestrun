@@ -1,4 +1,5 @@
 using System.Reflection;
+using Kestrun.Scripting;
 
 namespace Kestrun.Authentication;
 public record AuthenticationCodeSettings

@@ -1,4 +1,4 @@
-namespace Kestrun;
+namespace Kestrun.Scripting;
 
 /// <summary>
 /// Supported scripting languages for the Kestrun runtime.

@@ -8,6 +8,8 @@
 .PARAMETER AssemblyPath
     Path to the assembly file to load.
 #>
+ 
+
 function Assert-AssemblyLoaded {
     param (
         [string]$AssemblyPath
@@ -21,7 +23,14 @@ function Assert-AssemblyLoaded {
         Add-Type -Path $AssemblyPath
     }
 }
+function Import-KestrunAccelerator {
+    $ta = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
 
+    $ta::Add('KestrunHelpers', [Kestrun.Scriptable.KestrunHelpers])
+    $ta::Add('KestrunCerts', [Kestrun.Scriptable.CertificateUtils])
+    $ta::Add('KestrunLogger', [Kestrun.Logging.LogUtility])
+    Kestrun.Authentication
+}
 function Add-AspNetCoreType {
     <#
     .SYNOPSIS

@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
-namespace Kestrun;
+namespace Kestrun.Scripting;
 
 /// <summary>
 /// Exception thrown when C# script compilation fails.

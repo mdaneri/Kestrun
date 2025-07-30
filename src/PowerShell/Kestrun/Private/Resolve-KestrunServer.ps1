@@ -22,7 +22,7 @@
 #>
 function Resolve-KestrunServer {
     param (
-        [Kestrun.KestrunHost]$Server
+        [Kestrun.Hosting.KestrunHost]$Server
     )
     if ($null -eq $Server) {
         $Server = [Kestrun.KestrunHostManager]::Default

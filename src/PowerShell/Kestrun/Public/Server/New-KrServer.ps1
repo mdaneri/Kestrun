@@ -16,7 +16,7 @@
 #>
 function New-KrServer {
     [CmdletBinding(SupportsShouldProcess = $true)]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [string]$Name,

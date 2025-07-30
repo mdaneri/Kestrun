@@ -82,7 +82,7 @@ function Register-KrSchedule {
     [OutputType([Kestrun.Scheduling.JobInfo])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory)]
         [string]$Name,
@@ -91,7 +91,7 @@ function Register-KrSchedule {
         [Parameter(Mandatory = $true, ParameterSetName = "CronBlock")]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalFile')]
-        [Kestrun.ScriptLanguage]$Language,
+        [Kestrun.Scripting.ScriptLanguage]$Language,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'CronScriptBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'CronBlock')]
@@ -115,17 +115,22 @@ function Register-KrSchedule {
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalFile')]
         [string]$ScriptPath,
 
-        [Parameter()]        [switch]$RunImmediately
+        [Parameter()]
+        [switch]$RunImmediately,
+
+        [Parameter()]
+        [switch]$PassThru
     )
 
-    begin {
+    process {
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+        # Ensure the scheduler service is enabled
         $sched = $Server.Scheduler
         if ($null -eq $sched) {
             throw "SchedulerService is not enabled. Call host.EnableScheduling() first."
         }
-    }
 
-    process {
         if (-not $PSCmdlet.ShouldProcess($Name, "Register schedule")) { return }
 
         try {
@@ -158,9 +163,17 @@ function Register-KrSchedule {
                     $sched.Schedule($Name, $Interval, $fileInfo, $Language, $RunImmediately.IsPresent)
                 }
             }
+            if ($PassThru.IsPresent) {
+                # if the PassThru switch is specified, return the job info
+                # Return the newly registered job info
+                Write-KrInformationLog -MessageTemplate "Schedule '{0}' registered successfully." -PropertyValues $Name
 
-            # return the freshly-registered JobInfo
-            return $sched.GetSnapshot() | Where-Object Name -eq $Name
+                # return the freshly-registered JobInfo
+                return $sched.GetSnapshot() | Where-Object Name -eq $Name
+            }
+            else {
+                Write-KrInformationLog -MessageTemplate "Schedule '{0}' registered successfully. Use -PassThru to return the job info." -PropertyValues $Name
+            }
         }
         catch {
             Write-KrErrorLog -MessageTemplate "Failed to register schedule" -ErrorRecord $_

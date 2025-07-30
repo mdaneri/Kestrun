@@ -15,7 +15,7 @@ function Set-KrSharedState {
     #>
 
     [CmdletBinding(SupportsShouldProcess = $true)]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory)]
         [string]$Name,

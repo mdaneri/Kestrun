@@ -31,10 +31,10 @@ function Add-KrResponseCompression {
     Providers is not supported yet.
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.ResponseCompression.ResponseCompressionOptions]$Options,
@@ -52,8 +52,7 @@ function Add-KrResponseCompression {
         # [Microsoft.AspNetCore.ResponseCompression.ICompressionProvider[]]$Providers = @()
     )
     process {
-        # Ensure the server instance is resolved
-        $Server = Resolve-KestrunServer -Server $Server
+         
         if ($PSCmdlet.ParameterSetName -eq 'Items') {
             $Options = [Microsoft.AspNetCore.ResponseCompression.ResponseCompressionOptions]::new()
             if ($null -ne $MimeTypes -and $MimeTypes.Count -gt 0) {
@@ -72,8 +71,11 @@ function Add-KrResponseCompression {
                 }
             }#>
         }
+        
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
 
-        $Server.AddResponseCompression($Options) | Out-Null
+        [Kestrun.Hosting.KestrunHttpMiddlewareExtensions]::AddResponseCompression($Server, $Options) | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

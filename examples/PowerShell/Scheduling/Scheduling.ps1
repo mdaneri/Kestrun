@@ -45,7 +45,7 @@ Register-KrLogger -SetAsDefault -Name "DefaultLogger" -PassThru
 Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } 
 
 # 2.  ─── Host & core services ─────────────────────────────────
-$server = New-KrServer -Name 'MyKestrunServer' -Logger $logger 
+  New-KrServer -Name 'MyKestrunServer' -Logger $logger 
 
 # Listen on port 5000 (HTTP)
 Add-KrListener -Port 5000 -PassThru |
@@ -56,37 +56,37 @@ Enable-KrConfiguration -passThru
 # 3.  ─── Scheduled jobs ───────────────────────────────────────
 
 # (A) pure-C# heartbeat every 10 s (through ScriptBlock)
-Register-KrSchedule -Server $server -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock {
+Register-KrSchedule -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock {
     Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
 }
 
 
-Register-KrSchedule -Server $server -Name "HeartbeatCS" -Interval '00:00:15' -Language CSharp -Code @"
+Register-KrSchedule -Name "HeartbeatCS" -Interval '00:00:15' -Language CSharp -Code @"
     // C# code runs inside the server process
     Serilog.Log.Information("💓  Heartbeat (C#) at {0:O}", DateTimeOffset.UtcNow);
 "@
 
 # (B) inline PS every minute
-Register-KrSchedule -Server $server -Name 'ps-inline' -Cron '0 * * * * *' -ScriptBlock {
+Register-KrSchedule -Name 'ps-inline' -Cron '0 * * * * *' -ScriptBlock {
     Write-Information "[$([DateTime]::UtcNow.ToString('o'))] 🌙  Inline PS job ran."
     Write-Information "Runspace Name: $([runspace]::DefaultRunspace.Name)"
     Write-Information "$($Visits['Count']) Visits so far."
 }
 
 # (C) script file nightly 03:00
-Register-KrSchedule -Server $server -Name 'nightly-clean' -Cron '0 0 3 * * *' `
+Register-KrSchedule -Name 'nightly-clean' -Cron '0 0 3 * * *' `
     -ScriptPath 'Scripts\Cleanup.ps1' -Language PowerShell
 
 # 4.  ─── Routes ───────────────────────────────────────────────
 
 # /visit   (increments Visits)
-Add-KrMapRoute -Server $server -Verbs Get -Path '/visit' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path '/visit' -ScriptBlock {
     $Visits['Count']++
     Write-KrTextResponse "🔢 Visits now: $($Visits['Count'])" 200
 }
 
 # /schedule/report   (JSON snapshot)
-Add-KrMapRoute -Server $server -Verbs Get -Path '/schedule/report' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path '/schedule/report' -ScriptBlock {
     $report = Get-KrScheduleReport
     Write-KrJsonResponse -InputObject $report -StatusCode 200
 }

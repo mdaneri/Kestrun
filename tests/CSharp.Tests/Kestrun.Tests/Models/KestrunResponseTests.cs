@@ -4,6 +4,7 @@ using Xunit;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Kestrun.Models;
 
 namespace KestrunTests.Models;
 public class KestrunResponseTests
@@ -14,8 +15,8 @@ public class KestrunResponseTests
         {
             Method = "GET",
             Path = "/",
-            Query = new(),
-            Headers = new(),
+            Query = [],
+            Headers = [],
             Body = string.Empty
         });
 

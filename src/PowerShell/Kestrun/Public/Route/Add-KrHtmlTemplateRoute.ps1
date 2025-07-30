@@ -41,7 +41,7 @@ function Add-KrHtmlTemplateRoute {
     [OutputType([Microsoft.AspNetCore.Builder.RouteHandlerBuilder])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true)]
         [string]$Path,
@@ -59,13 +59,12 @@ function Add-KrHtmlTemplateRoute {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        $options = [Kestrun.Hosting.MapRouteOptions]::new()
+        $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
         $options.HttpVerbs = [Kestrun.Utilities.HttpVerb[]]::new([Kestrun.Utilities.HttpVerb]::Get) 
         $options.Pattern = $Path
         $options.RequireAuthorization = $Authorization
 
-        $map = $Server.AddHtmlTemplateRoute($options, $HtmlTemplatePath)
-
+        $map = [Kestrun.Hosting.KestrunHostMapExtensions]::AddHtmlTemplateRoute($Server, $options, $HtmlTemplatePath)
         if ($PassThru) {
             return $map
         }

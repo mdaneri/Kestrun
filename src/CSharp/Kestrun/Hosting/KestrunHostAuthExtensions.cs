@@ -14,6 +14,8 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Primitives;
 using Kestrun.Utilities;
 using Kestrun.Authentication;
+using Serilog.Events;
+using Kestrun.Scripting;
 
 
 namespace Kestrun.Hosting;
@@ -288,4 +290,73 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz
         );
     }
+
+
+    public static KestrunHost AddAuthentication(this KestrunHost host,
+          string defaultScheme,
+          Action<AuthenticationBuilder> buildPolicy, Action<AuthorizationOptions>? configureAuthz = null)
+    {
+
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            host._Logger.Debug("Adding authentication with default scheme: {DefaultScheme}", defaultScheme);
+        ArgumentNullException.ThrowIfNull(defaultScheme);
+        ArgumentNullException.ThrowIfNull(buildPolicy);
+
+        // ① Add authentication services via DI
+        host.AddService(services =>
+        {
+            var builder = services.AddAuthentication(defaultScheme);
+            buildPolicy(builder);  // ⬅️ Now you apply the user-supplied schemes here
+
+            if (configureAuthz is null)
+                services.AddAuthorization();                // default options
+            else
+                services.AddAuthorization(configureAuthz);  // caller customises
+        });
+
+        // ② Add middleware to enable auth pipeline
+        return host.Use(app =>
+        {
+            app.UseAuthentication();
+            app.UseAuthorization(); // optional but useful
+        });
+    }
+
+    public static KestrunHost AddAuthentication(this KestrunHost host,
+    Action<AuthenticationBuilder> buildSchemes,            // ← unchanged
+    string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
+    Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        host.AddService(services =>
+        {
+            var ab = services.AddAuthentication(defaultScheme);
+            buildSchemes(ab);                                  // Basic + JWT here
+
+            // make sure UseAuthorization() can find its services
+            if (configureAuthz is null)
+                services.AddAuthorization();
+            else
+                services.AddAuthorization(configureAuthz);
+        });
+
+        return host.Use(app =>
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        });
+    }
+
+
+    public static KestrunHost AddAuthorization(this KestrunHost host, Action<AuthorizationOptions>? cfg = null)
+    {
+        return host.AddService(s =>
+        {
+            if (cfg == null)
+                s.AddAuthorization();
+            else
+                s.AddAuthorization(cfg);
+        });
+    }
+
+
 }

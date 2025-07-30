@@ -40,10 +40,10 @@ function Add-KrCorsPolicy {
     https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.cors.infrastructure.corspolicybuilder?view=aspnetcore-8.0
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true)]
         [string]$Name,
@@ -93,7 +93,11 @@ function Add-KrCorsPolicy {
                 $Builder.DisallowCredentials() | Out-Null
             }
         }
-        $Server.AddCors($Name, $Builder) | Out-Null
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+
+        [Kestrun.Hosting.KestrunHttpMiddlewareExtensions]::AddCors($Server, $Name, $Builder) | Out-Null
+        # Add the CORS policy to the server
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance

@@ -2,6 +2,7 @@
 
 using System.Reflection;
 using System.Text;
+using Kestrun.Models;
 using Kestrun.SharedState;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

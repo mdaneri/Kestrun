@@ -29,7 +29,7 @@ using Serilog;
 using Serilog.Events;
 
 
-namespace Kestrun;
+namespace Kestrun.Certificates;
 
 /// <summary>
 /// Drop-in replacement for Pode’s certificate helpers, powered by Bouncy Castle.

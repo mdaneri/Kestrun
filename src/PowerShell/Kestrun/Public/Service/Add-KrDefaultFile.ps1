@@ -1,23 +1,4 @@
-function Add-KrControllersService {
-    <#
-.SYNOPSIS
-    Registers MVC / API controllers.
-#>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [Kestrun.KestrunHost]$Server
-    )
-    process { $Server.AddControllers() | out-Null }
-}
 
-# ----------- 
-
- 
-
- 
- 
- 
 function Add-KrDefaultFile {
     <#
 .SYNOPSIS
@@ -51,22 +32,28 @@ function Add-KrDefaultFile {
     https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.defaultfilesoptions?view=aspnetcore-8.0
 #>
     [CmdletBinding(defaultParameterSetName = 'Items')]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.AspNetCore.Builder.DefaultFilesOptions]$Options,
 
         [Parameter(ParameterSetName = 'Items')]
         [string]$RequestPath,
+
         [Parameter(ParameterSetName = 'Items')]
         [string[]]$DefaultFiles,
+
         [Parameter(ParameterSetName = 'Items')]
         [Microsoft.Extensions.FileProviders.IFileProvider] $FileProvider,
+
         [Parameter(ParameterSetName = 'Items')]
-        [switch]$RedirectToAppendTrailingSlash
+        [switch]$RedirectToAppendTrailingSlash,
+
+        [Parameter()]
+        [switch]$PassThru
     )
     process {
         if ($PSCmdlet.ParameterSetName -eq 'Items') {
@@ -86,56 +73,16 @@ function Add-KrDefaultFile {
                 $Options.RequestPath = [Microsoft.AspNetCore.Http.PathString]::new($RequestPath)
             }
         }
-        $Server.AddDefaultFiles($Options) | Out-Null
-        # Return the modified server instance
-        return $Server
+        # Ensure the server instance is resolved
+        $Server = Resolve-KestrunServer -Server $Server
+        
+        # Add the default file provider to the server
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddDefaultFiles($Server, $Options) | Out-Null
+
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
     }
 }
- 
-
-##########################################################################################
-
-# -------------------------------------------------------------------------
-function Add-KrSignalRHub {
-    <#
-.SYNOPSIS
-    Maps a SignalR hub class to the given URL path.
-
-.EXAMPLE
-    $server | Add-KrSignalRHub -HubType ([ChatHub]) -Path "/chat"
-#>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory, ValueFromPipeline)]
-        [Kestrun.KestrunHost]$Server,
-
-        [Parameter(Mandatory)]
-        [Type]$HubType,
-
-        [Parameter(Mandatory)]
-        [string]$Path
-    )
-
-    process {
-        # 1.  Find the generic method definition on KestrunHost
-        $method = $Server.GetType().GetMethods() |
-        Where-Object {
-            $_.Name -eq 'AddSignalR' -and
-            $_.IsGenericMethod -and
-            $_.GetParameters().Count -eq 1        # (string path)
-        }
-
-        if (-not $method) {
-            throw "Could not locate the generic AddSignalR<T>(string) method."
-        }
-
-        # 2.  Close the generic with the hub type from the parameter
-        $closed = $method.MakeGenericMethod(@($HubType))
-
-        # 3.  Invoke it, passing the path; return the resulting server for chaining
-        $closed.Invoke($Server, @($Path)) | Out-Null
-    }
-}
-
-
-# ------------------------------------------------------------------------- 

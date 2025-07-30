@@ -16,11 +16,11 @@
 #>
 function Enable-KrConfiguration {
     [CmdletBinding()]
-    [OutputType([Kestrun.KestrunHost])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-        [Kestrun.KestrunHost]$Server,
+        [Kestrun.Hosting.KestrunHost]$Server,
         [Parameter()]
         [switch]$Quiet,
         [Parameter()]
@@ -29,6 +29,7 @@ function Enable-KrConfiguration {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+        
         $Server.EnableConfiguration() | Out-Null
         if (-not $Quiet.IsPresent) {
             Write-Host "Kestrun server configuration enabled successfully."
