@@ -58,10 +58,10 @@ public class ApiKeyAuthHandler
             // ⑤ Now validate
             bool valid = false;
 
-            if (!string.IsNullOrWhiteSpace(Options.ExpectedKey))
+            if (Options.ExpectedKeyBytes is not null)
             {
 
-                valid = SecurityUtilities.FixedTimeEquals(providedKeyBytes, Options.ExpectedKeyBytes);
+                valid = FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes);
             }
             else if (Options.ValidateKeyAsync is not null)
             {
@@ -175,7 +175,6 @@ public class ApiKeyAuthHandler
     public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
       => async (ctx, providedKey, providedKeyBytes) =>
       {
-          //ctx.Items["PS_AUTH_CODE"] = code;
           return await ValidatePowerShellKeyAsync(codeSettings.Code, ctx, providedKey);
       };
 
@@ -197,7 +196,7 @@ public class ApiKeyAuthHandler
             var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
                 { "providedKey", providedKey },
-                { "providedKeyBytes", providedKeyBytes }
+                { "providedKeyBytes", providedKeyBytes },
             });
             var result = await script.RunAsync(globals).ConfigureAwait(false);
             return result.ReturnValue is true;

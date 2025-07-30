@@ -128,19 +128,19 @@ function Add-KrApiKeyAuthentication {
     )
     process {
         if ($PSCmdlet.ParameterSetName -ne 'Options') {
-            $options = [Kestrun.Authentication.ApiKeyAuthenticationOptions]::new()
-            $options.CodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
+            $Options = [Kestrun.Authentication.ApiKeyAuthenticationOptions]::new()
+            $Options.CodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
             if (-not [string]::IsNullOrWhiteSpace($ExpectedKey)) {
-                $options.ExpectedKey = $ExpectedKey
+                $Options.ExpectedKey = $ExpectedKey
             }
             elseif ($null -ne $ScriptBlock) {
-                $options.CodeSettings.Code = $ScriptBlock.ToString()
-                $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                $Options.CodeSettings.Code = $ScriptBlock.ToString()
+                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
 
             }
             elseif (-not [string]::IsNullOrWhiteSpace($CsCode)) {
-                $options.CodeSettings.Code = $CsCode
-                $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                $Options.CodeSettings.Code = $CsCode
+                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
             }
             elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
                 if (-not (Test-Path -Path $CodeFilePath)) {
@@ -149,42 +149,42 @@ function Add-KrApiKeyAuthentication {
                 $extension = Split-Path -Path $CodeFilePath -Extension
                 switch ($extension) {
                     ".ps1" {
-                        $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                     }
                     ".cs" {
-                        $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                     }
                     Default {
                         throw "Unsupported code file extension. Only .ps1 and .cs files are supported."
                     }
                 }
-                $options.CodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
+                $Options.CodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
             }
 
             if (-not [string]::IsNullOrWhiteSpace($HeaderName)) {
-                $options.HeaderName = $HeaderName
+                $Options.HeaderName = $HeaderName
             }
             if ($AdditionalHeaderNames.Count -gt 0) {
-                $options.AdditionalHeaderNames = $AdditionalHeaderNames
+                $Options.AdditionalHeaderNames = $AdditionalHeaderNames
             }
             if ($AllowQueryStringFallback.IsPresent) {
-                $options.AllowQueryStringFallback = $AllowQueryStringFallback.IsPresent
+                $Options.AllowQueryStringFallback = $AllowQueryStringFallback.IsPresent
             } 
             if ($EmitChallengeHeader.IsPresent) {
-                $options.EmitChallengeHeader = $EmitChallengeHeader.IsPresent
+                $Options.EmitChallengeHeader = $EmitChallengeHeader.IsPresent
             }
             if ($null -ne $ChallengeHeaderFormat) {
-                $options.ChallengeHeaderFormat = $ChallengeHeaderFormat
+                $Options.ChallengeHeaderFormat = $ChallengeHeaderFormat
             }
 
             if ($AllowInsecureHttp.IsPresent) {
-                $options.RequireHttps = $false
+                $Options.RequireHttps = $false
             }
             else {
-                $options.RequireHttps = $true
+                $Options.RequireHttps = $true
             }
             if ($null -ne $Logger) {
-                $options.Logger = $Logger
+                $Options.Logger = $Logger
             }
         }
         # Ensure the server instance is resolved
@@ -193,8 +193,8 @@ function Add-KrApiKeyAuthentication {
         [Kestrun.Hosting.KestrunHostAuthExtensions]::AddApiKeyAuthentication(
             $Server,
             $Name,
-            $options
-        )
+            $Options
+        ) | Out-Null
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance

@@ -1,3 +1,4 @@
+using Kestrun;
 using Kestrun.Utilities;
 using Xunit;
 
@@ -10,7 +11,7 @@ public class SecurityUtilitiesTests
     {
         byte[] a = { 1, 2, 3 };
         byte[] b = { 1, 2, 3 };
-        Assert.True(SecurityUtilities.FixedTimeEquals(a, b));
+        Assert.True(FixedTimeEquals.Test(a, b));
     }
 
     [Fact]
@@ -18,19 +19,19 @@ public class SecurityUtilitiesTests
     {
         byte[] a = { 1, 2, 3 };
         byte[] b = { 1, 2, 4 };
-        Assert.False(SecurityUtilities.FixedTimeEquals(a, b));
+        Assert.False(FixedTimeEquals.Test(a, b));
     }
 
     [Fact]
     public void FixedTimeEquals_Strings_Equal_ReturnsTrue()
     {
-        Assert.True(SecurityUtilities.FixedTimeEquals("abc", "abc"));
+        Assert.True(FixedTimeEquals.Test("abc", "abc"));
     }
 
     [Fact]
     public void FixedTimeEquals_Strings_Null_ReturnsFalse()
     {
-        Assert.False(SecurityUtilities.FixedTimeEquals(null, "abc"));
-        Assert.False(SecurityUtilities.FixedTimeEquals("abc", null));
+        Assert.False(FixedTimeEquals.Test((string?)null, "abc"));
+        Assert.False(FixedTimeEquals.Test("abc", (string?)null));
     }
 }

@@ -1,3 +1,4 @@
+using Kestrun;
 using Kestrun.Utilities;
 using System.Reflection;
 using Xunit;
@@ -8,7 +9,7 @@ public class RegexUtilsTests
 {
     private static bool InvokeIsGlobMatch(string input, string pattern, bool ignoreCase = true)
     {
-        var asm = typeof(SecurityUtilities).Assembly;
+        var asm = typeof(FixedTimeEquals).Assembly;
         var t = asm.GetType("Kestrun.Utilities.RegexUtils")!;
         var method = t.GetMethod("IsGlobMatch", BindingFlags.Public | BindingFlags.Static)!;
         return (bool)method.Invoke(null, new object[] { input, pattern, ignoreCase })!;

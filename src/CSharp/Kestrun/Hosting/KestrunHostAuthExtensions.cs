@@ -320,44 +320,37 @@ public static class KestrunHostAuthExtensions
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(scheme);
         ArgumentNullException.ThrowIfNull(configure);
-        return host.AddAuthentication(
-            defaultScheme: scheme,
-            buildSchemes: ab =>
+        return host.AddApiKeyAuthentication(
+            scheme: scheme,
+            configure: opts =>
             {
-                // ← TOptions == ApiKeyAuthenticationOptions
-                //    THandler == ApiKeyAuthHandler
-                ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
-                    authenticationScheme: scheme,
-                    displayName: "API Key",
-                    configureOptions: opts =>
-                    {
-                        // let caller mutate everything first
-                        opts.ExpectedKey = configure.ExpectedKey;
-                        opts.HeaderName = configure.HeaderName;
-                        opts.AdditionalHeaderNames = configure.AdditionalHeaderNames;
-                        opts.AllowQueryStringFallback = configure.AllowQueryStringFallback;
-                        opts.Logger = configure.Logger;
-                        opts.RequireHttps = configure.RequireHttps;
-                        opts.EmitChallengeHeader = configure.EmitChallengeHeader;
-                        opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;
+                // let caller mutate everything first
+                opts.ExpectedKey = configure.ExpectedKey;
+                opts.HeaderName = configure.HeaderName;
+                opts.AdditionalHeaderNames = configure.AdditionalHeaderNames;
+                opts.AllowQueryStringFallback = configure.AllowQueryStringFallback;
+                opts.Logger = configure.Logger;
+                opts.RequireHttps = configure.RequireHttps;
+                opts.EmitChallengeHeader = configure.EmitChallengeHeader;
+                opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;
+                opts.CodeSettings = configure.CodeSettings;
+                // ── SPECIAL POWER-SHELL PATH ────────────────────
+                if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
+                    !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                {
+                    // Build the PowerShell script validator
+                    // This will be used to validate credentials
+                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
+                }
+                else   // ── C# pathway ─────────────────────────────────
+                if (opts.CodeSettings.Language is ScriptLanguage.CSharp
+                    && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                {
+                    // Build the C# script validator
+                    // This will be used to validate credentials
+                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                }
 
-                        // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
-                        {
-                            // Build the PowerShell script validator
-                            // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
-                        }
-                        else   // ── C# pathway ─────────────────────────────────
-                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
-                        {
-                            // Build the C# script validator
-                            // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
-                        }
-                    });
 
             },
             configureAuthz: configureAuthz

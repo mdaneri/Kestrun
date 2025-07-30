@@ -151,8 +151,17 @@ internal static class CSharpDelegateBuilder
 
         // Check for compilation errors
         if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
+        {   var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            log.Warning($"C# script compilation completed with {errors.Length} error(s):");
+            foreach (var error in errors)
+            {
+                var location = error.Location.IsInSource
+                    ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
+                    : "";
+                log.Warning($"  Error [{error.Id}]: {error.GetMessage()}{location}");
+            }
             throw new CompilationErrorException("C# route code compilation failed", diagnostics);
-
+        }
         // Log warnings if any (optional - for debugging)
         var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings.Length != 0)

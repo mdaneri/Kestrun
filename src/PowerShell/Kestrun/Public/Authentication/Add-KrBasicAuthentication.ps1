@@ -68,16 +68,16 @@ function Add-KrBasicAuthentication {
     )
     process {
         if ($PSCmdlet.ParameterSetName -ne 'Options') {
-            $options = [Kestrun.Authentication.BasicAuthenticationOptions]::new()
-            $options.CodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
+            $Options = [Kestrun.Authentication.BasicAuthenticationOptions]::new()
+            $Options.CodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
             if ($null -ne $ScriptBlock) {
-                $options.CodeSettings.Code = $ScriptBlock.ToString()
-                $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                $Options.CodeSettings.Code = $ScriptBlock.ToString()
+                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
 
             }
             elseif (-not [string]::IsNullOrWhiteSpace($CsCode)) {
-                $options.CodeSettings.Code = $CsCode
-                $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                $Options.CodeSettings.Code = $CsCode
+                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
             }
             elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
                 if (-not (Test-Path -Path $CodeFilePath)) {
@@ -86,40 +86,41 @@ function Add-KrBasicAuthentication {
                 $extension = Split-Path -Path $CodeFilePath -Extension
                 switch ($extension) {
                     ".ps1" {
-                        $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                     }
                     ".cs" {
-                        $options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                     }
                     Default {
                         throw "Unsupported code file extension. Only .ps1 and .cs files are supported."
                     }
                 }
-                $options.CodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
+                $Options.CodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
             }
 
             if (-not [string]::IsNullOrWhiteSpace($HeaderName)) {
-                $options.HeaderName = $HeaderName
+                $Options.HeaderName = $HeaderName
             }
             if ($Base64Encoded.IsPresent) {
-                $options.Base64Encoded = $Base64Encoded.IsPresent
+                $Options.Base64Encoded = $Base64Encoded.IsPresent
             }
             if ($SuppressWwwAuthenticate.IsPresent) {
-                $options.SuppressWwwAuthenticate = $SuppressWwwAuthenticate.IsPresent
+                $Options.SuppressWwwAuthenticate = $SuppressWwwAuthenticate.IsPresent
             }
             if ($null -ne $SeparatorRegex) {
-                $options.SeparatorRegex = $SeparatorRegex
+                $Options.SeparatorRegex = $SeparatorRegex
             }
             if (-not [string]::IsNullOrWhiteSpace($Realm)) {
-                $options.Realm = $Realm
+                $Options.Realm = $Realm
             }
             if ($AllowInsecureHttp.IsPresent) {
-                $options.RequireHttps = $false
-            }else {
-                $options.RequireHttps = $true
+                $Options.RequireHttps = $false
+            }
+            else {
+                $Options.RequireHttps = $true
             }
             if ($null -ne $Logger) {
-                $options.Logger = $Logger
+                $Options.Logger = $Logger
             }
         }
         # Ensure the server instance is resolved
@@ -128,8 +129,8 @@ function Add-KrBasicAuthentication {
         [Kestrun.Hosting.KestrunHostAuthExtensions]::AddBasicAuthentication(
             $Server,
             $Name,
-            $options
-        )
+            $Options
+        ) | Out-Null
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance

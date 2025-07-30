@@ -96,6 +96,28 @@ Add-KrBasicAuthentication -Name $BasicCSharpScheme -Realm "CSharp-Kestrun" -Allo
 
 Add-KrApiKeyAuthentication -Name $ApiKeySimple -AllowInsecureHttp -HeaderName "X-Api-Key" -ExpectedKey "my-secret-api-key"
 
+
+
+Add-KrApiKeyAuthentication -Name $ApiKeyPowerShell -AllowInsecureHttp -HeaderName "X-Api-Key" -ScriptBlock {
+    param(
+        [string]$ProvidedKey
+    )
+    if ($ProvidedKey -eq 'my-secret-api-key') {
+        return $true
+    }
+    else {
+        return $false
+    }
+}
+
+
+Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X-Api-Key" -csCode @"
+return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
+     // or use a simple string comparison:
+     //return providedKey == "my-secret-api-key";
+"@
+
+
 # Enable configuration
 Enable-KrConfiguration
 
@@ -121,15 +143,33 @@ Add-KrMapRoute -Verbs Get -Path "/secure/cs/hello" -Authorization $BasicCSharpSc
 }
 
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/matching/hello" -Authorization $ApiKeySimple -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -Authorization $ApiKeySimple -ScriptBlock {
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
+}
+ 
+
+Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -Authorization $ApiKeyPowerShell -ScriptBlock {
+    # if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+    Write-KrErrorResponse -Message "Access denied by me" -StatusCode 401
+    #     return
+    #  }
+
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
+}
+ 
+Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -Authorization $ApiKeyCSharp -ScriptBlock {
     if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
     $user = $Context.HttpContext.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using native key matching." -ContentType "text/plain"
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
 }
  
+
+
 # Start the server asynchronously
 Start-KrServer -Server $server
 

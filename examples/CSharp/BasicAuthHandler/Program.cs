@@ -8,14 +8,14 @@ using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib; 
+using Org.BouncyCastle.Utilities.Zlib;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt; 
-using System.Management.Automation; 
+using System.IdentityModel.Tokens.Jwt;
+using System.Management.Automation;
 using Kestrun.Certificates;
 using Kestrun.Logging;
 using Kestrun.Utilities;
@@ -25,17 +25,19 @@ using Kestrun.Authentication;
 
 
 /*
-$creds   = "admin:s3cr3t"
+$creds   = "admin:password"
 $basic   = "Basic " + [Convert]::ToBase64String(
                        [Text.Encoding]::ASCII.GetBytes($creds))
 $token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-Invoke-RestMethod https://localhost:5001/secure/key/native/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+ 
+Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+
+Invoke-RestMethod https://localhost:5001/secure/hello-cs -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 */
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -279,43 +281,12 @@ server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
-server.AddMapRoute("/secure/hello-cs", HttpVerb.Get, """
-    if (!Context.HttpContext.User.Identity.IsAuthenticated)
-    {
-        Context.Response.WriteErrorResponse("Access denied", 401);
-        return;
-    }
-
-    var user = Context.HttpContext.User.Identity.Name;
-    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
-""", ScriptLanguage.CSharp, [JwtScheme]);
-
-
-server.AddNativeRoute("/secure/key/native/hello", HttpVerb.Get, async (ctx) =>
+server.AddNativeRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
-    if (ctx.HttpContext.User?.Identity == null || !ctx.HttpContext.User.Identity.IsAuthenticated)
-    {
-        await ctx.Response.WriteErrorResponseAsync("Access denied", 401);
-        return;
-    }
-
-    var user = ctx.HttpContext.User.Identity.Name;
-    await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated by Native C# code.", 200);
+    var user = ctx.HttpContext.User?.Identity?.Name;
+    await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated using simple key matching.", 200);
 
 }, [ApiKeySimple]);
-
-
-server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
-    if (!Context.HttpContext.User.Identity.IsAuthenticated)
-    {
-        Context.Response.WriteErrorResponse("Access denied", 401);
-        return;
-    }
-
-    var user = Context.HttpContext.User.Identity.Name;
-    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
-""", ScriptLanguage.CSharp, [ApiKeyCSharp]);
-
 
 
 server.AddMapRoute("/secure/key/ps/hello", HttpVerb.Get, """
@@ -330,6 +301,32 @@ server.AddMapRoute("/secure/key/ps/hello", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell, [ApiKeyPowerShell]);
 
 
+server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
+    if (!Context.HttpContext.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = Context.HttpContext.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
+""", ScriptLanguage.CSharp, [ApiKeyCSharp]);
+
+
+server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
+    if (!Context.HttpContext.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = Context.HttpContext.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
+""", ScriptLanguage.CSharp, [JwtScheme]);
+
+
+ 
+ 
 
 server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
 {
