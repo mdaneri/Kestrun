@@ -13,7 +13,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Buffers.Text;
 using Serilog;
 using Serilog.Events;
-using Microsoft.IdentityModel.JsonWebTokens;  // For Base64UrlEncoder
+using Microsoft.IdentityModel.JsonWebTokens;
+using System.Text;  // For Base64UrlEncoder
 namespace Kestrun.Security;
 
 /// <summary>
@@ -43,71 +44,142 @@ public sealed class JwtTokenBuilder
     public JwtTokenBuilder ValidFor(TimeSpan ttl) { _lifetime = ttl; return this; }
     public JwtTokenBuilder NotBefore(DateTime utc) { _nbf = utc; return this; }
     public JwtTokenBuilder AddHeader(string k, object v) { _header[k] = v; return this; }
-    private SymmetricSecurityKey? _lastSigningKey;   // add near the other fields
-                                                     // ── signing helpers
 
-    public JwtTokenBuilder SignWithRsaPem(string pemPath, string alg = "auto")
-    {
-        _signCfg = new RsaSign(File.ReadAllText(pemPath), alg); return this;
-    }
-    public JwtTokenBuilder SignWithCertificate(X509Certificate2 cert, string alg = "auto")
-    {
-        _signCfg = new CertSign(cert, alg); return this;
-    }
+    // ── pending-config “envelopes” (built later) ─────────
+    private sealed record PendingSymmetricSign(string B64u, string Alg /*auto/HS256…*/);
+    private sealed record PendingRsaSign(string Pem, string Alg);
+    private sealed record PendingCertSign(X509Certificate2 Cert, string Alg);
 
-    public JwtTokenBuilder SignWithSecret(string b64Url, string alg = "auto")
+    private sealed record PendingSymmetricEnc(string B64u, string KeyAlg, string EncAlg);
+    private sealed record PendingRsaEnc(string Pem, string KeyAlg, string EncAlg);
+    private sealed record PendingCertEnc(X509Certificate2 Cert, string KeyAlg, string EncAlg);
+
+    private object? _pendingSign;     // will be one of the above
+    private object? _pendingEnc;
+    private SymmetricSecurityKey? _issuerSigningKey;
+
+    // ── signing helpers (store only) ─────────────────────
+    public JwtTokenBuilder SignWithSecret(
+       string b64Url,
+       JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
+        if (string.IsNullOrWhiteSpace(b64Url))
+            throw new ArgumentNullException(nameof(b64Url));
+
+        // 1) Decode the incoming Base64Url to bytes
         byte[] raw = Base64UrlEncoder.DecodeBytes(b64Url);
-        var key = new SymmetricSecurityKey(raw) { KeyId = Guid.NewGuid().ToString("N") };
 
-        // pick algorithm when caller said "auto"
-        string resolvedAlg = alg.Equals("auto", StringComparison.OrdinalIgnoreCase)
-            ? raw.Length switch          // size in bytes → bits
-            {
-                >= 64 => SecurityAlgorithms.HmacSha512, // ≥ 512 bit
-                >= 48 => SecurityAlgorithms.HmacSha384, // ≥ 384 bit
-                _ => SecurityAlgorithms.HmacSha256  // everything else
-            }
-            : Map.Jws[alg];              // caller supplied HS256 / HS384 / …
+        // 2) Create (and remember) the SymmetricSecurityKey
+        var key = new SymmetricSecurityKey(raw)
+        {
+            KeyId = Guid.NewGuid().ToString("N")
+        };
+        _issuerSigningKey = key;
 
-        _lastSigningKey = key;
-        _signCfg = new SymmetricSign(key, resolvedAlg);
+        // 3) Resolve "Auto" or map the enum to the exact JWS alg string
+        string resolvedAlg = alg.ToJwtString(raw.Length);
+
+        // 4) Store the pending sign using the resolved algorithm
+        _pendingSign = new PendingSymmetricSign(b64Url, resolvedAlg);
+
         return this;
     }
 
-    // 2️⃣ Hex secret just delegates
-    public JwtTokenBuilder SignWithSecretHex(string hex, string alg = "auto")
+
+    public JwtTokenBuilder SignWithSecretHex(string hex, JwtAlgorithm alg = JwtAlgorithm.Auto)
+    { return SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg); }
+
+    /// <summary>
+    /// Treats the given passphrase as UTF-8 text, encodes it as Base64Url,
+    /// then calls SignWithSecret(b64u, alg).
+    /// </summary>
+    public JwtTokenBuilder SignWithSecretPassphrase(string passPhrase, JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
-        return SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg);
+        ArgumentNullException.ThrowIfNull(passPhrase);
+
+        // UTF-8 bytes → base64url text
+        var rawBytes = Encoding.UTF8.GetBytes(passPhrase);
+        var b64u = Base64UrlEncoder.Encode(rawBytes);
+
+        return SignWithSecret(b64u, alg);
     }
 
-    // ── encryption helpers
+    // ── inside JwtTokenBuilder ─────────────────────────────────────────
+
+    /// <summary>
+    /// Sign with an RSA private key in PEM (PKCS#1 or PKCS#8).
+    /// </summary>
+    public JwtTokenBuilder SignWithRsaPem(
+        string pemPath,
+        JwtAlgorithm alg = JwtAlgorithm.Auto)
+    {
+        var pem = File.ReadAllText(pemPath);
+
+        // Auto ⇒ default RS256; otherwise map enum to the exact string
+        string resolvedAlg = alg == JwtAlgorithm.Auto
+            ? SecurityAlgorithms.RsaSha256
+            : alg.ToJwtString(0);
+
+        _pendingSign = new PendingRsaSign(pem, resolvedAlg);
+        return this;
+    }
+
+    /// <summary>
+    /// Sign with an X.509 certificate (must have private key).
+    /// </summary>
+    public JwtTokenBuilder SignWithCertificate(
+        X509Certificate2 cert,
+        JwtAlgorithm alg = JwtAlgorithm.Auto)
+    {
+        if (!cert.HasPrivateKey)
+            throw new ArgumentException(
+                "Certificate must contain a private key.", nameof(cert));
+
+        // Auto ⇒ ES256 for ECDSA keys, RS256 for RSA keys
+        string resolvedAlg = alg == JwtAlgorithm.Auto
+            ? (cert.GetECDsaPublicKey() is not null
+                ? SecurityAlgorithms.EcdsaSha256
+                : SecurityAlgorithms.RsaSha256)
+            : alg.ToJwtString(0);
+
+        _pendingSign = new PendingCertSign(cert, resolvedAlg);
+        return this;
+    }
+
+
+
+    // ── encryption helpers (lazy) ───────────────────────────────────
+
+    // 1️⃣  X.509 certificate (RSA or EC public key)
     public JwtTokenBuilder EncryptWithCertificate(
         X509Certificate2 cert,
         string keyAlg = "RSA-OAEP",
         string encAlg = "A256GCM")
     {
-        _encCfg = new CertEncrypt(cert, keyAlg, encAlg); return this;
+        _pendingEnc = new PendingCertEnc(cert, keyAlg, encAlg);
+        return this;
     }
+
+    // 2️⃣  RSA / EC public key in PEM
     public JwtTokenBuilder EncryptWithPemPublic(
         string pemPath,
         string keyAlg = "RSA-OAEP",
         string encAlg = "A256GCM")
     {
-        _encCfg = new RsaEncrypt(File.ReadAllText(pemPath), keyAlg, encAlg); return this;
+        _pendingEnc = new PendingRsaEnc(File.ReadAllText(pemPath), keyAlg, encAlg);
+        return this;
     }
 
-
-
-    public JwtTokenBuilder EncryptWithSecretHex(string hex,
-                                                string keyAlg = "dir",
-                                                string encAlg = "A256CBC-HS512")
+    // 3️⃣  symmetric key: hex text
+    public JwtTokenBuilder EncryptWithSecretHex(
+        string hex,
+        string keyAlg = "dir",
+        string encAlg = "A256CBC-HS512")
     {
         return EncryptWithSecret(Convert.FromHexString(hex), keyAlg, encAlg);
     }
 
-
-
+    // 4️⃣  symmetric key: base-64-url text (optional helper)
     public JwtTokenBuilder EncryptWithSecretB64(
         string b64Url,
         string keyAlg = "dir",
@@ -116,23 +188,26 @@ public sealed class JwtTokenBuilder
         return EncryptWithSecret(Base64UrlEncoder.DecodeBytes(b64Url), keyAlg, encAlg);
     }
 
-    public JwtTokenBuilder EncryptWithSecret(byte[] keyBytes,
-                                         string keyAlg = "dir",
-                                         string encAlg = "A256CBC-HS512")
+    // 5️⃣  symmetric key: raw bytes (core overload)
+    public JwtTokenBuilder EncryptWithSecret(
+        byte[] keyBytes,
+        string keyAlg = "dir",
+        string encAlg = "A256CBC-HS512")
     {
         string b64u = Base64UrlEncoder.Encode(keyBytes);
-        _encCfg = new SymmetricEncrypt(b64u, keyAlg, encAlg);
+        _pendingEnc = new PendingSymmetricEnc(b64u, keyAlg, encAlg);
         return this;
     }
 
 
     // ───── Build the compact JWT ──────────────────────────────────────
-    public string Build()
+    private string BuildToken()
     {
-        if (_signCfg is null && _encCfg is null)
-            throw new InvalidOperationException("Provide signing and/or encryption settings.");
-
         var handler = new JwtSecurityTokenHandler();
+        // ── build creds lazily now ───────────────────────────
+        SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
+        Algorithm = signCreds.Algorithm;
+        EncryptingCredentials? encCreds = BuildEncryptingCredentials();
 
         var token = handler.CreateJwtSecurityToken(
             issuer: _issuer,
@@ -141,63 +216,97 @@ public sealed class JwtTokenBuilder
             notBefore: _nbf,
             expires: _nbf.Add(_lifetime),
             issuedAt: DateTime.UtcNow,
-            signingCredentials: _signCfg?.ToSigningCreds(),
-            encryptingCredentials: _encCfg?.ToEncryptingCreds());
+            signingCredentials: signCreds,
+            encryptingCredentials: encCreds);
+
 
         foreach (var kv in _header) token.Header[kv.Key] = kv.Value;
 
         return handler.WriteToken(token);
     }
 
-    public string Build(out SymmetricSecurityKey? signingKey)
+    private string BuildToken(out SymmetricSecurityKey? signingKey)
     {
-        string jwt = Build();          // call the original Build()
-        signingKey = _lastSigningKey;  // may be null for unsigned / RSA / cert
+        string jwt = BuildToken();          // call the original Build()
+        signingKey = _issuerSigningKey;  // may be null for unsigned / RSA / cert
         return jwt;
     }
 
-    public static async Task<string> RenewAsync(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null)
+
+    public JwtBuilderResult Build()
     {
-        var handler = new JsonWebTokenHandler();      // supports JWE & JWS
-
-        // ①  quick validation (signature only; ignore exp, aud, iss)
-        var result = await handler.ValidateTokenAsync(
-            jwt,
-            new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
-
-                ValidateLifetime = false,     // allow even expired token
-                ValidateAudience = false,
-                ValidateIssuer = false
-            });
-
-        if (!result.IsValid)
-            throw new SecurityTokenException(
-                $"Input token not valid: {result.Exception?.Message}");
-
-        var orig = (JsonWebToken)result.SecurityToken!;
-
-        // ②  build new token with same claims / iss / aud
-        var builder = JwtTokenBuilder.New()
-                         .WithIssuer(orig.Issuer)
-                         .WithAudience(orig.Audiences.FirstOrDefault() ?? "")
-                         .ValidFor(lifetime ?? (orig.ValidTo - orig.ValidFrom));
-
-        foreach (var c in orig.Claims)
-            builder.AddClaim(c.Type, c.Value);
-
-        // reuse symmetric key
-        builder.SignWithSecret(
-            Base64UrlEncoder.Encode(signingKey.Key), "HS256");
-
-        return builder.Build();
+        // ① produce the raw token + signing key
+        var token = BuildToken(out var key);
+        // ② Parse it immediately to pull out the valid-from / valid-to
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
+        DateTime issuedAt = jwtToken.ValidFrom.ToUniversalTime();
+        DateTime expires = jwtToken.ValidTo.ToUniversalTime();
+        // ③ return the helper object
+        return new JwtBuilderResult(token, key, this, issuedAt, expires);
     }
-    public static string Renew(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null)
+
+    // ────────── helpers that materialise creds ───────────
+    private SigningCredentials? BuildSigningCredentials(out SymmetricSecurityKey? key)
     {
-        return RenewAsync(jwt, signingKey, lifetime).GetAwaiter().GetResult();
+        key = null;
+
+        return _pendingSign switch
+        {
+            PendingSymmetricSign ps => CreateHsCreds(ps, out key),
+            PendingRsaSign pr => CreateRsaCreds(pr),
+            PendingCertSign pc => CreateCertCreds(pc),
+            _ => null
+        };
     }
+
+    private static SigningCredentials CreateHsCreds(
+     PendingSymmetricSign ps,
+     out SymmetricSecurityKey key)
+    {
+        // 1) decode the Base64Url secret
+        byte[] raw = Base64UrlEncoder.DecodeBytes(ps.B64u);
+
+        // 2) create the SymmetricSecurityKey (and record its KeyId)
+        key = new SymmetricSecurityKey(raw)
+        {
+            KeyId = Guid.NewGuid().ToString("N")
+        };
+
+        // 3) ps.Alg is *already* the exact SecurityAlgorithms.* constant
+        return new SigningCredentials(key, ps.Alg);
+    }
+
+
+    private static SigningCredentials CreateRsaCreds(PendingRsaSign pr)
+    {
+        var rsa = RSA.Create();
+        rsa.ImportFromPem(pr.Pem);
+        var key = new RsaSecurityKey(rsa)
+        {
+            KeyId = Guid.NewGuid().ToString("N")
+        };
+        return new SigningCredentials(key, pr.Alg);
+    }
+    private static SigningCredentials CreateCertCreds(PendingCertSign pc)
+    {
+        var cert = pc.Cert;
+        var key = new X509SecurityKey(cert);  // thumbprint becomes kid
+        return new SigningCredentials(key, pc.Alg);
+    }
+    private EncryptingCredentials? BuildEncryptingCredentials()
+        => _pendingEnc switch
+        {
+            PendingSymmetricEnc se => new SymmetricEncrypt(
+                                          se.B64u, se.KeyAlg, se.EncAlg).ToEncryptingCreds(),
+            PendingRsaEnc re => new RsaEncrypt(
+                                          re.Pem, re.KeyAlg, re.EncAlg).ToEncryptingCreds(),
+            PendingCertEnc ce => new CertEncrypt(
+                                          ce.Cert, ce.KeyAlg, ce.EncAlg).ToEncryptingCreds(),
+            _ => null
+        };
+
+
 
     // ───── Internals ──────────────────────────────────────────────────
     private readonly List<Claim> _claims = new();
@@ -205,8 +314,9 @@ public sealed class JwtTokenBuilder
     private DateTime _nbf = DateTime.UtcNow;
     private TimeSpan _lifetime = TimeSpan.FromHours(1);
     private string? _issuer, _aud;
-    private ISignConfig? _signCfg;
-    private IEncConfig? _encCfg;
+    public string Issuer { get => _issuer ?? string.Empty; }
+    public string Audience { get => _aud ?? string.Empty; }
+    public string? Algorithm { get; private set; }
 
     // ── Strategy interfaces & concrete configs ───────────────────────
     private interface ISignConfig { SigningCredentials ToSigningCreds(); }
@@ -241,9 +351,9 @@ public sealed class JwtTokenBuilder
             ["A192KW"] = SecurityAlgorithms.Aes192KW,
             ["A256KW"] = SecurityAlgorithms.Aes256KW,
             ["ECDH-ES"] = SecurityAlgorithms.EcdhEs,
-            ["ECDH-ES+A128KW"] = SecurityAlgorithms.EcdhEsA128kw,
-            ["ECDH-ES+A192KW"] = SecurityAlgorithms.EcdhEsA192kw,
-            ["ECDH-ES+A256KW"] = SecurityAlgorithms.EcdhEsA256kw,
+            ["ECDH-ESA128KW"] = SecurityAlgorithms.EcdhEsA128kw,
+            ["ECDH-ESA192KW"] = SecurityAlgorithms.EcdhEsA192kw,
+            ["ECDH-ESA256KW"] = SecurityAlgorithms.EcdhEsA256kw,
             ["dir"] = "dir"
         };
         public static readonly IReadOnlyDictionary<string, string> EncAlg = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -407,30 +517,30 @@ public sealed class JwtTokenBuilder
                 Map.EncAlg[encEff.ToUpper()]);         // validated / auto-picked enc
         }
     }
+    /*
+        public JwtTokenPackage BuildPackage()
+        {
+            string jwt = BuildToken(out var key);   // your existing overload
 
-    public JwtTokenPackage BuildPackage()
-{
-    string jwt = Build(out var key);   // your existing overload
+            var tvp = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = _issuer,      // private fields in builder
+                ValidateAudience = true,
+                ValidAudience = _aud,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1),
 
-    var tvp = new TokenValidationParameters
-    {
-        ValidateIssuer           = true,
-        ValidIssuer              = _issuer,      // private fields in builder
-        ValidateAudience         = true,
-        ValidAudience            = _aud,
-        ValidateLifetime         = true,
-        ClockSkew                = TimeSpan.FromMinutes(1),
+                RequireSignedTokens = key is not null,
+                ValidateIssuerSigningKey = key is not null,
+                IssuerSigningKey = key,
+                ValidAlgorithms = key is not null
+                    ? new[] { SecurityAlgorithms.HmacSha256 }
+                    : Array.Empty<string>()
+            };
 
-        RequireSignedTokens      = key is not null,
-        ValidateIssuerSigningKey = key is not null,
-        IssuerSigningKey         = key,
-        ValidAlgorithms          = key is not null
-            ? new[] { SecurityAlgorithms.HmacSha256 }
-            : Array.Empty<string>()
-    };
-
-    return new JwtTokenPackage(jwt, key, tvp);
-}
-
+            return new JwtTokenPackage(jwt, key, tvp);
+        }
+    */
 
 }

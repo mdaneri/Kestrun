@@ -26,7 +26,7 @@ using Kestrun.Security;          // ISecurityTokenValidator
 $creds   = "admin:password"
 $basic   = "Basic " + [Convert]::ToBase64String(
                        [Text.Encoding]::ASCII.GetBytes($creds))
-$token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+$token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
@@ -36,6 +36,8 @@ Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateChe
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+
+Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 */
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -73,13 +75,17 @@ const string JwtKeyHex =
     "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0"; // 32-byte hex string
 byte[] keyBytes = Convert.FromHexString(JwtKeyHex);
 string keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
-var tokenPackage = JwtTokenBuilder.New()
-               .WithSubject("admin")
+string textKey = System.Text.Encoding.UTF8.GetString(keyBytes);
+var tokenBuilder = JwtTokenBuilder.New()
+               //          .WithSubject("admin")
                .WithIssuer(issuer)
                .WithAudience(audience)
-               .SignWithSecret(keyB64u, "HS256")   // GCM enc
-               .ValidFor(TimeSpan.FromHours(1))
-               .BuildPackage();
+               .SignWithSecret(keyB64u, JwtAlgorithm.HS256)   // GCM enc
+
+               .ValidFor(TimeSpan.FromHours(1));
+
+
+var builderResult = tokenBuilder.Build();
 // for the token 
 
 //var symKey = new SymmetricSecurityKey(keyBytes);
@@ -187,23 +193,23 @@ server.AddResponseCompression(options =>
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
-     validationParameters: tokenPackage.ValidationParameters);
+     validationParameters: builderResult.ValidationParameters());
 
-     /*new TokenValidationParameters
-     {
-         ValidateIssuer = true,
-         ValidIssuer = issuer,
-         ValidateAudience = true,
-         ValidAudience = audience,
-         ValidateLifetime = true,
-         ClockSkew = TimeSpan.FromMinutes(1),
+/*new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidIssuer = issuer,
+    ValidateAudience = true,
+    ValidAudience = audience,
+    ValidateLifetime = true,
+    ClockSkew = TimeSpan.FromMinutes(1),
 
-         RequireSignedTokens = true,
-         ValidateIssuerSigningKey = true,
-         IssuerSigningKey = symKey,   // ← only this one key neede
-         ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+    RequireSignedTokens = true,
+    ValidateIssuerSigningKey = true,
+    IssuerSigningKey = symKey,   // ← only this one key neede
+    ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
 
-     });*/
+});*/
 
 // issuer: issuer,
 //audience: audience,
@@ -355,49 +361,32 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
-
-
-
-server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
+server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
-    // tiny demo – replace with your real credential check
-    /*    var auth = ctx.Request.Authorization;
-        if (auth != "Basic YWRtaW46czNjcjN0")
-        {   // “admin:s3cr3t” base64
-            ctx.Response.WriteErrorResponse("Access denied", 401);
-            return;
-        }*/
+    var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
+    await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
 
-    var claims = new[]
-    {
-        new Claim( JwtRegisteredClaimNames.Sub, "admin"),
-        new Claim( JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
-    };
-
-    // var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
-    try
-    {
-        //  var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+}, [JwtScheme]);
 
 
+server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
+{
+// tiny demo – replace with your real credential check
+/*    var auth = ctx.Request.Authorization;
+    if (auth != "Basic YWRtaW46czNjcjN0")
+    {   // “admin:s3cr3t” base64
+        ctx.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }*/
 
+// var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
+try
+{
+    var build = tokenBuilder.WithSubject("admin").Build();
+    var token = build.Token();
 
-        var token = JwtTokenBuilder.New()
-                     .WithSubject("admin")
-                     .WithIssuer(issuer)
-                     .WithAudience(audience)
-                     .SignWithSecret(keyB64u, "HS256")   // GCM enc
-                     .ValidFor(TimeSpan.FromHours(1))
-                     .Build();
-
-        //var token = Kestrun.Security.JwtGenerator.GenerateJwt(claims: claims,
-        //      issuer: issuer,
-        //    audience: audience,
-        //  expires: DateTime.UtcNow.AddHours(1),
-        //signingCredentials: creds,
-        //notBefore: DateTime.UtcNow
-        //  );
-        await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
+    await ctx.Response.WriteJsonResponseAsync(new { access_token = token , ExpiresIn = 3600}); // 1 hour TTL
+    Log.Information("Generated new JWT token: {Token}", token);
     }
     catch (Exception ex)
     {

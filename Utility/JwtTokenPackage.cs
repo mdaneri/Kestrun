@@ -48,6 +48,6 @@ public sealed record JwtTokenPackage(
             Base64UrlEncoder.Encode(SigningKey.Key),   // reuse same secret
             "HS256");
 
-        return builder.Build();
+        return builder.Build().Token();
     }
 }
