@@ -135,13 +135,28 @@ Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X
     //return providedKey == "my-secret-api-key";
 "@
 
+
+$secretB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('my-passphrase'))  # or any base64url
+
+$JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
+$global:JwtTokenBuilder = New-KrJwtTokenBuilder |
+Set-KrJwtIssuer    -Issuer   $issuer |
+Set-KrJwtAudience  -Audience $audience |
+#| Set-JwtSubject   -Subject  'admin' `
+Sign-JwtWithSecret -HexadecimalKey $JwtKeyHex 
+$result = Build-KrJwt -Builder $JwtTokenBuilder
+#$jwt     = Get-JwtToken -Result $result
+$jwtOptions = $result | Get-KrJwtValidation
+
+Add-KrJwtBearerAuthentication -Name $JwtScheme -Options $jwtOptions
+<#
 $JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
 $jwtKeyBytes = ([Convert]::FromHexString($JwtKeyHex))
 $jwtSecurityKey = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($jwtKeyBytes)
 Add-KrJwtBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudience $audience `
     -IssuerSigningKey $jwtSecurityKey -ValidAlgorithms @([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256) `
     -ClockSkew (New-TimeSpan -Minutes 5) `
-
+#>
 
 # Enable configuration
 Enable-KrConfiguration
@@ -196,11 +211,15 @@ Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -Authorization $JwtScheme -S
 }
 
 
-Add-KrMapRoute -Verbs Get -Path "/token" -Authorization $BasicPowershellScheme -ScriptBlock {
-New-KrJwtToken -Subject "admin" -Issuer $issuer -Audience $audience -Lifetime (New-TimeSpan -Hours 1) `
-        -SigningAlgorithm HS256 -Secret "c2VjcmV0"   
-
-    $user = $Context.HttpContext.User.Identity.Name
+Add-KrMapRoute -Verbs Get -Path "/token/new" -Authorization $BasicPowershellScheme -ScriptBlock {
+ $user = $Context.HttpContext.User.Identity.Name
+$global:JwtTokenBuilder|Set-KrJwtSubject -Subject $user |Build-KrJwt
+Write-KrJsonResponse -InputObject @{
+        access_token = $result.Token()
+        token_type   = "Bearer"
+        expires_in   = 3600
+    } -ContentType "application/json"
+    
 }
 
 # Start the server asynchronously

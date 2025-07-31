@@ -76,7 +76,7 @@ const string JwtKeyHex =
 byte[] keyBytes = Convert.FromHexString(JwtKeyHex);
 string keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
 string textKey = System.Text.Encoding.UTF8.GetString(keyBytes);
-var tokenBuilder = JwtTokenBuilder.New()
+ var tokenBuilder = JwtTokenBuilder.New()
                //          .WithSubject("admin")
                .WithIssuer(issuer)
                .WithAudience(audience)
@@ -86,6 +86,8 @@ var tokenBuilder = JwtTokenBuilder.New()
 
 
 var builderResult = tokenBuilder.Build();
+ 
+
 // for the token 
 
 //var symKey = new SymmetricSecurityKey(keyBytes);
