@@ -8,8 +8,6 @@
 .PARAMETER AssemblyPath
     Path to the assembly file to load.
 #>
- 
-
 function Assert-AssemblyLoaded {
     param (
         [string]$AssemblyPath

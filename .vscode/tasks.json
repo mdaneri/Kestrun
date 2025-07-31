@@ -52,12 +52,12 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build BasicAuthHandler",
+            "label": "build Authentication",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/examples/CSharp/BasicAuthHandler/BasicAuthHandler.csproj"
+                "${workspaceFolder}/examples/CSharp/Authentication/Authentication.csproj"
             ],
             "problemMatcher": "$msCompile"
         },

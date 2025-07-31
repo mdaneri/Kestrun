@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiRoutes", "examples\CSh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scheduling", "examples\CSharp\Scheduling\Scheduling.csproj", "{54995008-4D08-4D8C-8010-9D665233CFD5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BasicAuthHandler", "examples\CSharp\BasicAuthHandler\BasicAuthHandler.csproj", "{F6105C16-0358-4AAE-BFFD-51E52D526DCA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authentication", "examples\CSharp\Authentication\Authentication.csproj", "{F6105C16-0358-4AAE-BFFD-51E52D526DCA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HtmlTemplate", "examples\CSharp\HtmlTemplate\HtmlTemplate.csproj", "{D62B6A86-10C3-4DAB-BD89-C681ED67E1F0}"
 EndProject

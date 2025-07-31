@@ -6,7 +6,25 @@ param()
     Kestrun PowerShell Example: Multi Routes
 .DESCRIPTION
     This script demonstrates how to define multiple routes in Kestrun, a PowerShell web server framework.
-#>
+.EXAMPLE
+    .\Authentication.ps1
+    This example shows how to set up a Kestrun server with multiple authentication methods, including Basic Authentication, API Key Authentication, and JWT Bearer Token Authentication.
+    It also demonstrates how to secure routes using these authentication methods.
+
+    $creds   = "admin:password"
+    $basic   = "Basic " + [Convert]::ToBase64String(
+                        [Text.Encoding]::ASCII.GetBytes($creds))
+    $token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+    Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+    Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+ 
+    Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+    Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+    Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+
+    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+
+    #>
 
 try {
     # Get the path of the current script

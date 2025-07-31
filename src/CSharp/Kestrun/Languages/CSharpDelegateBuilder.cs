@@ -1,5 +1,3 @@
-
-
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
@@ -104,9 +102,22 @@ internal static class CSharpDelegateBuilder
             throw new ArgumentNullException(nameof(code), "C# code cannot be null or whitespace.");
 
         // 1. Compose ScriptOptions
+        var coreRefs = new[]
+        {
+            MetadataReference.CreateFromFile(typeof(object).Assembly.Location),            // System.Private.CoreLib
+            MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),        // System.Linq
+            MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location),       // Microsoft.AspNetCore.Http
+            MetadataReference.CreateFromFile(typeof(KestrunResponse).Assembly.Location),    // Kestrun.Response
+            MetadataReference.CreateFromFile(typeof(KestrunRequest).Assembly.Location),     // Kestrun.Request
+            MetadataReference.CreateFromFile(typeof(KestrunContext).Assembly.Location),     // Kestrun.Hosting
+            MetadataReference.CreateFromFile(typeof(SharedStateStore).Assembly.Location),   // Kestrun.SharedState
+            MetadataReference.CreateFromFile(typeof(CsGlobals).Assembly.Location)          // Kestrun.Languages            
+        };
+
         var opts = ScriptOptions.Default
-                   .WithImports("System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http")
-                   .WithReferences(typeof(HttpContext).Assembly, typeof(KestrunResponse).Assembly)
+                   .WithImports("System", "System.Linq", "System.Threading.Tasks",
+                                "Microsoft.AspNetCore.Http")
+                   .WithReferences(coreRefs)                 // ✅ now uses MetadataReference[]
                    .WithLanguageVersion(languageVersion);
         extraImports ??= ["Kestrun"];
         if (!extraImports.Contains("Kestrun"))
@@ -118,9 +129,23 @@ internal static class CSharpDelegateBuilder
         if (extraImports is { Length: > 0 })
             opts = opts.WithImports(opts.Imports.Concat(extraImports));
 
+        // Add extra assembly references
         if (extraRefs is { Length: > 0 })
-            opts = opts.WithReferences(opts.MetadataReferences
-                                          .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
+        {
+            foreach (var r in extraRefs)
+            {
+                if (string.IsNullOrEmpty(r.Location))
+                    log.Warning("Skipping dynamic assembly with no location: {Assembly}", r.FullName);
+                else if (!File.Exists(r.Location))
+                    log.Warning("Skipping missing assembly file: {Location}", r.Location);
+            }
+
+            var safeRefs = extraRefs
+                .Where(r => !string.IsNullOrEmpty(r.Location) && File.Exists(r.Location))
+                .Select(r => MetadataReference.CreateFromFile(r.Location));
+
+            opts = opts.WithReferences(opts.MetadataReferences.Concat(safeRefs));
+        }
 
         // 1. Inject each global as a top-level script variable
         var allGlobals = SharedStateStore.Snapshot();
@@ -147,24 +172,41 @@ internal static class CSharpDelegateBuilder
 
         // 2. Compile once
         var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
-        var diagnostics = script.Compile();
+        ImmutableArray<Diagnostic>? diagnostics = null;
+        try
+        {
+            diagnostics = script.Compile();
+        }
+        catch (CompilationErrorException ex)
+        {
+            log.Error(ex, "C# script compilation failed with errors.");
 
+        }
+        if (diagnostics == null)
+        {
+            log.Error("C# script compilation failed with no diagnostics.");
+            throw new CompilationErrorException("C# script compilation failed with no diagnostics.", ImmutableArray<Diagnostic>.Empty);
+        }
         // Check for compilation errors
-        if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-        {   var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-            log.Warning($"C# script compilation completed with {errors.Length} error(s):");
-            foreach (var error in errors)
+        if (diagnostics?.Any(d => d.Severity == DiagnosticSeverity.Error) == true)
+        {
+            var errors = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            if (errors is not null && errors.Length > 0)
             {
-                var location = error.Location.IsInSource
-                    ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
-                    : "";
-                log.Warning($"  Error [{error.Id}]: {error.GetMessage()}{location}");
+                log.Error($"C# script compilation completed with {errors.Length} error(s):");
+                foreach (var error in errors)
+                {
+                    var location = error.Location.IsInSource
+                        ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
+                        : "";
+                    log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
+                }
+                throw new CompilationErrorException("C# route code compilation failed", diagnostics ?? []);
             }
-            throw new CompilationErrorException("C# route code compilation failed", diagnostics);
         }
         // Log warnings if any (optional - for debugging)
-        var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
-        if (warnings.Length != 0)
+        var warnings = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
+        if (warnings is not null && warnings.Length != 0)
         {
             log.Warning($"C# script compilation completed with {warnings.Length} warning(s):");
             foreach (var warning in warnings)
@@ -178,5 +220,4 @@ internal static class CSharpDelegateBuilder
         return script;
     }
 
-    
 }

@@ -106,13 +106,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": ".NET Launch CSharp/BasicAuthHandler",
+            "name": ".NET Launch CSharp/Authentication",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build BasicAuthHandler",
-            "program": "${workspaceFolder}/examples/CSharp/BasicAuthHandler/bin/Debug/net8.0/BasicAuthHandler.dll",
+            "preLaunchTask": "build Authentication",
+            "program": "${workspaceFolder}/examples/CSharp/Authentication/bin/Debug/net8.0/Authentication.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/examples/CSharp/BasicAuthHandler",
+            "cwd": "${workspaceFolder}/examples/CSharp/Authentication",
             "stopAtEntry": false,
             "console": "integratedTerminal"
         },
