@@ -7,14 +7,8 @@ using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.OpenSsl;
 using Serilog.Events;
 using Serilog;
-using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
 using System.Management.Automation;
 using Kestrun.Certificates;
 using Kestrun.Logging;
@@ -22,6 +16,10 @@ using Kestrun.Utilities;
 using Kestrun.Scripting;
 using Kestrun.Hosting;
 using Kestrun.Authentication;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
+using Kestrun.Security;          // ISecurityTokenValidator
 
 
 /*
@@ -69,9 +67,23 @@ const string ApiKeyCSharp = "ApiKeyCSharp";
 string issuer = "KestrunApi";
 string audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
-const string JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
-byte[] jwtKeyBytes = Convert.FromHexString(JwtKeyHex);
-var jwtKey = new SymmetricSecurityKey(jwtKeyBytes);
+// shared secret = 32-byte array
+
+const string JwtKeyHex =
+    "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0"; // 32-byte hex string
+byte[] keyBytes = Convert.FromHexString(JwtKeyHex);
+string keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
+var tokenPackage = JwtTokenBuilder.New()
+               .WithSubject("admin")
+               .WithIssuer(issuer)
+               .WithAudience(audience)
+               .SignWithSecret(keyB64u, "HS256")   // GCM enc
+               .ValidFor(TimeSpan.FromHours(1))
+               .BuildPackage();
+// for the token 
+
+//var symKey = new SymmetricSecurityKey(keyBytes);
+
 
 // 2. Add services
 server.AddResponseCompression(options =>
@@ -175,18 +187,24 @@ server.AddResponseCompression(options =>
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
-    validationParameters: new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = issuer,
-        ValidateAudience = true,
-        ValidAudience = audience,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = jwtKey,
-        ClockSkew = TimeSpan.FromMinutes(1), // default 5 minutes
-        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
-    });
+     validationParameters: tokenPackage.ValidationParameters);
+
+     /*new TokenValidationParameters
+     {
+         ValidateIssuer = true,
+         ValidIssuer = issuer,
+         ValidateAudience = true,
+         ValidAudience = audience,
+         ValidateLifetime = true,
+         ClockSkew = TimeSpan.FromMinutes(1),
+
+         RequireSignedTokens = true,
+         ValidateIssuerSigningKey = true,
+         IssuerSigningKey = symKey,   // ← only this one key neede
+         ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+
+     });*/
+
 // issuer: issuer,
 //audience: audience,
 //validationKey: jwtKey,
@@ -352,21 +370,33 @@ server.AddNativeRoute("/token", HttpVerb.Get, async (ctx) =>
 
     var claims = new[]
     {
-        new Claim(JwtRegisteredClaimNames.Sub, "admin"),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+        new Claim( JwtRegisteredClaimNames.Sub, "admin"),
+        new Claim( JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
     };
 
-    var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256); 
+    // var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
     try
     {
         //  var token = new JwtSecurityTokenHandler().WriteToken(jwt);
 
-        var token = Kestrun.Security.JwtGenerator.GenerateJwt(claims: claims,
-                issuer: issuer,
-                audience: audience,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds
-            );
+
+
+
+        var token = JwtTokenBuilder.New()
+                     .WithSubject("admin")
+                     .WithIssuer(issuer)
+                     .WithAudience(audience)
+                     .SignWithSecret(keyB64u, "HS256")   // GCM enc
+                     .ValidFor(TimeSpan.FromHours(1))
+                     .Build();
+
+        //var token = Kestrun.Security.JwtGenerator.GenerateJwt(claims: claims,
+        //      issuer: issuer,
+        //    audience: audience,
+        //  expires: DateTime.UtcNow.AddHours(1),
+        //signingCredentials: creds,
+        //notBefore: DateTime.UtcNow
+        //  );
         await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
     }
     catch (Exception ex)

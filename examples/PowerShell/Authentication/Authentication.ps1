@@ -196,10 +196,11 @@ Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -Authorization $JwtScheme -S
 }
 
 
-Add-KrMapRoute -Verbs Get -Path "/token" -Authorization $JwtScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/token" -Authorization $BasicPowershellScheme -ScriptBlock {
+New-KrJwtToken -Subject "admin" -Issuer $issuer -Audience $audience -Lifetime (New-TimeSpan -Hours 1) `
+        -SigningAlgorithm HS256 -Secret "c2VjcmV0"   
 
     $user = $Context.HttpContext.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
 }
 
 # Start the server asynchronously

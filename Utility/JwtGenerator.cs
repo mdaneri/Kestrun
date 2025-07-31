@@ -22,9 +22,11 @@ public static class JwtGenerator
         string? issuer = null,
         string? audience = null,
         DateTimeOffset? expires = null,
-        SigningCredentials? signingCredentials = null,
-        EncryptingCredentials? encryptingCredentials = null,
-        IDictionary<string, object>? additionalHeaders = null)
+          // Optional parameters
+          SigningCredentials? signingCredentials = null,
+          DateTime? notBefore = null,
+          EncryptingCredentials? encryptingCredentials = null,
+          IDictionary<string, object>? additionalHeaders = null)
     {
         if (signingCredentials is null && encryptingCredentials is null)
             throw new ArgumentException(
@@ -35,9 +37,11 @@ public static class JwtGenerator
         // `[]` requires C# 12; use Array.Empty<Claim>() for older language versions
         var identity = new ClaimsIdentity(claims ?? Array.Empty<Claim>());
 
+        var effectiveNotBefore = notBefore ?? DateTime.UtcNow;
+
         var token = handler.CreateJwtSecurityToken(
             issuer, audience, identity,
-            notBefore: DateTime.UtcNow,
+            notBefore: effectiveNotBefore,
             expires: (expires ?? DateTimeOffset.UtcNow.AddHours(1)).UtcDateTime,
             issuedAt: DateTime.UtcNow,
             signingCredentials, encryptingCredentials);

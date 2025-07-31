@@ -119,7 +119,7 @@
         'Add-KrSinkConsole', 'Add-KrSinkFile', 'Add-KrSinkPowerShell', 'Add-KrSinkEventLog',
         'Add-KrEnrichWithEnvironment', 'Add-KrEnrichWithExceptionDetail', 'Add-KrEnrichWithProcessId', 'Add-KrEnrichWithProcessName',
         'Add-KrSinkSyslogUdp', 'Add-KrSinkSyslogTcp', 'Add-KrSinkSyslogLocal', 'Add-KrSinkHttp',
-        'Add-Favicon'
+        'Add-Favicon', 'New-KrJwtToken'
     )
 
     # Variables to export from this module

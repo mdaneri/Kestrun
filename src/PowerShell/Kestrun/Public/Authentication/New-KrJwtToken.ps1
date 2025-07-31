@@ -8,6 +8,7 @@ function New-KrJwtToken {
         # ───── Standard fields ─────────────────────
         [string]    $Issuer,
         [string]    $Audience,
+        [DateTime]  $NotBefore = [DateTime]::UtcNow,
         [TimeSpan]  $Lifetime = (New-TimeSpan -Hours 1),
 
         # ───── Signing options (pick ONE set) ──────
@@ -52,7 +53,7 @@ function New-KrJwtToken {
     switch ($PSCmdlet.ParameterSetName) {
         'HS256' {
             $bytes = [Convert]::FromBase64String($Secret)
-            $key   = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($bytes)
+            $key = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($bytes)
             $signingCreds = [Microsoft.IdentityModel.Tokens.SigningCredentials]::new(
                 $key, [Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256)
         }
@@ -70,10 +71,11 @@ function New-KrJwtToken {
             }
             $key = [Microsoft.IdentityModel.Tokens.X509SecurityKey]::new($SigningCertificate)
             $alg = if ($key.PublicKey.Key -is [System.Security.Cryptography.ECDsa]) {
-                       [Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::EcdsaSha256
-                   } else {
-                       [Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::RsaSha256
-                   }
+                [Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::EcdsaSha256
+            }
+            else {
+                [Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::RsaSha256
+            }
             $signingCreds = [Microsoft.IdentityModel.Tokens.SigningCredentials]::new($key, $alg)
         }
     }
@@ -102,12 +104,7 @@ function New-KrJwtToken {
     $expiry = [DateTime]::UtcNow.Add($Lifetime)
     if ($PSCmdlet.ShouldProcess("Generate JWT token for subject '$Subject'")) {
         [Kestrun.Security.JwtGenerator]::GenerateJwt(
-            $claimObjs,
-            $Issuer,
-            $Audience,
-            $expiry,
-            $signingCreds,
-            $encryptCreds,
-            $AdditionalHeaders)
+            $claimObjs, $Issuer, $Audience, $expiry,
+            $signingCreds, $NotBefore, $encryptCreds, $AdditionalHeaders)
     }
 }
