@@ -171,10 +171,10 @@
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.7" />
 
     <!-- Roslyn Scripting -->
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.13.0" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" /> 
 
   </ItemGroup>
 
@@ -186,7 +186,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Serilog.Sinks.Http" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.Http" Version="9.1.1" />
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogServer" Version="1.1.1" />
 
@@ -209,10 +209,10 @@
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Cronos" Version="0.11.0" />
     <PackageReference Include="PeterO.Cbor" Version="4.5.5" />
-    <PackageReference Include="MongoDB.Bson" Version="3.4.1" />
+    <PackageReference Include="MongoDB.Bson" Version="3.4.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <!-- Source Link for debugging  
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />-->
   </ItemGroup>
