@@ -68,16 +68,19 @@ public static class KestrunHostMapExtensions
 
 
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
-                                     string[]? requireAuthorization = null)
+                                     string[]? requireAuthorization = null,
+                                 Dictionary<string, object>? arguments = null)
     {
+        arguments ??= [];
         return host.AddMapRoute(new MapRouteOptions
-        {
-            Pattern = pattern,
-            HttpVerbs = [httpVerbs],
-            Code = scriptBlock,
-            Language = language,
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
-        });
+            {
+                Pattern = pattern,
+                HttpVerbs = [httpVerbs],
+                Code = scriptBlock,
+                Language = language,
+                RequireAuthorization = requireAuthorization ?? [], // No authorization by default
+                Arguments =  arguments ?? [] // No additional arguments by default
+            });
 
     }
 
@@ -85,15 +88,17 @@ public static class KestrunHostMapExtensions
                                 IEnumerable<HttpVerb> httpVerbs,
                                 string scriptBlock,
                                 ScriptLanguage language = ScriptLanguage.PowerShell,
-                                string[]? requireAuthorization = null)
-    {
+                                string[]? requireAuthorization = null,
+                                 Dictionary<string, object>? arguments = null)
+    { 
         return host.AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
             Code = scriptBlock,
             Language = language,
-            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
+            RequireAuthorization = requireAuthorization ?? [], // No authorization by default            
+            Arguments = arguments ?? [] // No additional arguments by default
         });
     }
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, MapRouteOptions options)
@@ -125,8 +130,8 @@ public static class KestrunHostMapExtensions
             var handler = options.Language switch
             {
 
-                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.Code, logger),
-                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.Code, logger, options.ExtraImports, options.ExtraRefs),
+                ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.Code, logger, options.Arguments),
+                ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.Code, logger, options.Arguments,options.ExtraImports, options.ExtraRefs),
                 ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.Code, logger), // F# scripting not implemented
                 ScriptLanguage.Python => PyDelegateBuilder.Build(options.Code, logger),
                 ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.Code, logger),

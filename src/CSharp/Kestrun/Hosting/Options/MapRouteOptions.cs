@@ -20,6 +20,8 @@ public record MapRouteOptions
     public bool DisableAntiforgery { get; internal set; }
     public string? RateLimitPolicyName { get; internal set; }
 
+    public Dictionary<string,object> Arguments { get; init; } = []; // Additional metadata for the route
+
     public record OpenAPIMetadata
     {
         public string? Summary { get; init; }

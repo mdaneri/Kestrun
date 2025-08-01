@@ -11,7 +11,7 @@ internal static class PowerShellDelegateBuilder
     public const string PS_INSTANCE_KEY = "PS_INSTANCE";
     public const string KR_REQUEST_KEY = "KR_REQUEST";
     public const string KR_RESPONSE_KEY = "KR_RESPONSE";
-    internal static RequestDelegate Build(string code, Serilog.ILogger log)
+    internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object> arguments)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Building PowerShell delegate, script length={Length}", code?.Length);
@@ -36,6 +36,16 @@ internal static class PowerShellDelegateBuilder
             // Ensure the runspace pool is open before executing the script 
             try
             {
+                if (arguments != null && arguments.Count > 0)
+                {
+                    log.Verbose("Setting PowerShell variables from arguments: {Count}", arguments.Count);
+                    // Set the arguments as PowerShell variables in the runspace
+                    var ss = ps.Runspace.SessionStateProxy;
+                    foreach (var arg in arguments)
+                    {
+                        ss.SetVariable(arg.Key, arg.Value);
+                    }
+                }
                 log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
                 var krRequest = context.Items[KR_REQUEST_KEY] as KestrunRequest
                     ?? throw new InvalidOperationException($"{KR_REQUEST_KEY} key not found in context items.");
@@ -44,7 +54,7 @@ internal static class PowerShellDelegateBuilder
                 ps.AddScript(code);
                 // Execute the PowerShell script block 
                 log.Verbose("Executing PowerShell script...");
-          
+
                 var psResults = await ps.InvokeAsync().ConfigureAwait(false);
                 log.Verbose($"PowerShell script executed with {psResults.Count} results.");
                 if (log.IsEnabled(LogEventLevel.Debug))

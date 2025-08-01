@@ -34,7 +34,7 @@ internal static class CSharpDelegateBuilder
     /// The delegate will execute the provided C# code within the context of an HTTP request, allowing access to the request and response objects.
     /// </remarks>
     internal static RequestDelegate Build(
-            string code, Serilog.ILogger log, string[]? extraImports,
+            string code, Serilog.ILogger log, Dictionary<string, object> arguments, string[]? extraImports,
             Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
@@ -52,7 +52,24 @@ internal static class CSharpDelegateBuilder
                 var krRequest = await KestrunRequest.NewRequest(context);
                 var krResponse = new KestrunResponse(krRequest);
                 var Context = new KestrunContext(krRequest, krResponse, context);
-                await script.RunAsync(new CsGlobals(SharedStateStore.Snapshot(), Context)).ConfigureAwait(false);
+
+                var state = new Dictionary<string, object?>(SharedStateStore.Snapshot());
+                if (arguments != null && arguments.Count > 0)
+                {
+                    if (log.IsEnabled(LogEventLevel.Debug))
+                        log.Debug("Setting C# variables from arguments: {Count}", arguments.Count);
+                    foreach (var arg in arguments)
+                    {
+                        // Set the arguments as C# variables in the script
+                        state[arg.Key] = arg.Value;
+                    }
+                }
+
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Executing C# script for {Path}", context.Request.Path);
+                // Create a new script instance with the current context and shared state
+                // Execute the script with the current context and shared state
+                await script.RunAsync(new CsGlobals(state, Context)).ConfigureAwait(false);
 
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {

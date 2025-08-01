@@ -37,7 +37,8 @@ Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateChe
 
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+$token2   = Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }.access_token
+Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
 */
 var currentDir = Directory.GetCurrentDirectory();
 
@@ -385,9 +386,9 @@ server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
 try
 {
     var build = tokenBuilder.WithSubject("admin").Build();
-    var token = build.Token();
+    var token = build.Token(); 
 
-    await ctx.Response.WriteJsonResponseAsync(new { access_token = token , ExpiresIn = 3600}); // 1 hour TTL
+    await ctx.Response.WriteJsonResponseAsync(new { access_token = token ,token_type   = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL
     Log.Information("Generated new JWT token: {Token}", token);
     }
     catch (Exception ex)

@@ -72,6 +72,9 @@ function Add-KrMapRoute {
         [System.Reflection.Assembly[]]$ExtraRefs = $null,
 
         [Parameter()]
+        [hashtable]$Arguments,
+
+        [Parameter()]
         [switch]$PassThru
 
     )
@@ -85,6 +88,14 @@ function Add-KrMapRoute {
         $options.ExtraImports = $ExtraImports
         $options.ExtraRefs = $ExtraRefs
         $options.RequireAuthorization = $Authorization
+
+        if ($null -ne $Arguments) {
+            $dict = [System.Collections.Generic.Dictionary[string, object]]::new()
+            foreach ($key in $Arguments.Keys) {
+                $dict[$key] = $Arguments[$key]
+            }
+            $options.Arguments = $dict
+        }
 
         if ($PSCmdlet.ParameterSetName -eq "Code") {
             $options.Language = $Language

@@ -14,7 +14,7 @@ param()
     $creds   = "admin:password"
     $basic   = "Basic " + [Convert]::ToBase64String(
                         [Text.Encoding]::ASCII.GetBytes($creds))
-    $token   = (Invoke-RestMethod https://localhost:5001/token -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+    $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
     Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
     Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
  
@@ -23,7 +23,10 @@ param()
     Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
     Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
+    $token2   = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
     #>
 
 try {
@@ -139,11 +142,12 @@ Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X
 $secretB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('my-passphrase'))  # or any base64url
 
 $JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
-$global:JwtTokenBuilder = New-KrJwtTokenBuilder |
+$JwtTokenBuilder = New-KrJwtTokenBuilder |
 Set-KrJwtIssuer    -Issuer   $issuer |
 Set-KrJwtAudience  -Audience $audience |
 #| Set-JwtSubject   -Subject  'admin' `
-Sign-JwtWithSecret -HexadecimalKey $JwtKeyHex 
+Sign-JwtWithSecret -HexadecimalKey $JwtKeyHex -Algorithm ([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256)
+
 $result = Build-KrJwt -Builder $JwtTokenBuilder
 #$jwt     = Get-JwtToken -Result $result
 $jwtOptions = $result | Get-KrJwtValidation
@@ -210,17 +214,48 @@ Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -Authorization $JwtScheme -S
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
 }
 
+Add-KrMapRoute -Verbs Get -Path "/token/renew" -Authorization $JwtScheme  -ScriptBlock {
+    $user = $Context.HttpContext.User.Identity.Name
+
+    write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user 
+  
+    Write-Output "JwtTokenBuilder Type : $($JwtBuilderResult.GetType().FullName)"
+    Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
+    Write-Output "Expires : $($JwtBuilderResult.Expires)"
+ 
+    $accessToken = $JwtBuilderResult |Update-KrJwt
+    Write-KrJsonResponse -InputObject @{
+        access_token = $accessToken
+        token_type   = "Bearer"
+        expires_in   = $build.Expires
+    } -ContentType "application/json"
+
+} -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder|  Build-KrJwt  }
+
 
 Add-KrMapRoute -Verbs Get -Path "/token/new" -Authorization $BasicPowershellScheme -ScriptBlock {
- $user = $Context.HttpContext.User.Identity.Name
-$global:JwtTokenBuilder|Set-KrJwtSubject -Subject $user |Build-KrJwt
-Write-KrJsonResponse -InputObject @{
-        access_token = $result.Token()
+    $user = $Context.HttpContext.User.Identity.Name
+
+    write-KrInformationLog -MessageTemplate "Regenerating JWT token for user {0}" -PropertyValues $user
+    write-KrInformationLog -MessageTemplate "JWT Token Builder: {0}" -PropertyValues $JwtTokenBuilder
+    if (-not $JwtTokenBuilder) {
+        Write-KrErrorResponse -Message "JWT Token Builder is not initialized." -StatusCode 500
+        return
+    } 
+    Write-Output "JwtTokenBuilder Type : $($JwtTokenBuilder.GetType().FullName)"
+    Write-Output "Issuer : $($JwtTokenBuilder.Issuer)"
+    Write-Output "Audience : $($JwtTokenBuilder.Audience)"
+    Write-Output "Algorithm: $($JwtTokenBuilder.Algorithm)" 
+
+    $build  = Set-KrJwtSubject -Builder $JwtTokenBuilder -Subject $user | Build-KrJwt
+    $accessToken = $build | Get-KrJwtToken
+    Write-KrJsonResponse -InputObject @{
+        access_token = $accessToken
         token_type   = "Bearer"
-        expires_in   = 3600
+        expires_in   = $build.Expires
     } -ContentType "application/json"
-    
-}
+
+} -Arguments @{"JwtTokenBuilder" = $JwtTokenBuilder }
 
 # Start the server asynchronously
 Start-KrServer -Server $server
