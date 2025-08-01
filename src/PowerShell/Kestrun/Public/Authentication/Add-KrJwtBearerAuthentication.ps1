@@ -18,7 +18,7 @@ function Add-KrJwtBearerAuthentication {
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Microsoft.IdentityModel.Tokens.TokenValidationParameters]$Options,
-  
+
         [string]  $ValidIssuer,
         [string[]]$ValidIssuers,
         [string]  $ValidAudience,

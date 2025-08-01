@@ -35,15 +35,69 @@ namespace Kestrun.Security;
 public sealed class JwtTokenBuilder
 {
     // ───── Public fluent API ──────────────────────────────────────────
+    /// <summary>
+    /// Creates a new instance of <see cref="JwtTokenBuilder"/>.
+    /// </summary>
+    /// <returns>A new <see cref="JwtTokenBuilder"/> instance.</returns>
     public static JwtTokenBuilder New() => new();
 
+    /// <summary>
+    /// Sets the issuer of the JWT token.
+    /// </summary>
+    /// <param name="issuer">The issuer to set.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder WithIssuer(string issuer) { _issuer = issuer; return this; }
+    /// <summary>
+    /// Sets the audience of the JWT token.
+    /// </summary>
+    /// <param name="audience">The audience to set.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder WithAudience(string audience) { _aud = audience; return this; }
+    /// <summary>
+    /// Sets the subject ('sub' claim) of the JWT token.
+    /// </summary>
+    /// <param name="sub">The subject to set.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder WithSubject(string sub) { _claims.Add(new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub, sub)); return this; }
+    /// <summary>
+    /// Adds a claim to the JWT token.
+    /// </summary>
+    /// <param name="type">The claim type.</param>
+    /// <param name="value">The claim value.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder AddClaim(string type, string value) { _claims.Add(new Claim(type, value)); return this; }
+    /// <summary>
+    /// Sets the lifetime (validity period) of the JWT token.
+    /// </summary>
+    /// <param name="ttl">The time span for which the token is valid.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder ValidFor(TimeSpan ttl) { _lifetime = ttl; return this; }
+    /// <summary>
+    /// Sets the 'not before' (nbf) claim for the JWT token.
+    /// </summary>
+    /// <param name="utc">The UTC date and time before which the token is not valid.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder NotBefore(DateTime utc) { _nbf = utc; return this; }
+    /// <summary>
+    /// Adds a custom header to the JWT token.
+    /// </summary>
+    /// <param name="k">The header key.</param>
+    /// <param name="v">The header value.</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder AddHeader(string k, object v) { _header[k] = v; return this; }
+
+    /// <summary>
+    /// Gets the issuer of the JWT token.
+    /// </summary>
+    public string Issuer { get => _issuer ?? string.Empty; }
+    /// <summary>
+    /// Gets the audience of the JWT token.
+    /// </summary>
+    public string Audience { get => _aud ?? string.Empty; }
+    /// <summary>
+    /// Gets the algorithm used for signing the JWT token.
+    /// </summary>
+    public string? Algorithm { get; private set; }
 
     // ── pending-config “envelopes” (built later) ─────────
     private sealed record PendingSymmetricSign(string B64u, string Alg /*auto/HS256…*/);
@@ -59,6 +113,12 @@ public sealed class JwtTokenBuilder
     private SymmetricSecurityKey? _issuerSigningKey;
 
     // ── signing helpers (store only) ─────────────────────
+    /// <summary>
+    /// Signs the JWT using a symmetric key provided as a Base64Url-encoded string.
+    /// </summary>
+    /// <param name="b64Url">The symmetric key as a Base64Url-encoded string.</param>
+    /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder SignWithSecret(
        string b64Url,
        JwtAlgorithm alg = JwtAlgorithm.Auto)
@@ -86,13 +146,22 @@ public sealed class JwtTokenBuilder
     }
 
 
+    /// <summary>
+    /// Signs the JWT using a symmetric key provided as a hexadecimal string.
+    /// </summary>
+    /// <param name="hex">The symmetric key as a hexadecimal string.</param>
+    /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder SignWithSecretHex(string hex, JwtAlgorithm alg = JwtAlgorithm.Auto)
     { return SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg); }
 
+
     /// <summary>
-    /// Treats the given passphrase as UTF-8 text, encodes it as Base64Url,
-    /// then calls SignWithSecret(b64u, alg).
+    /// Signs the JWT using a symmetric key derived from the provided passphrase.
     /// </summary>
+    /// <param name="passPhrase">The passphrase to use as the symmetric key.</param>
+    /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder SignWithSecretPassphrase(string passPhrase, JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
         ArgumentNullException.ThrowIfNull(passPhrase);
@@ -107,8 +176,11 @@ public sealed class JwtTokenBuilder
     // ── inside JwtTokenBuilder ─────────────────────────────────────────
 
     /// <summary>
-    /// Sign with an RSA private key in PEM (PKCS#1 or PKCS#8).
+    /// Signs the JWT using an RSA private key provided in PEM format.
     /// </summary>
+    /// <param name="pemPath">The file path to the RSA private key in PEM format.</param>
+    /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder SignWithRsaPem(
         string pemPath,
         JwtAlgorithm alg = JwtAlgorithm.Auto)
@@ -151,6 +223,13 @@ public sealed class JwtTokenBuilder
     // ── encryption helpers (lazy) ───────────────────────────────────
 
     // 1️⃣  X.509 certificate (RSA or EC public key)
+    /// <summary>
+    /// Encrypts the JWT using the provided X.509 certificate.
+    /// </summary>
+    /// <param name="cert">The X.509 certificate to use for encryption.</param>
+    /// <param name="keyAlg">The key encryption algorithm (default is "RSA-OAEP").</param>
+    /// <param name="encAlg">The content encryption algorithm (default is "A256GCM").</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder EncryptWithCertificate(
         X509Certificate2 cert,
         string keyAlg = "RSA-OAEP",
@@ -160,7 +239,13 @@ public sealed class JwtTokenBuilder
         return this;
     }
 
-    // 2️⃣  RSA / EC public key in PEM
+    /// <summary>
+    /// Encrypts the JWT using a PEM-encoded RSA public key.
+    /// </summary>
+    /// <param name="pemPath">The file path to the PEM-encoded RSA public key.</param>
+    /// <param name="keyAlg">The key encryption algorithm (default is "RSA-OAEP").</param>
+    /// <param name="encAlg">The content encryption algorithm (default is "A256GCM").</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder EncryptWithPemPublic(
         string pemPath,
         string keyAlg = "RSA-OAEP",
@@ -170,7 +255,13 @@ public sealed class JwtTokenBuilder
         return this;
     }
 
-    // 3️⃣  symmetric key: hex text
+    /// <summary>
+    /// Encrypts the JWT using a symmetric key provided as a hexadecimal string.
+    /// </summary>
+    /// <param name="hex">The symmetric key as a hexadecimal string.</param>
+    /// <param name="keyAlg">The key encryption algorithm (default is "dir").</param>
+    /// <param name="encAlg">The content encryption algorithm (default is "A256CBC-HS512").</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder EncryptWithSecretHex(
         string hex,
         string keyAlg = "dir",
@@ -179,7 +270,13 @@ public sealed class JwtTokenBuilder
         return EncryptWithSecret(Convert.FromHexString(hex), keyAlg, encAlg);
     }
 
-    // 4️⃣  symmetric key: base-64-url text (optional helper)
+    /// <summary>
+    /// Encrypts the JWT using a symmetric key provided as a Base64Url-encoded string.
+    /// </summary>
+    /// <param name="b64Url">The symmetric key as a Base64Url-encoded string.</param>
+    /// <param name="keyAlg">The key encryption algorithm (default is "dir").</param>
+    /// <param name="encAlg">The content encryption algorithm (default is "A256CBC-HS512").</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder EncryptWithSecretB64(
         string b64Url,
         string keyAlg = "dir",
@@ -188,7 +285,13 @@ public sealed class JwtTokenBuilder
         return EncryptWithSecret(Base64UrlEncoder.DecodeBytes(b64Url), keyAlg, encAlg);
     }
 
-    // 5️⃣  symmetric key: raw bytes (core overload)
+    /// <summary>
+    /// Encrypts the JWT using a symmetric key provided as a byte array.
+    /// </summary>
+    /// <param name="keyBytes">The symmetric key as a byte array.</param>
+    /// <param name="keyAlg">The key encryption algorithm (default is "dir").</param>
+    /// <param name="encAlg">The content encryption algorithm (default is "A256CBC-HS512").</param>
+    /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder EncryptWithSecret(
         byte[] keyBytes,
         string keyAlg = "dir",
@@ -201,6 +304,16 @@ public sealed class JwtTokenBuilder
 
 
     // ───── Build the compact JWT ──────────────────────────────────────
+
+    /// <summary>
+    /// Builds the JWT token.
+    /// This method constructs the JWT token using the configured parameters and returns it as a compact string.
+    /// </summary>
+    /// <returns>The JWT token as a compact string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no signing credentials are configured.</exception>
+    /// <remarks>
+    /// This method constructs the JWT token using the configured parameters and returns it as a compact string.
+    /// </remarks>
     private string BuildToken()
     {
         var handler = new JwtSecurityTokenHandler();
@@ -225,6 +338,16 @@ public sealed class JwtTokenBuilder
         return handler.WriteToken(token);
     }
 
+    /// <summary>
+    /// Builds the JWT token.
+    /// This method constructs the JWT token using the configured parameters and returns it as a compact string.
+    /// </summary>
+    /// <param name="signingKey">The signing key used to sign the JWT.</param>
+    /// <returns>The JWT token as a compact string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no signing credentials are configured.</exception>
+    /// <remarks>
+    /// This method constructs the JWT token using the configured parameters and returns it as a compact string.
+    /// </remarks>
     private string BuildToken(out SymmetricSecurityKey? signingKey)
     {
         string jwt = BuildToken();          // call the original Build()
@@ -233,6 +356,10 @@ public sealed class JwtTokenBuilder
     }
 
 
+    /// <summary>
+    /// Builds the JWT token and returns a <see cref="JwtBuilderResult"/> containing the token, signing key, and validity period.
+    /// </summary>
+    /// <returns>A <see cref="JwtBuilderResult"/> containing the JWT token, signing key, and validity period.</returns>
     public JwtBuilderResult Build()
     {
         // ① produce the raw token + signing key
@@ -247,6 +374,19 @@ public sealed class JwtTokenBuilder
     }
 
     // ────────── helpers that materialise creds ───────────
+
+    /// <summary>
+    /// Builds the signing credentials.
+    /// This method constructs the signing credentials based on the pending signing configuration.
+    /// If no signing configuration is set, it returns null.
+    /// </summary>
+    /// <param name="key">The symmetric security key to use for signing.</param>
+    /// <returns>The signing credentials, or null if not configured.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no signing configuration is set.</exception>
+    /// <remarks>
+    /// This method constructs the signing credentials based on the pending signing configuration.
+    /// If no signing configuration is set, it returns null.
+    /// </remarks>
     private SigningCredentials? BuildSigningCredentials(out SymmetricSecurityKey? key)
     {
         key = null;
@@ -260,6 +400,19 @@ public sealed class JwtTokenBuilder
         };
     }
 
+    /// <summary>
+    /// Builds the signing credentials.
+    /// This method constructs the signing credentials based on the pending signing configuration.
+    /// If no signing configuration is set, it returns null.
+    /// </summary>
+    /// <param name="ps">The pending symmetric signing configuration.</param>
+    /// <param name="key">The symmetric security key to use for signing.</param>
+    /// <returns>The signing credentials, or null if not configured.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no signing configuration is set.</exception>
+    /// <remarks>
+    /// This method constructs the signing credentials based on the pending symmetric signing configuration.
+    /// If no signing configuration is set, it returns null.
+    /// </remarks>
     private static SigningCredentials CreateHsCreds(
      PendingSymmetricSign ps,
      out SymmetricSecurityKey key)
@@ -277,7 +430,16 @@ public sealed class JwtTokenBuilder
         return new SigningCredentials(key, ps.Alg);
     }
 
-
+    /// <summary>
+    /// Creates signing credentials for RSA using the provided PEM string.
+    /// This method imports the RSA key from the PEM string and returns the signing credentials.
+    /// </summary>
+    /// <param name="pr">The pending RSA signing configuration.</param>
+    /// <returns>The signing credentials for RSA.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the PEM string is invalid or cannot be imported.</exception>
+    /// <remarks>
+    /// This method imports the RSA key from the PEM string and returns the signing credentials.
+    /// </remarks>
     private static SigningCredentials CreateRsaCreds(PendingRsaSign pr)
     {
         var rsa = RSA.Create();
@@ -288,12 +450,31 @@ public sealed class JwtTokenBuilder
         };
         return new SigningCredentials(key, pr.Alg);
     }
+    /// <summary>
+    /// Creates signing credentials for a certificate.
+    /// </summary>
+    /// <param name="pc">The pending certificate signing configuration.</param>
+    /// <returns>The signing credentials for the certificate.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the certificate does not have a private key.</exception>
+    /// <remarks>
+    /// This method creates signing credentials for a certificate using the provided certificate.
+    /// </remarks>
     private static SigningCredentials CreateCertCreds(PendingCertSign pc)
     {
         var cert = pc.Cert;
         var key = new X509SecurityKey(cert);  // thumbprint becomes kid
         return new SigningCredentials(key, pc.Alg);
     }
+    /// <summary>
+    /// Builds the encrypting credentials.
+    /// This method constructs the encrypting credentials based on the pending encryption configuration.
+    /// If no encryption configuration is set, it returns null.
+    /// </summary>
+    /// <returns>The encrypting credentials, or null if not set.</returns>
+    /// <remarks>
+    /// This method constructs the encrypting credentials based on the pending encryption configuration.
+    /// If no encryption configuration is set, it returns null.
+    /// </remarks>
     private EncryptingCredentials? BuildEncryptingCredentials()
         => _pendingEnc switch
         {
@@ -309,14 +490,24 @@ public sealed class JwtTokenBuilder
 
 
     // ───── Internals ──────────────────────────────────────────────────
-    private readonly List<Claim> _claims = new();
+    /// <summary>
+    /// Gets the claims to be included in the JWT token.
+    /// </summary>
+    private readonly List<Claim> _claims = [];
+    /// <summary>
+    /// Gets the headers to be included in the JWT token.
+    /// </summary>
     private readonly Dictionary<string, object> _header = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// Gets the not before (nbf) claim for the JWT token.
+    /// </summary>
     private DateTime _nbf = DateTime.UtcNow;
+    /// <summary>
+    /// Gets the lifetime of the JWT token.
+    /// </summary>
     private TimeSpan _lifetime = TimeSpan.FromHours(1);
     private string? _issuer, _aud;
-    public string Issuer { get => _issuer ?? string.Empty; }
-    public string Audience { get => _aud ?? string.Empty; }
-    public string? Algorithm { get; private set; }
+
 
     // ── Strategy interfaces & concrete configs ───────────────────────
     private interface ISignConfig { SigningCredentials ToSigningCreds(); }

@@ -8,6 +8,9 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Kestrun.Utilities;
 
+/// <summary>
+/// Provides helper methods for serializing and deserializing YAML content, with special handling for PowerShell objects.
+/// </summary>
 public static class YamlHelper
 {
     private static readonly ISerializer _serializer = new SerializerBuilder()
@@ -18,21 +21,33 @@ public static class YamlHelper
         .WithNamingConvention(CamelCaseNamingConvention.Instance)
         .Build();
 
-    // Serialize any PowerShell object to YAML
+    /// <summary>
+    /// Serializes any PowerShell object to YAML format.
+    /// </summary>
+    /// <param name="input">The PowerShell object to serialize. Can be null.</param>
+    /// <returns>A string containing the YAML representation of the input object.</returns>
     public static string ToYaml(object? input)
     {
         var normalized = NormalizePSObject(input);
         return _serializer.Serialize(normalized);
     }
 
-    // Deserialize YAML into Hashtable
+    /// <summary>
+    /// Deserializes a YAML string into a PowerShell Hashtable.
+    /// </summary>
+    /// <param name="yaml">The YAML string to deserialize.</param>
+    /// <returns>A Hashtable containing the deserialized YAML content.</returns>
     public static Hashtable FromYamlToHashtable(string yaml)
     {
         var obj = _deserializer.Deserialize<object>(yaml);
         return (Hashtable)ConvertToPSCompatible(obj);
     }
 
-    // Deserialize YAML into PSCustomObject
+    /// <summary>
+    /// Deserializes a YAML string into a PowerShell PSObject (PSCustomObject).
+    /// </summary>
+    /// <param name="yaml">The YAML string to deserialize.</param>
+    /// <returns>A PSObject containing the deserialized YAML content.</returns>
     public static PSObject FromYamlToPSCustomObject(string yaml)
     {
         var obj = _deserializer.Deserialize<object>(yaml);
@@ -40,7 +55,18 @@ public static class YamlHelper
         return ConvertToPSCustomObject(hash);
     }
 
-    // --- Helper: Normalize PowerShell object into plain .NET structure
+    /// <summary>
+    /// Normalizes a PowerShell object into a plain .NET structure that can be serialized to YAML.
+    /// </summary>
+    /// <param name="obj">The object to normalize. Can be null.</param>
+    /// <returns>A normalized object suitable for YAML serialization, or null if the input is null.</returns>
+    /// <remarks>
+    /// This method handles various PowerShell-specific types and converts them into standard .NET types:
+    /// - PSObjects are unwrapped to their base objects
+    /// - Dictionaries are converted to Dictionary&lt;object, object?&gt;
+    /// - Collections are converted to List&lt;object&gt;
+    /// - Objects with properties are converted to Dictionary&lt;string, object?&gt;
+    /// </remarks>
     private static object? NormalizePSObject(object? obj)
     {
         if (obj is PSObject psObj)
@@ -78,7 +104,17 @@ public static class YamlHelper
         return result;
     }
 
-    // --- Helper: Convert raw YAML object to Hashtable recursively
+    /// <summary>
+    /// Converts a deserialized YAML object into PowerShell-compatible types recursively.
+    /// </summary>
+    /// <param name="obj">The object to convert.</param>
+    /// <returns>A PowerShell-compatible object structure using Hashtable and ArrayList.</returns>
+    /// <remarks>
+    /// This method performs the following conversions:
+    /// - Dictionaries are converted to PowerShell Hashtables
+    /// - Lists are converted to ArrayLists
+    /// - Null values are converted to empty strings
+    /// </remarks>
     private static object ConvertToPSCompatible(object obj)
     {
         switch (obj)
@@ -100,7 +136,17 @@ public static class YamlHelper
         }
     }
 
-    // --- Helper: Convert Hashtable to PSCustomObject recursively
+    /// <summary>
+    /// Converts a Hashtable or ArrayList into a PowerShell PSObject (PSCustomObject) recursively.
+    /// </summary>
+    /// <param name="obj">The object to convert, typically a Hashtable or ArrayList.</param>
+    /// <returns>A PSObject representing the input structure.</returns>
+    /// <remarks>
+    /// This method performs deep conversion of nested structures:
+    /// - Hashtables are converted to PSObjects with NoteProperties
+    /// - ArrayLists are converted to arrays of PSObjects
+    /// - Other types are wrapped in PSObject using AsPSObject
+    /// </remarks>
     private static PSObject ConvertToPSCustomObject(object obj)
     {
         if (obj is Hashtable ht)
@@ -131,6 +177,12 @@ public static class YamlHelper
         return PSObject.AsPSObject(obj);
     }
 
+    /// <summary>
+    /// Adds a new note property to a PSObject.
+    /// </summary>
+    /// <param name="obj">The PSObject to add the property to.</param>
+    /// <param name="name">The name of the property.</param>
+    /// <param name="value">The value of the property.</param>
     private static void AddMember(PSObject obj, string name, object value)
     {
         obj.Properties.Add(new PSNoteProperty(name, value));
