@@ -44,12 +44,11 @@
     <!-- <NoWarn>1591</NoWarn> -->
 
     <!-- Assembly versioning -->
-    <AssemblyVersion>1.0.0</AssemblyVersion>
-    <AssemblyFileVersion>1.0.0.0</AssemblyFileVersion>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+      
+     
+   
 
     <EpochDate>2020-01-01</EpochDate>
-
     <!-- Get current UTC ticks and epoch ticks -->
     <Now>$([System.DateTime]::UtcNow.Ticks)</Now>
     <EpochTicks>$([System.DateTime]::Parse('$(EpochDate)').Ticks)</EpochTicks>
@@ -60,21 +59,32 @@
     <!-- 1 minute = 600,000,000 ticks -->
     <BuildNumber>$([MSBuild]::Divide($(TicksSinceEpoch), 600000000))</BuildNumber>
 
+
+    <Version Condition="'$(Version)' == ''">0.0.1</Version>
     <!-- Now use it for informational version -->
-    <InformationalVersion>1.2.3+build.$(BuildNumber).$(GitSha)</InformationalVersion>
+    <!-- Default value if AssemblyVersion is empty -->
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">0.0.1-beta+build.$(BuildNumber).$(GitSha)</InformationalVersion>
+    <!-- Use AssemblyVersion if it is set -->
+    <InformationalVersion Condition="'$(InformationalVersion)' != ''">$(InformationalVersion)+build.$(BuildNumber).$(GitSha)</InformationalVersion>
+
+    <PackageVersion Condition="'$(Version)' == ''">0.0.1</PackageVersion>
+
+    <AssemblyFileVersion>1.0.0.$(BuildNumber)</AssemblyFileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion> 
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>  
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- Enable packing for NuGet -->
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-
+     
     <!-- Package identity -->
     <PackageId>Kestrun</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
     <Authors>Max Daneri</Authors>
     <Company>Kestrun</Company>
     <Description>Kestrun Web Framework</Description>
+    <PackageVersion Condition="'$(Version)' == ''">0.0.1</PackageVersion>
 
     <!-- Licensing and repo info -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -84,9 +94,8 @@
     <!-- Include README in NuGet package -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <PropertyGroup>
-    <PackageVersion>1.0.0</PackageVersion>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  <PropertyGroup> 
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
   </PropertyGroup>
@@ -236,7 +245,43 @@
   </Target>
 
   <Target Name="DisplayBuildVersion" AfterTargets="GenerateAssemblyInfo">
+    <Message Text="🔨 Build Configuration: $(Configuration)" Importance="High" />
     <Message Text="🌟 Kestrun Build Number: $(BuildNumber)" Importance="High" />
     <Message Text="💫 InformationalVersion: $(InformationalVersion)" Importance="High" />
+    <Message Text="🔧 AssemblyVersion: $(AssemblyVersion)" Importance="High" />
+    <Message Text="🔧 AssemblyFileVersion: $(AssemblyFileVersion)" Importance="High" />
+    <Message Text="🔗 Git SHA: $(GitSha)" Importance="High" />
+    <Message Text="📅 Build Date: $(Now)" Importance="High" />
+    <Message Text="📅 Epoch Date: $(EpochDate)" Importance="High" />
+    <Message Text="📅 Ticks Since Epoch: $(TicksSinceEpoch)" Importance="High" />
+    <Message Text="🔗 Repository URL: $(RepositoryUrl)" Importance="High" />
+    <Message Text="📦 Package Version: $(PackageVersion)" Importance="Normal" />
+    <Message Text="📦 Package ID: $(PackageId)" Importance="Normal" />
+    <Message Text="📦 Authors: $(Authors)" Importance="Normal" />
+    <Message Text="📦 Company: $(Company)" Importance="Normal" />
+    <Message Text="📦 Description: $(Description)" Importance="Normal" />
+    <Message Text="📦 License: $(PackageLicenseExpression)" Importance="Normal" />
+    <Message Text="📦 Project URL: $(PackageProjectUrl)" Importance="Normal" />
+    <Message Text="📦 Readme File: $(PackageReadmeFile)" Importance="Normal" />
+    <Message Text="📦 Runtime Identifiers: $(RuntimeIdentifiers)" Importance="Normal" />
+    <Message Text="📦 Target Frameworks: $(TargetFrameworks)" Importance="Normal" />
+    <Message Text="📦 Publish Trimmed: $(PublishTrimmed)" Importance="Normal" />
+    <Message Text="📦 Invariant Globalization: $(InvariantGlobalization)" Importance="Normal" />
+    <Message Text="📦 Allow Unsafe Blocks: $(AllowUnsafeBlocks)" Importance="Normal" />
+    <Message Text="📦 Implicit Usings: $(ImplicitUsings)" Importance="Normal" />
+    <Message Text="📦 Enable Preview Features: $(EnablePreviewFeatures)" Importance="Normal" />
+    <Message Text="📦 Lang Version: $(LangVersion)" Importance="Normal" />
+    <Message Text="📦 Output Type: $(OutputType)" Importance="Normal" />
+    <Message Text="📦 Assembly Name: $(AssemblyName)" Importance="Normal" />
+    <Message Text="📦 Root Namespace: $(RootNamespace)" Importance="Normal" />
+    <Message Text="📦 Copy Local Lock File Assemblies: $(CopyLocalLockFileAssemblies)" Importance="Normal" />
+    <Message Text="📦 Generate Assembly Info: $(GenerateAssemblyInfo)" Importance="Normal" />
+    <Message Text="📦 Generate Documentation File: $(GenerateDocumentationFile)" Importance="Normal" />
+    <Message Text="📦 Treat Warnings As Errors: $(TreatWarningsAsErrors)" Importance="Normal" />
+    <Message Text="📦 No Warn: $(NoWarn)" Importance="Normal" />
+    <Message Text="📦 Is Packable: $(IsPackable)" Importance="Normal" />
+    <Message Text="📦 Generate Package On Build: $(GeneratePackageOnBuild)" Importance="Normal" />
+    <Message Text="📦 Package Version: $(PackageVersion)" Importance="Normal" />
+    <Message Text="📦 Package Id: $(PackageId)" Importance="Normal" />  
   </Target>
 </Project>
