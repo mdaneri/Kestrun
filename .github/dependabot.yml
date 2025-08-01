@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"                # or "/src" if csproj lives deeper
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "🔼 NuGet"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "Microsoft.NET.Test.Sdk"
+        versions: [">= 20.0.0"]
+  - package-ecosystem: "github-actions"
+    directory: "/"                # updates GitHub Actions versions
+    schedule:
+      interval: "weekly"
