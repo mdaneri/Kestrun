@@ -196,7 +196,7 @@ server.AddResponseCompression(options =>
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
-     validationParameters: builderResult.ValidationParameters());
+     validationParameters: builderResult.GetValidationParameters());
 
 /*new TokenValidationParameters
 {

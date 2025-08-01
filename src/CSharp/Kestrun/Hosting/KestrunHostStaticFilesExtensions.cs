@@ -99,14 +99,14 @@ public static class KestrunHostStaticFilesExtensions
     }
 
     /// <summary>
-    /// Adds a file server middleware to the application.   
-    /// This middleware serves static files and default files from a specified file provider.
+    /// Adds a file server middleware to the application.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">Configuration options for the file server middleware.</param>
     /// <returns>The current KestrunHost instance.</returns>
-    /// </remarks>
-    /// This method allows you to configure the file server options such as enabling default files, directory browsing,
-    /// and setting the file provider and request path.
+    /// <remarks>
+    /// This middleware serves static files and default files from a specified file provider.
+    /// If no configuration is provided, it uses default settings.
     /// </remarks>
     public static KestrunHost AddFileServer(this KestrunHost host, FileServerOptions? cfg)
     {
@@ -154,14 +154,14 @@ public static class KestrunHostStaticFilesExtensions
     }
 
 
-    
+
     /// <summary>
     /// Adds static files to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
     /// <param name="cfg">The static file options to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
-    public static KestrunHost AddStaticFiles(this KestrunHost host,Action<StaticFileOptions>? cfg = null)
+    public static KestrunHost AddStaticFiles(this KestrunHost host, Action<StaticFileOptions>? cfg = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding static files with configuration: {Config}", cfg);
@@ -186,7 +186,7 @@ public static class KestrunHostStaticFilesExtensions
     /// </summary>
     /// <param name="options">The static file options to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
-    public static KestrunHost AddStaticFiles(this KestrunHost host,StaticFileOptions options)
+    public static KestrunHost AddStaticFiles(this KestrunHost host, StaticFileOptions options)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding static files with options: {@Options}", options);

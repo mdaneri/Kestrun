@@ -127,16 +127,9 @@ public static class KestrunHostAuthExtensions
     /// Adds JWT Bearer authentication to the Kestrun host.
     /// <para>Use this for APIs that require token-based authentication.</para>
     /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
     /// <param name="scheme">The authentication scheme name (e.g. "Bearer").</param>
-    /// <param name="issuer">Expected token issuer. Set to null to disable issuer validation.</param>
-    /// <param name="audience">Expected token audience. Set to null to disable audience validation.</param>
-    /// <param name="validationKey">Signing key: HMAC, RSA, or ECDSA.</param>
-    /// <param name="validAlgorithms">List of accepted JWT signing algorithms (e.g. RS256).</param>
-    /// <param name="validateIssuer">If true, requires issuer to match.</param>
-    /// <param name="validateAudience">If true, requires audience to match.</param>
-    /// <param name="validateLifetime">If true, checks token expiration.</param>
-    /// <param name="validateSigningKey">If true, checks the signing key.</param
-    /// <param name="clockSkew">Optional time window to allow clock drift. Default is 1 minute.</param>
+    /// <param name="validationParameters">Parameters used to validate JWT tokens.</param>
     /// <param name="configureJwt">Optional hook to customize JwtBearerOptions.</param>
     /// <param name="configureAuthz">Optional authorization policy configuration.</param>
     /// <example>
@@ -182,7 +175,7 @@ public static class KestrunHostAuthExtensions
     /// <returns></returns>
     public static KestrunHost AddJwtBearerAuthentication(
       this KestrunHost host,
-      string scheme, 
+      string scheme,
       TokenValidationParameters validationParameters,
       Action<JwtBearerOptions>? configureJwt = null,
       Action<AuthorizationOptions>? configureAuthz = null)
@@ -192,7 +185,7 @@ public static class KestrunHostAuthExtensions
             buildSchemes: ab =>
             {
                 ab.AddJwtBearer(scheme, opts =>
-                { 
+                {
                     opts.TokenValidationParameters = validationParameters;
                     configureJwt?.Invoke(opts);
                 });

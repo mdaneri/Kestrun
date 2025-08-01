@@ -14,7 +14,9 @@ using System.Buffers.Text;
 using Serilog;
 using Serilog.Events;
 using Microsoft.IdentityModel.JsonWebTokens;
-using System.Text;  // For Base64UrlEncoder
+using System.Text;
+using System.Security;
+using System.Runtime.InteropServices;  // For Base64UrlEncoder
 namespace Kestrun.Security;
 
 /// <summary>
@@ -162,15 +164,37 @@ public sealed class JwtTokenBuilder
     /// <param name="passPhrase">The passphrase to use as the symmetric key.</param>
     /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
     /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
-    public JwtTokenBuilder SignWithSecretPassphrase(string passPhrase, JwtAlgorithm alg = JwtAlgorithm.Auto)
+    public JwtTokenBuilder SignWithSecretPassphrase(
+       SecureString passPhrase,
+       JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
         ArgumentNullException.ThrowIfNull(passPhrase);
 
-        // UTF-8 bytes → base64url text
-        var rawBytes = Encoding.UTF8.GetBytes(passPhrase);
-        var b64u = Base64UrlEncoder.Encode(rawBytes);
+        // Marshal to unmanaged Unicode (UTF-16) buffer
+        IntPtr unicodePtr = Marshal.SecureStringToGlobalAllocUnicode(passPhrase);
+        try
+        {
+            int charCount = passPhrase.Length;
+            byte[] unicodeBytes = new byte[charCount * sizeof(char)];
+            // copy from unmanaged -> managed
+            Marshal.Copy(unicodePtr, unicodeBytes, 0, unicodeBytes.Length);
 
-        return SignWithSecret(b64u, alg);
+            // convert UTF-16 bytes directly to UTF-8
+            byte[] utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, unicodeBytes);
+            // zero-out the intermediate Unicode bytes
+            Array.Clear(unicodeBytes, 0, unicodeBytes.Length);
+
+            string b64url = Base64UrlEncoder.Encode(utf8Bytes);
+            // zero-out the UTF-8 bytes too
+            Array.Clear(utf8Bytes, 0, utf8Bytes.Length);
+
+            return SignWithSecret(b64url, alg);
+        }
+        finally
+        {
+            // zero-free the unmanaged buffer
+            Marshal.ZeroFreeGlobalAllocUnicode(unicodePtr);
+        }
     }
 
     // ── inside JwtTokenBuilder ─────────────────────────────────────────

@@ -88,7 +88,7 @@ function Resolve-KrPath {
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
         [string] $Path,
 
         [Parameter(parameterSetName = 'RelativeBasePath')]

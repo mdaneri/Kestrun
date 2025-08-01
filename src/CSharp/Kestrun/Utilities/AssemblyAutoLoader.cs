@@ -29,6 +29,9 @@ public static class AssemblyAutoLoader
     ///  loaded, and installs an <c>AssemblyResolve</c> hook so that any
     ///  later requests are resolved automatically.
     /// </summary>
+    /// <param name="verbose">
+    ///  If <see langword="true"/>, outputs diagnostic information to the console.
+    /// </param>
     /// <param name="directories">
     ///  One or more absolute paths (they may be repeated; duplicates ignored).
     /// </param>

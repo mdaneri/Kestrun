@@ -12,14 +12,28 @@ namespace Kestrun.Scripting;
 /// </summary>
 public class CompilationErrorException : Exception
 {
+    /// <summary>
+    /// Gets the collection of diagnostics produced during compilation.
+    /// </summary>
     public ImmutableArray<Diagnostic> Diagnostics { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CompilationErrorException"/> class with a specified error message and diagnostics.
+    /// </summary>
+    /// <param name="message">The error message that explains the reason for the exception.</param>
+    /// <param name="diagnostics">The collection of diagnostics produced during compilation.</param>
     public CompilationErrorException(string message, ImmutableArray<Diagnostic> diagnostics)
         : base(FormatMessage(message, diagnostics))
     {
         Diagnostics = diagnostics;
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CompilationErrorException"/> class with a specified error message, diagnostics, and inner exception.
+    /// </summary>
+    /// <param name="message">The error message that explains the reason for the exception.</param>
+    /// <param name="diagnostics">The collection of diagnostics produced during compilation.</param>
+    /// <param name="innerException">The exception that is the cause of the current exception.</param>
     public CompilationErrorException(string message, ImmutableArray<Diagnostic> diagnostics, Exception innerException)
         : base(FormatMessage(message, diagnostics), innerException)
     {

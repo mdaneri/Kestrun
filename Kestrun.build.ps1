@@ -17,7 +17,8 @@ param(
 )
 
 if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.MyInvocation.PSCommandPath)) -or (-not $PSCmdlet.MyInvocation.PSCommandPath.EndsWith('Invoke-Build.ps1'))) {
-    Write-Host 'This script is intended to be run with Invoke-Build. Please use Invoke-Build to execute the tasks defined in this script.' -ForegroundColor Yellow
+    Write-Host 'This script is intended to be run with Invoke-Build. ' -ForegroundColor Yellow
+     Write-Host 'Please use Invoke-Build to execute the tasks defined in this script or Invoke-Build Help for more information.' -ForegroundColor Yellow
     return
 }
 
@@ -36,6 +37,8 @@ Add-BuildTask Help {
     Write-Host '- Clean: Cleans the solution.'
     Write-Host '- Build: Builds the solution.'
     Write-Host '- Test: Runs tests and Pester tests.'
+    Write-Host '- Package: Packages the solution.'
+    Write-Host '- UpdatePSD1: Updates the Kestrun.psd1 manifest.'
     Write-Host '- All: Runs Clean, Build, and Test tasks in sequence.'
     Write-Host
 }

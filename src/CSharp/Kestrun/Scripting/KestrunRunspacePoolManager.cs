@@ -8,6 +8,9 @@ using Serilog.Events;
 
 namespace Kestrun.Scripting;
 
+/// <summary>
+/// Manages a pool of PowerShell runspaces for efficient reuse and resource control.
+/// </summary>
 public sealed class KestrunRunspacePoolManager : IDisposable
 {
     private readonly ConcurrentBag<Runspace> _stash = new();
@@ -16,7 +19,13 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     private int _count;        // total live runspaces
     private bool _disposed;
 
+    /// <summary>
+    /// Gets the minimum number of runspaces maintained in the pool.
+    /// </summary>
     public int MinRunspaces { get; }
+    /// <summary>
+    /// Gets the maximum number of runspaces allowed in the pool.
+    /// </summary>
     public int MaxRunspaces => _max;
 
     /// <summary>
@@ -26,6 +35,13 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     public PSThreadOptions ThreadOptions { get; set; } = PSThreadOptions.ReuseThread;
 
     // ───────────────── constructor ──────────────────────────
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KestrunRunspacePoolManager"/> class with the specified minimum and maximum runspaces, initial session state, and thread options.
+    /// </summary>
+    /// <param name="minRunspaces">The minimum number of runspaces to maintain in the pool.</param>
+    /// <param name="maxRunspaces">The maximum number of runspaces allowed in the pool.</param>
+    /// <param name="initialSessionState">The initial session state for each runspace (optional).</param>
+    /// <param name="threadOptions">The thread affinity strategy for runspaces (optional).</param>
     public KestrunRunspacePoolManager(
         int minRunspaces,
         int maxRunspaces,
@@ -90,8 +106,10 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     }
 
     /// <summary>
-    /// Asynchronously borrow a runspace (waits if none available and at max).
+    /// Asynchronously acquires a runspace from the pool, creating a new one if under the cap, or waits until one becomes available.
     /// </summary>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for a runspace.</param>
+    /// <returns>A task that represents the asynchronous operation, containing the acquired <see cref="Runspace"/>.</returns>
     public async Task<Runspace> AcquireAsync(CancellationToken cancellationToken = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -126,7 +144,11 @@ public sealed class KestrunRunspacePoolManager : IDisposable
         }
     }
 
-    /// <summary>Return the runspace so the pool can reuse it.</summary>
+ 
+    /// <summary>
+    /// Returns a runspace to the pool for reuse, or disposes it if the pool has been disposed.
+    /// </summary>
+    /// <param name="rs">The <see cref="Runspace"/> to return to the pool.</param>
     public void Release(Runspace rs)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -170,6 +192,9 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     }
 
     // ───────────────── cleanup ───────────────────────────────
+    /// <summary>
+    /// Disposes the runspace pool manager and all pooled runspaces.
+    /// </summary>
     public void Dispose()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))

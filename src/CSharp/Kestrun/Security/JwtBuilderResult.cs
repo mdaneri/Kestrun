@@ -42,7 +42,7 @@ public sealed class JwtBuilderResult(
     /// </summary>
     /// <param name="clockSkew">Optional clock skew to allow when validating token lifetime.</param>
     /// <returns>The configured <see cref="TokenValidationParameters"/> instance.</returns>
-    public TokenValidationParameters ValidationParameters(TimeSpan? clockSkew = null)
+    public TokenValidationParameters GetValidationParameters(TimeSpan? clockSkew = null)
     {
         var tvp = new TokenValidationParameters
         {
@@ -61,6 +61,36 @@ public sealed class JwtBuilderResult(
         return tvp;
     }
 
+    /// <summary>
+    /// Asynchronously validates the specified JWT using the configured validation parameters.
+    /// </summary>
+    /// <param name="jwt">The JWT compact string to validate.</param>
+    /// <param name="clockSkew">Optional clock skew to allow when validating token lifetime.</param>
+    /// <returns>A task that represents the asynchronous operation, containing the token validation result.</returns>
+    public async Task<TokenValidationResult> ValidateAsync(string jwt, TimeSpan? clockSkew = null)
+    {
+        ArgumentNullException.ThrowIfNull(jwt);
+        ArgumentNullException.ThrowIfNull(_key);
+
+        // validate the token using the parameters
+        var validationParameters = GetValidationParameters(clockSkew);
+
+        var handler = new JsonWebTokenHandler();
+        return await handler.ValidateTokenAsync(
+            jwt, validationParameters).ConfigureAwait(false);
+
+    }
+
+    /// <summary>
+    /// Synchronously validates the specified JWT using the configured validation parameters.
+    /// </summary>
+    /// <param name="jwt">The JWT compact string to validate.</param>
+    /// <param name="clockSkew">Optional clock skew to allow when validating token lifetime.</param>
+    /// <returns>The token validation result.</returns>
+    public TokenValidationResult Validate(string jwt, TimeSpan? clockSkew = null)
+    {
+        return ValidateAsync(jwt, clockSkew).GetAwaiter().GetResult();
+    }
 
     /// <summary>
     /// Re-issues a fresh token with the same claims, issuer, audience, and a new TTL synchronously.
@@ -91,24 +121,16 @@ public sealed class JwtBuilderResult(
     /// <param name="jwt">The JWT compact string to renew.</param>
     /// <param name="signingKey">The symmetric security key used for signing.</param>
     /// <param name="lifetime">Optional lifetime for the renewed token.</param>
+    /// <param name="allowExpired">Whether to allow expired tokens to be renewed.</param>
     /// <returns>The renewed JWT compact string.</returns>
     /// <exception cref="SecurityTokenException"></exception>
-    private async Task<string> RenewAsync(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null)
+    private async Task<string> RenewAsync(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null, bool allowExpired = false)
     {
         var handler = new JsonWebTokenHandler();      // supports JWE & JWS
-
+        var validationParameters = GetValidationParameters();
+        validationParameters.ValidateLifetime = !allowExpired; // validate lifetime only if not allowing expired tokens
         // ①  quick validation (signature only; ignore exp, aud, iss)
-        var result = await handler.ValidateTokenAsync(
-            jwt,
-            new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
-
-                ValidateLifetime = false,     // allow even expired token
-                ValidateAudience = false,
-                ValidateIssuer = false
-            });
+        var result = await handler.ValidateTokenAsync(jwt, validationParameters);
 
         if (!result.IsValid)
             throw new SecurityTokenException(
@@ -119,6 +141,7 @@ public sealed class JwtBuilderResult(
 
         return _builder.ValidFor(_expires).Build().Token();
     }
+
     /// <summary>
     /// Synchronously re-issues a fresh token using the provided JWT, signing key, and optional lifetime.
     /// </summary>

@@ -1,4 +1,4 @@
-function Add-KrJwtBearerAuthentication {
+function Add-KrJWTBearerAuthentication {
     <#
     .SYNOPSIS
         Adds JWT Bearer authentication to the Kestrun server.

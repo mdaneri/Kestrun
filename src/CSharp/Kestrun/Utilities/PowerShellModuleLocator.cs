@@ -5,10 +5,12 @@ using Serilog;
 using Serilog.Events;
 namespace Kestrun.Utilities;
 
+/// <summary>
+/// Utility class to locate the Kestrun PowerShell module.
+/// It searches for the module in both development and production environments.
+/// </summary>
 public static class PowerShellModuleLocator
 {
-
-
     /// <summary>
     /// Retrieves the PowerShell module paths using pwsh.
     /// This method executes a PowerShell command to get the PSModulePath environment variable,

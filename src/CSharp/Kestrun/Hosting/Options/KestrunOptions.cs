@@ -22,10 +22,10 @@ namespace Kestrun.Hosting.Options;
 /// </remarks>
 public class KestrunOptions
 {
-
-    /// Gets the Kestrel server options.
+    /// <summary>
+    /// Gets or sets the Kestrel server options.
     /// </summary>
-    public KestrelServerOptions ServerOptions { get; }
+    public KestrelServerOptions ServerOptions { get; set; }
 
     /// <summary>Provides access to request limit options. Use a hashtable or a KestrelServerLimits instance.</summary>
     public KestrelServerLimits ServerLimits { get => ServerOptions.Limits; }

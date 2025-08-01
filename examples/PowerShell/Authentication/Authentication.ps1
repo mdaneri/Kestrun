@@ -1,32 +1,32 @@
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
 param()
-<#
-.SYNOPSIS
-    Kestrun PowerShell Example: Multi Routes
-.DESCRIPTION
-    This script demonstrates how to define multiple routes in Kestrun, a PowerShell web server framework.
-.EXAMPLE
-    .\Authentication.ps1
-    This example shows how to set up a Kestrun server with multiple authentication methods, including Basic Authentication, API Key Authentication, and JWT Bearer Token Authentication.
-    It also demonstrates how to secure routes using these authentication methods.
+    <#
+    .SYNOPSIS
+        Kestrun PowerShell Example: Multi Routes
+    .DESCRIPTION
+        This script demonstrates how to define multiple routes in Kestrun, a PowerShell web server framework.
+    .EXAMPLE
+        .\Authentication.ps1
+        This example shows how to set up a Kestrun server with multiple authentication methods, including Basic Authentication, API Key Authentication, and JWT Bearer Token Authentication.
+        It also demonstrates how to secure routes using these authentication methods.
 
-    $creds   = "admin:password"
-    $basic   = "Basic " + [Convert]::ToBase64String(
-                        [Text.Encoding]::ASCII.GetBytes($creds))
-    $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
-    Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-    Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
- 
-    Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-    Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-    Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+        $creds   = "admin:password"
+        $basic   = "Basic " + [Convert]::ToBase64String(
+                            [Text.Encoding]::ASCII.GetBytes($creds))
+        $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+        Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+        Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+    
+        Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+        Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+        Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
-    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-    $token2   = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
-    Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+        $token2   = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
     #>
 
 try {
@@ -142,22 +142,22 @@ Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X
 $secretB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('my-passphrase'))  # or any base64url
 
 $JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
-$JwtTokenBuilder = New-KrJwtTokenBuilder |
-Set-KrJwtIssuer    -Issuer   $issuer |
-Set-KrJwtAudience  -Audience $audience |
+$JwtTokenBuilder = New-KrJWTBuilder |
+Add-KrJWTIssuer    -Issuer   $issuer |
+Add-KrJWTAudience  -Audience $audience |
 #| Set-JwtSubject   -Subject  'admin' `
-Sign-JwtWithSecret -HexadecimalKey $JwtKeyHex -Algorithm ([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256)
+Protect-KrJWT -HexadecimalKey $JwtKeyHex -Algorithm HS256 
 
-$result = Build-KrJwt -Builder $JwtTokenBuilder
+$result = Build-KrJWT -Builder $JwtTokenBuilder
 #$jwt     = Get-JwtToken -Result $result
-$jwtOptions = $result | Get-KrJwtValidation
+$jwtOptions = $result | Get-KrJWTValidationParameter
 
-Add-KrJwtBearerAuthentication -Name $JwtScheme -Options $jwtOptions
+Add-KrJWTBearerAuthentication -Name $JwtScheme -Options $jwtOptions
 <#
 $JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
 $jwtKeyBytes = ([Convert]::FromHexString($JwtKeyHex))
 $jwtSecurityKey = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($jwtKeyBytes)
-Add-KrJwtBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudience $audience `
+Add-KrJWTBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudience $audience `
     -IssuerSigningKey $jwtSecurityKey -ValidAlgorithms @([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256) `
     -ClockSkew (New-TimeSpan -Minutes 5) `
 #>
@@ -223,14 +223,14 @@ Add-KrMapRoute -Verbs Get -Path "/token/renew" -Authorization $JwtScheme  -Scrip
     Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
     Write-Output "Expires : $($JwtBuilderResult.Expires)"
  
-    $accessToken = $JwtBuilderResult |Update-KrJwt
+    $accessToken = $JwtBuilderResult | Update-KrJWT
     Write-KrJsonResponse -InputObject @{
         access_token = $accessToken
         token_type   = "Bearer"
         expires_in   = $build.Expires
     } -ContentType "application/json"
 
-} -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder|  Build-KrJwt  }
+} -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder |  Build-KrJWT }
 
 
 Add-KrMapRoute -Verbs Get -Path "/token/new" -Authorization $BasicPowershellScheme -ScriptBlock {
@@ -247,8 +247,8 @@ Add-KrMapRoute -Verbs Get -Path "/token/new" -Authorization $BasicPowershellSche
     Write-Output "Audience : $($JwtTokenBuilder.Audience)"
     Write-Output "Algorithm: $($JwtTokenBuilder.Algorithm)" 
 
-    $build  = Set-KrJwtSubject -Builder $JwtTokenBuilder -Subject $user | Build-KrJwt
-    $accessToken = $build | Get-KrJwtToken
+    $build = Add-KrJWTSubject -Builder $JwtTokenBuilder -Subject $user | Build-KrJWT
+    $accessToken = $build | Get-KrJWTToken
     Write-KrJsonResponse -InputObject @{
         access_token = $accessToken
         token_type   = "Bearer"

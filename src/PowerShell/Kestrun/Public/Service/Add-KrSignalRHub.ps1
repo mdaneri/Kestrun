@@ -34,7 +34,7 @@ function Add-KrSignalRHub {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory, ValueFromPipeline)]
+        [Parameter(Mandatory = $true, ValueFromPipeline)]
         [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory)]
