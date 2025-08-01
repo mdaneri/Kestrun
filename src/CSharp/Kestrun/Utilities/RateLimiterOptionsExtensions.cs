@@ -1,6 +1,9 @@
 using System.Reflection;
 using Microsoft.AspNetCore.RateLimiting;
 namespace Kestrun.Utilities;
+/// <summary>
+/// Provides extension methods for copying rate limiter options and policies.
+/// </summary>
 public static class RateLimiterOptionsExtensions
 {
     private static readonly MethodInfo AddPolicyMethod =
@@ -16,14 +19,19 @@ public static class RateLimiterOptionsExtensions
         typeof(RateLimiterOptions).GetField("UnactivatedPolicyMap",
             BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-    /// <summary>Copies every policy and the scalar settings from <paramref name="source"/> into <paramref name="target"/>.</summary>
+
+    /// <summary>
+    /// Copies all rate limiter options and policies from the source to the target <see cref="RateLimiterOptions"/>.
+    /// </summary>
+    /// <param name="target">The target <see cref="RateLimiterOptions"/> to copy to.</param>
+    /// <param name="source">The source <see cref="RateLimiterOptions"/> to copy from.</param>
     public static void CopyFrom(this RateLimiterOptions target, RateLimiterOptions source)
     {
-        if (source == null) throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         // ───── scalar props ─────
-        target.GlobalLimiter       = source.GlobalLimiter;
-        target.OnRejected          = source.OnRejected;
+        target.GlobalLimiter = source.GlobalLimiter;
+        target.OnRejected = source.OnRejected;
         target.RejectionStatusCode = source.RejectionStatusCode;
 
         // ───── activated policies ─────

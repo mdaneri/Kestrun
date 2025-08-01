@@ -1,3 +1,4 @@
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
 param(
     [parameter(Mandatory = $true)]
     [string]$Path,
@@ -5,7 +6,7 @@ param(
     [ValidateSet("Text", "Binary")]
     [string]$Mode = "Text",
     [parameter()]
-    [int]$SizeMB = 100     
+    [long]$SizeMB = 100
 )
 
 # ─── Setup ────────────────────────────────────────────────────────
@@ -27,7 +28,8 @@ if ($Mode -eq "Binary") {
 
         while ($written -lt $targetBytes) {
             $rng.GetBytes($buffer)
-            $bytesToWrite = [Math]::Min($buffer.Length, $targetBytes - $written)
+            $remaining = $targetBytes - $written
+            $bytesToWrite = if ($buffer.Length -lt $remaining) { $buffer.Length } else { [long]$remaining }
             $fs.Write($buffer, 0, $bytesToWrite)
             $written += $bytesToWrite
             if ($written % (10MB) -eq 0) {
@@ -37,9 +39,9 @@ if ($Mode -eq "Binary") {
         }
     }
     finally {
-        $fs.Close() 
+        $fs.Close()
     }
-    Write-Host "Binary file done."
+    Write-Host " [Done]" -ForegroundColor Green
 }
 
 # ─── Generate Compressible Text File ──────────────────────────────
@@ -65,7 +67,7 @@ if ($Mode -eq "Text") {
             }
             # Write the line to the file
             $writer.Write($line)
-            if ($i % 1000 -eq 0) {
+            if ($i % (63700) -eq 0) {
                 Write-Host "#" -NoNewline
             }
         }
@@ -73,6 +75,6 @@ if ($Mode -eq "Text") {
     finally {
         $writer.Close()
     }
-    Write-Host "Text file with entropy done."
+    Write-Host " [Done]" -ForegroundColor Green
 }
 

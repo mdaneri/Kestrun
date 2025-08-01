@@ -10,9 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 using Kestrun;
-
-namespace KestrunTests;
-{
+ 
     public class PowerShellRazorPageTests
     {
         [Fact]
@@ -132,4 +130,4 @@ namespace KestrunTests;
             }
         }
     }
-}
+ 

@@ -39,6 +39,8 @@ Add-BuildTask Help {
     Write-Host '- Test: Runs tests and Pester tests.'
     Write-Host '- Package: Packages the solution.'
     Write-Host '- UpdatePSD1: Updates the Kestrun.psd1 manifest.'
+    Write-Host '- Generate-LargeFile: Generates a large test file.'
+    Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
     Write-Host '- All: Runs Clean, Build, and Test tasks in sequence.'
     Write-Host
 }
@@ -91,10 +93,25 @@ Add-BuildTask "Package" "Build", {
     dotnet pack .\Kestrun.sln -c $Configuration -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build  
 }
 
-
 Add-BuildTask "UpdatePSD1" {
     Write-Host "Updating Kestrun.psd1 manifest..."
     pwsh -NoProfile -File .\Utility\Update-PSD1.ps1
+}
+
+Add-BuildTask  "Generate-LargeFile" "Clean-LargeFile", {
+    Write-Host "Generating large file..."
+    if (-not (Test-Path -Path ".\examples\files\LargeFiles")) {
+        New-Item -ItemType Directory -Path ".\examples\files\LargeFiles" -Force| Out-Null
+    }
+    (10, 100, 1000, 3000) | ForEach-Object {
+        $sizeMB = $_
+        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.bin" -Mode "Binary" -SizeMB $sizeMB
+        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.txt" -Mode "Text" -SizeMB $sizeMB
+    }
+}
+Add-BuildTask  "Clean-LargeFile" {
+    Write-Host "Cleaning large files..."
+    Remove-Item -Path ".\examples\files\LargeFiles\*" -Force
 }
 
 Add-BuildTask All "Clean", "Build", "Test"
