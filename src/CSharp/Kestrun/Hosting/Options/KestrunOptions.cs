@@ -58,6 +58,9 @@ public class KestrunOptions
 
     // Add more properties as needed for your scenario.
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KestrunOptions"/> class with default values.
+    /// </summary>
     public KestrunOptions()
     {
         // Set default values if needed

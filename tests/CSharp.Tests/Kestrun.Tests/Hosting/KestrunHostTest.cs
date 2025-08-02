@@ -113,8 +113,8 @@ public class KestrunHostTest
             host.AddHtmlTemplateRoute(options, "nonexistent.html")
         );
     }
-    
-     [Fact]
+
+    [Fact]
     public void IsCSharpScriptValid_ReturnsTrueForValid()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -124,7 +124,7 @@ public class KestrunHostTest
     [Fact]
     public void IsCSharpScriptValid_ReturnsFalseForInvalid()
     {
-        KestrunHostManager.SetKestrunRoot(AppContext.BaseDirectory);
+        KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         bool valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
         Assert.False(valid);
@@ -132,7 +132,7 @@ public class KestrunHostTest
     [Fact]
     public void GetCSharpScriptErrors_ReturnsMessage()
     {
-        KestrunHostManager.SetKestrunRoot(AppContext.BaseDirectory);
+        KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
         var msg = host.GetCSharpScriptErrors("System.Console.Writeline(\"hi\");");
         Assert.NotNull(msg);

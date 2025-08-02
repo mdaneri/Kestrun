@@ -14,15 +14,28 @@ using Serilog;
 
 namespace Kestrun.Authentication;
 
+/// <summary>
+/// Handles API Key authentication for incoming HTTP requests.
+/// </summary>
 public class ApiKeyAuthHandler
     : AuthenticationHandler<ApiKeyAuthenticationOptions>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ApiKeyAuthHandler"/> class.
+    /// </summary>
+    /// <param name="options">The options monitor for API key authentication options.</param>
+    /// <param name="logger">The logger factory.</param>
+    /// <param name="encoder">The URL encoder.</param>
     public ApiKeyAuthHandler(
         IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder)
         : base(options, logger, encoder) { }
 
+    /// <summary>
+    /// Authenticates the incoming request using an API key.
+    /// </summary>
+    /// <returns>An <see cref="AuthenticateResult"/> indicating the authentication outcome.</returns>
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         try
@@ -109,6 +122,11 @@ public class ApiKeyAuthHandler
         return AuthenticateResult.Fail(reason);
     }
 
+    /// <summary>
+    /// Handles the authentication challenge by setting the appropriate response headers and status code.
+    /// </summary>
+    /// <param name="properties">Authentication properties for the challenge.</param>
+    /// <returns>A completed task.</returns>
     protected override Task HandleChallengeAsync(AuthenticationProperties properties)
     {
         if (Options.EmitChallengeHeader)
@@ -125,6 +143,13 @@ public class ApiKeyAuthHandler
         Response.StatusCode = StatusCodes.Status401Unauthorized;
         return Task.CompletedTask;
     }
+    /// <summary>
+    /// Validates the provided API key using a PowerShell script.
+    /// </summary>
+    /// <param name="code">The PowerShell script code to execute for validation.</param>
+    /// <param name="context">The current HTTP context containing the PowerShell runspace.</param>
+    /// <param name="providedKey">The API key to validate.</param>
+    /// <returns>A <see cref="ValueTask{Boolean}"/> indicating whether the API key is valid.</returns>
     public static async ValueTask<bool> ValidatePowerShellKeyAsync(string? code, HttpContext context, string providedKey)
     {
         try
@@ -172,12 +197,22 @@ public class ApiKeyAuthHandler
     }
 
 
+    /// <summary>
+    /// Builds a PowerShell-based API key validator delegate using the provided authentication code settings.
+    /// </summary>
+    /// <param name="codeSettings">The settings containing the PowerShell authentication code.</param>
+    /// <returns>A delegate that validates an API key using PowerShell.</returns>
     public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
       => async (ctx, providedKey, providedKeyBytes) =>
       {
           return await ValidatePowerShellKeyAsync(codeSettings.Code, ctx, providedKey);
       };
 
+    /// <summary>
+    /// Builds a C#-based API key validator delegate using the provided authentication code settings.
+    /// </summary>
+    /// <param name="codeSettings">The settings containing the C# authentication code.</param>
+    /// <returns>A delegate that validates an API key using C# code.</returns>
     public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
     {
         var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<ApiKeyAuthHandler>(),

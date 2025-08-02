@@ -1,6 +1,9 @@
 ﻿
 namespace Kestrun.Logging.Utils.Console.Extensions;
 
+/// <summary>
+/// Provides extension methods for the <see cref="Table"/> class.
+/// </summary>
 public static class TableExtensions
 {
 	/// <summary>

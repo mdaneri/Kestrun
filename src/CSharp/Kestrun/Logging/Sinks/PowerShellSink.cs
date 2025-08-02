@@ -6,14 +6,26 @@ using Serilog.Formatting;
 using Serilog.Formatting.Display;
 
 namespace Kestrun.Logging.Sinks;
-	public class PowerShellSink : ILogEventSink
+	/// <summary>
+	/// A Serilog sink that formats log events and invokes a callback for PowerShell integration.
+	/// </summary>
+		public class PowerShellSink : ILogEventSink
 	{
-		public const string DEFAULT_OUTPUT_TEMPLATE = "{Message:lj}";
+		/// <summary>
+		/// The default output template used for formatting log messages.
+		/// </summary>
+				public const string DEFAULT_OUTPUT_TEMPLATE = "{Message:lj}";
 
 		readonly object _syncRoot = new object();
 
+		/// <summary>
+		/// Gets or sets the text formatter used to format log events.
+		/// </summary>
 		public ITextFormatter TextFormatter { get; set; }
 
+		/// <summary>
+		/// Gets or sets the callback action that is invoked with the log event and its formatted message.
+		/// </summary>
 		public Action<LogEvent, string> Callback { get; set; }
 
 		public PowerShellSink(Action<LogEvent, string> callback, string outputTemplate = DEFAULT_OUTPUT_TEMPLATE)

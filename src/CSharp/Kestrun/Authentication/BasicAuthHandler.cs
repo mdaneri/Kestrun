@@ -13,6 +13,9 @@ using Serilog;
 
 namespace Kestrun.Authentication;
 
+/// <summary>
+/// Handles Basic Authentication for HTTP requests.
+/// </summary>
 public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>
 {
     /// <summary>
@@ -194,6 +197,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// Authenticates the user using PowerShell script.
     /// This method is used to validate the username and password against a PowerShell script.
     /// </summary>
+    /// <param name="code">The PowerShell script code used for authentication.</param>
     /// <param name="context">The HTTP context.</param>
     /// <param name="username">The username to validate.</param>
     /// <param name="password">The password to validate.</param>
@@ -247,12 +251,22 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     }
 
 
+    /// <summary>
+    /// Builds a PowerShell-based validator function for authenticating users.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the PowerShell script.</param>
+    /// <returns>A function that validates credentials using the provided PowerShell script.</returns>
     public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
       => async (ctx, user, pass) =>
       {
           return await AuthenticatePowerShellAsync(codeSettings.Code, ctx, user, pass);
       };
 
+    /// <summary>
+    /// Builds a C#-based validator function for authenticating users.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the C# script.</param>
+    /// <returns>A function that validates credentials using the provided C# script.</returns>
     public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
     {
         var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),

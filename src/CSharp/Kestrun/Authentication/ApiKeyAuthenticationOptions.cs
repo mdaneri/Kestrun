@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Authentication;
 
 namespace Kestrun.Authentication;
 
+/// <summary>
+/// Options for API key authentication, including header names, validation, and claims issuance.
+/// </summary>
 public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
 {
     /// <summary>
@@ -34,6 +37,10 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// <para>Use this for simple scenarios where you have a known key.</para>
     /// </summary>
     public string? ExpectedKey { get; set; }
+    
+    /// <summary>
+    /// Gets the expected API key as a UTF-8 byte array, or null if <see cref="ExpectedKey"/> is not set.
+    /// </summary>
     public byte[]? ExpectedKeyBytes => ExpectedKey is not null ? Encoding.UTF8.GetBytes(ExpectedKey) : null;
 
     /// <summary>

@@ -701,6 +701,10 @@ public class KestrunResponse
     #endregion
 
     #region Apply to HttpResponse
+    /// <summary>
+    /// Applies the current KestrunResponse to the specified HttpResponse, setting status, headers, cookies, and writing the body.
+    /// </summary>
+    /// <param name="response">The HttpResponse to apply the response to.</param>
     public async Task ApplyTo(HttpResponse response)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))

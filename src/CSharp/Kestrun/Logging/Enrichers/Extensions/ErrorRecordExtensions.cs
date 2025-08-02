@@ -7,8 +7,16 @@ using Kestrun.Logging.Utils.Console.Extensions;
 
 namespace Kestrun.Logging.Enrichers.Extensions;
 
+/// <summary>
+/// Provides extension methods for formatting error records and invocation info as tables.
+/// </summary>
 public static class ErrorRecordExtensions
 {
+	/// <summary>
+	/// Formats the specified <see cref="ErrorRecordWrapper"/> as a table string.
+	/// </summary>
+	/// <param name="errorRecord">The error record to format.</param>
+	/// <returns>A string representation of the error record as a table.</returns>
 	public static string ToTable(this ErrorRecordWrapper errorRecord)
 	{
 		var table = new Table(new Padding(1));
@@ -23,6 +31,11 @@ public static class ErrorRecordExtensions
 		return table.ToString();
 	}
 
+	/// <summary>
+	/// Formats the specified <see cref="InvocationInfoWrapper"/> as a table string.
+	/// </summary>
+	/// <param name="invocationInfo">The invocation info to format.</param>
+	/// <returns>A string representation of the invocation info as a table.</returns>
 	public static string ToTable(this InvocationInfoWrapper invocationInfo)
 	{
 		var table = new Table(new Padding(1));

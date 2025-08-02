@@ -20,6 +20,9 @@ using Kestrun.Scripting;
 
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides extension methods for adding authentication and authorization schemes to the Kestrun host.
+/// </summary>
 public static class KestrunHostAuthExtensions
 {
     /// <summary>
@@ -73,6 +76,14 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz
         );
     }
+    /// <summary>
+    /// Adds Basic Authentication to the Kestrun host using the provided options object.
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name (e.g. "Basic").</param>
+    /// <param name="configure">The BasicAuthenticationOptions object to configure the authentication.</param>
+    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddBasicAuthentication(
         this KestrunHost host,
         string scheme,
@@ -193,6 +204,16 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz);
     }
 
+    /// <summary>
+    /// Adds Cookie Authentication to the Kestrun host.
+    /// <para>Use this for browser-based authentication using cookies.</para>
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name (default is CookieAuthenticationDefaults.AuthenticationScheme).</param>
+    /// <param name="loginPath">The login path for unauthenticated users (default is "/account/login").</param>
+    /// <param name="configure">Optional configuration for CookieAuthenticationOptions.</param>
+    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddCookieAuthentication(
         this KestrunHost host,
         string scheme = CookieAuthenticationDefaults.AuthenticationScheme,

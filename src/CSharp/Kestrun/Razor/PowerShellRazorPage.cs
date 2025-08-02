@@ -27,6 +27,9 @@ using Serilog.Events;
 
 namespace Kestrun.Razor;
 
+/// <summary>
+/// Provides middleware for enabling PowerShell-backed Razor Pages, allowing execution of a sibling PowerShell script (*.cshtml.ps1) for each Razor view (*.cshtml).
+/// </summary>
 public static class PowerShellRazorPage
 {
     private const string MODEL_KEY = "PageModel";

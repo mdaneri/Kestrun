@@ -4,12 +4,16 @@ using Serilog.Events;
 
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides extension methods for configuring static file, default file, favicon, and file server middleware in KestrunHost.
+/// </summary>
 public static class KestrunHostStaticFilesExtensions
 {
     /// <summary>
     /// Adds default files middleware to the application.
     /// This middleware serves default files like index.html when a directory is requested.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">Configuration options for the default files middleware.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddDefaultFiles(this KestrunHost host, DefaultFilesOptions? cfg)
@@ -31,6 +35,7 @@ public static class KestrunHostStaticFilesExtensions
     /// Adds default files middleware to the application.
     /// This middleware serves default files like index.html when a directory is requested.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">Configuration options for the default files middleware.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddDefaultFiles(this KestrunHost host, Action<DefaultFilesOptions>? cfg = null)
@@ -44,6 +49,12 @@ public static class KestrunHostStaticFilesExtensions
     }
 
 
+    /// <summary>
+    /// Adds a favicon middleware to the application.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
+    /// <param name="iconPath">The path to the favicon file. If null, uses the default favicon.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddFavicon(this KestrunHost host, string? iconPath = null)
     {
         return host.Use(app =>
@@ -139,6 +150,7 @@ public static class KestrunHostStaticFilesExtensions
     /// Adds a file server middleware to the application.
     /// This middleware serves static files and default files from a specified file provider.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">Configuration options for the file server middleware.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddFileServer(this KestrunHost host, Action<FileServerOptions>? cfg = null)
@@ -159,6 +171,7 @@ public static class KestrunHostStaticFilesExtensions
     /// Adds static files to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">The static file options to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddStaticFiles(this KestrunHost host, Action<StaticFileOptions>? cfg = null)
@@ -184,6 +197,7 @@ public static class KestrunHostStaticFilesExtensions
     /// Adds static files to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="options">The static file options to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddStaticFiles(this KestrunHost host, StaticFileOptions options)

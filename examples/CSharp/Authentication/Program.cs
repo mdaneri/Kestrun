@@ -19,7 +19,8 @@ using Kestrun.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
-using Kestrun.Security;          // ISecurityTokenValidator
+using Kestrun.Security;
+using Microsoft.AspNetCore.Http;          // ISecurityTokenValidator
 
 
 /*
@@ -39,7 +40,13 @@ Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck 
 
 $token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+
+#Form
+Invoke-WebRequest -Uri https://localhost:5001/cookie/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
+Invoke-WebRequest -Uri https://localhost:5001/cookie/secure -SkipCertificateCheck -WebSession $authSession
+Invoke-WebRequest -Uri "https://localhost:5001/cookie/login" -SkipCertificateCheck -Method Post -Form @{ username = 'admin'; password = 'secret' } -WebSession $session -Verbose
 */
+
 var currentDir = Directory.GetCurrentDirectory();
 
 // 1️⃣  Audit log: only warnings and above, writes JSON files
@@ -77,17 +84,17 @@ const string JwtKeyHex =
 byte[] keyBytes = Convert.FromHexString(JwtKeyHex);
 string keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
 string textKey = System.Text.Encoding.UTF8.GetString(keyBytes);
- var tokenBuilder = JwtTokenBuilder.New()
-               //          .WithSubject("admin")
-               .WithIssuer(issuer)
-               .WithAudience(audience)
-               .SignWithSecret(keyB64u, JwtAlgorithm.HS256)   // GCM enc
+var tokenBuilder = JwtTokenBuilder.New()
+              //          .WithSubject("admin")
+              .WithIssuer(issuer)
+              .WithAudience(audience)
+              .SignWithSecret(keyB64u, JwtAlgorithm.HS256)   // GCM enc
 
-               .ValidFor(TimeSpan.FromHours(1));
+              .ValidFor(TimeSpan.FromHours(1));
 
 
 var builderResult = tokenBuilder.Build();
- 
+
 
 // for the token 
 
@@ -196,29 +203,24 @@ server.AddResponseCompression(options =>
 // ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
-     validationParameters: builderResult.GetValidationParameters());
+     validationParameters: builderResult.GetValidationParameters())
 
-/*new TokenValidationParameters
-{
-    ValidateIssuer = true,
-    ValidIssuer = issuer,
-    ValidateAudience = true,
-    ValidAudience = audience,
-    ValidateLifetime = true,
-    ClockSkew = TimeSpan.FromMinutes(1),
-
-    RequireSignedTokens = true,
-    ValidateIssuerSigningKey = true,
-    IssuerSigningKey = symKey,   // ← only this one key neede
-    ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
-
-});*/
-
-// issuer: issuer,
-//audience: audience,
-//validationKey: jwtKey,
-//validAlgorithms: [SecurityAlgorithms.HmacSha256]);
-
+.AddCookieAuthentication(
+    scheme: "Cookie",
+    loginPath: "/account/login",
+    configure: opts =>
+    {
+        opts.Cookie.Name = "Kestrun.Cookie";
+        opts.Cookie.HttpOnly = true;
+        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        opts.LoginPath = "/account/login";
+        opts.LogoutPath = "/account/logout";
+        opts.AccessDeniedPath = "/account/access-denied";
+        opts.SlidingExpiration = true;
+        opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        opts.Cookie.SameSite = SameSiteMode.Strict;
+    }
+);
 
 X509Certificate2? x509Certificate = null;
 
@@ -374,22 +376,13 @@ server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 
 server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
 {
-// tiny demo – replace with your real credential check
-/*    var auth = ctx.Request.Authorization;
-    if (auth != "Basic YWRtaW46czNjcjN0")
-    {   // “admin:s3cr3t” base64
-        ctx.Response.WriteErrorResponse("Access denied", 401);
-        return;
-    }*/
+    try
+    {
+        var build = tokenBuilder.WithSubject("admin").Build();
+        var token = build.Token();
 
-// var creds = new SigningCredentials(jwtKey, SecurityAlgorithms.HmacSha256);
-try
-{
-    var build = tokenBuilder.WithSubject("admin").Build();
-    var token = build.Token(); 
-
-    await ctx.Response.WriteJsonResponseAsync(new { access_token = token ,token_type   = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL
-    Log.Information("Generated new JWT token: {Token}", token);
+        await ctx.Response.WriteJsonResponseAsync(new { access_token = token, token_type = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL
+        Log.Information("Generated new JWT token: {Token}", token);
     }
     catch (Exception ex)
     {
@@ -398,11 +391,63 @@ try
     }
 }, [BasicNativeScheme]);
 
+server.AddNativeRoute("/cookie/login", HttpVerb.Post, async (ctx) =>
+{
+    var form = ctx.Request.Form;
+    var username = form["username"];
+    var password = form["password"];
+    if (username == "admin" && password == "secret")
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, username)
+        };
+        var identity = new ClaimsIdentity(claims, "Cookies");
+        var principal = new ClaimsPrincipal(identity);
+        // await ctx.HttpContext.Request.SignInAsync("Cookies", principal);
+        await ctx.Response.WriteJsonResponseAsync(new { success = true });
+    }
+    else
+    {
+        await ctx.Response.WriteJsonResponseAsync(new { success = false });
+    }
+});
+
+server.AddMapRoute("/cookie/login2", HttpVerb.Post, """
+    write-host 'Processing login request...'
+    # Check if the form contains the expected fields
+    Write-KrInformationLog -MessageTemplate 'Received login request with form data: {@Position}' -PropertyValues $Context.Request.Form
+    Write-Host "User: $($Context.Request.Form['user']), Password: $($Context.Request.Form['pass'])"
+    if ($Context.Request.Form['user'] -eq 'admin' -and $Request.Form['pass'] -eq 'secret') {
+        # Build claims principal
+        $claims = [System.Collections.Generic.List[System.Security.Claims.Claim]]::new()
+        $claims.Add([System.Security.Claims.Claim]::new('sub','admin'))
+        $identity = [System.Security.Claims.ClaimsIdentity]::new($claims,'Cookies')
+        $principal = [System.Security.Claims.ClaimsPrincipal]::new($identity)
+        # Issue the cookie
+        $Context.Request.HttpContext.SignInAsync('Cookies',$principal).Wait()
+        Write-KrTextResponse -InputObject 'Logged in successfully!' -ContentType 'text/plain' 
+    } else {
+        Write-KrErrorResponse -Message 'Unauthorized' -StatusCode 401
+    }
+""", ScriptLanguage.PowerShell);
+
+server.AddMapRoute("/cookie/secure", HttpVerb.Get, @"
+
+    if (!$Context.Request.HttpContext.User.Identity.IsAuthenticated) {
+      $Context.Response.StatusCode = 302
+      $Context.Response.Headers['Location'] = '/login'
+    } else {
+      $Context.Response.Write('Hello, '+$Context.Request.HttpContext.User.Identity.Name)
+    }
+  ", ScriptLanguage.PowerShell, ["Cookies"]);
+
+
+
 await server.RunUntilShutdownAsync(
-    consoleEncoding: Encoding.UTF8,
-    onStarted: () => Console.WriteLine("Server ready 🟢"),
-    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
+  consoleEncoding: Encoding.UTF8,
+  onStarted: () => Console.WriteLine("Server ready 🟢"),
+  onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
 
-    )
+  )
 );
-

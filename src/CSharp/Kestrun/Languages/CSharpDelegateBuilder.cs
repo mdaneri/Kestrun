@@ -20,8 +20,9 @@ internal static class CSharpDelegateBuilder
     /// <summary>
     /// Builds a C# delegate for handling HTTP requests.
     /// </summary>
-    /// /// <param name="code">The C# code to execute.</param>
+    /// <param name="code">The C# code to execute.</param>
     /// <param name="log">The logger instance.</param>
+    /// <param name="arguments">Arguments to inject as variables into the script.</param>
     /// <param name="extraImports">Additional namespaces to import.</param>
     /// <param name="extraRefs">Additional assemblies to reference.</param>
     /// <param name="languageVersion">The C# language version to use.</param>

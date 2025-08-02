@@ -1,5 +1,8 @@
 namespace Kestrun.Authentication;
 
+/// <summary>
+/// Specifies the format for API key authentication challenges.
+/// </summary>
 public enum ApiKeyChallengeFormat
 {
     /// <summary>

@@ -18,7 +18,7 @@ param(
 
 if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.MyInvocation.PSCommandPath)) -or (-not $PSCmdlet.MyInvocation.PSCommandPath.EndsWith('Invoke-Build.ps1'))) {
     Write-Host 'This script is intended to be run with Invoke-Build. ' -ForegroundColor Yellow
-     Write-Host 'Please use Invoke-Build to execute the tasks defined in this script or Invoke-Build Help for more information.' -ForegroundColor Yellow
+    Write-Host 'Please use Invoke-Build to execute the tasks defined in this script or Invoke-Build Help for more information.' -ForegroundColor Yellow
     return
 }
 
@@ -101,7 +101,7 @@ Add-BuildTask "UpdatePSD1" {
 Add-BuildTask  "Generate-LargeFile" "Clean-LargeFile", {
     Write-Host "Generating large file..."
     if (-not (Test-Path -Path ".\examples\files\LargeFiles")) {
-        New-Item -ItemType Directory -Path ".\examples\files\LargeFiles" -Force| Out-Null
+        New-Item -ItemType Directory -Path ".\examples\files\LargeFiles" -Force | Out-Null
     }
     (10, 100, 1000, 3000) | ForEach-Object {
         $sizeMB = $_

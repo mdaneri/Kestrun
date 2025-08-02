@@ -8,12 +8,16 @@ using Serilog.Events;
 
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides extension methods for adding PowerShell and Razor Pages to a KestrunHost.
+/// </summary>
 public static class KestrunHostRazorExtensions
 {
     /// <summary>
     /// Adds PowerShell Razor Pages to the application.
     /// This middleware allows you to serve Razor Pages using PowerShell scripts.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
     /// <param name="cfg">Configuration options for the Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
@@ -40,12 +44,18 @@ public static class KestrunHostRazorExtensions
     /// Adds PowerShell Razor Pages to the application.
     /// This middleware allows you to serve Razor Pages using PowerShell scripts.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host, PathString? routePrefix) =>
         AddPowerShellRazorPages(host, routePrefix, (Action<RazorPagesOptions>?)null);
-    public static KestrunHost AddPowerShellRazorPages(this KestrunHost host) =>
-        AddPowerShellRazorPages(host, null, (Action<RazorPagesOptions>?)null);
+    /// <summary>
+    /// Adds PowerShell Razor Pages to the application with default configuration and no route prefix.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+        public static KestrunHost AddPowerShellRazorPages(this KestrunHost host) =>
+            AddPowerShellRazorPages(host, null, (Action<RazorPagesOptions>?)null);
     // helper: true  ⇢ file contains managed metadata
     static bool IsManaged(string path)
     {
@@ -56,6 +66,7 @@ public static class KestrunHostRazorExtensions
     /// Adds PowerShell Razor Pages to the application.
     /// This middleware allows you to serve Razor Pages using PowerShell scripts.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
     /// <param name="cfg">Configuration options for the Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
@@ -227,6 +238,7 @@ public static class KestrunHostRazorExtensions
     /// <summary>
     /// Adds Razor Pages to the application.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="cfg">The configuration options for Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRazorPages(this KestrunHost host,RazorPagesOptions? cfg)
@@ -253,6 +265,7 @@ public static class KestrunHostRazorExtensions
     /// This overload allows you to specify configuration options.
     /// If you need to configure Razor Pages options, use the other overload.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="cfg">The configuration options for Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRazorPages(this KestrunHost host,Action<RazorPagesOptions>? cfg = null)

@@ -28,6 +28,9 @@ public class ListenerOptions
     /// <summary>Optional TLS certificate.</summary>
     public X509Certificate2? X509Certificate { get; internal set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ListenerOptions"/> class with default values.
+    /// </summary>
     public ListenerOptions()
     {
         IPAddress = IPAddress.Any;

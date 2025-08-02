@@ -7,11 +7,21 @@ using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Middleware;
+
+/// <summary>
+/// Initializes a new instance of the <see cref="PowerShellRunspaceMiddleware"/> class.
+/// </summary>
+/// <param name="next">The next middleware in the pipeline.</param>
+/// <param name="pool">The runspace pool manager.</param>
 public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRunspacePoolManager pool)
 {
     private readonly RequestDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
     private readonly KestrunRunspacePoolManager _pool = pool ?? throw new ArgumentNullException(nameof(pool));
 
+    /// <summary>
+    /// Processes an HTTP request using a PowerShell runspace from the pool.
+    /// </summary>
+    /// <param name="context">The HTTP context for the current request.</param>
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -35,7 +45,7 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             KestrunContext kestrunContext = new(krRequest, krResponse, context);
 
             if (Log.IsEnabled(LogEventLevel.Debug))
-                Log.Debug("PowerShellRunspaceMiddleware - Setting KestrunContext in HttpContext.Items for {Path}", context.Request.Path);   
+                Log.Debug("PowerShellRunspaceMiddleware - Setting KestrunContext in HttpContext.Items for {Path}", context.Request.Path);
             Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
             // Set the PowerShell variables for the request and response
             var ss = ps.Runspace.SessionStateProxy;

@@ -64,6 +64,9 @@ using Kestrun.Hosting.Options;
 */
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides hosting and configuration for the Kestrun application, including service registration, middleware setup, and runspace pool management.
+/// </summary>
 public class KestrunHost : IDisposable
 {
     #region Fields
@@ -88,8 +91,14 @@ public class KestrunHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets the application name for the Kestrun host.
+    /// </summary>
     public string ApplicationName => Options.ApplicationName ?? "KestrunApp";
 
+    /// <summary>
+    /// Gets the configuration options for the Kestrun host.
+    /// </summary>
     public KestrunOptions Options { get; private set; }
     private readonly List<string> _modulePaths = [];
 
@@ -108,9 +117,19 @@ public class KestrunHost : IDisposable
             return _runspacePool;
         }
     }
+    /// <summary>
+    /// Gets the root directory path for the Kestrun application.
+    /// </summary>
     public string? KestrunRoot { get; private set; }
 
+    /// <summary>
+    /// Gets the Serilog logger instance used by the Kestrun host.
+    /// </summary>
     public Serilog.ILogger _Logger { get; private set; }
+
+    /// <summary>
+    /// Gets the scheduler service used for managing scheduled tasks in the Kestrun host.
+    /// </summary>
     public SchedulerService Scheduler { get; internal set; } = null!; // Initialized in ConfigureServices
 
     // ── ✦ QUEUE #1 : SERVICE REGISTRATION ✦ ─────────────────────────────
@@ -128,14 +147,27 @@ public class KestrunHost : IDisposable
     // Accepts optional module paths (from PowerShell)
     #region Constructor
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KestrunHost"/> class with the specified application name, root directory, and optional module paths.
+    /// </summary>
+    /// <param name="appName">The name of the application.</param>
+    /// <param name="kestrunRoot">The root directory for the Kestrun application.</param>
+    /// <param name="modulePathsObj">An array of module paths to be loaded.</param>
     public KestrunHost(string? appName, string? kestrunRoot = null, string[]? modulePathsObj = null) :
             this(appName, Log.Logger, kestrunRoot, modulePathsObj)
     { }
 
-    public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
-    {
-        // Initialize Serilog logger if not provided
-        _Logger = logger ?? Log.Logger;
+    /// <summary>
+    /// Initializes a new instance of the <see cref="KestrunHost"/> class with the specified application name, logger, root directory, and optional module paths.
+    /// </summary>
+    /// <param name="appName">The name of the application.</param>
+    /// <param name="logger">The Serilog logger instance to use.</param>
+    /// <param name="kestrunRoot">The root directory for the Kestrun application.</param>
+    /// <param name="modulePathsObj">An array of module paths to be loaded.</param>
+        public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
+        {
+            // Initialize Serilog logger if not provided
+            _Logger = logger ?? Log.Logger;
 
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
@@ -231,17 +263,26 @@ public class KestrunHost : IDisposable
 
     #region ListenerOptions 
 
+    /// <summary>
+    /// Configures a listener for the Kestrun host with the specified port, optional IP address, certificate, protocols, and connection logging.
+    /// </summary>
+    /// <param name="port">The port number to listen on.</param>
+    /// <param name="ipAddress">The IP address to bind to. If null, binds to any address.</param>
+    /// <param name="x509Certificate">The X509 certificate for HTTPS. If null, HTTPS is not used.</param>
+    /// <param name="protocols">The HTTP protocols to use.</param>
+    /// <param name="useConnectionLogging">Specifies whether to enable connection logging.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
-
+    
         if (protocols == HttpProtocols.Http1AndHttp2AndHttp3 && !CcUtilities.PreviewFeaturesEnabled())
         {
             _Logger.Warning("Http3 is not supported in this version of Kestrun. Using Http1 and Http2 only.");
             protocols = HttpProtocols.Http1AndHttp2;
         }
-
+    
         Options.Listeners.Add(new ListenerOptions
         {
             IPAddress = ipAddress ?? IPAddress.Any,
@@ -252,14 +293,25 @@ public class KestrunHost : IDisposable
             UseConnectionLogging = useConnectionLogging
         });
         return this;
-
+    
     }
 
+    /// <summary>
+    /// Configures a listener for the Kestrun host with the specified port, optional IP address, and connection logging.
+    /// </summary>
+    /// <param name="port">The port number to listen on.</param>
+    /// <param name="ipAddress">The IP address to bind to. If null, binds to any address.</param>
+    /// <param name="useConnectionLogging">Specifies whether to enable connection logging.</param>
     public void ConfigureListener(int port, IPAddress? ipAddress = null, bool useConnectionLogging = false)
     {
         ConfigureListener(port: port, ipAddress: ipAddress, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
     }
 
+    /// <summary>
+    /// Configures a listener for the Kestrun host with the specified port and connection logging option.
+    /// </summary>
+    /// <param name="port">The port number to listen on.</param>
+    /// <param name="useConnectionLogging">Specifies whether to enable connection logging.</param>
     public void ConfigureListener(int port, bool useConnectionLogging = false)
     {
         ConfigureListener(port: port, ipAddress: null, x509Certificate: null, protocols: HttpProtocols.Http1, useConnectionLogging: useConnectionLogging);
@@ -285,10 +337,13 @@ public class KestrunHost : IDisposable
     #region Configuration
 
 
-    public void EnableConfiguration()
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("EnableConfiguration(options) called");
+    /// <summary>
+    /// Applies the configured options to the Kestrel server and initializes the runspace pool.
+    /// </summary>
+        public void EnableConfiguration()
+        {
+            if (_Logger.IsEnabled(LogEventLevel.Debug))
+                _Logger.Debug("EnableConfiguration(options) called");
 
         if (_isConfigured)
         {
@@ -436,12 +491,23 @@ public class KestrunHost : IDisposable
         return this;
     }
 
+    /// <summary>
+    /// Adds a feature configuration action to the feature queue.
+    /// This action will be executed when the features are applied.
+    /// </summary>
+    /// <param name="feature">The feature configuration action.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddFeature(Action<KestrunHost> feature)
     {
         _featureQueue.Add(feature);
         return this;
     }
 
+    /// <summary>
+    /// Adds a scheduling feature to the Kestrun host, optionally specifying the maximum number of runspaces for the scheduler.
+    /// </summary>
+    /// <param name="MaxRunspaces">The maximum number of runspaces for the scheduler. If null, uses the default value.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddScheduling(int? MaxRunspaces = null)
     {
         if (MaxRunspaces is not null && MaxRunspaces <= 0)
@@ -450,7 +516,7 @@ public class KestrunHost : IDisposable
         {
             if (_Logger.IsEnabled(LogEventLevel.Debug))
                 _Logger.Debug("AddScheduling (deferred)");
-
+    
             if (host.Scheduler is null)
             {
                 if (MaxRunspaces is not null && MaxRunspaces > 0)
@@ -528,6 +594,12 @@ public class KestrunHost : IDisposable
  
 
     // ② SignalR
+    /// <summary>
+    /// Adds a SignalR hub to the application at the specified path.
+    /// </summary>
+    /// <typeparam name="T">The type of the SignalR hub.</typeparam>
+    /// <param name="path">The path at which to map the SignalR hub.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public KestrunHost AddSignalR<T>(string path) where T : Hub
     {
         return AddService(s => s.AddSignalR())
@@ -568,6 +640,9 @@ public class KestrunHost : IDisposable
     #endregion
     #region Run/Start/Stop
 
+    /// <summary>
+    /// Runs the Kestrun web application, applying configuration and starting the server.
+    /// </summary>
     public void Run()
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
@@ -577,46 +652,59 @@ public class KestrunHost : IDisposable
         _app?.Run();
     }
 
-    public async Task StartAsync(CancellationToken cancellationToken = default)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("StartAsync() called");
-        EnableConfiguration();
-        if (_app != null)
+    /// <summary>
+    /// Starts the Kestrun web application asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous start operation.</returns>
+        public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            await _app.StartAsync(cancellationToken);
-        }
-    }
-
-    public async Task StopAsync(CancellationToken cancellationToken = default)
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("StopAsync() called");
-        if (_app != null)
-        {
-            try
+            if (_Logger.IsEnabled(LogEventLevel.Debug))
+                _Logger.Debug("StartAsync() called");
+            EnableConfiguration();
+            if (_app != null)
             {
-                // Initiate graceful shutdown
-                await _app.StopAsync(cancellationToken);
-            }
-            catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
-            {
-                // QUIC exceptions can occur during shutdown, especially if the server is not using QUIC.
-                // We log this as a debug message to avoid cluttering the logs with expected exceptions.
-                // This is a workaround for
-
-                _Logger.Debug("Ignored QUIC exception during shutdown: {Message}", ex.Message);
+                await _app.StartAsync(cancellationToken);
             }
         }
-    }
 
-    public void Stop()
-    {
-        if (_Logger.IsEnabled(LogEventLevel.Debug))
-            _Logger.Debug("Stop() called");
-        // This initiates a graceful shutdown.
-        _app?.Lifetime.StopApplication();
-    }
+    /// <summary>
+    /// Stops the Kestrun web application asynchronously.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns>A task that represents the asynchronous stop operation.</returns>
+        public async Task StopAsync(CancellationToken cancellationToken = default)
+        {
+            if (_Logger.IsEnabled(LogEventLevel.Debug))
+                _Logger.Debug("StopAsync() called");
+            if (_app != null)
+            {
+                try
+                {
+                    // Initiate graceful shutdown
+                    await _app.StopAsync(cancellationToken);
+                }
+                catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
+                {
+                    // QUIC exceptions can occur during shutdown, especially if the server is not using QUIC.
+                    // We log this as a debug message to avoid cluttering the logs with expected exceptions.
+                    // This is a workaround for
+    
+                    _Logger.Debug("Ignored QUIC exception during shutdown: {Message}", ex.Message);
+                }
+            }
+        }
+
+    /// <summary>
+    /// Initiates a graceful shutdown of the Kestrun web application.
+    /// </summary>
+        public void Stop()
+        {
+            if (_Logger.IsEnabled(LogEventLevel.Debug))
+                _Logger.Debug("Stop() called");
+            // This initiates a graceful shutdown.
+            _app?.Lifetime.StopApplication();
+        }
 
     #endregion
 
@@ -626,6 +714,11 @@ public class KestrunHost : IDisposable
 
 
 
+    /// <summary>
+    /// Creates and returns a new <see cref="KestrunRunspacePoolManager"/> instance with the specified maximum number of runspaces.
+    /// </summary>
+    /// <param name="maxRunspaces">The maximum number of runspaces to create. If not specified or zero, defaults to twice the processor count.</param>
+    /// <returns>A configured <see cref="KestrunRunspacePoolManager"/> instance.</returns>
     public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
@@ -673,6 +766,9 @@ public class KestrunHost : IDisposable
 
     #region Disposable
 
+    /// <summary>
+    /// Releases all resources used by the <see cref="KestrunHost"/> instance.
+    /// </summary>
     public void Dispose()
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))

@@ -1,34 +1,51 @@
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Concurrent; 
 using Kestrun.Hosting;
 using Serilog;
 using Serilog.Events;
 
 namespace Kestrun;
 
+/// <summary>
+/// Provides management functionality for KestrunHost instances, including creation, retrieval, starting, stopping, and destruction.
+/// </summary>
 public static class KestrunHostManager
 {
     private static readonly ConcurrentDictionary<string, KestrunHost> _instances = new(StringComparer.OrdinalIgnoreCase);
     private static string? _defaultName;
 
+    /// <summary>
+    /// Gets the collection of names for all KestrunHost instances.
+    /// </summary>
     public static IReadOnlyCollection<string> InstanceNames => (IReadOnlyCollection<string>)_instances.Keys;
 
-    public static string? KestrunRoot { get; private set; }
 
-    public static void SetKestrunRoot(string? kestrunRoot)
-    {
-        if (string.IsNullOrWhiteSpace(kestrunRoot))
-            throw new ArgumentException("Kestrun root path cannot be null or empty.", nameof(kestrunRoot));
-        if (Directory.GetCurrentDirectory() != kestrunRoot)
+    private static string? _kestrunRoot;
+    /// <summary>
+    /// Gets or sets the root path for Kestrun operations.
+    /// </summary>
+        public static string? KestrunRoot
         {
-            Directory.SetCurrentDirectory(kestrunRoot);
+            get => _kestrunRoot;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Kestrun root path cannot be null or empty.", nameof(value));
+                if (Directory.GetCurrentDirectory() != value)
+                {
+                    Directory.SetCurrentDirectory(value);
+                }
+                _kestrunRoot = value;
+            }
         }
-        KestrunRoot = kestrunRoot;
-    }
+
+
+    /// <summary>
+    /// Creates a new KestrunHost instance using the provided factory function.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to create.</param>
+    /// <param name="factory">A factory function that returns a new KestrunHost instance.</param>
+    /// <param name="setAsDefault">Whether to set this instance as the default.</param>
+    /// <returns>The created KestrunHost instance.</returns>
     public static KestrunHost Create(string name, Func<KestrunHost> factory, bool setAsDefault = false)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -45,6 +62,13 @@ public static class KestrunHostManager
 
         return host;
     }
+    /// <summary>
+    /// Creates a new KestrunHost instance with the specified name and optional module paths, using the default logger.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to create.</param>
+    /// <param name="modulePathsObj">Optional array of module paths to load.</param>
+    /// <param name="setAsDefault">Whether to set this instance as the default.</param>
+    /// <returns>The created KestrunHost instance.</returns>
     public static KestrunHost Create(string name,
          string[]? modulePathsObj = null, bool setAsDefault = false)
     {
@@ -52,6 +76,14 @@ public static class KestrunHostManager
         return Create(name, Log.Logger, modulePathsObj, setAsDefault);
     }
 
+    /// <summary>
+    /// Creates a new KestrunHost instance with the specified name, logger, root path, and optional module paths.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to create.</param>
+    /// <param name="logger">The Serilog logger to use for the host.</param>
+    /// <param name="modulePathsObj">Optional array of module paths to load.</param>
+    /// <param name="setAsDefault">Whether to set this instance as the default.</param>
+    /// <returns>The created KestrunHost instance.</returns>
     public static KestrunHost Create(string name, Serilog.ILogger logger,
          string[]? modulePathsObj = null, bool setAsDefault = false)
     {
@@ -74,14 +106,33 @@ public static class KestrunHostManager
     }
 
 
+    /// <summary>
+    /// Attempts to retrieve a KestrunHost instance by its name.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to retrieve.</param>
+    /// <param name="host">When this method returns, contains the KestrunHost instance associated with the specified name, if found; otherwise, null.</param>
+    /// <returns>True if the instance was found; otherwise, false.</returns>
     public static bool TryGet(string name, out KestrunHost? host) =>
         _instances.TryGetValue(name, out host);
 
+    /// <summary>
+    /// Retrieves a KestrunHost instance by its name.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to retrieve.</param>
+    /// <returns>The KestrunHost instance if found; otherwise, null.</returns>
     public static KestrunHost? Get(string name) =>
         _instances.TryGetValue(name, out var host) ? host : null;
 
+    /// <summary>
+    /// Gets the default KestrunHost instance, if one has been set.
+    /// </summary>
     public static KestrunHost? Default => _defaultName != null && _instances.TryGetValue(_defaultName, out var host) ? host : null;
 
+    /// <summary>
+    /// Sets the specified KestrunHost instance as the default.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to set as default.</param>
+    /// <exception cref="InvalidOperationException">Thrown if no instance with the specified name exists.</exception>
     public static void SetDefault(string name)
     {
         if (!_instances.ContainsKey(name))
@@ -90,6 +141,11 @@ public static class KestrunHostManager
         _defaultName = name;
     }
 
+    /// <summary>
+    /// Starts the specified KestrunHost instance asynchronously.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to start.</param>
+    /// <param name="ct">A cancellation token to observe while waiting for the task to complete.</param>
     public static async Task StartAsync(string name, CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -111,6 +167,11 @@ public static class KestrunHostManager
         }
     }
 
+    /// <summary>
+    /// Stops the specified KestrunHost instance asynchronously.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to stop.</param>
+    /// <param name="ct">A cancellation token to observe while waiting for the task to complete.</param>
     public static async Task StopAsync(string name, CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -132,6 +193,10 @@ public static class KestrunHostManager
         }
     }
 
+    /// <summary>
+    /// Stops all KestrunHost instances asynchronously.
+    /// </summary>
+    /// <param name="ct">A cancellation token to observe while waiting for the tasks to complete.</param>
     public static async Task StopAllAsync(CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -142,6 +207,10 @@ public static class KestrunHostManager
         }
     }
 
+    /// <summary>
+    /// Destroys the specified KestrunHost instance and disposes its resources.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to destroy.</param>
     public static void Destroy(string name)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -154,6 +223,9 @@ public static class KestrunHostManager
         }
     }
 
+    /// <summary>
+    /// Destroys all KestrunHost instances and disposes their resources.
+    /// </summary>
     public static void DestroyAll()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
