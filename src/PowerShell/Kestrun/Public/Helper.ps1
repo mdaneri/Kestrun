@@ -112,7 +112,7 @@ function Resolve-KrPath {
 
         $p3 = & $expand $Path
 
-        if($KestrunRoot) {
+        if ($KestrunRoot) {
             # Use the Kestrun root as base
             $RelativeBasePath = $script:KestrunRoot
         }
@@ -147,4 +147,72 @@ function Resolve-KrPath {
 
 function Get-KestrunRoot {
     return $script:KestrunRoot
+}
+
+function Write-KrHost {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+    [CmdletBinding(DefaultParameterSetName = 'inbuilt')]
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        [Alias('Message')]
+        [object]
+        $Object,
+
+        [Parameter()]
+        [System.ConsoleColor]
+        $ForegroundColor,
+
+        [switch]
+        $NoNewLine,
+
+        [Parameter( Mandatory = $true, ParameterSetName = 'object')]
+        [switch]
+        $Explode,
+
+        [Parameter( Mandatory = $false, ParameterSetName = 'object')]
+        [switch]
+        $ShowType,
+
+        [Parameter( Mandatory = $false, ParameterSetName = 'object')]
+        [string]
+        $Label )
+    
+    process {
+
+        if ($Explode.IsPresent ) {
+            if ($null -eq $Object) {
+                if ($ShowType) {
+                    $Object = "`tNull Value"
+                }
+            }
+            else {
+                $type = $Object.gettype().FullName
+                $Object = $Object | Out-String
+                if ($ShowType) {
+                    $Object = "`tTypeName: $type`n$Object"
+                }
+            }
+            if ($Label) {
+                $Object = "`tName: $Label $Object"
+            }
+
+        }
+
+        if ($ForegroundColor) {
+            if ($pipelineValue.Count -gt 1) {
+                $Object | Write-Host -ForegroundColor $ForegroundColor -NoNewline:$NoNewLine
+            }
+            else {
+                Write-Host -Object $Object -ForegroundColor $ForegroundColor -NoNewline:$NoNewLine
+            }
+        }
+        else {
+            if ($pipelineValue.Count -gt 1) {
+                $Object | Write-Host -NoNewline:$NoNewLine
+            }
+            else {
+                Write-Host -Object $Object -NoNewline:$NoNewLine
+            }
+        }
+    }
 }

@@ -20,7 +20,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
 using Kestrun.Security;
-using Microsoft.AspNetCore.Http;          // ISecurityTokenValidator
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authentication;          // ISecurityTokenValidator
 
 
 /*
@@ -42,8 +43,8 @@ $token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificate
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
 
 #Form
-Invoke-WebRequest -Uri https://localhost:5001/cookie/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
-Invoke-WebRequest -Uri https://localhost:5001/cookie/secure -SkipCertificateCheck -WebSession $authSession
+Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
+Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession
 Invoke-WebRequest -Uri "https://localhost:5001/cookie/login" -SkipCertificateCheck -Method Post -Form @{ username = 'admin'; password = 'secret' } -WebSession $session -Verbose
 */
 
@@ -206,16 +207,16 @@ server.AddResponseCompression(options =>
      validationParameters: builderResult.GetValidationParameters())
 
 .AddCookieAuthentication(
-    scheme: "Cookie",
-    loginPath: "/account/login",
+    scheme: "Cookies",
+    loginPath: "/cookies/login",
     configure: opts =>
     {
         opts.Cookie.Name = "Kestrun.Cookie";
         opts.Cookie.HttpOnly = true;
         opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        opts.LoginPath = "/account/login";
-        opts.LogoutPath = "/account/logout";
-        opts.AccessDeniedPath = "/account/access-denied";
+        opts.LoginPath = "/cookies/login";
+        opts.LogoutPath = "/cookies/logout";
+        opts.AccessDeniedPath = "/cookies/access-denied";
         opts.SlidingExpiration = true;
         opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         opts.Cookie.SameSite = SameSiteMode.Strict;
@@ -291,77 +292,77 @@ server.EnableConfiguration();
                                     Assembly[]? extraRefs = null)*/
 // 4. Add routes
 server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+    if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $Context.HttpContext.User.Identity.Name
+    $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicPowershellScheme]);
 
 server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+    if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $Context.HttpContext.User.Identity.Name
+    $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicCSharpScheme]);
 
 
 server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+    if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $Context.HttpContext.User.Identity.Name
+    $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native C# code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
 server.AddNativeRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
-    var user = ctx.HttpContext.User?.Identity?.Name;
+    var user = ctx.User?.Identity?.Name;
     await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated using simple key matching.", 200);
 
 }, [ApiKeySimple]);
 
 
 server.AddMapRoute("/secure/key/ps/hello", HttpVerb.Get, """
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
+    if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
         return
     }
 
-    $user = $Context.HttpContext.User.Identity.Name
+    $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code."
     
 """, ScriptLanguage.PowerShell, [ApiKeyPowerShell]);
 
 
 server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
-    if (!Context.HttpContext.User.Identity.IsAuthenticated)
+    if (!Context.User.Identity.IsAuthenticated)
     {
         Context.Response.WriteErrorResponse("Access denied", 401);
         return;
     }
 
-    var user = Context.HttpContext.User.Identity.Name;
+    var user = Context.User.Identity.Name;
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
 """, ScriptLanguage.CSharp, [ApiKeyCSharp]);
 
 
 server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
-    if (!Context.HttpContext.User.Identity.IsAuthenticated)
+    if (!Context.User.Identity.IsAuthenticated)
     {
         Context.Response.WriteErrorResponse("Access denied", 401);
         return;
     }
 
-    var user = Context.HttpContext.User.Identity.Name;
+    var user = Context.User.Identity.Name;
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
@@ -391,20 +392,50 @@ server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
     }
 }, [BasicNativeScheme]);
 
-server.AddNativeRoute("/cookie/login", HttpVerb.Post, async (ctx) =>
+server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
+{ 
+    await ctx.Response.WriteTextResponseAsync(@"
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <title>Login</title>
+  </head>
+  <body>
+    <h1>Login</h1>
+    <form method='post' action='/cookies/login'>
+      <label>
+        Username:
+        <input type='text' name='username' required />
+      </label><br/>
+      <label>
+        Password:
+        <input type='password' name='password' required />
+      </label><br/>
+      <button type='submit'>Log In</button>
+    </form>
+  </body>
+</html>", statusCode: 200,contentType: "text/html; charset=UTF-8");
+});
+server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
 {
     var form = ctx.Request.Form;
+    if (form == null)
+    {
+        await ctx.Response.WriteJsonResponseAsync(new { success = false, error = "Form data missing" });
+        return;
+    }
     var username = form["username"];
     var password = form["password"];
     if (username == "admin" && password == "secret")
     {
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, username)
+            new(ClaimTypes.Name, username)
         };
         var identity = new ClaimsIdentity(claims, "Cookies");
         var principal = new ClaimsPrincipal(identity);
-        // await ctx.HttpContext.Request.SignInAsync("Cookies", principal);
+        await ctx.HttpContext.SignInAsync("Cookies", principal);
         await ctx.Response.WriteJsonResponseAsync(new { success = true });
     }
     else
@@ -413,7 +444,15 @@ server.AddNativeRoute("/cookie/login", HttpVerb.Post, async (ctx) =>
     }
 });
 
-server.AddMapRoute("/cookie/login2", HttpVerb.Post, """
+server.AddNativeRoute("/cookies/logout", HttpVerb.Get, async ctx =>
+{
+    await ctx.HttpContext.SignOutAsync("Cookies");
+    // After logout, send them back to login
+    ctx.Response.StatusCode = 302;
+    ctx.Response.Headers["Location"] = "/cookies/login";
+}, ["Cookies"]);
+
+server.AddMapRoute("/cookies/login2", HttpVerb.Post, """
     write-host 'Processing login request...'
     # Check if the form contains the expected fields
     Write-KrInformationLog -MessageTemplate 'Received login request with form data: {@Position}' -PropertyValues $Context.Request.Form
@@ -432,17 +471,38 @@ server.AddMapRoute("/cookie/login2", HttpVerb.Post, """
     }
 """, ScriptLanguage.PowerShell);
 
-server.AddMapRoute("/cookie/secure", HttpVerb.Get, @"
-
-    if (!$Context.Request.HttpContext.User.Identity.IsAuthenticated) {
-      $Context.Response.StatusCode = 302
-      $Context.Response.Headers['Location'] = '/login'
+server.AddMapRoute("/cookies/secure2", HttpVerb.Get, """
+    # Check if the user is authenticated
+    if (!$Context.User.Identity.IsAuthenticated) {
+        Write-KrRedirectResponse -Location '/cookies/login'
     } else {
-      $Context.Response.Write('Hello, '+$Context.Request.HttpContext.User.Identity.Name)
+        Write-KrTextResponse -InputObject ('Hello, '+$Context.User.Identity.Name) -ContentType 'text/plain'
     }
-  ", ScriptLanguage.PowerShell, ["Cookies"]);
+  """, ScriptLanguage.PowerShell, ["Cookies"]);
+
+server.AddMapRoute("/cookies/secure3", HttpVerb.Get, """
+   if (Context.User?.Identity == null || !Context.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteRedirectResponse("/cookies/login");
+    }
+    else
+    {
+       await Context.Response.WriteTextResponseAsync($"Hello, {Context.User.Identity.Name}");
+    }
+""", ScriptLanguage.CSharp, ["Cookies"]);
 
 
+server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
+{
+    if (ctx.User?.Identity == null || !ctx.User.Identity.IsAuthenticated)
+    {
+        ctx.Response.WriteRedirectResponse("/cookies/login");
+    }
+    else
+    {
+        await ctx.Response.WriteTextResponseAsync($"Hello, {ctx.User.Identity.Name}");
+    }
+}, ["Cookies"]);
 
 await server.RunUntilShutdownAsync(
   consoleEncoding: Encoding.UTF8,

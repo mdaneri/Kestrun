@@ -1,5 +1,6 @@
 
 
+using System.Security.Claims;
 using Kestrun.Models;
 
 namespace Kestrun.Hosting;
@@ -25,4 +26,9 @@ public sealed record KestrunContext(KestrunRequest Request, KestrunResponse Resp
     /// Gets the collection of key/value pairs associated with the current HTTP context.
     /// </summary>
     public IDictionary<object, object?> Items => HttpContext.Items;
+
+    /// <summary>
+    /// Gets the user associated with the current HTTP context.
+    /// </summary>
+    public ClaimsPrincipal User => HttpContext.User;
 }

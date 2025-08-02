@@ -57,6 +57,7 @@ Add-BuildTask Help {
     Write-Host '- UpdatePSD1: Updates the Kestrun.psd1 manifest.'
     Write-Host '- Generate-LargeFile: Generates a large test file.'
     Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
+    Write-Host '- ThirdPartyNotices: Generates third-party notices.'
     Write-Host '- All: Runs Clean, Build, and Test tasks in sequence.'
     Write-Host
 }
