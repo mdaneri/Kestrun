@@ -11,6 +11,9 @@ using Serilog;
 
 namespace Kestrun.Utilities
 {
+    /// <summary>
+    /// Provides extension methods for hosting Kestrun servers.
+    /// </summary>
     public static class HostingExtensions
     {
         /// <summary>

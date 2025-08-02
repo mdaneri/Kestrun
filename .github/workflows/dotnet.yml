@@ -42,10 +42,14 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: 🧪 Run C# Tests
-      run: dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj
+    - name: 🧰 Install Module Invoke-Build
+      shell: pwsh
+      run: |
+        if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
+          Install-Module -Name InvokeBuild -Force -Scope CurrentUser
+        }
 
-    - name: 🔧 Ensure Pester Installed
+    - name: 🧰 Install Module Pester
       shell: pwsh
       run: |
         if (-not (Get-Module -ListAvailable -Name Pester)) {
@@ -57,7 +61,13 @@ jobs:
       run: |
         Get-Module Pester -ListAvailable | Select-Object Name, Version, Path
 
-    - name: 🧪 Run PowerShell Tests
+    - name: 🔧 Run C# Build
       shell: pwsh
-      run: Invoke-Pester -CI -Path tests/PowerShell.Tests/Kestrun.Tests
+      run: |
+        Invoke-Build Build
+
+    - name: 🧪 Run Tests
+      shell: pwsh
+      run: |
+        Invoke-Build Test
     

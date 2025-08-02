@@ -129,9 +129,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Certificate" Version="8.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.18" />
-
+    
+    <!-- Serilog -->
+    <PackageReference Include="Serilog.Sinks.Http" Version="9.1.0" />
+    
     <!-- Hosting & DI -->
-
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
@@ -160,6 +162,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.7" />
 
+
+    <!-- Serilog -->
+    <PackageReference Include="Serilog.Sinks.Http" Version="9.1.1" />
+
     <!-- Hosting & DI -->
     <!--<PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
     <PackageReference Update="Microsoft.Extensions.ObjectPool" Version="9.0.7" />
@@ -186,7 +192,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Serilog.Sinks.Http" Version="8.0.0" />
+  
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogServer" Version="1.1.1" />
 

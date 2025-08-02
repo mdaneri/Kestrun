@@ -14,6 +14,12 @@ public static class XmlUtil
 {
     private static readonly XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
 
+    /// <summary>
+    /// Converts an object to an <see cref="XElement"/> with the specified name, handling nulls, primitives, dictionaries, enumerables, and complex types.
+    /// </summary>
+    /// <param name="name">The name of the XML element.</param>
+    /// <param name="value">The object to convert to XML.</param>
+    /// <returns>An <see cref="XElement"/> representing the object.</returns>
     public static XElement ToXml(string name, object? value)
     {
         // 1️⃣ null  → <name xsi:nil="true"/>

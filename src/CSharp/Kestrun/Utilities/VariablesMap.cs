@@ -6,8 +6,17 @@ using Kestrun.SharedState;
 
 namespace Kestrun.Utilities;
 
+/// <summary>
+/// Provides utility methods for mapping and flattening variables from various sources.
+/// </summary>
 public static class VariablesMap
 {
+    /// <summary>
+    /// Populates the provided dictionary with variables from the request context and shared state store.
+    /// </summary>
+    /// <param name="ctx">The Kestrun context containing request information.</param>
+    /// <param name="vars">The dictionary to populate with variables.</param>
+    /// <returns>True if variables were successfully mapped; otherwise, false.</returns>
     public static bool GetVariablesMap(KestrunContext ctx, ref Dictionary<string, object?> vars)
     {
         // ① Initialize the dictionary
@@ -16,6 +25,11 @@ public static class VariablesMap
         && GetSharedStateStore(ref vars); // ③ Add shared state variables
     }
 
+    /// <summary>
+    /// Populates the provided dictionary with variables from the shared state store.
+    /// </summary>
+    /// <param name="vars">The dictionary to populate with shared state variables.</param>
+    /// <returns>True if variables were successfully mapped; otherwise, false.</returns>
     public static bool GetSharedStateStore(ref Dictionary<string, object?> vars)
     {
         vars ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
@@ -25,6 +39,12 @@ public static class VariablesMap
         return true;
     }
 
+    /// <summary>
+    /// Populates the provided dictionary with common request and server properties from the Kestrun context.
+    /// </summary>
+    /// <param name="ctx">The Kestrun context containing request information.</param>
+    /// <param name="vars">The dictionary to populate with common properties.</param>
+    /// <returns>True if properties were successfully mapped; otherwise, false.</returns>
     public static bool GetCommonProperties(KestrunContext ctx, ref Dictionary<string, object?> vars)
     {
         // ① Initialize the dictionary
@@ -49,9 +69,17 @@ public static class VariablesMap
     }
 
     /// <summary>
-    /// If value is IDictionary, serialize it and also add sub-keys;
-    /// otherwise just add the single entry.
+    /// Flattens a given value into a dictionary by serializing dictionaries as JSON and adding sub-keys for their entries.
     /// </summary>
+    /// <param name="vars">
+    /// The dictionary to populate with flattened key-value pairs.
+    /// </param>
+    /// <param name="key">
+    /// The base key under which the value or its sub-keys will be stored.
+    /// </param>
+    /// <param name="value">
+    /// The value to flatten, which may be a scalar, object, or dictionary.
+    /// </param>
     private static void FlattenInto(
         Dictionary<string, object?> vars,
         string key,
