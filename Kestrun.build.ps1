@@ -21,9 +21,25 @@ if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.My
     Write-Host 'Please use Invoke-Build to execute the tasks defined in this script or Invoke-Build Help for more information.' -ForegroundColor Yellow
     return
 }
-
- 
-
+function Get-Version {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FileVersion
+    )
+    if (-not (Test-Path -Path $FileVersion)) {
+        throw "File version file not found: $FileVersion"
+    }
+    $versionData = Get-Content -Path $FileVersion | ConvertFrom-Json
+    $Version = $versionData.Version
+    $Release = $versionData.Release
+    $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))? $Release : "$Release.$($versionData.Iteration)"
+    if ($Release -ne 'Stable') {
+        $Version = "$Version-$ReleaseIteration"
+    }
+    return $Version
+}
 
 # Load the InvokeBuild module
 Add-BuildTask Default Help
@@ -54,13 +70,7 @@ Add-BuildTask "Build" "Clean", {
     Write-Host "Building solution..."
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
-        if (-not (Test-Path -Path $FileVersion)) {
-            throw "File version file not found: $FileVersion"
-        }
-        $versionData = Get-Content -Path $FileVersion | ConvertFrom-Json
-        $Version = $versionData.Version
-        $Release = $versionData.Release
-        $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))? $Release : "$Release.$($versionData.Iteration)"
+        $Version = Get-Version -FileVersion $FileVersion 
  
     }
     elseif ($PSCmdlet.ParameterSetName -eq 'Version') {
@@ -71,12 +81,10 @@ Add-BuildTask "Build" "Clean", {
                 Iteration = $Iteration
             } | ConvertTo-Json | Set-Content -Path $FileVersion
         }
+        $Version = Get-Version -FileVersion $FileVersion
     }
     else {
         throw "Invalid parameter set. Use either 'FileVersion' or 'Version'."
-    }
-    if ($Release -ne 'Stable') {
-        $Version = "$Version-$ReleaseIteration"
     }
 
     dotnet build .\Kestrun.sln -c $Configuration -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion
@@ -114,9 +122,9 @@ Add-BuildTask  "Clean-LargeFile" {
     Remove-Item -Path ".\examples\files\LargeFiles\*" -Force
 }
 
-Add-BuildTask "Generate-License" {
-    Write-Host "Generating LICENSES file..."
-    nuget-license -i .\src\CSharp\Kestrun\Kestrun.csproj  -fo licenses.md -o markdown
+Add-BuildTask "ThirdPartyNotices" {
+    Write-Host "Generating third-party notices..."
+    & .\Utility\Generate-ThirdPartyNotices.ps1 -Project ".\src\CSharp\Kestrun\Kestrun.csproj" -Path ".\THIRD-PARTY-NOTICES.md" -Version (Get-Version -FileVersion $FileVersion)
 }
 
 Add-BuildTask All "Clean", "Build", "Test"

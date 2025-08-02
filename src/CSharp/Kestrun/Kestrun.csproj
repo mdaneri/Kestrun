@@ -194,7 +194,6 @@
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
-    <PackageReference Include="Serilog.Sinks.SyslogServer" Version="1.1.1" />
 
     <!-- Microsoft.AspNetCore -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.0" />
