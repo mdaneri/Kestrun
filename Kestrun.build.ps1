@@ -114,4 +114,9 @@ Add-BuildTask  "Clean-LargeFile" {
     Remove-Item -Path ".\examples\files\LargeFiles\*" -Force
 }
 
+Add-BuildTask "Generate-License" {
+    Write-Host "Generating LICENSES file..."
+    nuget-license -i .\src\CSharp\Kestrun\Kestrun.csproj  -fo licenses.md -o markdown
+}
+
 Add-BuildTask All "Clean", "Build", "Test"
