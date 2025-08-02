@@ -171,10 +171,10 @@
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.7" />
 
     <!-- Roslyn Scripting -->
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.13.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.13.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.13.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" /> 
 
   </ItemGroup>
 
@@ -186,13 +186,13 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Serilog.Sinks.Http" Version="9.1.1" />
+    <PackageReference Include="Serilog.Sinks.Http" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.SyslogServer" Version="1.1.1" />
 
     <!-- Microsoft.AspNetCore -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt"     Version="8.13.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.13.0" />
 
     <!-- Scripting Engines -->
