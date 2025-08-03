@@ -406,6 +406,40 @@ server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (ctx) =>
 });
 
 
+
+server.AddMapRoute("/status", HttpVerb.Get, """
+    $html = @'
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Server Status</title>
+</head>
+<body>
+  <h1>Status for {{ApplicationName}}</h1>
+  <ul>
+    <li>Path: {{Request.Path}}</li>
+    <li>Method: {{Request.Method}}</li>
+    <li>Time: {{Timestamp}}</li>
+    <li>Hits: {{Visits}}</li>
+  </ul>
+</body>
+</html>
+'@
+
+    Expand-KrObject -inputObject $Context  -Label "Context" 
+
+    Expand-KrObject -inputObject $Context.Request  -Label "Request" 
+
+    Write-KrHtmlResponse -Template $html -Variables @{
+        ApplicationName = $server.ApplicationName
+        Request         = $Context.Request
+        Timestamp       = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        Visits          = Get-Random
+    } 
+""", ScriptLanguage.PowerShell);
+
 await server.RunUntilShutdownAsync(
     consoleEncoding: Encoding.UTF8,
     onStarted: () => Console.WriteLine("Server ready 🟢"),

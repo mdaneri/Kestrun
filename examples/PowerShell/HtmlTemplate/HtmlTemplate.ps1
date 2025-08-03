@@ -55,14 +55,16 @@ Add-KrListener -Port 5000 -PassThru| Add-KrPowerShellRuntime -PassThru|
 
 Enable-KrConfiguration -PassThru
 
-  
+
+Add-KrHtmlTemplateRoute -Path '/status' -HtmlTemplatePath "./Pages/status.html"
+
+# Inject the global variable into the route
 Add-KrMapRoute -Verbs Get -Path '/visit' -ScriptBlock {
     # increment the injected variable
     $Visits.Count++
 
     Write-KrTextResponse -inputObject "Incremented to $($Visits.Count)" -statusCode 200
 }
-Add-KrHtmlTemplateRoute -Path '/status' -HtmlTemplatePath "./Pages/status.html"
 
 
 # Start the server (blocking)

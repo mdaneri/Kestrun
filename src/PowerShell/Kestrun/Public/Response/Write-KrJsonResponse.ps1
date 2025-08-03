@@ -28,7 +28,7 @@ function Write-KrJsonResponse {
     if ($null -ne $Context.Response) {
         $ContentType = [string]::IsNullOrEmpty($ContentType) ? "application/json" : $ContentType;
         $Context.Response.WriteTextResponse((ConvertTo-Json -InputObject $InputObject -Depth $Depth -Compress:$Compress), $StatusCode, $ContentType)
-        
+
         <# To use the C# method directly, uncomment the following lines:
         # Create a new JsonSerializerSettings object with the specified options
         $serializerSettings = [Newtonsoft.Json.JsonSerializerSettings]::new()

@@ -14,12 +14,16 @@ using Kestrun.Scripting;
 
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides extension methods for validating C# scripts in the context of a KestrunHost.
+/// </summary>
 public static class KestrunHostScriptValidationExtensions
 {
     /// <summary>
     /// Validates a C# script and returns compilation diagnostics without throwing exceptions.
     /// Useful for testing scripts before adding routes.
     /// </summary>
+    /// <param name="host">The KestrunHost instance used for validation</param>
     /// <param name="code">The C# script code to validate</param>
     /// <param name="extraImports">Optional additional imports</param>
     /// <param name="extraRefs">Optional additional assembly references</param>
@@ -74,6 +78,7 @@ public static class KestrunHostScriptValidationExtensions
     /// <summary>
     /// Checks if a C# script has compilation errors.
     /// </summary>
+    /// <param name="host">The KestrunHost instance used for validation</param>
     /// <param name="code">The C# script code to check</param>
     /// <param name="extraImports">Optional additional imports</param>
     /// <param name="extraRefs">Optional additional assembly references</param>
@@ -93,6 +98,7 @@ public static class KestrunHostScriptValidationExtensions
     /// <summary>
     /// Gets formatted error information for a C# script.
     /// </summary>
+    /// <param name="host">The KestrunHost instance used for validation</param>
     /// <param name="code">The C# script code to check</param>
     /// <param name="extraImports">Optional additional imports</param>
     /// <param name="extraRefs">Optional additional assembly references</param>

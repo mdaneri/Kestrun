@@ -850,103 +850,177 @@ public class KestrunResponse
     /// <param name="template">The template string containing placeholders.</param>
     /// <param name="vars">A dictionary of variables to replace in the template.</param>
     /// <returns>The rendered string with placeholders replaced by variable values.</returns>
-    private static string RenderInlineTemplate(string template, IReadOnlyDictionary<string, object?> vars)
+    private static string RenderInlineTemplate(
+     string template,
+     IReadOnlyDictionary<string, object?> vars)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Rendering inline template, TemplateLength={TemplateLength}, VarsCount={VarsCount}", template.Length, vars.Count);
+            Log.Debug("Rendering inline template, TemplateLength={TemplateLength}, VarsCount={VarsCount}",
+                      template?.Length ?? 0, vars?.Count ?? 0);
+
+        if (string.IsNullOrEmpty(template))
+            return string.Empty;
+
+        if (vars is null || vars.Count == 0)
+            return template;
+
         var sb = new StringBuilder(template.Length);
+
         for (int i = 0; i < template.Length; i++)
         {
+            // opening “{{”
             if (template[i] == '{' && i + 1 < template.Length && template[i + 1] == '{')
             {
-                int start = i + 2;
+                int start = i + 2;                                        // after “{{”
                 int end = template.IndexOf("}}", start, StringComparison.Ordinal);
-                if (end > start)
+
+                if (end > start)                                          // found closing “}}”
                 {
-                    var key = template[start..end].Trim();
-                    if (vars.TryGetValue(key, out var val) && val is not null)
-                        sb.Append(val);
-                    i = end + 1;
+                    var rawKey = template[start..end].Trim();
+
+                    if (TryResolveValue(rawKey, vars, out var value) && value is not null)
+                        sb.Append(value);
+                    else
+                        sb.Append("{{").Append(rawKey).Append("}}");      // leave it as-is if unknown
+
+                    i = end + 1;    // jump past the “}}”
                     continue;
                 }
             }
+
+            // ordinary character
             sb.Append(template[i]);
         }
+
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Rendered template length: {RenderedLength}", sb.Length);
+
         return sb.ToString();
+    }
+
+
+    /// <summary>
+    /// Resolves a dotted path like “Request.Path” through nested dictionaries
+    /// and/or object properties (case-insensitive).
+    /// </summary>
+    private static bool TryResolveValue(
+        string path,
+        IReadOnlyDictionary<string, object?> root,
+        out object? value)
+    {
+        value = null;
+
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        object? current = root;
+        foreach (var segment in path.Split('.'))
+        {
+            if (current is null)
+                return false;
+
+            // ① Handle dictionary look-ups (IReadOnlyDictionary or IDictionary)
+            if (current is IReadOnlyDictionary<string, object?> roDict)
+            {
+                if (!roDict.TryGetValue(segment, out current))
+                    return false;
+                continue;
+            }
+
+            if (current is IDictionary dict)
+            {
+                if (!dict.Contains(segment))
+                    return false;
+                current = dict[segment];
+                continue;
+            }
+
+            // ② Handle property look-ups via reflection
+            var prop = current.GetType().GetProperty(
+                segment,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+            if (prop is null)
+                return false;
+
+            current = prop.GetValue(current);
+        }
+
+        value = current;
+        return true;
     }
 
 
     /// <summary>
     /// Asynchronously writes an HTML response, rendering the provided template string and replacing placeholders with values from the given dictionary.
     /// </summary>
-    /// <param name="html">The HTML template string containing placeholders.</param>
+    /// <param name="template">The HTML template string containing placeholders.</param>
     /// <param name="vars">A dictionary of variables to replace in the template.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     public async Task WriteHtmlResponseAsync(
-        string html,
+        string template,
         IReadOnlyDictionary<string, object?>? vars,
         int statusCode = 200)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing HTML response (async), StatusCode={StatusCode}, TemplateLength={TemplateLength}", statusCode, html.Length);
+            Log.Debug("Writing HTML response (async), StatusCode={StatusCode}, TemplateLength={TemplateLength}", statusCode, template.Length);
         if (vars is null || vars.Count == 0)
         {
-            await WriteTextResponseAsync(html, statusCode, "text/html");
+            await WriteTextResponseAsync(template, statusCode, "text/html");
         }
         else
         {
-            await WriteTextResponseAsync(RenderInlineTemplate(html, vars), statusCode, "text/html");
+            await WriteTextResponseAsync(RenderInlineTemplate(template, vars), statusCode, "text/html");
         }
     }
 
     /// <summary>
     /// Asynchronously reads an HTML file, merges in placeholders from the provided dictionary, and writes the result as a response.
     /// </summary>
-    /// <param name="htmlFilePath">The path to the HTML file to read.</param>
+    /// <param name="filePath">The path to the HTML file to read.</param>
     /// <param name="vars">A dictionary of variables to replace in the template.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     public async Task WriteHtmlResponseFromFileAsync(
-        string htmlFilePath,
+        string filePath,
         IReadOnlyDictionary<string, object?> vars,
         int statusCode = 200)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
-            Log.Debug("Writing HTML response from file (async), FilePath={FilePath}, StatusCode={StatusCode}", htmlFilePath, statusCode);
-        if (!File.Exists(htmlFilePath))
+            Log.Debug("Writing HTML response from file (async), FilePath={FilePath}, StatusCode={StatusCode}", filePath, statusCode);
+        if (!File.Exists(filePath))
         {
-            WriteTextResponse($"<!-- File not found: {htmlFilePath} -->", 404, "text/html");
+            WriteTextResponse($"<!-- File not found: {filePath} -->", 404, "text/html");
             return;
         }
 
-        var template = await File.ReadAllTextAsync(htmlFilePath);
-        var html = RenderInlineTemplate(template, vars);
-        await WriteTextResponseAsync(html, statusCode, "text/html");
+        var template = await File.ReadAllTextAsync(filePath);
+        WriteHtmlResponseAsync(template, vars, statusCode).GetAwaiter().GetResult();
     }
 
 
     /// <summary>
     /// Renders the given HTML string with placeholders and writes it as a response.
     /// </summary>
-    /// <param name="htmlTemplate">The HTML template string containing placeholders.</param>
+    /// <param name="template">The HTML template string containing placeholders.</param>
     /// <param name="vars">A dictionary of variables to replace in the template.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     public void WriteHtmlResponse(
-        string htmlTemplate,
+        string template,
         IReadOnlyDictionary<string, object?>? vars,
         int statusCode = 200)
     {
-        WriteHtmlResponseAsync(htmlTemplate, vars, statusCode).GetAwaiter().GetResult();
+        WriteHtmlResponseAsync(template, vars, statusCode).GetAwaiter().GetResult();
     }
 
     /// <summary>
     /// Reads an .html file, merges in placeholders, and writes it.
     /// </summary>
     public void WriteHtmlResponseFromFile(
-        string htmlFilePath,
+        string filePath,
         IReadOnlyDictionary<string, object?> vars,
         int statusCode = 200)
     {
-        WriteHtmlResponseFromFileAsync(htmlFilePath, vars, statusCode).GetAwaiter().GetResult();
+        WriteHtmlResponseFromFileAsync(filePath, vars, statusCode).GetAwaiter().GetResult();
     }
 
     #endregion

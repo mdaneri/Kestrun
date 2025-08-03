@@ -145,6 +145,6 @@ if ($funcs) {
 
 if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
     # Set the Kestrun root path for the host manager
-    [Kestrun.KestrunHostManager]::SetKestrunRoot($script:KestrunRoot)
+    [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
 }
 # Ensure that the Kestrun host manager is destroyed to clean up resources.

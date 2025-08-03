@@ -1,4 +1,41 @@
 function Write-KrLog {
+	<#
+	.SYNOPSIS
+		Logs a message with the specified log level and parameters.
+	.DESCRIPTION
+		This function logs a message using the specified log level and parameters.
+		It supports various log levels and can output the formatted message to the pipeline if requested.
+	.PARAMETER LogLevel
+		The log level to use for the log event.
+	.PARAMETER MessageTemplate
+		The message template describing the event.
+	.PARAMETER Name
+		The name of the logger to use. If not specified, the default logger is used.
+	.PARAMETER Exception
+		The exception related to the event.
+	.PARAMETER ErrorRecord
+		The error record related to the event.
+	.PARAMETER PropertyValues
+		Objects positionally formatted into the message template.
+	.PARAMETER PassThru
+		If specified, outputs the formatted message into the pipeline.
+	.INPUTS
+		MessageTemplate - Message template describing the event.
+	.OUTPUTS
+		None or MessageTemplate populated with PropertyValues into pipeline if PassThru specified.
+	.EXAMPLE
+		PS> Write-KrLog -LogLevel Information -MessageTemplate 'Info log message
+		This example logs a simple information message.
+	.EXAMPLE
+		PS> Write-KrLog -LogLevel Warning -MessageTemplate 'Processed {@Position} in {Elapsed:000} ms.' -PropertyValues $position, $elapsedMs
+		This example logs a warning message with formatted properties.
+	.EXAMPLE
+		PS> Write-KrLog -LogLevel Error -MessageTemplate 'Error occurred' -Exception ([System.Exception]::new('Some exception'))
+		This example logs an error message with an exception.
+	.NOTES
+		This function is part of the Kestrun logging framework and is used to log messages at various levels.
+		It can be used in scripts and modules that utilize Kestrun for logging.
+	#>
 	[Cmdletbinding()]
 	param(
 		[Parameter(Mandatory = $true)]
@@ -32,20 +69,26 @@ function Write-KrLog {
 		if ($null -ne $ErrorRecord) {
 
 			if ($null -eq $Exception) {
+				# If Exception is not provided, use the ErrorRecord's Exception
 				$Exception = $ErrorRecord.Exception
 			}
 
 			$Exception = [Kestrun.Logging.Exceptions.WrapperException]::new($Exception, $ErrorRecord)
 		}
+		# If Name is not specified, use the default logger
+		# If Name is specified, get the logger with that name
 		if ([string]::IsNullOrEmpty($Name)) {
 			$Logger = [Kestrun.Logging.LoggerManager]::DefaultLogger
 		}
 		else {
 			$Logger = [Kestrun.Logging.LoggerManager]::Get($Name)
 		}
+		# If Logger is not found, throw an error
+		# This ensures that the logger is registered before logging
 		if ($null -eq $Logger) {
 			throw "Logger with name '$Name' not found. Please ensure it is registered before logging."
 		}
+		# Log the message using the specified log level and parameters
 		switch ($LogLevel) {
 			Verbose {
 				$Logger.Verbose($Exception, $MessageTemplate, $PropertyValues)
@@ -53,7 +96,7 @@ function Write-KrLog {
 			Debug { 
 				$Logger.Debug($Exception, $MessageTemplate, $PropertyValues)
 			}
-			Information { 
+			Information {
 				$Logger.Information($Exception, $MessageTemplate, $PropertyValues)
 			}
 			Warning { 
@@ -66,7 +109,8 @@ function Write-KrLog {
 				$Logger.Fatal($Exception, $MessageTemplate, $PropertyValues)
 			}
 		}
-
+		# If PassThru is specified, output the formatted message into the pipeline
+		# This allows the caller to capture the formatted message if needed
 		if ($PassThru) {
 			Get-KrFormattedMessage -Logger $Logger -LogLevel $LogLevel -MessageTemplate $MessageTemplate -PropertyValues $PropertyValues -Exception $Exception
 		}

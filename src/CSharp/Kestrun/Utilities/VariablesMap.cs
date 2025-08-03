@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Management.Automation.Language;
 using System.Reflection;
 using System.Text.Json;
 using Kestrun.Hosting;
@@ -34,7 +35,9 @@ public static class VariablesMap
     {
         vars ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
         foreach (var kv in SharedStateStore.Snapshot())
-            FlattenInto(vars, kv.Key, kv.Value);
+        {
+            vars[kv.Key] = kv.Value; // 1) top-level JSON
+        }
 
         return true;
     }
@@ -48,9 +51,8 @@ public static class VariablesMap
     public static bool GetCommonProperties(KestrunContext ctx, ref Dictionary<string, object?> vars)
     {
         // ① Initialize the dictionary
-
-        vars["Request.Path"] = ctx.Request.Path;
-        vars["Request.Method"] = ctx.Request.Method;
+        vars["Context"] = ctx;
+        vars["Request"] = ctx.Request;
         vars["QueryString"] = ctx.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString());
         vars["Form"] = ctx.Request.Form;
         vars["Cookies"] = ctx.Request.Cookies;
@@ -68,40 +70,5 @@ public static class VariablesMap
         return true;
     }
 
-    /// <summary>
-    /// Flattens a given value into a dictionary by serializing dictionaries as JSON and adding sub-keys for their entries.
-    /// </summary>
-    /// <param name="vars">
-    /// The dictionary to populate with flattened key-value pairs.
-    /// </param>
-    /// <param name="key">
-    /// The base key under which the value or its sub-keys will be stored.
-    /// </param>
-    /// <param name="value">
-    /// The value to flatten, which may be a scalar, object, or dictionary.
-    /// </param>
-    private static void FlattenInto(
-        Dictionary<string, object?> vars,
-        string key,
-        object? value)
-    {
-        if (value is IDictionary dict)
-        {
-            // 1) top-level JSON
-            vars[key] = JsonSerializer.Serialize(dict);
-
-            // 2) sub-keys
-            foreach (DictionaryEntry entry in dict)
-            {
-                var subKey = $"{key}.{entry.Key}";
-                vars[subKey] = entry.Value;
-            }
-        }
-        else
-        {
-            // simple scalar or other object
-            vars[key] = value;
-        }
-    }
 }
 

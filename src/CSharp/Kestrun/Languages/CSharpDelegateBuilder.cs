@@ -20,6 +20,7 @@ internal static class CSharpDelegateBuilder
     /// <summary>
     /// Builds a C# delegate for handling HTTP requests.
     /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
     /// <param name="code">The C# code to execute.</param>
     /// <param name="log">The logger instance.</param>
     /// <param name="arguments">Arguments to inject as variables into the script.</param>
@@ -125,17 +126,30 @@ internal static class CSharpDelegateBuilder
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),            // System.Private.CoreLib
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),        // System.Linq
             MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location),       // Microsoft.AspNetCore.Http
-            MetadataReference.CreateFromFile(typeof(KestrunResponse).Assembly.Location),    // Kestrun.Response
-            MetadataReference.CreateFromFile(typeof(KestrunRequest).Assembly.Location),     // Kestrun.Request
-            MetadataReference.CreateFromFile(typeof(KestrunContext).Assembly.Location),     // Kestrun.Hosting
-            MetadataReference.CreateFromFile(typeof(SharedStateStore).Assembly.Location),   // Kestrun.SharedState
-            MetadataReference.CreateFromFile(typeof(CsGlobals).Assembly.Location)          // Kestrun.Languages            
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)          // System Console
         };
+        // 2. Reference *your* Kestrun.dll once (contains Model, Hosting, etc.)
+        var kestrunAssembly = typeof(Kestrun.Hosting.KestrunHost).Assembly;               // ← this *is* Kestrun.dll
+        var kestrunRef = MetadataReference.CreateFromFile(kestrunAssembly.Location);
 
+        // 3. Collect every exported namespace that starts with "Kestrun"
+        var kestrunNamespaces = kestrunAssembly
+            .GetExportedTypes()
+            .Select(t => t.Namespace)
+            .Where(ns => ns is { Length: > 0 } && ns.StartsWith("Kestrun", StringComparison.Ordinal))
+            .Distinct()
+            .ToArray();
+        // Convert to MetadataReference for each namespace
+        var platformImports = new[] { "System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http" };
+        // Convert to MetadataReference for each namespace
+        var allImports = platformImports.Concat(kestrunNamespaces);
+        // 4. Create ScriptOptions with all imports and references
+        //    - Use MetadataReference.CreateFromFile() for each assembly reference
+        //    - Use .WithImports() to add all imports
+        //    - Use .WithLanguageVersion() to set the C# language version
         var opts = ScriptOptions.Default
-                   .WithImports("System", "System.Linq", "System.Threading.Tasks",
-                                "Microsoft.AspNetCore.Http")
-                   .WithReferences(coreRefs)                 // ✅ now uses MetadataReference[]
+                   .WithImports(allImports)
+                   .WithReferences(coreRefs.Concat([kestrunRef]))                 // ✅ now uses MetadataReference[]
                    .WithLanguageVersion(languageVersion);
         extraImports ??= ["Kestrun"];
         if (!extraImports.Contains("Kestrun"))

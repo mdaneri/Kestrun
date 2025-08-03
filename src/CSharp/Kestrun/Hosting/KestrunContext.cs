@@ -6,7 +6,7 @@ using Kestrun.Models;
 namespace Kestrun.Hosting;
 
 /// <summary>
-/// Represents the context for a Kestrun request, including the request, response, and HTTP context.
+/// Represents the context for a Kestrun request, including the request, response, HTTP context, and host.
 /// </summary>
 /// <param name="Request">The Kestrun request.</param>
 /// <param name="Response">The Kestrun response.</param>
