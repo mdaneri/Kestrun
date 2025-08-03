@@ -54,7 +54,7 @@ Add-BuildTask Help {
     Write-Host '- Build: Builds the solution.'
     Write-Host '- Test: Runs tests and Pester tests.'
     Write-Host '- Package: Packages the solution.'
-    Write-Host '- UpdatePSD1: Updates the Kestrun.psd1 manifest.'
+    Write-Host '- Manifest: Updates the Kestrun.psd1 manifest.'
     Write-Host '- Generate-LargeFile: Generates a large test file.'
     Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
     Write-Host '- ThirdPartyNotices: Generates third-party notices.'
@@ -102,9 +102,9 @@ Add-BuildTask "Package" "Build", {
     dotnet pack .\Kestrun.sln -c $Configuration -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build  
 }
 
-Add-BuildTask "UpdatePSD1" {
+Add-BuildTask "Manifest" {
     Write-Host "Updating Kestrun.psd1 manifest..."
-    pwsh -NoProfile -File .\Utility\Update-PSD1.ps1
+    pwsh -NoProfile -File .\Utility\Update-Manifest.ps1
 }
 
 Add-BuildTask  "Generate-LargeFile" "Clean-LargeFile", {
@@ -124,7 +124,6 @@ Add-BuildTask  "Clean-LargeFile" {
 }
 
 Add-BuildTask "ThirdPartyNotices" {
-    Write-Host "Generating third-party notices..."
     & .\Utility\Generate-ThirdPartyNotices.ps1 -Project ".\src\CSharp\Kestrun\Kestrun.csproj" -Path ".\THIRD-PARTY-NOTICES.md" -Version (Get-Version -FileVersion $FileVersion)
 }
 
