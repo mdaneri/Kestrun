@@ -16,6 +16,7 @@ using Kestrun.Utilities;
 using Kestrun.Authentication;
 using Serilog.Events;
 using Kestrun.Scripting;
+using Microsoft.AspNetCore.Authentication.Negotiate;
 
 
 namespace Kestrun.Hosting;
@@ -255,7 +256,34 @@ public static class KestrunHostAuthExtensions
         );
     }
 
-
+    /// <summary>
+    /// Adds Windows Authentication to the Kestrun host.
+    /// <para>
+    /// The authentication scheme name is <see cref="NegotiateDefaults.AuthenticationScheme"/>.
+    /// This enables Kerberos and NTLM authentication.
+    /// </para>
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
+    public static KestrunHost AddWindowsAuthentication(this KestrunHost host)
+    {
+        return host.AddAuthentication(
+            defaultScheme: NegotiateDefaults.AuthenticationScheme,
+            buildSchemes: ab =>
+            {
+                ab.AddNegotiate();
+            }
+        );
+    }
+    /// <summary>
+    /// Adds API Key Authentication to the Kestrun host.
+    /// <para>Use this for endpoints that require an API key for access.</para>
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name (default is "ApiKey").</param>
+    /// <param name="configure">Optional configuration for ApiKeyAuthenticationOptions.</param>
+    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddApiKeyAuthentication(
     this KestrunHost host,
     string scheme = "ApiKey",
@@ -300,6 +328,14 @@ public static class KestrunHostAuthExtensions
     }
 
 
+    /// <summary>
+    /// Adds API Key Authentication to the Kestrun host using the provided options object.
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name.</param>
+    /// <param name="configure">The ApiKeyAuthenticationOptions object to configure the authentication.</param>
+    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddApiKeyAuthentication(
     this KestrunHost host,
     string scheme,

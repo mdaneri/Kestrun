@@ -21,7 +21,8 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
 using Kestrun.Security;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Authentication;          // ISecurityTokenValidator
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Negotiate;          // ISecurityTokenValidator
 
 
 /*
@@ -96,13 +97,7 @@ var tokenBuilder = JwtTokenBuilder.New()
 
 var builderResult = tokenBuilder.Build();
 
-
-// for the token 
-
-//var symKey = new SymmetricSecurityKey(keyBytes);
-
-
-// 2. Add services
+/// Add compression
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
@@ -117,9 +112,12 @@ server.AddResponseCompression(options =>
         "text/html"
     });
     options.Providers.Add<BrotliCompressionProvider>();
-}).AddPowerShellRuntime()
-// ── BASIC (generic helper) ──────────────────────────────────────────── 
+})
 
+/// Enable PowerShell runtime
+.AddPowerShellRuntime()
+
+/// ── BASIC AUTHENTICATION – POWERSHELL CODE ─────────────────────────────
 .AddBasicAuthentication(BasicPowershellScheme, opts =>
 {
     opts.Realm = "Power-Kestrun";
@@ -143,6 +141,8 @@ server.AddResponseCompression(options =>
     opts.RequireHttps = false;           // example
 
 })
+
+/// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────
 .AddBasicAuthentication(BasicNativeScheme, opts =>
 {
     opts.Realm = "Native-Kestrun";
@@ -154,7 +154,10 @@ server.AddResponseCompression(options =>
         // Replace with your real credential validation logic
         return username == "admin" && password == "password";
     };
-}).AddBasicAuthentication(BasicCSharpScheme, opts =>
+})
+
+/// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
+.AddBasicAuthentication(BasicCSharpScheme, opts =>
 {
     opts.Realm = "CSharp-Kestrun";
     opts.CodeSettings = new AuthenticationCodeSettings
@@ -165,11 +168,20 @@ server.AddResponseCompression(options =>
         return username == "admin" && password == "password";
     """
     };
-}).AddApiKeyAuthentication(ApiKeySimple, opts =>
+})
+
+/// ── WINDOWS AUTHENTICATION ────────────────────────────────────────────
+.AddWindowsAuthentication()
+
+/// ── API KEY AUTHENTICATION – SIMPLE STRING MATCHING ────────────────────
+.AddApiKeyAuthentication(ApiKeySimple, opts =>
 {
     opts.HeaderName = "X-Api-Key";
     opts.ExpectedKey = "my-secret-api-key";
-}).AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
+})
+
+/// ── API KEY AUTHENTICATION – POWERSHELL CODE ───────────────────────────
+.AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
 {
     opts.HeaderName = "X-Api-Key";
     opts.CodeSettings = new AuthenticationCodeSettings
@@ -186,7 +198,10 @@ server.AddResponseCompression(options =>
     }
     """
     };
-}).AddApiKeyAuthentication(ApiKeyCSharp, opts =>
+})
+
+/// ── API KEY AUTHENTICATION – C# CODE ───────────────────────────────────
+.AddApiKeyAuthentication(ApiKeyCSharp, opts =>
 {
     opts.HeaderName = "X-Api-Key";
     opts.CodeSettings = new AuthenticationCodeSettings
@@ -201,11 +216,12 @@ server.AddResponseCompression(options =>
     };
 })
 
-// ── JWT – HS256 or HS512, RS256, etc. ─────────────────────────────────
+/// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
 .AddJwtBearerAuthentication(
     scheme: JwtScheme,
      validationParameters: builderResult.GetValidationParameters())
 
+/// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
 .AddCookieAuthentication(
     scheme: "Cookies",
     loginPath: "/cookies/login",
@@ -223,6 +239,11 @@ server.AddResponseCompression(options =>
     }
 );
 
+//***************************************************************************************
+//    CERTIFICATE IMPORT/CREATION
+//    ──────────────────────────────────────────
+//    This section handles the creation or import of a self-signed certificate.
+//****************************************************************************************
 X509Certificate2? x509Certificate = null;
 
 if (File.Exists("./devcert.pfx"))
@@ -270,27 +291,40 @@ if (!CertificateManager.Validate(
 
 
 
-// 3. Add listeners
+// 2. Configure Kestrel server
+// This will set up the server to listen on specific ports and IP addresses
+// It will also configure the server to use the provided certificate for HTTPS
 server.ConfigureListener(
     port: 5001,
     ipAddress: IPAddress.Loopback,
     x509Certificate: x509Certificate,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3
 );
+/// Configure HTTP listener
+/// This will set up the server to listen on a specific port and IP address
+/// It will also configure the server to use HTTP/1.1 protocol
 server.ConfigureListener(
     port: 5000,
     ipAddress: IPAddress.Loopback,
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
 
+// 3. Enable configuration
+// This will load configuration from appsettings.json and environment variables
+// It will also enable Serilog configuration from appsettings.json
 server.EnableConfiguration();
-/*string pattern,
-                                    IEnumerable<HttpMethod> httpMethods,
-                                    string scriptBlock,
-                                    ScriptLanguage language = ScriptLanguage.PowerShell,
-                                    string[]? extraImports = null,
-                                    Assembly[]? extraRefs = null)*/
-// 4. Add routes
+
+
+//***************************************************************************************
+//    ROUTES
+//    ──────────────────────────────────────────
+//    These routes are protected by the authentication schemes defined above.
+//    They will only be accessible if the user is authenticated.
+//****************************************************************************************
+
+//*********************************************
+//    BASIC AUTHENTICATION ROUTES
+//**********************************************
 server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
     if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
@@ -323,6 +357,12 @@ server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
+
+/*
+********************************************
+    API KEY AUTHENTICATION ROUTES
+*********************************************
+*/
 server.AddNativeRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
     var user = ctx.User?.Identity?.Name;
@@ -392,8 +432,14 @@ server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
     }
 }, [BasicNativeScheme]);
 
+
+/*
+********************************************
+    Cookie authentication routes
+*********************************************
+*/
 server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
-{ 
+{
     await ctx.Response.WriteTextResponseAsync(@"
 <!DOCTYPE html>
 <html>
@@ -415,7 +461,7 @@ server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
       <button type='submit'>Log In</button>
     </form>
   </body>
-</html>", statusCode: 200,contentType: "text/html; charset=UTF-8");
+</html>", statusCode: 200, contentType: "text/html; charset=UTF-8");
 });
 server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
 {
@@ -503,6 +549,27 @@ server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
         await ctx.Response.WriteTextResponseAsync($"Hello, {ctx.User.Identity.Name}");
     }
 }, ["Cookies"]);
+
+
+//***************************************************************************************
+//    Kerberos Authentication Route
+//    ──────────────────────────────────────────
+//    This route is protected by Kerberos authentication.
+//    It will only be accessible if the user is authenticated via Kerberos.
+//****************************************************************************************
+server.AddNativeRoute("/kerberos/secure", HttpVerb.Get, async (ctx) =>
+{
+    var userName = ctx.User?.Identity?.Name ?? "Unknown";
+    await ctx.Response.WriteTextResponseAsync($"Hello, {userName}");
+}, [NegotiateDefaults.AuthenticationScheme]);
+
+
+
+//***************************************************************************************
+//    Start the server
+//    ──────────────────────────────────────────
+//    This will start the Kestrun server and listen for incoming requests.
+//****************************************************************************************
 
 await server.RunUntilShutdownAsync(
   consoleEncoding: Encoding.UTF8,
