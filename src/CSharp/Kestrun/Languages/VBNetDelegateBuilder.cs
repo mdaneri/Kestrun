@@ -9,12 +9,19 @@ using Serilog;
 using Serilog.Events;
 using Kestrun.Models;
 using Microsoft.CodeAnalysis;
+using Kestrun.Utilities;
 
 namespace Kestrun.Languages;
 
 
 internal static class VBNetDelegateBuilder
 {
+    /// <summary>
+    /// The marker that indicates where user code starts in the VB.NET script.
+    /// This is used to ensure that the user code is correctly placed within the generated module.
+    /// </summary>
+    private const string StartMarker = "Rem ---- User code starts here ----";
+
     /// <summary>
     /// Builds a VB.NET delegate for Kestrun routes.
     /// </summary>
@@ -40,23 +47,64 @@ internal static class VBNetDelegateBuilder
         Assembly[]? extraRefs,
         Microsoft.CodeAnalysis.VisualBasic.LanguageVersion lang = Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic16)
     {
-        var run = Compile(code, log, extraImports, extraRefs, lang);
+        var script = Compile(code, log, extraImports, extraRefs, lang);
 
         return async ctx =>
         {
-            var krRequest = await KestrunRequest.NewRequest(ctx);
-            var krResponse = new KestrunResponse(krRequest);
-            var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
-            var context = new KestrunContext(krRequest, krResponse, ctx);
-            foreach (var kv in args) glob[kv.Key] = kv.Value;
+            try
+            {
+                var krRequest = await KestrunRequest.NewRequest(ctx);
+                var krResponse = new KestrunResponse(krRequest);
+                var Context = new KestrunContext(krRequest, krResponse, ctx);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Kestrun context created for {Path}", ctx.Request.Path);
 
-            var globals = new CsGlobals(glob, context);
-            await run(globals).ConfigureAwait(false);
+                // Create a shared state dictionary that will be used to store global variables
+                // This will be shared across all requests and can be used to store state
+                // that needs to persist across multiple requests
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Creating shared state store for Kestrun context");
+                var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Shared state store created with {Count} items", glob.Count);
 
-            if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
-                ctx.Response.Redirect(krResponse.RedirectUrl);
+                // Inject the provided arguments into the globals
+                // This allows the script to access these variables as if they were defined in the script itself
+                // e.g. glob["arg1"] = args["arg1"]
+                if (args != null && args.Count > 0)
+                {
+                    if (log.IsEnabled(LogEventLevel.Debug))
+                        log.Debug("Setting VB.NET variables from arguments: {Count}", args.Count);
+                    foreach (var kv in args) glob[kv.Key] = kv.Value; // add args to globals
+                }
+                // Create a new CsGlobals instance with the current context and shared state
+                // This will provide access to the globals and locals in the script
+                var globals = new CsGlobals(glob, Context);
 
-            await krResponse.ApplyTo(ctx.Response);
+                // Execute the script with the current context and shared state
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Executing VB.NET script for {Path}", ctx.Request.Path);
+                await script(globals).ConfigureAwait(false);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("VB.NET script executed successfully for {Path}", ctx.Request.Path);
+
+                // Apply the response to the Kestrun context
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Applying response to Kestrun context for {Path}", ctx.Request.Path);
+                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                {
+                    ctx.Response.Redirect(krResponse.RedirectUrl);
+                    return;
+                }
+
+                await krResponse.ApplyTo(ctx.Response).ConfigureAwait(false);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+            }
+            finally
+            {
+                await ctx.Response.CompleteAsync().ConfigureAwait(false);
+            }
         };
     }
 
@@ -74,15 +122,31 @@ internal static class VBNetDelegateBuilder
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
     private static Func<CsGlobals, Task> Compile(
-            string code,
+            string? code,
             Serilog.ILogger log,
-            IEnumerable<string>? extraImports,
-            IEnumerable<Assembly>? extraRefs,
+            string[]? extraImports,
+             Assembly[]? extraRefs,
             Microsoft.CodeAnalysis.VisualBasic.LanguageVersion lang = LanguageVersion.VisualBasic16)
     {
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+               code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, lang);
+
+        // Validate inputs
+        if (string.IsNullOrWhiteSpace(code))
+            throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
+
         // 🔧 1.  Build a real VB file around the user snippet
         string source = BuildWrappedSource(code, extraImports);
+        var startIndex = source.IndexOf(StartMarker);
+        if (startIndex < 0)
+            throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.", nameof(code));
+        int startLine = CcUtilities.GetLineNumber(source, startIndex);
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script starts at line {LineNumber}", startLine);
 
+        // Parse the source code into a syntax tree
+        // This will allow us to analyze and compile the code
         var tree = VisualBasicSyntaxTree.ParseText(
                        source,
                        new VisualBasicParseOptions(LanguageVersion.VisualBasic16));
@@ -100,7 +164,7 @@ internal static class VBNetDelegateBuilder
         // 🔧 3.  Normal DLL compilation
         var compilation = VisualBasicCompilation.Create(
             assemblyName: $"RouteScript_{Guid.NewGuid():N}",
-            syntaxTrees: new[] { tree },
+            syntaxTrees: [tree],
             references: refs,
             options: new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -112,14 +176,17 @@ internal static class VBNetDelegateBuilder
             var errors = emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
             if (errors is not null && errors.Length > 0)
             {
+                // Log the errors with adjusted line numbers                
                 log.Error($"VBNet script compilation completed with {errors.Length} error(s):");
                 foreach (var error in errors)
                 {
                     var location = error.Location.IsInSource
-                        ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
+                        ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}" // ⬅ adjust line number based on start
                         : "";
                     log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
                 }
+                // Throw an exception with the error details
+                // This will stop the execution and provide feedback to the user
                 throw new CompilationErrorException("VBNet route code compilation failed", emitResult.Diagnostics);
             }
         }
@@ -127,27 +194,41 @@ internal static class VBNetDelegateBuilder
         var warnings = emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings is not null && warnings.Length != 0)
         {
+            // Log the warnings with adjusted line numbers
             log.Warning($"VBNet script compilation completed with {warnings.Length} warning(s):");
             foreach (var warning in warnings)
             {
                 var location = warning.Location.IsInSource
-                    ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
+                    ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}" // ⬅ adjust line number based on start
                     : "";
                 log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
             }
+            // If there are warnings, log a debug message
+            if (log.IsEnabled(LogEventLevel.Debug))
+                log.Debug("VB.NET script compiled with warnings: {Count}", warnings.Length);
         }
+        // If there are no warnings, log a debug message
+        if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compiled successfully with no warnings.");
+        // If there are no errors, log a debug message
+        if (emitResult.Success && log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compiled successfully with no errors."); 
+
+
+        // If there are no errors, proceed to load the assembly and create the delegate
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compiled successfully, loading assembly...");
         ms.Position = 0;
         var asm = Assembly.Load(ms.ToArray());
         var runMethod = asm.GetType("RouteScript")!
                            .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
 
         // cast to a fast delegate (CsGlobals → Task)
-        return (Func<CsGlobals, Task>)
-       runMethod.CreateDelegate(typeof(Func<CsGlobals, Task>));
+        return (Func<CsGlobals, Task>) runMethod.CreateDelegate(typeof(Func<CsGlobals, Task>));
 
     }
 
-    private static string BuildWrappedSource(string code, IEnumerable<string>? extraImports)
+    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports )
     {
         var sb = new StringBuilder();
 
@@ -165,22 +246,22 @@ internal static class VBNetDelegateBuilder
             sb.AppendLine($"Imports {ns}");
 
         sb.AppendLine("""
-               Public Module RouteScript
+                Public Module RouteScript
                    Public Async Function Run(g As CsGlobals) As Task
                         Dim Request  = g.Context?.Request
                         Dim Response = g.Context?.Response
-                        Dim Ctx      = g.Context
-           """);
-        /*
-        sb.AppendLine("""
-                Public Module RouteScript
-                    Public Async Function Run() As Task         
-            """);*/
-        // indent the user snippet so VB is happy
-        sb.AppendLine(String.Join(
-            Environment.NewLine,
-            code.Split('\n').Select(l => "        " + l.TrimEnd('\r'))));
+                        Dim Context  = g.Context
 
+                Rem ---- User code starts here ----
+           """);
+
+        if (!string.IsNullOrEmpty(code))
+        {
+            // indent the user snippet so VB is happy
+            sb.AppendLine(String.Join(
+                Environment.NewLine,
+                code.Split('\n').Select(l => "        " + l.TrimEnd('\r'))));
+        }
         sb.AppendLine("""
             End Function
         End Module

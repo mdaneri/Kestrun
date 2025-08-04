@@ -442,13 +442,73 @@ server.AddMapRoute("/status", HttpVerb.Get, """
 
 
 /* VB.NET Route */
-server.AddMapRoute("/vbtest", HttpVerb.Get, """
+server.AddMapRoute("/vb/hello", HttpVerb.Get, """
      
      Await Response.WriteTextResponseAsync(
      "Hello from VB.NET!" & vbCrLf & 
      "Time: " & Now.ToString(), 200)
 """, ScriptLanguage.VBNet);
 
+server.AddMapRoute("/vb/text", HttpVerb.Get, """
+    Console.WriteLine("Hello from VB.NET script! - Text Response (From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Text Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteTextResponseAsync(payload, 200)
+""", ScriptLanguage.VBNet);
+
+
+server.AddMapRoute("/vb/xml", HttpVerb.Get, """
+    Console.WriteLine("Hello from VB.NET script! - Xml Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Xml Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+    
+    Await Context.Response.WriteXmlResponseAsync(payload, 200)
+""", ScriptLanguage.VBNet);
+
+server.AddMapRoute("/vb/yaml", HttpVerb.Get, """
+    Console.WriteLine("Hello from VB.NET script! - Yaml Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Yaml Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteYamlResponseAsync(payload, 200)
+""", ScriptLanguage.VBNet);
+
+server.AddMapRoute("/vb/json", HttpVerb.Get, """
+    Console.WriteLine("Hello from VB.NET script! - Json Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Json Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteJsonResponseAsync(payload, 200)
+""", ScriptLanguage.VBNet);
 
 await server.RunUntilShutdownAsync(
     consoleEncoding: Encoding.UTF8,

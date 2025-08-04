@@ -22,7 +22,7 @@ internal static class CSharpDelegateBuilder
     /// </summary>
     /// <param name="code">The C# code to execute.</param>
     /// <param name="log">The logger instance.</param>
-    /// <param name="arguments">Arguments to inject as variables into the script.</param>
+    /// <param name="args">Arguments to inject as variables into the script.</param>
     /// <param name="extraImports">Additional namespaces to import.</param>
     /// <param name="extraRefs">Additional assemblies to reference.</param>
     /// <param name="languageVersion">The C# language version to use.</param>
@@ -35,7 +35,7 @@ internal static class CSharpDelegateBuilder
     /// The delegate will execute the provided C# code within the context of an HTTP request, allowing access to the request and response objects.
     /// </remarks>
     internal static RequestDelegate Build(
-            string code, Serilog.ILogger log, Dictionary<string, object> arguments, string[]? extraImports,
+            string code, Serilog.ILogger log, Dictionary<string, object> args, string[]? extraImports,
             Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
@@ -46,43 +46,65 @@ internal static class CSharpDelegateBuilder
         var script = Compile(code, log, extraImports, extraRefs, null, languageVersion);
 
         // 3. Build the per-request delegate
-        return async context =>
+        return async ctx =>
         {
             try
             {
-                var krRequest = await KestrunRequest.NewRequest(context);
+                var krRequest = await KestrunRequest.NewRequest(ctx);
                 var krResponse = new KestrunResponse(krRequest);
-                var Context = new KestrunContext(krRequest, krResponse, context);
+                var Context = new KestrunContext(krRequest, krResponse, ctx);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Kestrun context created for {Path}", ctx.Request.Path);
 
-                var state = new Dictionary<string, object?>(SharedStateStore.Snapshot());
-                if (arguments != null && arguments.Count > 0)
+                // Create a shared state dictionary that will be used to store global variables
+                // This will be shared across all requests and can be used to store state
+                // that needs to persist across multiple requests
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Creating shared state store for Kestrun context");
+                var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Shared state store created with {Count} items", glob.Count);
+                
+                // Inject the provided arguments into the globals
+                // This allows the script to access these variables as if they were defined in the script itself
+                // e.g. glob["arg1"] = args["arg1"];
+                if (args != null && args.Count > 0)
                 {
                     if (log.IsEnabled(LogEventLevel.Debug))
-                        log.Debug("Setting C# variables from arguments: {Count}", arguments.Count);
-                    foreach (var arg in arguments)
-                    {
-                        // Set the arguments as C# variables in the script
-                        state[arg.Key] = arg.Value;
-                    }
+                        log.Debug("Setting C# variables from arguments: {Count}", args.Count);
+                    foreach (var kv in args) glob[kv.Key] = kv.Value; // add args to globals
                 }
 
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Executing C# script for {Path}", context.Request.Path);
-                // Create a new script instance with the current context and shared state
-                // Execute the script with the current context and shared state
-                await script.RunAsync(new CsGlobals(state, Context)).ConfigureAwait(false);
+                    log.Debug("Executing C# script for {Path}", ctx.Request.Path);
 
+                // Create a new CsGlobals instance with the current context and shared state
+                // This will provide access to the globals and locals in the script
+                var globals = new CsGlobals(glob, Context);
+
+                // Execute the script with the current context and shared state
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Executing C# script for {Path}", ctx.Request.Path);
+                await script.RunAsync(globals).ConfigureAwait(false);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("C# script executed successfully for {Path}", ctx.Request.Path);
+
+                // Apply the response to the Kestrun context
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Applying response to Kestrun context for {Path}", ctx.Request.Path);
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {
-                    context.Response.Redirect(krResponse.RedirectUrl);
+                    ctx.Response.Redirect(krResponse.RedirectUrl);
                     return;
                 }
 
-                await krResponse.ApplyTo(context.Response).ConfigureAwait(false);
+                await krResponse.ApplyTo(ctx.Response).ConfigureAwait(false);
+                if (log.IsEnabled(LogEventLevel.Debug))
+                    log.Debug("Response applied to Kestrun context for {Path}", ctx.Request.Path);
             }
             finally
             {
-                await context.Response.CompleteAsync().ConfigureAwait(false);
+                await ctx.Response.CompleteAsync().ConfigureAwait(false);
             }
         };
     }
@@ -142,7 +164,7 @@ internal static class CSharpDelegateBuilder
         string[] platformImports = ["System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http"];
         // Convert to MetadataReference for each namespace
         var allImports = platformImports.Concat(kestrunNamespaces);
-        if(allImports is null  )
+        if (allImports is null)
             throw new ArgumentException("No valid imports found.", nameof(allImports));
 
         // 4. Create ScriptOptions with all imports and references
@@ -251,6 +273,10 @@ internal static class CSharpDelegateBuilder
                 log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
             }
         }
+          // If there are no warnings, log a debug message
+        if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compiled successfully with no warnings.");
+        
         return script;
     }
 
