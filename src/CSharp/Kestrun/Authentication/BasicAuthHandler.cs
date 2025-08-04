@@ -310,7 +310,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
         return async (ctx, user, pass) =>
         {
-            if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
                 Log.Debug("Running VB.NET authentication script for user: {Username}", user);
             var krRequest = await KestrunRequest.NewRequest(ctx);
             var krResponse = new KestrunResponse(krRequest);
@@ -326,13 +326,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
             Log.Information("VB.NET authentication result for {Username}: {Result}", user, result);
 
-            // If the result is null, return false
-            // Check if the result is a boolean and return it
-            if (result is null)
-            {
-                return false;
-            }
-            return result is bool b && b;
+            return result;
         };
     }
 }

@@ -38,6 +38,7 @@ Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateChe
 Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod https://localhost:5001/secure/key/vb/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
@@ -78,6 +79,7 @@ const string JwtScheme = "Bearer";
 const string ApiKeySimple = "ApiKeySimple";
 const string ApiKeyPowerShell = "ApiKeyPowerShell";
 const string ApiKeyCSharp = "ApiKeyCSharp";
+const string ApiKeyVBNet = "ApiKeyVBNet";
 string issuer = "KestrunApi";
 string audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
@@ -230,6 +232,20 @@ server.AddResponseCompression(options =>
         ExtraImports = ["System.Text"]
     };
 })
+.AddApiKeyAuthentication(ApiKeyVBNet, opts =>
+{
+    opts.HeaderName = "X-Api-Key";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.VBNet,
+        Code = """
+    Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
+    ' or use a simple string comparison:
+    ' Return providedKey = "my-secret-api-key"
+    """,
+        ExtraImports = ["System.Text"]
+    };
+}) 
 
 /// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
 .AddJwtBearerAuthentication(
@@ -418,6 +434,17 @@ server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
     var user = Context.User.Identity.Name;
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
 """, ScriptLanguage.CSharp, [ApiKeyCSharp]);
+
+server.AddMapRoute("/secure/key/vb/hello", HttpVerb.Get, """
+    if (!Context.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = Context.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by VB.NET code.", 200);
+""", ScriptLanguage.CSharp, [ApiKeyVBNet]);
 
 
 server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """

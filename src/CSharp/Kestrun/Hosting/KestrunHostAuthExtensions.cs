@@ -327,6 +327,13 @@ public static class KestrunHostAuthExtensions
                             // Build the C# script validator
                             // This will be used to validate credentials
                             opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                        } else   // ── VB.NET pathway ─────────────────────────────────
+                        if (opts.CodeSettings.Language is ScriptLanguage.VBNet
+                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the VB.NET script validator
+                            // This will be used to validate credentials
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.CodeSettings);
                         }
                     });
 

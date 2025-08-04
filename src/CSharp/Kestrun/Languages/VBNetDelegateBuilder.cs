@@ -20,7 +20,7 @@ internal static class VBNetDelegateBuilder
     /// The marker that indicates where user code starts in the VB.NET script.
     /// This is used to ensure that the user code is correctly placed within the generated module.
     /// </summary>
-    private const string StartMarker = "Rem ---- User code starts here ----";
+    private const string StartMarker = "' ---- User code starts here ----";
 
     /// <summary>
     /// Builds a VB.NET delegate for Kestrun routes.
@@ -137,7 +137,7 @@ internal static class VBNetDelegateBuilder
     /// <remarks>
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
-    internal static Func<CsGlobals, Task<object?>> Compile(
+    internal static Func<CsGlobals, Task<bool>> Compile(
             string? code, Serilog.ILogger log, string[]? extraImports,
             Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion
         )
@@ -150,8 +150,15 @@ internal static class VBNetDelegateBuilder
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
 
+        var injectAuthVariables = locals?.ContainsKey("username") == true && locals?.ContainsKey("password") == true;
+        var injectKeysVariables = locals?.ContainsKey("providedKey") == true && locals?.ContainsKey("providedKeyBytes") == true;
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("Injecting auth variables: {InjectAuth}, keys: {InjectKeys}",
+                injectAuthVariables, injectKeysVariables);
+
         // 🔧 1.  Build a real VB file around the user snippet
-        string source = BuildWrappedSource(code, extraImports);
+        string source = BuildWrappedSource(code, extraImports, injectAuthVariables: injectAuthVariables,
+            injectKeysVariables: injectKeysVariables);
         var startIndex = source.IndexOf(StartMarker);
         if (startIndex < 0)
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.", nameof(code));
@@ -237,12 +244,11 @@ internal static class VBNetDelegateBuilder
         var runMethod = asm.GetType("RouteScript")!
                            .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
 
-        // 👇 produce Func<CsGlobals, Task<object?>> —not Task
-        return (Func<CsGlobals, Task<object?>>)
-       runMethod.CreateDelegate(typeof(Func<CsGlobals, Task<object?>>));
+        // 👇 produce Func<CsGlobals, Task<object?>> —not Task 
+        return (Func<CsGlobals, Task<bool>>)runMethod.CreateDelegate(typeof(Func<CsGlobals, Task<bool>>));
     }
 
-    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports)
+    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports, bool injectAuthVariables = false, bool injectKeysVariables = false)
     {
         var sb = new StringBuilder();
 
@@ -261,13 +267,31 @@ internal static class VBNetDelegateBuilder
 
         sb.AppendLine("""
                 Public Module RouteScript
-                   Public Async Function Run(g As CsGlobals) As Task
+                    Public Async Function Run(g As CsGlobals) As Task(Of Boolean)
                         Dim Request  = g.Context?.Request
                         Dim Response = g.Context?.Response
                         Dim Context  = g.Context
+        """);
 
-                Rem ---- User code starts here ----
-           """);
+        // only emit these _when_ you called Compile with locals:
+        if (injectAuthVariables)
+            sb.AppendLine("""
+        ' only bind creds if someone passed them in 
+                        Dim username As String = CStr(g.Locals("username"))
+                        Dim password As String = CStr(g.Locals("password"))
+                
+        """);
+
+        if (injectKeysVariables)
+            sb.AppendLine("""
+        ' only bind keys if someone passed them in
+                        Dim providedKey As String = CStr(g.Locals("providedKey"))
+                        Dim providedKeyBytes As Byte() = CType(g.Locals("providedKeyBytes"), Byte())
+        """);
+
+        // add the Marker for user code
+        sb.AppendLine(StartMarker);
+        // ---- User code starts here ----
 
         if (!string.IsNullOrEmpty(code))
         {
@@ -277,9 +301,9 @@ internal static class VBNetDelegateBuilder
                 code.Split('\n').Select(l => "        " + l.TrimEnd('\r'))));
         }
         sb.AppendLine("""
-                Return Nothing    ' in case user code doesn’t Return anything
-            End Function
-        End Module
+                     
+                End Function
+            End Module
     """);
         return sb.ToString();
     }
