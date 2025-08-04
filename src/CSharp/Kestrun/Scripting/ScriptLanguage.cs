@@ -39,5 +39,9 @@ public enum ScriptLanguage
     /// <summary>
     /// Uses JavaScript scripting language (optional, e.g., via ClearScript/Jint).
     /// </summary>
-    JavaScript
+    JavaScript,
+    /// <summary>
+    /// Uses VB.NET scripting language.
+    /// </summary>
+    VBNet
 }

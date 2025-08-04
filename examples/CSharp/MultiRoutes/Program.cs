@@ -440,10 +440,18 @@ server.AddMapRoute("/status", HttpVerb.Get, """
     } 
 """, ScriptLanguage.PowerShell);
 
+
+/* VB.NET Route */
+server.AddMapRoute("/vbtest", HttpVerb.Get, """
+     
+     Await Response.WriteTextResponseAsync(
+     "Hello from VB.NET!" & vbCrLf & 
+     "Time: " & Now.ToString(), 200)
+""", ScriptLanguage.VBNet);
+
+
 await server.RunUntilShutdownAsync(
     consoleEncoding: Encoding.UTF8,
     onStarted: () => Console.WriteLine("Server ready 🟢"),
-    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}"
-
-    )
+    onShutdownError: ex => Console.WriteLine($"Shutdown error: {ex.Message}")
 );

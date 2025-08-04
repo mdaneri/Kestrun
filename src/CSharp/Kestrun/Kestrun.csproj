@@ -145,7 +145,10 @@
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.11.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.11.0" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.11.0" />
 
   </ItemGroup>
 
@@ -182,6 +185,10 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.13.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.13.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" /> 
+    <!-- common scripting API -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.13.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.13.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.13.0" />
 
   </ItemGroup>
 

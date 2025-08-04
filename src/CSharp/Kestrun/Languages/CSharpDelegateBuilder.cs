@@ -20,7 +20,6 @@ internal static class CSharpDelegateBuilder
     /// <summary>
     /// Builds a C# delegate for handling HTTP requests.
     /// </summary>
-    /// <param name="host">The KestrunHost instance.</param>
     /// <param name="code">The C# code to execute.</param>
     /// <param name="log">The logger instance.</param>
     /// <param name="arguments">Arguments to inject as variables into the script.</param>
@@ -140,15 +139,18 @@ internal static class CSharpDelegateBuilder
             .Distinct()
             .ToArray();
         // Convert to MetadataReference for each namespace
-        var platformImports = new[] { "System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http" };
+        string[] platformImports = ["System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http"];
         // Convert to MetadataReference for each namespace
         var allImports = platformImports.Concat(kestrunNamespaces);
+        if(allImports is null  )
+            throw new ArgumentException("No valid imports found.", nameof(allImports));
+
         // 4. Create ScriptOptions with all imports and references
         //    - Use MetadataReference.CreateFromFile() for each assembly reference
         //    - Use .WithImports() to add all imports
         //    - Use .WithLanguageVersion() to set the C# language version
         var opts = ScriptOptions.Default
-                   .WithImports(allImports)
+                   .WithImports((IEnumerable<string>)allImports)
                    .WithReferences(coreRefs.Concat([kestrunRef]))                 // ✅ now uses MetadataReference[]
                    .WithLanguageVersion(languageVersion);
         extraImports ??= ["Kestrun"];
