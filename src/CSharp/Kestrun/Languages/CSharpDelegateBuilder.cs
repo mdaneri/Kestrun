@@ -42,10 +42,23 @@ internal static class CSharpDelegateBuilder
             log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
 
-        // 1. Inject each global as a top-level script variable
+        // Validate inputs
+        if (string.IsNullOrWhiteSpace(code))
+            throw new ArgumentNullException(nameof(code), "C# code cannot be null or whitespace.");
+        // 1. Compile the C# code into a script
+        //    - Use CSharpScript.Create() to create a script with the provided code
+        //    - Use ScriptOptions to specify imports, references, and language version
+        //    - Inject the provided arguments into the globals
         var script = Compile(code, log, extraImports, extraRefs, null, languageVersion);
 
-        // 3. Build the per-request delegate
+        // 2. Return a delegate that executes the script 
+        //    - The delegate takes an HttpContext and returns a Task
+        //    - It creates a KestrunContext and KestrunResponse from the HttpContext
+        //    - It executes the script with the provided globals and locals
+        //    - It applies the response to the HttpContext
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("C# delegate built successfully, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
         return async ctx =>
         {
             try
@@ -64,7 +77,7 @@ internal static class CSharpDelegateBuilder
                 var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
                 if (log.IsEnabled(LogEventLevel.Debug))
                     log.Debug("Shared state store created with {Count} items", glob.Count);
-                
+
                 // Inject the provided arguments into the globals
                 // This allows the script to access these variables as if they were defined in the script itself
                 // e.g. glob["arg1"] = args["arg1"];
@@ -130,8 +143,10 @@ internal static class CSharpDelegateBuilder
     /// The script can be executed later with the provided globals and locals.
     /// It is useful for scenarios where dynamic C# code execution is required, such as in web applications or scripting environments.
     /// </remarks>
-    internal static Script<object> Compile(string? code, Serilog.ILogger log, string[]? extraImports,
-            Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion = LanguageVersion.CSharp12)
+    internal static Script<object> Compile(
+            string? code, Serilog.ILogger log, string[]? extraImports,
+            Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion= LanguageVersion.CSharp12
+            )
     {
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Compiling C# script, length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
@@ -173,8 +188,8 @@ internal static class CSharpDelegateBuilder
         //    - Use .WithLanguageVersion() to set the C# language version
         var opts = ScriptOptions.Default
                    .WithImports((IEnumerable<string>)allImports)
-                   .WithReferences(coreRefs.Concat([kestrunRef]))                 // ✅ now uses MetadataReference[]
-                   .WithLanguageVersion(languageVersion);
+                   .WithReferences(coreRefs.Concat([kestrunRef]));
+                   
         extraImports ??= ["Kestrun"];
         if (!extraImports.Contains("Kestrun"))
         {
@@ -273,10 +288,10 @@ internal static class CSharpDelegateBuilder
                 log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
             }
         }
-          // If there are no warnings, log a debug message
+        // If there are no warnings, log a debug message
         if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
             log.Debug("VB.NET script compiled successfully with no warnings.");
-        
+
         return script;
     }
 

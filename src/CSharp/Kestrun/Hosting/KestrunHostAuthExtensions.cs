@@ -71,6 +71,14 @@ public static class KestrunHostAuthExtensions
                             // This will be used to validate credentials
                             opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.CodeSettings);
                         }
+                        else
+                          if (opts.CodeSettings.Language is ScriptLanguage.VBNet
+                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        {
+                            // Build the VB.NET script validator
+                            // This will be used to validate credentials
+                            opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.CodeSettings);
+                        }
                     });
 
             },

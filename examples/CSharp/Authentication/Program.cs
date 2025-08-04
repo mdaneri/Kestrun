@@ -32,6 +32,7 @@ $basic   = "Basic " + [Convert]::ToBase64String(
 $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
  
 Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
@@ -72,6 +73,7 @@ server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 const string BasicPowershellScheme = "PowershellBasic";
 const string BasicNativeScheme = "NativeBasic";
 const string BasicCSharpScheme = "CSharpBasic";
+const string BasicVBNetScheme = "VBNetBasic";
 const string JwtScheme = "Bearer";
 const string ApiKeySimple = "ApiKeySimple";
 const string ApiKeyPowerShell = "ApiKeyPowerShell";
@@ -166,6 +168,19 @@ server.AddResponseCompression(options =>
 
         Code = """      
         return username == "admin" && password == "password";
+    """
+    };
+})
+/// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
+.AddBasicAuthentication(BasicVBNetScheme, opts =>
+{
+    opts.Realm = "VBNet-Kestrun";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.VBNet,
+
+        Code = """      
+        Return username = "admin" AndAlso password = "password"
     """
     };
 })
@@ -345,6 +360,16 @@ server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicCSharpScheme]);
 
+
+server.AddMapRoute("/secure/vb/hello", HttpVerb.Get, """
+    if (-not $Context.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+    }
+
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
+""", ScriptLanguage.PowerShell, [BasicVBNetScheme]);
 
 server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
     if (-not $Context.User.Identity.IsAuthenticated) {

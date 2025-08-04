@@ -193,10 +193,10 @@ public static class KestrunHostMapExtensions
 
                 ScriptLanguage.PowerShell => PowerShellDelegateBuilder.Build(options.Code, logger, options.Arguments),
                 ScriptLanguage.CSharp => CSharpDelegateBuilder.Build(options.Code, logger, options.Arguments, options.ExtraImports, options.ExtraRefs),
+                ScriptLanguage.VBNet => VBNetDelegateBuilder.Build(options.Code, logger, options.Arguments, options.ExtraImports, options.ExtraRefs),
                 ScriptLanguage.FSharp => FSharpDelegateBuilder.Build(options.Code, logger), // F# scripting not implemented
                 ScriptLanguage.Python => PyDelegateBuilder.Build(options.Code, logger),
                 ScriptLanguage.JavaScript => JScriptDelegateBuilder.Build(options.Code, logger),
-                ScriptLanguage.VBNet => VBNetDelegateBuilder.Build(options.Code, logger, options.Arguments, options.ExtraImports, options.ExtraRefs),
 
                 _ => throw new NotSupportedException(options.Language.ToString())
             };

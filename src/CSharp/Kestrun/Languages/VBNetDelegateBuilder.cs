@@ -33,22 +33,37 @@ internal static class VBNetDelegateBuilder
     /// <param name="args">The arguments to pass to the script.</param>
     /// <param name="extraImports">Optional additional namespaces to import in the script.</param>
     /// <param name="extraRefs">Optional additional assemblies to reference in the script.</param>
-    /// <param name="lang">The VB.NET language version to use for compilation.</param>
+    /// <param name="languageVersion">The VB.NET language version to use for compilation.</param>
     /// <returns>A delegate that takes CsGlobals and returns a Task.</returns>
     /// <exception cref="CompilationErrorException">Thrown if the compilation fails with errors.</exception>
     /// <remarks>
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
     public static RequestDelegate Build(
-        string code,
-        Serilog.ILogger log,
-        Dictionary<string, object?> args,
-        string[]? extraImports,
-        Assembly[]? extraRefs,
-        Microsoft.CodeAnalysis.VisualBasic.LanguageVersion lang = Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic16)
+        string code, Serilog.ILogger log, Dictionary<string, object> args, string[]? extraImports,
+        Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.VisualBasic16_9)
     {
-        var script = Compile(code, log, extraImports, extraRefs, lang);
 
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+               code.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+
+        // Validate inputs
+        if (string.IsNullOrWhiteSpace(code))
+            throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
+        // 1. Compile the VB.NET code into a script 
+        //    - Use VisualBasicScript.Create() to create a script with the provided code
+        //    - Use ScriptOptions to specify imports, references, and language version
+        //    - Inject the provided arguments into the globals
+        var script = Compile(code, log, extraImports, extraRefs, null, languageVersion);
+
+        // 2. Build the per-request delegate
+        //    - This delegate will be executed for each request
+        //    - It will create a KestrunContext and CsGlobals, then execute the script with these globals
+        //    - The script can access the request context and shared state store
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("C# delegate built successfully, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
         return async ctx =>
         {
             try
@@ -115,22 +130,21 @@ internal static class VBNetDelegateBuilder
     /// <param name="log">The logger to use for logging compilation errors and warnings.</param>
     /// <param name="extraImports">Optional additional namespaces to import in the script.</param>
     /// <param name="extraRefs">Optional additional assemblies to reference in the script.</param>
-    /// <param name="lang">The VB.NET language version to use for compilation.</param>
+    /// <param name="locals">Optional local variables to provide to the script.</param>
+    /// <param name="languageVersion">The VB.NET language version to use for compilation.</param>
     /// <returns>A delegate that takes CsGlobals and returns a Task.</returns>
     /// <exception cref="CompilationErrorException">Thrown if the compilation fails with errors.</exception>
     /// <remarks>
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
-    private static Func<CsGlobals, Task> Compile(
-            string? code,
-            Serilog.ILogger log,
-            string[]? extraImports,
-             Assembly[]? extraRefs,
-            Microsoft.CodeAnalysis.VisualBasic.LanguageVersion lang = LanguageVersion.VisualBasic16)
+    internal static Func<CsGlobals, Task<object?>> Compile(
+            string? code, Serilog.ILogger log, string[]? extraImports,
+            Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion
+        )
     {
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
-               code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, lang);
+               code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
 
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
@@ -212,7 +226,7 @@ internal static class VBNetDelegateBuilder
             log.Debug("VB.NET script compiled successfully with no warnings.");
         // If there are no errors, log a debug message
         if (emitResult.Success && log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("VB.NET script compiled successfully with no errors."); 
+            log.Debug("VB.NET script compiled successfully with no errors.");
 
 
         // If there are no errors, proceed to load the assembly and create the delegate
@@ -223,12 +237,12 @@ internal static class VBNetDelegateBuilder
         var runMethod = asm.GetType("RouteScript")!
                            .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
 
-        // cast to a fast delegate (CsGlobals → Task)
-        return (Func<CsGlobals, Task>) runMethod.CreateDelegate(typeof(Func<CsGlobals, Task>));
-
+        // 👇 produce Func<CsGlobals, Task<object?>> —not Task
+        return (Func<CsGlobals, Task<object?>>)
+       runMethod.CreateDelegate(typeof(Func<CsGlobals, Task<object?>>));
     }
 
-    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports )
+    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports)
     {
         var sb = new StringBuilder();
 
@@ -263,6 +277,7 @@ internal static class VBNetDelegateBuilder
                 code.Split('\n').Select(l => "        " + l.TrimEnd('\r'))));
         }
         sb.AppendLine("""
+                Return Nothing    ' in case user code doesn’t Return anything
             End Function
         End Module
     """);
