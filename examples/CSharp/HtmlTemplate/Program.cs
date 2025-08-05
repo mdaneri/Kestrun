@@ -65,7 +65,7 @@ server.AddHtmlTemplateRoute(
 
 
 
-server.AddNativeRoute("/visit", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/visit", HttpVerb.Get, async (ctx) =>
 {
 
     SharedStateStore.TryGet("Visits", out Hashtable? visits);

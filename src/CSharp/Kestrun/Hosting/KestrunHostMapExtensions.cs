@@ -6,6 +6,7 @@ using Kestrun.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Serilog.Events;
 using Kestrun.Models;
+using System.Reflection;
 
 namespace Kestrun.Hosting;
 
@@ -31,11 +32,11 @@ public static class KestrunHostMapExtensions
     /// <param name="handler">The handler to execute for the route.</param>
     /// <param name="requireAuthorization">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
-    public static IEndpointConventionBuilder AddNativeRoute(this KestrunHost host, string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
+    public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
-        return host.AddNativeRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
+            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
+        return host.AddMapRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireAuthorization: requireAuthorization);
     }
 
     /// <summary>
@@ -47,12 +48,12 @@ public static class KestrunHostMapExtensions
     /// <param name="handler">The handler to execute for the route.</param>
     /// <param name="requireAuthorization">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
-    public static IEndpointConventionBuilder AddNativeRoute(this KestrunHost host, string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
+    public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireAuthorization = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddNativeRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
+            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
 
-        return host.AddNativeRoute(new MapRouteOptions
+        return host.AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
             HttpVerbs = httpVerbs,
@@ -69,10 +70,10 @@ public static class KestrunHostMapExtensions
     /// <param name="options">The MapRouteOptions containing route configuration.</param>
     /// <param name="handler">The handler to execute for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
-    public static IEndpointConventionBuilder AddNativeRoute(this KestrunHost host, MapRouteOptions options, KestrunHandler handler)
+    public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, MapRouteOptions options, KestrunHandler handler)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddNativeRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
+            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
         // Ensure the WebApplication is initialized
         if (host.App is null)
             throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
@@ -113,7 +114,7 @@ public static class KestrunHostMapExtensions
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, HttpVerb httpVerbs, string scriptBlock, ScriptLanguage language = ScriptLanguage.PowerShell,
                                      string[]? requireAuthorization = null,
-                                 Dictionary<string, object>? arguments = null)
+                                 Dictionary<string, object?>? arguments = null)
     {
         arguments ??= [];
         return host.AddMapRoute(new MapRouteOptions
@@ -144,7 +145,7 @@ public static class KestrunHostMapExtensions
                                 string scriptBlock,
                                 ScriptLanguage language = ScriptLanguage.PowerShell,
                                 string[]? requireAuthorization = null,
-                                 Dictionary<string, object>? arguments = null)
+                                 Dictionary<string, object?>? arguments = null)
     {
         return host.AddMapRoute(new MapRouteOptions
         {
@@ -372,7 +373,7 @@ public static class KestrunHostMapExtensions
             throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
         }
 
-        var map = host.AddNativeRoute(options.Pattern, HttpVerb.Get, async (ctx) =>
+        var map = host.AddMapRoute(options.Pattern, HttpVerb.Get, async (ctx) =>
           {
               // ② Build your variables map
               var vars = new Dictionary<string, object?>();
@@ -383,5 +384,98 @@ public static class KestrunHostMapExtensions
 
         AddMapOptions(host, map, options);
         return map;
+    }
+
+    /// <summary>
+    /// Adds a static override route to the KestrunHost for the specified pattern and handler.
+    /// This allows you to override static file serving with dynamic content.
+    /// Call this method before adding static file components to ensure it takes precedence.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="pattern">The route pattern to match.</param>
+    /// <param name="handler">The handler to execute for the route.</param>
+    /// <returns>The KestrunHost instance for method chaining.</returns>
+    /// <remarks>
+    /// This method allows you to override static file serving with dynamic content by providing a handler
+    /// that will be executed for the specified route pattern.
+    /// </remarks>
+    public static KestrunHost AddStaticOverride(
+        this KestrunHost host,
+        string pattern,
+         KestrunHandler handler)         // same delegate you already use
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
+
+        // Defer registration until Kestrun builds the WebApplication:
+        return host.Use(app =>
+        {
+            // Path-based branch
+            app.Map(pattern, branch =>
+            {
+                branch.Run(async ctx =>
+                {
+                    // method guard: always GET
+                    if (!HttpMethods.IsGet(ctx.Request.Method))
+                    {
+                        ctx.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                        return;
+                    }
+
+                    // Wrap in Kestrun request/response objects
+                    var req = await KestrunRequest.NewRequest(ctx);
+                    var res = new KestrunResponse(req);
+                    // Create Kestrun context
+                    var context = new KestrunContext(req, res, ctx);
+
+                    await handler(context);          // your logic
+                    await res.ApplyTo(ctx.Response);  // flush back to ASP.NET
+                });
+            });
+        });
+    }
+
+    /// <summary>
+    /// Adds a static override route to the KestrunHost for the specified pattern and script code.
+    /// This allows you to override static file serving with dynamic content.
+    /// /// Call this method before adding static file components to ensure it takes precedence.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="pattern">The route pattern to match.</param>
+    /// <param name="code">The script code to execute.</param>
+    /// <param name="language">The scripting language to use.</param>
+    /// <param name="arguments">Optional dictionary of arguments to pass to the script.</param>
+    /// <param name="extraImports">Optional array of extra imports for the script.</param>
+    /// <param name="extraRefs">Optional array of extra assemblies to reference in the script.</param>
+    /// <returns>The KestrunHost instance for method chaining.</returns>
+    /// <remarks>
+    /// This method allows you to override static file serving with dynamic content by providing a script
+    /// that will be executed for the specified route pattern.
+    /// </remarks> 
+    public static KestrunHost AddStaticOverride(
+    this KestrunHost host,
+         string pattern,
+         string code,
+         ScriptLanguage language = ScriptLanguage.PowerShell,
+         Dictionary<string, object?>? arguments = null,
+         string[]? extraImports = null,
+         Assembly[]? extraRefs = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+
+        var options = new MapRouteOptions
+        {
+            Pattern = pattern,
+            HttpVerbs = [HttpVerb.Get], // GET-only
+            Code = code,
+            Language = language,
+            //RequireAuthorization = requireAuthorization ?? [], // No authorization by default            
+            Arguments = arguments ?? [] // No additional arguments by default
+        };
+        // queue before static files
+        return host.Use(app =>
+        {
+            AddMapRoute(host, options);
+        });
     }
 }

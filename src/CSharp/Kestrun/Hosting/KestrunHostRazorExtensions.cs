@@ -49,13 +49,15 @@ public static class KestrunHostRazorExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host, PathString? routePrefix) =>
         AddPowerShellRazorPages(host, routePrefix, (Action<RazorPagesOptions>?)null);
+
     /// <summary>
     /// Adds PowerShell Razor Pages to the application with default configuration and no route prefix.
     /// </summary>
     /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <returns>The current KestrunHost instance.</returns>
-        public static KestrunHost AddPowerShellRazorPages(this KestrunHost host) =>
-            AddPowerShellRazorPages(host, null, (Action<RazorPagesOptions>?)null);
+    public static KestrunHost AddPowerShellRazorPages(this KestrunHost host) =>
+        AddPowerShellRazorPages(host, null, (Action<RazorPagesOptions>?)null);
+        
     // helper: true  ⇢ file contains managed metadata
     static bool IsManaged(string path)
     {
@@ -234,14 +236,14 @@ public static class KestrunHostRazorExtensions
     }
 
 
-    
+
     /// <summary>
     /// Adds Razor Pages to the application.
     /// </summary>
     /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="cfg">The configuration options for Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
-    public static KestrunHost AddRazorPages(this KestrunHost host,RazorPagesOptions? cfg)
+    public static KestrunHost AddRazorPages(this KestrunHost host, RazorPagesOptions? cfg)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding Razor Pages from source: {Source}", cfg);
@@ -268,7 +270,7 @@ public static class KestrunHostRazorExtensions
     /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <param name="cfg">The configuration options for Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
-    public static KestrunHost AddRazorPages(this KestrunHost host,Action<RazorPagesOptions>? cfg = null)
+    public static KestrunHost AddRazorPages(this KestrunHost host, Action<RazorPagesOptions>? cfg = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding Razor Pages with configuration: {Config}", cfg);

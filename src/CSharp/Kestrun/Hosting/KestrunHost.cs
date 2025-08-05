@@ -140,7 +140,7 @@ public class KestrunHost : IDisposable
 
     private readonly List<Action<KestrunHost>> _featureQueue = [];
 
-    internal  List<Action<KestrunHost>> FeatureQueue => _featureQueue;
+    internal List<Action<KestrunHost>> FeatureQueue => _featureQueue;
     #endregion
 
 
@@ -164,10 +164,10 @@ public class KestrunHost : IDisposable
     /// <param name="logger">The Serilog logger instance to use.</param>
     /// <param name="kestrunRoot">The root directory for the Kestrun application.</param>
     /// <param name="modulePathsObj">An array of module paths to be loaded.</param>
-        public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
-        {
-            // Initialize Serilog logger if not provided
-            _Logger = logger ?? Log.Logger;
+    public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
+    {
+        // Initialize Serilog logger if not provided
+        _Logger = logger ?? Log.Logger;
 
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
@@ -276,13 +276,13 @@ public class KestrunHost : IDisposable
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
-    
+
         if (protocols == HttpProtocols.Http1AndHttp2AndHttp3 && !CcUtilities.PreviewFeaturesEnabled())
         {
             _Logger.Warning("Http3 is not supported in this version of Kestrun. Using Http1 and Http2 only.");
             protocols = HttpProtocols.Http1AndHttp2;
         }
-    
+
         Options.Listeners.Add(new ListenerOptions
         {
             IPAddress = ipAddress ?? IPAddress.Any,
@@ -293,7 +293,7 @@ public class KestrunHost : IDisposable
             UseConnectionLogging = useConnectionLogging
         });
         return this;
-    
+
     }
 
     /// <summary>
@@ -330,8 +330,8 @@ public class KestrunHost : IDisposable
 
 
     #region Route
-    
- 
+
+
 
     #endregion
     #region Configuration
@@ -340,10 +340,10 @@ public class KestrunHost : IDisposable
     /// <summary>
     /// Applies the configured options to the Kestrel server and initializes the runspace pool.
     /// </summary>
-        public void EnableConfiguration()
-        {
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("EnableConfiguration(options) called");
+    public void EnableConfiguration()
+    {
+        if (_Logger.IsEnabled(LogEventLevel.Debug))
+            _Logger.Debug("EnableConfiguration(options) called");
 
         if (_isConfigured)
         {
@@ -516,7 +516,7 @@ public class KestrunHost : IDisposable
         {
             if (_Logger.IsEnabled(LogEventLevel.Debug))
                 _Logger.Debug("AddScheduling (deferred)");
-    
+
             if (host.Scheduler is null)
             {
                 if (MaxRunspaces is not null && MaxRunspaces > 0)
@@ -536,7 +536,7 @@ public class KestrunHost : IDisposable
             }
         });
     }
- 
+
     /// <summary>
     /// Adds MVC / API controllers to the application.
     /// </summary>
@@ -551,7 +551,7 @@ public class KestrunHost : IDisposable
         });
     }
 
-     
+
 
 
     /// <summary>
@@ -567,31 +567,19 @@ public class KestrunHost : IDisposable
         return Use(app =>
         {
             ArgumentNullException.ThrowIfNull(_runspacePool);
-            if (routePrefix.HasValue)
-            {
-                // ── mount PowerShell only under /ps (or whatever you pass) ──
-                app.Map(routePrefix.Value, branch =>
-                {
-                    branch.UseLanguageRuntime(
-                        ScriptLanguage.PowerShell,
-                        b => b.UsePowerShellRunspace(_runspacePool));
-                });
-            }
-            else
-            {
-                // ── mount PowerShell at the root ──
-                app.UseLanguageRuntime(
-                    ScriptLanguage.PowerShell,
-                    b => b.UsePowerShellRunspace(_runspacePool));
-            }
+            // ── mount PowerShell at the root ──
+            app.UseLanguageRuntime(
+                ScriptLanguage.PowerShell,
+                b => b.UsePowerShellRunspace(_runspacePool));
+
         });
     }
 
- 
-    
 
-   
- 
+
+
+
+
 
     // ② SignalR
     /// <summary>
@@ -657,54 +645,54 @@ public class KestrunHost : IDisposable
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous start operation.</returns>
-        public async Task StartAsync(CancellationToken cancellationToken = default)
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        if (_Logger.IsEnabled(LogEventLevel.Debug))
+            _Logger.Debug("StartAsync() called");
+        EnableConfiguration();
+        if (_app != null)
         {
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("StartAsync() called");
-            EnableConfiguration();
-            if (_app != null)
-            {
-                await _app.StartAsync(cancellationToken);
-            }
+            await _app.StartAsync(cancellationToken);
         }
+    }
 
     /// <summary>
     /// Stops the Kestrun web application asynchronously.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A task that represents the asynchronous stop operation.</returns>
-        public async Task StopAsync(CancellationToken cancellationToken = default)
+    public async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        if (_Logger.IsEnabled(LogEventLevel.Debug))
+            _Logger.Debug("StopAsync() called");
+        if (_app != null)
         {
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("StopAsync() called");
-            if (_app != null)
+            try
             {
-                try
-                {
-                    // Initiate graceful shutdown
-                    await _app.StopAsync(cancellationToken);
-                }
-                catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
-                {
-                    // QUIC exceptions can occur during shutdown, especially if the server is not using QUIC.
-                    // We log this as a debug message to avoid cluttering the logs with expected exceptions.
-                    // This is a workaround for
-    
-                    _Logger.Debug("Ignored QUIC exception during shutdown: {Message}", ex.Message);
-                }
+                // Initiate graceful shutdown
+                await _app.StopAsync(cancellationToken);
+            }
+            catch (Exception ex) when (ex.GetType().FullName == "System.Net.Quic.QuicException")
+            {
+                // QUIC exceptions can occur during shutdown, especially if the server is not using QUIC.
+                // We log this as a debug message to avoid cluttering the logs with expected exceptions.
+                // This is a workaround for
+
+                _Logger.Debug("Ignored QUIC exception during shutdown: {Message}", ex.Message);
             }
         }
+    }
 
     /// <summary>
     /// Initiates a graceful shutdown of the Kestrun web application.
     /// </summary>
-        public void Stop()
-        {
-            if (_Logger.IsEnabled(LogEventLevel.Debug))
-                _Logger.Debug("Stop() called");
-            // This initiates a graceful shutdown.
-            _app?.Lifetime.StopApplication();
-        }
+    public void Stop()
+    {
+        if (_Logger.IsEnabled(LogEventLevel.Debug))
+            _Logger.Debug("Stop() called");
+        // This initiates a graceful shutdown.
+        _app?.Lifetime.StopApplication();
+    }
 
     #endregion
 
@@ -784,7 +772,7 @@ public class KestrunHost : IDisposable
     #endregion
 
     #region Script Validation
- 
+
 
     #endregion
 }

@@ -40,7 +40,7 @@ internal static class VBNetDelegateBuilder
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
     public static RequestDelegate Build(
-        string code, Serilog.ILogger log, Dictionary<string, object> args, string[]? extraImports,
+        string code, Serilog.ILogger log, Dictionary<string, object?>? args, string[]? extraImports,
         Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.VisualBasic16_9)
     {
 

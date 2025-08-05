@@ -394,12 +394,12 @@ server.AddMapRoute("/cs/file", HttpVerb.Get, """
 
 
 
-server.AddNativeRoute("/compiled", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/compiled", HttpVerb.Get, async (ctx) =>
 {
     await ctx.Response.WriteJsonResponseAsync(new { ok = true, message = "Native C# works!" });
 });
 
-server.AddNativeRoute("/compiled/stream", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/compiled/stream", HttpVerb.Get, async (ctx) =>
 {
     ctx.Response.WriteFileResponse(filePath: "../Files/LargeFiles/2GB.bin", contentType: "application/octet-stream", statusCode: 200);
     await Task.CompletedTask; // Ensure the method is async

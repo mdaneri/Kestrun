@@ -6,6 +6,8 @@ using Kestrun.Utilities;
 // Add the namespace that contains HttpVerb
 using System.Text;
 using Serilog;
+using Kestrun.Scripting;
+using Kestrun.Certificates;
 using Kestrun.Logging;
 using Kestrun.Hosting;
 
@@ -51,11 +53,51 @@ server.AddResponseCompression(options =>
     });
     options.Providers.Add<BrotliCompressionProvider>();
 }).AddPowerShellRuntime()
+.AddStaticOverride("/assets/report", async ctx =>
+{
+    await ctx.Response.WriteJsonResponseAsync(new { ok = true, message = "Static override works!" });
+})
+.AddStaticOverride(
+    "/assets/ps-report", """
+
+  $Payload = @{
+    ok    = $true
+    lang  = 'PowerShell'
+    time  = (Get-Date)
+}
+Write-KrJsonResponse -inputObject $Payload
+""", ScriptLanguage.PowerShell)
+
+.AddStaticOverride(
+    "/assets/vb-report",
+    """
+    Dim payload = New With {.ok=True, .lang="VB.NET", .time=DateTime.UtcNow}
+    Await Context.Response.WriteJsonResponseAsync(payload)
+""",
+    ScriptLanguage.VBNet)
+
+.AddStaticOverride(
+    "/assets/cs-report",
+    """  
+        var payload = new
+        {
+            ok = true,
+            lang = "CSharp",
+            time = DateTime.UtcNow
+        };
+        await Context.Response.WriteJsonResponseAsync(payload);
+""",
+    ScriptLanguage.CSharp)
+
 .AddFileServer(options =>
 {
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
-}).AddPowerShellRazorPages();
+}) 
+.AddPowerShellRazorPages(
+    routePrefix: "/pages"
+    
+);
 
 
 

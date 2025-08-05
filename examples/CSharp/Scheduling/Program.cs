@@ -91,7 +91,7 @@ server.AddMapRoute("/visit", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell);
 
 // JSON schedule report
-server.AddNativeRoute("/schedule/report", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/schedule/report", HttpVerb.Get, async (ctx) =>
 {
     var report = server.Scheduler.GetReport();
     await ctx.Response.WriteJsonResponseAsync(report, 200);

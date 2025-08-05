@@ -403,7 +403,7 @@ server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
     API KEY AUTHENTICATION ROUTES
 *********************************************
 */
-server.AddNativeRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
     var user = ctx.User?.Identity?.Name;
     await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated using simple key matching.", 200);
@@ -458,7 +458,7 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
-server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
     var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
@@ -466,7 +466,7 @@ server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 }, [JwtScheme]);
 
 
-server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/token/new", HttpVerb.Get, async (ctx) =>
 {
     try
     {
@@ -489,7 +489,7 @@ server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
     Cookie authentication routes
 *********************************************
 */
-server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
+server.AddMapRoute("/cookies/login", HttpVerb.Get, async ctx =>
 {
     await ctx.Response.WriteTextResponseAsync(@"
 <!DOCTYPE html>
@@ -514,7 +514,7 @@ server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
   </body>
 </html>", statusCode: 200, contentType: "text/html; charset=UTF-8");
 });
-server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
+server.AddMapRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
 {
     var form = ctx.Request.Form;
     if (form == null)
@@ -541,7 +541,7 @@ server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
     }
 });
 
-server.AddNativeRoute("/cookies/logout", HttpVerb.Get, async ctx =>
+server.AddMapRoute("/cookies/logout", HttpVerb.Get, async ctx =>
 {
     await ctx.HttpContext.SignOutAsync("Cookies");
     // After logout, send them back to login
@@ -589,7 +589,7 @@ server.AddMapRoute("/cookies/secure3", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, ["Cookies"]);
 
 
-server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
 {
     if (ctx.User?.Identity == null || !ctx.User.Identity.IsAuthenticated)
     {
@@ -608,7 +608,7 @@ server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
 //    This route is protected by Kerberos authentication.
 //    It will only be accessible if the user is authenticated via Kerberos.
 //****************************************************************************************
-server.AddNativeRoute("/kerberos/secure", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/kerberos/secure", HttpVerb.Get, async (ctx) =>
 {
     var userName = ctx.User?.Identity?.Name ?? "Unknown";
     await ctx.Response.WriteTextResponseAsync($"Hello, {userName}");

@@ -35,7 +35,7 @@ internal static class CSharpDelegateBuilder
     /// The delegate will execute the provided C# code within the context of an HTTP request, allowing access to the request and response objects.
     /// </remarks>
     internal static RequestDelegate Build(
-            string code, Serilog.ILogger log, Dictionary<string, object> args, string[]? extraImports,
+            string code, Serilog.ILogger log, Dictionary<string, object?>? args, string[]? extraImports,
             Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
