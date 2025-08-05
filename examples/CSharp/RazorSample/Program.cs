@@ -93,11 +93,9 @@ Write-KrJsonResponse -inputObject $Payload
 {
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
-}) 
-.AddPowerShellRazorPages(
-    routePrefix: "/pages"
+})
+.AddPowerShellRazorPages(routePrefix: "/pages");  
     
-);
 
 
 
