@@ -19,6 +19,7 @@ using System.Text;
 var currentDir = Directory.GetCurrentDirectory();
 new LoggerConfiguration()
       .MinimumLevel.Debug()
+      .WriteTo.Console()
       .WriteTo.File("logs/sharedState.log", rollingInterval: RollingInterval.Day)
       .Register("Audit", setAsDefault: true);
 

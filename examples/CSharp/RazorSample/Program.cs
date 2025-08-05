@@ -10,6 +10,8 @@ using Kestrun.Scripting;
 using Kestrun.Certificates;
 using Kestrun.Logging;
 using Kestrun.Hosting;
+using Microsoft.AspNetCore.Authentication;
+using Kestrun.Authentication;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -18,6 +20,8 @@ Log.Logger = new LoggerConfiguration()
         .WriteTo.File("logs/razor.log", rollingInterval: RollingInterval.Day)
         .Register("Audit", setAsDefault: true);
 
+// Define a constant for the basic authentication scheme
+const string BasicPowershellScheme = "PowershellBasic";
 var currentDir = Directory.GetCurrentDirectory();
 // 1. Create server
 var server = new KestrunHost("MyKestrunServer", currentDir);
@@ -53,6 +57,30 @@ server.AddResponseCompression(options =>
     });
     options.Providers.Add<BrotliCompressionProvider>();
 }).AddPowerShellRuntime()
+
+.AddBasicAuthentication(BasicPowershellScheme, opts =>
+{
+    opts.Realm = "Power-Kestrun";
+
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.PowerShell,
+        Code = """
+            param(
+                [string]$Username,
+                [string]$Password
+            )
+            if ($Username -eq 'admin' -and $Password -eq 'password') {
+                return $true
+            } else {
+                return $false
+            }
+        """
+    };
+    opts.Base64Encoded = true;            // default anyway
+    opts.RequireHttps = false;           // example
+
+})
 .AddStaticOverride("/assets/report", async ctx =>
 {
     await ctx.Response.WriteJsonResponseAsync(new { ok = true, message = "Static override works!" });
@@ -66,7 +94,7 @@ server.AddResponseCompression(options =>
     time  = (Get-Date)
 }
 Write-KrJsonResponse -inputObject $Payload
-""", ScriptLanguage.PowerShell)
+""", ScriptLanguage.PowerShell, requireAuthorization:[BasicPowershellScheme])
 
 .AddStaticOverride(
     "/assets/vb-report",
