@@ -273,8 +273,11 @@ public class ApiKeyAuthHandler
             var result = await script(globals).ConfigureAwait(false);
 
             Log.Information("VB.NET authentication result for {ProvidedKey}: {Result}", providedKey, result);
-
-            return result;
+            if (result is bool isValid)
+            {
+                return isValid;
+            }
+            return false;
         };
     }
 

@@ -34,9 +34,13 @@ public record MapRouteOptions
     /// </summary>
     public Assembly[]? ExtraRefs { get; init; }
     /// <summary>
+    /// Authorization Scheme names required for this route.
+    /// </summary>
+    public string[] RequireSchemes { get; init; } = []; // Authorization scheme name, if any
+    /// <summary>
     /// Authorization policy names required for this route.
     /// </summary>
-    public string[] RequireAuthorization { get; init; } = []; // Authorization policy name, if any
+    public string[]? RequirePolicies { get; init; } = []; // Authorization policies, if any
     /// <summary>
     /// Name of the CORS policy to apply, if any.
     /// </summary>
@@ -65,7 +69,7 @@ public record MapRouteOptions
     /// <summary>
     /// Additional metadata for the route, represented as key-value pairs.
     /// </summary>
-    public Dictionary<string,object?>? Arguments { get; init; } = []; // Additional metadata for the route
+    public Dictionary<string, object?>? Arguments { get; init; } = []; // Additional metadata for the route
 
     /// <summary>
     /// Metadata for OpenAPI documentation related to the route.

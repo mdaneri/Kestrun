@@ -60,8 +60,8 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// After credentials are valid, this is called to add extra Claims.
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
-    public Func<HttpContext, string, IEnumerable<Claim>>? IssueClaims { get; set; }
-
+    public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
+    public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
 
     /// <summary>
     /// Settings for the authentication code, if using a script.
@@ -69,5 +69,13 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// <remarks>
     /// This allows you to specify the language, code, and additional imports/refs.
     /// </remarks>
-    public AuthenticationCodeSettings CodeSettings { get; set; } = new();
+    public AuthenticationCodeSettings ValidateCredentialCodeSettings { get; set; } = new();
+
+    /// <summary>
+    /// Settings for the claims issuing code, if using a script.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to specify the language, code, and additional imports/refs for claims issuance.
+    /// </remarks>
+    public AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; } = new();
 }

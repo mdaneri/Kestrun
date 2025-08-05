@@ -22,7 +22,9 @@ using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler
 using Kestrun.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Negotiate;          // ISecurityTokenValidator
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using Org.BouncyCastle.Bcpg;
+using Kestrun.Hosting.Options;          // ISecurityTokenValidator
 
 
 /*
@@ -100,6 +102,16 @@ var tokenBuilder = JwtTokenBuilder.New()
 
 var builderResult = tokenBuilder.Build();
 
+var claimConfig = new ClaimPolicyConfig
+{
+    Policies =
+    {
+        ["CanDelete"] = new("can_delete", "true"),
+        ["CanRead"]   = new("can_read"  , "true"),
+        ["Admin"]     = new(ClaimTypes.Role, "admin")
+    }
+};
+
 /// Add compression
 server.AddResponseCompression(options =>
 {
@@ -125,7 +137,7 @@ server.AddResponseCompression(options =>
 {
     opts.Realm = "Power-Kestrun";
 
-    opts.CodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.PowerShell,
         Code = """
@@ -140,10 +152,43 @@ server.AddResponseCompression(options =>
             }
         """
     };
+    opts.IssueClaimsCodeSettings= new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.PowerShell,
+        Code = """
+            param(
+                [string]$Username
+            )
+            if ($Username -eq 'admin') {
+                return [System.Security.Claims.Claim[]]@(
+                    [System.Security.Claims.Claim]::New('can_delete', "true")
+                    # or, if you really want it as a role:
+                    # New-Object System.Security.Claims.Claim([System.Security.Claims.ClaimTypes]::Role, 'can_read')
+                )
+            } else {
+                return [System.Security.Claims.Claim[]]@()
+            }
+        """
+    };
+  /*  opts.NativeIssueClaims = (ctx, user) =>
+    {
+        if (user == "admin")
+        {
+            // ← return the claims you want to add
+            return new[]
+            {
+            new Claim("can_delete", "true")          // custom claim
+            // or, if you really want it as a role:
+            // new Claim(ClaimTypes.Role, "can_read")
+        };
+        }
+
+        // everyone else gets no extra claims
+        return Enumerable.Empty<Claim>();
+    }; */
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
-
-})
+}, configureAuthz: claimConfig.ToAuthzDelegate())
 
 /// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────
 .AddBasicAuthentication(BasicNativeScheme, opts =>
@@ -163,7 +208,7 @@ server.AddResponseCompression(options =>
 .AddBasicAuthentication(BasicCSharpScheme, opts =>
 {
     opts.Realm = "CSharp-Kestrun";
-    opts.CodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.CSharp,
 
@@ -176,7 +221,7 @@ server.AddResponseCompression(options =>
 .AddBasicAuthentication(BasicVBNetScheme, opts =>
 {
     opts.Realm = "VBNet-Kestrun";
-    opts.CodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.VBNet,
 
@@ -244,7 +289,7 @@ server.AddResponseCompression(options =>
     """,
         ExtraImports = ["System.Text"]
     };
-}) 
+})
 
 /// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
 .AddJwtBearerAuthentication(
@@ -364,6 +409,43 @@ server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
     $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
 """, ScriptLanguage.PowerShell, [BasicPowershellScheme]);
+
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/ps/policy",
+    HttpVerbs = [HttpVerb.Get],
+    Code = """
+         if (-not $Context.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+        }
+
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+    """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanRead"],
+    RequireSchemes = [BasicPowershellScheme]
+}); 
+
+server.AddMapRoute( new()
+{
+    Pattern = "/secure/ps/policy",
+    HttpVerbs = [HttpVerb.Delete],
+    Code = """
+         if (-not $Context.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+        }
+
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+    """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanDelete"],
+    RequireSchemes = [BasicPowershellScheme]
+}); 
 
 server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
     if (-not $Context.User.Identity.IsAuthenticated) {

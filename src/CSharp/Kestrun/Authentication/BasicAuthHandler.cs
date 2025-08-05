@@ -113,7 +113,22 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             if (Options.IssueClaims is not null)
             {
                 // Call the IssueClaims function to get additional claims
-                var extra = Options.IssueClaims(Context, user);
+                var extra =  await Options.IssueClaims(Context, user);
+                if (extra is not null)
+                {
+                    foreach (var claim in extra)
+                    {
+                        if (claim is not null && !string.IsNullOrEmpty(claim.Value) && claim is Claim)
+                            claims.Add(claim);
+                    }
+                    //claims.AddRange(extra);
+                }
+            }
+
+            if (Options.NativeIssueClaims is not null)
+            {
+                // Call the NativeIssueClaims function to get additional claims
+                var extra =  Options.NativeIssueClaims(Context, user);
                 if (extra is not null)
                     claims.AddRange(extra);
             }
@@ -325,8 +340,117 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var result = await script(glob).ConfigureAwait(false);
 
             Log.Information("VB.NET authentication result for {Username}: {Result}", user, result);
+            if (result is bool isValid)
+            {
+                return isValid;
+            }
+            return false;
+        };
+    }
 
-            return result;
+
+    public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext context, string username)
+    {
+        try
+        {
+            if (!context.Items.ContainsKey("PS_INSTANCE"))
+            {
+                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                Log.Warning("Username  is null or empty.");
+                return [];
+            }
+            if (string.IsNullOrEmpty(code))
+            {
+                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
+            }
+
+            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
+                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
+            if (ps.Runspace == null)
+            {
+                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+
+            ps.AddScript(code, useLocalScope: true)
+            .AddParameter("username", username);
+            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+
+            return psResults.Select(result => new Claim(ClaimTypes.Name, result.ToString()))
+                .Where(claim => claim != null && !string.IsNullOrEmpty(claim.Value))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during Issue Claims for {Username}", username);
+            return [];
+        }
+    }
+
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings codeSettings)
+  => async (ctx, user) =>
+        {
+            return await IssueClaimsPowerShellAsync(codeSettings.Code, ctx, user);
+
+        };
+
+
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings codeSettings)
+    {
+        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        new Dictionary<string, object?>
+            {
+                { "username", "" }
+            }, languageVersion: codeSettings.CSharpVersion);
+
+        return async (ctx, user) =>
+        {
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                { "username", user }
+            });
+            var result = await script.RunAsync(globals).ConfigureAwait(false);
+            return result.ReturnValue is IEnumerable<Claim> claims
+                ? claims
+                : Enumerable.Empty<Claim>();
+        };
+    }
+
+
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings codeSettings)
+    {
+        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        new Dictionary<string, object?>
+            {
+                    { "username", "" }
+            }, languageVersion: codeSettings.VisualBasicVersion);
+
+        return async (ctx, user) =>
+        {
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                    { "username", user }
+            });
+            // Run the VB.NET script and get the result
+            // Note: The script should return a boolean indicating success or failure
+            var result = await script(glob).ConfigureAwait(false);
+            // return result is IEnumerable<Claim> claims
+            //   ? claims
+            // : Enumerable.Empty<Claim>();
+               
+               return Enumerable.Empty<Claim>(); // TODO: Implement proper VB.NET claims extraction
         };
     }
 }

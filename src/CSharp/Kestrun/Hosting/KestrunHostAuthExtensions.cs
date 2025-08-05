@@ -56,29 +56,52 @@ public static class KestrunHostAuthExtensions
                         configure?.Invoke(opts);
 
                         // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
                         {
                             // Build the PowerShell script validator
                             // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.CodeSettings);
+                            opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
                         }
                         else   // ── C# pathway ─────────────────────────────────
-                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
                         {
                             // Build the C# script validator
                             // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.CodeSettings);
+                            opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
                         }
                         else
-                          if (opts.CodeSettings.Language is ScriptLanguage.VBNet
-                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                          if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.VBNet
+                            && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
                         {
                             // Build the VB.NET script validator
                             // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.CodeSettings);
+                            opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCredentialCodeSettings);
                         }
+
+                        // ── SPECIAL POWER-SHELL PATH ────────────────────
+                        // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
+                        // script validator
+                        if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
+                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                        {
+                            opts.IssueClaims = BasicAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                        }
+                        else   // ── C# pathway ─────────────────────────────────
+                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
+                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                        {
+                            opts.IssueClaims = BasicAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                        }
+                        else
+                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
+                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                        {
+                            opts.IssueClaims = BasicAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                        }
+
+
                     });
 
             },
@@ -119,22 +142,22 @@ public static class KestrunHostAuthExtensions
                 opts.SuppressWwwAuthenticate = configure.SuppressWwwAuthenticate;
                 opts.Logger = configure.Logger;
                 // Copy properties from the provided configure object
-                opts.CodeSettings = configure.CodeSettings;
+                opts.ValidateCredentialCodeSettings = configure.ValidateCredentialCodeSettings;
                 // ── SPECIAL POWER-SHELL PATH ────────────────────
-                if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
-                    !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
+                    !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
                 {
                     // Build the PowerShell script validator
                     // This will be used to validate credentials
-                    opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.CodeSettings);
+                    opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
                 }
                 else   // ── C# pathway ─────────────────────────────────
-                if (opts.CodeSettings.Language is ScriptLanguage.CSharp
-                    && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
+                    && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
                 {
                     // Build the C# script validator
                     // This will be used to validate credentials
-                    opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.CodeSettings);
+                    opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
                 }
             },
             configureAuthz: configureAuthz
@@ -327,7 +350,8 @@ public static class KestrunHostAuthExtensions
                             // Build the C# script validator
                             // This will be used to validate credentials
                             opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
-                        } else   // ── VB.NET pathway ─────────────────────────────────
+                        }
+                        else   // ── VB.NET pathway ─────────────────────────────────
                         if (opts.CodeSettings.Language is ScriptLanguage.VBNet
                             && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
                         {
@@ -429,7 +453,7 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz
         );
     }
-  
+
 
     /// <summary>
     /// Adds authentication and authorization middleware to the Kestrun host.
@@ -439,29 +463,29 @@ public static class KestrunHostAuthExtensions
     /// <param name="defaultScheme">The default authentication scheme (default is JwtBearer).</param>
     /// <param name="configureAuthz">Optional authorization policy configuration.</param>
     /// <returns>The configured KestrunHost instance.</returns>
-        internal static KestrunHost AddAuthentication(this KestrunHost host,
-        Action<AuthenticationBuilder> buildSchemes,            // ← unchanged
-        string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
-        Action<AuthorizationOptions>? configureAuthz = null)
+    internal static KestrunHost AddAuthentication(this KestrunHost host,
+    Action<AuthenticationBuilder> buildSchemes,            // ← unchanged
+    string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
+    Action<AuthorizationOptions>? configureAuthz = null)
+    {
+        host.AddService(services =>
         {
-            host.AddService(services =>
-            {
-                var ab = services.AddAuthentication(defaultScheme);
-                buildSchemes(ab);                                  // Basic + JWT here
-    
-                // make sure UseAuthorization() can find its services
-                if (configureAuthz is null)
-                    services.AddAuthorization();
-                else
-                    services.AddAuthorization(configureAuthz);
-            });
-    
-            return host.Use(app =>
-            {
-                app.UseAuthentication();
-                app.UseAuthorization();
-            });
-        }
+            var ab = services.AddAuthentication(defaultScheme);
+            buildSchemes(ab);                                  // Basic + JWT here
+
+            // make sure UseAuthorization() can find its services
+            if (configureAuthz is null)
+                services.AddAuthorization();
+            else
+                services.AddAuthorization(configureAuthz);
+        });
+
+        return host.Use(app =>
+        {
+            app.UseAuthentication();
+            app.UseAuthorization();
+        });
+    }
 
 
     /// <summary>
@@ -480,5 +504,5 @@ public static class KestrunHostAuthExtensions
                 s.AddAuthorization(cfg);
         });
     }
- 
+
 }

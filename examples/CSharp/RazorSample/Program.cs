@@ -62,7 +62,7 @@ server.AddResponseCompression(options =>
 {
     opts.Realm = "Power-Kestrun";
 
-    opts.CodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.PowerShell,
         Code = """
@@ -86,7 +86,7 @@ server.AddResponseCompression(options =>
     await ctx.Response.WriteJsonResponseAsync(new { ok = true, message = "Static override works!" });
 })
 .AddStaticOverride(
-    "/assets/ps-report", """
+   pattern: "/assets/ps-report", code: """
 
   $Payload = @{
     ok    = $true
@@ -94,7 +94,7 @@ server.AddResponseCompression(options =>
     time  = (Get-Date)
 }
 Write-KrJsonResponse -inputObject $Payload
-""", ScriptLanguage.PowerShell, requireAuthorization:[BasicPowershellScheme])
+""", language: ScriptLanguage.PowerShell, requireSchemes: [BasicPowershellScheme])
 
 .AddStaticOverride(
     "/assets/vb-report",
@@ -122,8 +122,8 @@ Write-KrJsonResponse -inputObject $Payload
     options.RequestPath = "/assets"; // Set the request path for static files 
     options.EnableDirectoryBrowsing = true;
 })
-.AddPowerShellRazorPages(routePrefix: "/pages");  
-    
+.AddPowerShellRazorPages(routePrefix: "/pages");
+
 
 
 
