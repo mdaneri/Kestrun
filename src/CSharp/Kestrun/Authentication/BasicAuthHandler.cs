@@ -315,14 +315,14 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var krRequest = await KestrunRequest.NewRequest(ctx);
             var krResponse = new KestrunResponse(krRequest);
             var context = new KestrunContext(krRequest, krResponse, ctx);
-            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
                     { "username", user },
                     { "password", pass }
             });
             // Run the VB.NET script and get the result
             // Note: The script should return a boolean indicating success or failure
-            var result = await script(globals).ConfigureAwait(false);
+            var result = await script(glob).ConfigureAwait(false);
 
             Log.Information("VB.NET authentication result for {Username}: {Result}", user, result);
 

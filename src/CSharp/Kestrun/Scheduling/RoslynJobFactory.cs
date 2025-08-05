@@ -27,12 +27,6 @@ internal static class RoslynJobFactory
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
 
         var script = CSharpDelegateBuilder.Compile(code: code, log: log, extraImports: extraImports, extraRefs: extraRefs, locals: locals, languageVersion: languageVersion);
-     /*   var diagnostics = script.Compile();
-        if (diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-            throw new CompilationErrorException("C# job failed to compile", diagnostics);
-        if (log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("C# job compiled successfully, diagnostics: {@Diagnostics}", diagnostics);
-       */
         var runner = script.CreateDelegate();   // returns ScriptRunner<object?>
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("C# job runner created, type={Type}", runner.GetType());

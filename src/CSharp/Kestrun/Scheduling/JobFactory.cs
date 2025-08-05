@@ -112,8 +112,15 @@ internal static class JobFactory
             }
         };
     }
-
-    /* ----------------  C# (Roslyn) ---------------- */
+    
+    /// <summary>
+    /// Creates a C# or VB.NET job using Roslyn compilation.
+    /// </summary>
+    /// <param name="config">The job configuration containing code, logger, and other parameters.</param>
+    /// <returns>A function that executes the job.</returns>
+    /// <remarks>
+    /// This method uses Roslyn to compile and execute C# or VB.NET code.
+    /// </remarks>
     private static Func<CancellationToken, Task> RoslynJob(JobConfig config)
     {
         return RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.Locals, config.LanguageVersion);

@@ -291,7 +291,7 @@ internal static class CSharpDelegateBuilder
         }
         // If there are no warnings, log a debug message
         if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("VB.NET script compiled successfully with no warnings.");
+            log.Debug("C# script compiled successfully with no warnings.");
 
         return script;
     }
