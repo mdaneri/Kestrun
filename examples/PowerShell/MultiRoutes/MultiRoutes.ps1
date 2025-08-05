@@ -425,9 +425,70 @@ Add-KrMapRoute -Verbs Get -Path '/status' -ScriptBlock {
         Visits          = Get-Random
     } 
 }
-# Add routes
-#$server.AddMapRoute("/api/echo")
-#$server.AddMapRoute("/api/store")
+
+Add-KrMapRoute -Verbs Get -Path "/vb/text" -Language VBNet -Code @"
+    Console.WriteLine("Hello from VB.NET script! - Text Response (From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Text Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteTextResponseAsync(payload, 200)
+"@
+
+
+Add-KrMapRoute -Verbs Get -Path "/vb/xml" -Language VBNet -Code @"
+    Console.WriteLine("Hello from VB.NET script! - Xml Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Xml Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+    
+    Await Context.Response.WriteXmlResponseAsync(payload, 200)
+"@
+
+Add-KrMapRoute -Verbs Get -Path "/vb/yaml" -Language VBNet -Code @"
+    Console.WriteLine("Hello from VB.NET script! - Yaml Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Yaml Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteYamlResponseAsync(payload, 200)
+"@
+
+
+Add-KrMapRoute -Verbs Get -Path "/vb/json" -Language VBNet -Code @"
+    Console.WriteLine("Hello from VB.NET script! - Json Response(From VB.NET)")
+
+    Dim payload = New With {
+        .Body = "Hello from VB.NET script! - Json Response",
+        .RequestQuery = Context.Request.Query,
+        .RequestHeaders = Context.Request.Headers,
+        .RequestMethod = Context.Request.Method,
+        .RequestPath = Context.Request.Path,
+        .RequestBody = Context.Request.Body
+    }
+
+    Await Context.Response.WriteJsonResponseAsync(payload, 200)
+"@ 
+
+
 
 # Start the server asynchronously
 Start-KrServer

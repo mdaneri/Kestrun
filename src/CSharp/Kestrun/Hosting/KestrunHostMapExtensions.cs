@@ -323,7 +323,6 @@ public static class KestrunHostMapExtensions
         }
     }
 
-
     /// <summary>
     /// Adds an HTML template route to the KestrunHost for the specified pattern and HTML file path.
     /// </summary>
@@ -394,6 +393,7 @@ public static class KestrunHostMapExtensions
     /// <param name="host">The KestrunHost instance.</param>
     /// <param name="pattern">The route pattern to match.</param>
     /// <param name="handler">The handler to execute for the route.</param>
+    /// <param name="requireAuthorization">Optional array of authorization schemes required for the route.</param>
     /// <returns>The KestrunHost instance for method chaining.</returns>
     /// <remarks>
     /// This method allows you to override static file serving with dynamic content by providing a handler
@@ -402,35 +402,58 @@ public static class KestrunHostMapExtensions
     public static KestrunHost AddStaticOverride(
         this KestrunHost host,
         string pattern,
-         KestrunHandler handler)         // same delegate you already use
+        KestrunHandler handler,
+        string[]? requireAuthorization = null)         // same delegate you already use
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
 
-        // Defer registration until Kestrun builds the WebApplication:
+        return host.AddStaticOverride(new MapRouteOptions
+        {
+            Pattern = pattern,
+            HttpVerbs = [HttpVerb.Get], // GET-only
+            Language = ScriptLanguage.Native,
+            RequireAuthorization = requireAuthorization ?? [] // No authorization by default
+        }, handler);
+    }
+
+    /// <summary>
+    /// Adds a static override route to the KestrunHost using the specified MapRouteOptions and handler.
+    /// This allows you to override static file serving with dynamic content by providing a handler
+    /// that will be executed for the specified route pattern.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="options">The MapRouteOptions containing route configuration.</param>
+    /// <param name="handler">The handler to execute for the route.</param>
+    /// <returns>The KestrunHost instance for method chaining.</returns>
+    public static KestrunHost AddStaticOverride(
+        this KestrunHost host,
+        MapRouteOptions options,
+        KestrunHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.Pattern);
+
+        // defer until WebApplication is being built
         return host.Use(app =>
         {
-            // Path-based branch
-            app.Map(pattern, branch =>
-            {
-                branch.Run(async ctx =>
-                {
-                    // method guard: always GET
-                    if (!HttpMethods.IsGet(ctx.Request.Method))
-                    {
-                        ctx.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                        return;
-                    }
+            var endpoints = (IEndpointRouteBuilder)app;        // ← key change
 
-                    // Wrap in Kestrun request/response objects
+            // you said: static-file override should always be GET
+            var map = endpoints.MapMethods(
+                options.Pattern,
+                [HttpMethods.Get],
+                async ctx =>
+                {
+                    // wrap ASP.NET types in Kestrun abstractions
                     var req = await KestrunRequest.NewRequest(ctx);
                     var res = new KestrunResponse(req);
-                    // Create Kestrun context
-                    var context = new KestrunContext(req, res, ctx);
+                    var kestrun = new KestrunContext(req, res, ctx);
 
-                    await handler(context);          // your logic
-                    await res.ApplyTo(ctx.Response);  // flush back to ASP.NET
+                    await handler(kestrun);        // your logic
+                    await res.ApplyTo(ctx.Response);
                 });
-            });
+
+            // apply ShortCircuit / CORS / auth etc.
+            host.AddMapOptions(map, options);
         });
     }
 
@@ -443,9 +466,8 @@ public static class KestrunHostMapExtensions
     /// <param name="pattern">The route pattern to match.</param>
     /// <param name="code">The script code to execute.</param>
     /// <param name="language">The scripting language to use.</param>
+    /// <param name="requireAuthorization">Optional array of authorization schemes required for the route.</param>
     /// <param name="arguments">Optional dictionary of arguments to pass to the script.</param>
-    /// <param name="extraImports">Optional array of extra imports for the script.</param>
-    /// <param name="extraRefs">Optional array of extra assemblies to reference in the script.</param>
     /// <returns>The KestrunHost instance for method chaining.</returns>
     /// <remarks>
     /// This method allows you to override static file serving with dynamic content by providing a script
@@ -456,22 +478,45 @@ public static class KestrunHostMapExtensions
          string pattern,
          string code,
          ScriptLanguage language = ScriptLanguage.PowerShell,
-         Dictionary<string, object?>? arguments = null,
-         string[]? extraImports = null,
-         Assembly[]? extraRefs = null)
+         string[]? requireAuthorization = null,
+         Dictionary<string, object?>? arguments = null
+           )
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
-        ArgumentException.ThrowIfNullOrWhiteSpace(code);
-
-        var options = new MapRouteOptions
         {
-            Pattern = pattern,
-            HttpVerbs = [HttpVerb.Get], // GET-only
-            Code = code,
-            Language = language,
-            //RequireAuthorization = requireAuthorization ?? [], // No authorization by default            
-            Arguments = arguments ?? [] // No additional arguments by default
-        };
+            ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
+            ArgumentException.ThrowIfNullOrWhiteSpace(code);
+
+            var options = new MapRouteOptions
+            {
+                Pattern = pattern,
+                HttpVerbs = [HttpVerb.Get], // GET-only
+                Code = code,
+                Language = language,
+                RequireAuthorization = requireAuthorization ?? [], // No authorization by default
+                Arguments = arguments ?? [], // No additional arguments by default
+
+            };
+            // queue before static files
+            return host.Use(app =>
+            {
+                AddMapRoute(host, options);
+            });
+        }
+    }
+
+
+    /// <summary>
+    /// Adds a static override route to the KestrunHost using the specified MapRouteOptions.
+    /// This allows you to override static file serving with dynamic content.
+    /// Call this method before adding static file components to ensure it takes precedence.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="options">The MapRouteOptions containing route configuration.</param>
+    /// <returns>The KestrunHost instance for method chaining.</returns>
+    public static KestrunHost AddStaticOverride(this KestrunHost host, MapRouteOptions options)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.Pattern);
+        ArgumentException.ThrowIfNullOrWhiteSpace(options.Code);
         // queue before static files
         return host.Use(app =>
         {
