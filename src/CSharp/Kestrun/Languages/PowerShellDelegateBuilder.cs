@@ -11,7 +11,7 @@ internal static class PowerShellDelegateBuilder
     public const string PS_INSTANCE_KEY = "PS_INSTANCE";
     public const string KR_REQUEST_KEY = "KR_REQUEST";
     public const string KR_RESPONSE_KEY = "KR_RESPONSE";
-    internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object> arguments)
+    internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object?>? arguments)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Building PowerShell delegate, script length={Length}", code?.Length);

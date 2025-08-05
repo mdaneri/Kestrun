@@ -27,6 +27,7 @@ using Org.BouncyCastle.Asn1.X9;
 using System.Text.RegularExpressions;
 using Serilog;
 using Serilog.Events;
+using Kestrun.Utilities;
 
 
 namespace Kestrun.Certificates;
@@ -37,9 +38,55 @@ namespace Kestrun.Certificates;
 public static class CertificateManager
 {
     #region  enums / option records
-    public enum KeyType { Rsa, Ecdsa }
-    public enum ExportFormat { Pfx, Pem }
+    /// <summary>
+    /// Specifies the type of cryptographic key to use for certificate operations.
+    /// </summary>
+    /// <summary>
+    /// Specifies the cryptographic key type.
+    /// </summary>
+    public enum KeyType
+    {
+        /// <summary>
+        /// RSA key type.
+        /// </summary>
+        Rsa,
+        /// <summary>
+        /// ECDSA key type.
+        /// </summary>
+        Ecdsa
+    }
 
+    /// <summary>
+    /// Specifies the format to use when exporting certificates.
+    /// </summary>
+    /// <summary>
+    /// Specifies the format to use when exporting certificates.
+    /// </summary>
+    public enum ExportFormat
+    {
+        /// <summary>
+        /// PFX/PKCS#12 format.
+        /// </summary>
+        Pfx,
+        /// <summary>
+        /// PEM format.
+        /// </summary>
+        Pem
+    }
+
+    /// <summary>
+    /// Options for creating a self-signed certificate.
+    /// </summary>
+    /// <param name="DnsNames">The DNS names to include in the certificate's Subject Alternative Name (SAN) extension.</param>
+    /// <param name="KeyType">The type of cryptographic key to use (RSA or ECDSA).</param>
+    /// <param name="KeyLength">The length of the cryptographic key in bits.</param>
+    /// <param name="Purposes">The key purposes (Extended Key Usage) for the certificate.</param>
+    /// <param name="ValidDays">The number of days the certificate will be valid.</param>
+    /// <param name="Ephemeral">If true, the certificate will not be stored in the Windows certificate store.</param>
+    /// <param name="Exportable">If true, the private key can be exported from the certificate.</param>
+    /// <remarks>
+    /// This record is used to specify options for creating a self-signed certificate.
+    /// </remarks>
     public record SelfSignedOptions(
         IEnumerable<string> DnsNames,
         KeyType KeyType = KeyType.Rsa,
@@ -47,8 +94,22 @@ public static class CertificateManager
         IEnumerable<KeyPurposeID>? Purposes = null,
         int ValidDays = 365,
         bool Ephemeral = false,
-        bool Exportable = false);
+        bool Exportable = false
+        );
 
+    /// <summary>
+    /// Options for creating a Certificate Signing Request (CSR).
+    /// </summary>
+    /// <param name="DnsNames">The DNS names to include in the CSR's Subject Alternative Name (SAN) extension.</param>
+    /// <param name="KeyType">The type of cryptographic key to use (RSA or ECDSA).</param>
+    /// <param name="KeyLength">The length of the cryptographic key in bits.</param>
+    /// <param name="Country">The country code for the subject distinguished name.</param>
+    /// <param name="Org">The organization name for the subject distinguished name.</param>
+    /// <param name="OrgUnit">The organizational unit for the subject distinguished name.</param>
+    /// <param name="CommonName">The common name for the subject distinguished name.</param>
+    /// <remarks>
+    /// This record is used to specify options for creating a Certificate Signing Request (CSR).
+    /// </remarks>
     public record CsrOptions(
         IEnumerable<string> DnsNames,
         KeyType KeyType = KeyType.Rsa,
@@ -60,6 +121,11 @@ public static class CertificateManager
     #endregion
 
     #region  Self-signed certificate
+    /// <summary>
+    /// Creates a new self-signed X509 certificate using the specified options.
+    /// </summary>
+    /// <param name="o">Options for creating the self-signed certificate.</param>
+    /// <returns>A new self-signed X509Certificate2 instance.</returns>
     public static X509Certificate2 NewSelfSigned(SelfSignedOptions o)
     {
         var random = new SecureRandom(new CryptoApiRandomGenerator());
@@ -125,6 +191,11 @@ public static class CertificateManager
 
 
 
+    /// <summary>
+    /// Creates a new Certificate Signing Request (CSR) and returns the PEM-encoded CSR and the private key.
+    /// </summary>
+    /// <param name="o">Options for creating the CSR.</param>
+    /// <returns>A tuple containing the PEM-encoded CSR and the private key.</returns>
     public static (string csrPem, AsymmetricKeyParameter privateKey) NewCertificateRequest(CsrOptions o)
     {
         // 0️⃣ Setup
@@ -198,12 +269,20 @@ public static class CertificateManager
     #endregion
 
     #region  Import
-    public static X509Certificate2 Import(
-       string certPath,
-       ReadOnlySpan<char> password = default,
-       string? privateKeyPath = null,
-       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
-    {
+    /// <summary>
+    /// Imports an X509 certificate from the specified file path, with optional password and private key file.
+    /// </summary>
+    /// <param name="certPath">The path to the certificate file.</param>
+    /// <param name="password">The password for the certificate, if required.</param>
+    /// <param name="privateKeyPath">The path to the private key file, if separate.</param>
+    /// <param name="flags">Key storage flags for the imported certificate.</param>
+    /// <returns>The imported X509Certificate2 instance.</returns>
+        public static X509Certificate2 Import(
+           string certPath,
+           ReadOnlySpan<char> password = default,
+           string? privateKeyPath = null,
+           X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
+        {
         if (string.IsNullOrEmpty(certPath))
             throw new ArgumentException("Certificate path cannot be null or empty.", nameof(certPath));
         if (!File.Exists(certPath))
@@ -315,25 +394,40 @@ public static class CertificateManager
 #endif
     }
 
-    public static X509Certificate2 Import(
-       string certPath,
-       SecureString password,
-       string? privateKeyPath = null,
-       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
-    {
-        X509Certificate2? result = null;
-        Log.Debug("Importing certificate from {CertPath} with flags {Flags}", certPath, flags);
-        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
-        password.ToSecureSpan(span =>
+    /// <summary>
+    /// Imports an X509 certificate from the specified file path, using a SecureString password and optional private key file.
+    /// </summary>
+    /// <param name="certPath">The path to the certificate file.</param>
+    /// <param name="password">The SecureString password for the certificate, if required.</param>
+    /// <param name="privateKeyPath">The path to the private key file, if separate.</param>
+    /// <param name="flags">Key storage flags for the imported certificate.</param>
+    /// <returns>The imported X509Certificate2 instance.</returns>
+        public static X509Certificate2 Import(
+           string certPath,
+           SecureString password,
+           string? privateKeyPath = null,
+           X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
         {
-            // capture the return value of the span-based overload
-            result = Import(certPath: certPath, password: span, privateKeyPath: privateKeyPath, flags: flags);
-        });
+            X509Certificate2? result = null;
+            Log.Debug("Importing certificate from {CertPath} with flags {Flags}", certPath, flags);
+            // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+            password.ToSecureSpan(span =>
+            {
+                // capture the return value of the span-based overload
+                result = Import(certPath: certPath, password: span, privateKeyPath: privateKeyPath, flags: flags);
+            });
+    
+            // at this point, unmanaged memory is already zeroed
+            return result!;   // non-null because the callback always runs exactly once
+        }
 
-        // at this point, unmanaged memory is already zeroed
-        return result!;   // non-null because the callback always runs exactly once
-    }
-
+    /// <summary>
+    /// Imports an X509 certificate from the specified file path, with optional private key file and key storage flags.
+    /// </summary>
+    /// <param name="certPath">The path to the certificate file.</param>
+    /// <param name="privateKeyPath">The path to the private key file, if separate.</param>
+    /// <param name="flags">Key storage flags for the imported certificate.</param>
+    /// <returns>The imported X509Certificate2 instance.</returns>
     public static X509Certificate2 Import(
          string certPath,
          string? privateKeyPath = null,
@@ -348,33 +442,46 @@ public static class CertificateManager
         return result!;
     }
 
-    public static X509Certificate2 Import(string certPath)
-    {
-        X509Certificate2? result = null;
-
-        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
-        ReadOnlySpan<char> passwordSpan = default;
-        // capture the return value of the span-based overload
-        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
-        return result!;
-    }
+    /// <summary>
+    /// Imports an X509 certificate from the specified file path.
+    /// </summary>
+    /// <param name="certPath">The path to the certificate file.</param>
+    /// <returns>The imported X509Certificate2 instance.</returns>
+        public static X509Certificate2 Import(string certPath)
+        {
+            X509Certificate2? result = null;
+    
+            // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+            ReadOnlySpan<char> passwordSpan = default;
+            // capture the return value of the span-based overload
+            result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
+            return result!;
+        }
 
 
 
     #endregion
 
     #region Export
-    public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
-           ReadOnlySpan<char> password = default, bool includePrivateKey = false)
-    {
-        var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
-        switch (fileExtension)
+    /// <summary>
+    /// Exports the specified X509 certificate to a file in the given format, with optional password and private key inclusion.
+    /// </summary>
+    /// <param name="cert">The X509Certificate2 to export.</param>
+    /// <param name="filePath">The file path to export the certificate to.</param>
+    /// <param name="fmt">The export format (Pfx or Pem).</param>
+    /// <param name="password">The password to protect the exported certificate or private key, if applicable.</param>
+    /// <param name="includePrivateKey">Whether to include the private key in the export.</param>
+        public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
+               ReadOnlySpan<char> password = default, bool includePrivateKey = false)
         {
-            case ".pfx":
-                if (fmt != ExportFormat.Pfx)
-                    throw new NotSupportedException(
-                        $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
-                break;
+            var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+            switch (fileExtension)
+            {
+                case ".pfx":
+                    if (fmt != ExportFormat.Pfx)
+                        throw new NotSupportedException(
+                            $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
+                    break;
 
 
             case ".pem":
@@ -401,7 +508,7 @@ public static class CertificateManager
         // build both shapes once
         using SecureString? pwdString = password.IsEmpty
             ? null
-            : ToSecureString(password);
+            : SecureStringUtils.ToSecureString(password);
         char[]? pwdChars = password.IsEmpty
             ? null
             : password.ToArray();
@@ -470,32 +577,50 @@ public static class CertificateManager
         }
     }
 
-    // 2) The SecureString overload just calls (1) in a callback
-    public static void Export(
-        X509Certificate2 cert,
-        string filePath,
-        ExportFormat fmt,
-        SecureString password,
-        bool includePrivateKey = false)
-    {
-        password.ToSecureSpan(span =>
-            // this will run your span‐based implementation,
-            // then immediately zero & free the unmanaged buffer
-            Export(cert, filePath, fmt, span, includePrivateKey)
-        );
-    }
+    /// <summary>
+    /// Exports the specified X509 certificate to a file in the given format, using a SecureString password and optional private key inclusion.
+    /// </summary>
+    /// <param name="cert">The X509Certificate2 to export.</param>
+    /// <param name="filePath">The file path to export the certificate to.</param>
+    /// <param name="fmt">The export format (Pfx or Pem).</param>
+    /// <param name="password">The SecureString password to protect the exported certificate or private key, if applicable.</param>
+    /// <param name="includePrivateKey">Whether to include the private key in the export.</param>
+        // 2) The SecureString overload just calls (1) in a callback
+        public static void Export(
+            X509Certificate2 cert,
+            string filePath,
+            ExportFormat fmt,
+            SecureString password,
+            bool includePrivateKey = false)
+        {
+            password.ToSecureSpan(span =>
+                // this will run your span‐based implementation,
+                // then immediately zero & free the unmanaged buffer
+                Export(cert, filePath, fmt, span, includePrivateKey)
+            );
+        }
 
     #endregion
 
     #region  Validation helpers (Test-PodeCertificate equivalent)
-    public static bool Validate(
-     X509Certificate2 cert,
-     bool checkRevocation = false,
-     bool allowWeakAlgorithms = false,
-     bool denySelfSigned = false,
-     OidCollection? expectedPurpose = null,
-     bool strictPurpose = false)
-    {
+    /// <summary>
+    /// Validates the specified X509 certificate according to the provided options.
+    /// </summary>
+    /// <param name="cert">The X509Certificate2 to validate.</param>
+    /// <param name="checkRevocation">Whether to check certificate revocation status.</param>
+    /// <param name="allowWeakAlgorithms">Whether to allow weak algorithms such as SHA-1 or small key sizes.</param>
+    /// <param name="denySelfSigned">Whether to deny self-signed certificates.</param>
+    /// <param name="expectedPurpose">A collection of expected key purposes (EKU) for the certificate.</param>
+    /// <param name="strictPurpose">If true, the certificate must match the expected purposes exactly.</param>
+    /// <returns>True if the certificate is valid according to the specified options; otherwise, false.</returns>
+        public static bool Validate(
+         X509Certificate2 cert,
+         bool checkRevocation = false,
+         bool allowWeakAlgorithms = false,
+         bool denySelfSigned = false,
+         OidCollection? expectedPurpose = null,
+         bool strictPurpose = false)
+        {
         // ── 1. Validity period ────────────────────────────────────────
         if (DateTime.UtcNow < cert.NotBefore || DateTime.UtcNow > cert.NotAfter)
             return false;
@@ -561,12 +686,17 @@ public static class CertificateManager
     }
 
 
+    /// <summary>
+    /// Gets the enhanced key usage purposes (EKU) from the specified X509 certificate.
+    /// </summary>
+    /// <param name="cert">The X509Certificate2 to extract purposes from.</param>
+    /// <returns>An enumerable of purpose names or OID values.</returns>
     public static IEnumerable<string> GetPurposes(X509Certificate2 cert) =>
-    cert.Extensions
-        .OfType<X509EnhancedKeyUsageExtension>()
-        .SelectMany(x => x.EnhancedKeyUsages.Cast<Oid>())
-        .Select(o => (o.FriendlyName ?? o.Value)!)   // ← null-forgiving
-        .Where(s => s.Length > 0);                   // optional: drop empties
+        cert.Extensions
+            .OfType<X509EnhancedKeyUsageExtension>()
+            .SelectMany(x => x.EnhancedKeyUsages.Cast<Oid>())
+            .Select(o => (o.FriendlyName ?? o.Value)!)   // ← null-forgiving
+            .Where(s => s.Length > 0);                   // optional: drop empties
     #endregion
 
     #region  private helpers
@@ -636,64 +766,6 @@ public static class CertificateManager
 
     #endregion
 
-    #region  SecureString extension for ReadOnlySpan<char>
-    public unsafe delegate void SpanHandler(ReadOnlySpan<char> span);
-
-
-    public static unsafe void ToSecureSpan(this SecureString secureString, SpanHandler handler)
-    {
-        Log.Debug("Converting SecureString to ReadOnlySpan<char> for handler {Handler}", handler.Method.Name);
-
-        ArgumentNullException.ThrowIfNull(secureString);
-        ArgumentNullException.ThrowIfNull(handler);
-        if (secureString.Length == 0)
-            throw new ArgumentException("SecureString is empty", nameof(secureString));
-        // Convert SecureString to a ReadOnlySpan<char> using a pointer
-        // This is safe because SecureString guarantees that the memory is zeroed after use.
-        IntPtr ptr = IntPtr.Zero;
-        try
-        {
-            // Convert SecureString to a pointer
-            // Marshal.SecureStringToCoTaskMemUnicode returns a pointer to the unmanaged memory
-            // that contains the characters of the SecureString.
-            // This memory must be freed after use to avoid memory leaks.
-            Log.Debug("Marshalling SecureString to unmanaged memory");
-            ptr = Marshal.SecureStringToCoTaskMemUnicode(secureString);
-            var span = new ReadOnlySpan<char>((char*)ptr, secureString.Length);
-            handler(span);
-            Log.Debug("Handler executed successfully with SecureString span");
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error while converting SecureString to ReadOnlySpan<char>");
-            throw; // rethrow the exception for further handling
-        }
-        finally
-        {
-            // Ensure the unmanaged memory is zeroed and freed
-            Log.Debug("Zeroing and freeing unmanaged memory for SecureString");
-            if (ptr != IntPtr.Zero)
-            {
-                // zero & free
-                for (int i = 0; i < secureString.Length; i++)
-                    Marshal.WriteInt16(ptr, i * 2, 0);
-                Marshal.ZeroFreeCoTaskMemUnicode(ptr);
-            }
-        }
-    }
-    public static SecureString ToSecureString(this ReadOnlySpan<char> span)
-    {
-        if (span.Length == 0)
-            throw new ArgumentException("Span is empty", nameof(span));
-
-        var secure = new SecureString();
-        foreach (char c in span)
-            secure.AppendChar(c);
-
-        secure.MakeReadOnly();
-        return secure;
-    }
-
-    #endregion
+    
 
 }

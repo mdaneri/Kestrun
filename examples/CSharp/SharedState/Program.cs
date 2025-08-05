@@ -84,7 +84,7 @@ server.AddMapRoute("/cs/visit", HttpVerb.Get, """
      Context.Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
 """, ScriptLanguage.CSharp);
 
-server.AddNativeRoute("/raw", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/raw", HttpVerb.Get, async (ctx) =>
 {
     Console.WriteLine("Native C# route hit!");
 

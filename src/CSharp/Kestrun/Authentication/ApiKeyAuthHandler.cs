@@ -221,10 +221,12 @@ public class ApiKeyAuthHandler
             {
                 { "providedKey", string.Empty },
                 { "providedKeyBytes", Array.Empty<byte>() }
-            });
+            }, languageVersion: codeSettings.CSharpVersion);
 
         return async (ctx, providedKey, providedKeyBytes) =>
         {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("Running C# authentication script for user: {ProvidedKey}", providedKey);
             var krRequest = await KestrunRequest.NewRequest(ctx);
             var krResponse = new KestrunResponse(krRequest);
             var context = new KestrunContext(krRequest, krResponse, ctx);
@@ -234,7 +236,46 @@ public class ApiKeyAuthHandler
                 { "providedKeyBytes", providedKeyBytes },
             });
             var result = await script.RunAsync(globals).ConfigureAwait(false);
+            Log.Information("C# authentication result for {ProvidedKey}: {Result}", providedKey, result.ReturnValue);
             return result.ReturnValue is true;
         };
     }
+
+    /// <summary>
+    /// Builds a VB.NET-based API key validator delegate using the provided authentication code settings.
+    /// </summary>
+    /// <param name="codeSettings">The settings containing the VB.NET authentication code.</param>
+    /// <returns>A delegate that validates an API key using VB.NET code.</returns>
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
+    {
+        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        new Dictionary<string, object?>
+            {
+                { "providedKey", string.Empty },
+                { "providedKeyBytes", Array.Empty<byte>() }
+            }, languageVersion: codeSettings.VisualBasicVersion);
+
+        return async (ctx, providedKey, providedKeyBytes) =>
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("Running VB.NET authentication script for user: {ProvidedKey}", providedKey);
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                { "providedKey", providedKey },
+                { "providedKeyBytes", providedKeyBytes },
+            });
+            // Run the VB.NET script and get the result
+            // Note: The script should return a boolean indicating success or failure
+            var result = await script(globals).ConfigureAwait(false);
+
+            Log.Information("VB.NET authentication result for {ProvidedKey}: {Result}", providedKey, result);
+
+            return result;
+        };
+    }
+
 }

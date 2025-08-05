@@ -65,7 +65,7 @@ public record MapRouteOptions
     /// <summary>
     /// Additional metadata for the route, represented as key-value pairs.
     /// </summary>
-    public Dictionary<string,object> Arguments { get; init; } = []; // Additional metadata for the route
+    public Dictionary<string,object?>? Arguments { get; init; } = []; // Additional metadata for the route
 
     /// <summary>
     /// Metadata for OpenAPI documentation related to the route.

@@ -275,7 +275,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             {
                 { "username", "" },
                 { "password", "" }
-            });
+            }, languageVersion: codeSettings.CSharpVersion);
 
         return async (ctx, user, pass) =>
         {
@@ -289,6 +289,44 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             });
             var result = await script.RunAsync(globals).ConfigureAwait(false);
             return result.ReturnValue is true;
+        };
+    }
+
+
+    /// <summary>
+    /// Builds a VB.NET-based validator function for authenticating users.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the VB.NET script.</param>
+    /// <returns>A function that validates credentials using the provided VB.NET script.</returns>
+    public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
+    {
+        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        new Dictionary<string, object?>
+            {
+                    { "username", "" },
+                    { "password", "" }
+            }, languageVersion: codeSettings.VisualBasicVersion);
+
+        return async (ctx, user, pass) =>
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("Running VB.NET authentication script for user: {Username}", user);
+            var krRequest = await KestrunRequest.NewRequest(ctx);
+            var krResponse = new KestrunResponse(krRequest);
+            var context = new KestrunContext(krRequest, krResponse, ctx);
+            var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
+            {
+                    { "username", user },
+                    { "password", pass }
+            });
+            // Run the VB.NET script and get the result
+            // Note: The script should return a boolean indicating success or failure
+            var result = await script(glob).ConfigureAwait(false);
+
+            Log.Information("VB.NET authentication result for {Username}: {Result}", user, result);
+
+            return result;
         };
     }
 }

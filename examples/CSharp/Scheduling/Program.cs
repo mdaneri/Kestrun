@@ -1,23 +1,25 @@
-using System.Net; 
-using Kestrun.Logging; 
-using Serilog; 
-using System.Collections; 
+using System.Net;
+using Kestrun.Logging;
+using Serilog;
+using System.Collections;
 using Kestrun.Utilities;
 using Kestrun.SharedState;
 using System.Text;
-using Kestrun.Hosting; 
+using Kestrun.Hosting;
 using Kestrun.Scripting;
 
 var cwd = Directory.GetCurrentDirectory();
 
 // ───────── 1. Serilog
-new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
-    .Register("Log", setAsDefault: true);
+_ = new LoggerConfiguration()
+       .MinimumLevel.Debug()
+       .WriteTo.Console()
+       .WriteTo.File("logs/scheduler.log", rollingInterval: RollingInterval.Day)
+       .Register("Audit", setAsDefault: true);
+
 
 // ───────── 2. Kestrun host
-var server = new KestrunHost("Kestrun+Scheduler",cwd).
+var server = new KestrunHost("Kestrun+Scheduler", cwd).
 
 
 
@@ -49,10 +51,16 @@ server.Scheduler.Schedule(
     },
     runImmediately: true);
 
-server.Scheduler.Schedule("Roslyn Heartbeat", TimeSpan.FromSeconds(15), code: """
+server.Scheduler.Schedule("Roslyn C# Heartbeat", TimeSpan.FromSeconds(15), code: """
     // C# code compiled by Roslyn
     Serilog.Log.Information("💓  Heartbeat (C# [Roslyn]) at {0:O}", DateTimeOffset.UtcNow);
 """, lang: ScriptLanguage.CSharp, runImmediately: false);
+
+
+server.Scheduler.Schedule("Roslyn VB.Net Heartbeat", TimeSpan.FromSeconds(15), code: """
+    // VB.Net code compiled by Roslyn
+    Serilog.Log.Information("💓  Heartbeat (VB.Net [Roslyn]) at {0:O}", DateTimeOffset.UtcNow);
+""", lang: ScriptLanguage.VBNet, runImmediately: false);
 
 server.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code: """
     # PowerShell code runs inside the server process
@@ -60,9 +68,7 @@ server.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code
 """, lang: ScriptLanguage.PowerShell, runImmediately: false);
 
 // (B) PowerShell inline – every minute
-server.Scheduler.Schedule(
-    "ps-inline",
-    "0 * * * * *",                          // cron: every minute
+server.Scheduler.Schedule("ps-inline", "0 * * * * *",                          // cron: every minute
     System.Management.Automation.ScriptBlock.Create("""
     Write-Information "[$([DateTime]::UtcNow.ToString('o'))] 🌙  Inline PS job ran."
     Write-Information "Runspace Name: $([runspace]::DefaultRunspace.Name)"
@@ -85,7 +91,7 @@ server.AddMapRoute("/visit", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell);
 
 // JSON schedule report
-server.AddNativeRoute("/schedule/report", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/schedule/report", HttpVerb.Get, async (ctx) =>
 {
     var report = server.Scheduler.GetReport();
     await ctx.Response.WriteJsonResponseAsync(report, 200);

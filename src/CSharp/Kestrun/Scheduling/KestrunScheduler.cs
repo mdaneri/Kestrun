@@ -16,26 +16,87 @@ using Kestrun.Utilities;
 using static Kestrun.Scheduling.JobFactory;
 using Kestrun.Scripting;
 
+/// <summary>
+/// Represents a scheduled task with its configuration and state.
+/// </summary>
+/// <param name="Name">The name of the scheduled task.</param>
+/// <param name="LastRunAt">The last time the task was run.</param>
+/// <param name="NextRunAt">The next scheduled run time for the task.</param>
+/// <param name="IsSuspended">Indicates whether the task is currently suspended.</param>
+/// <remarks>
+/// This class encapsulates the details of a scheduled task, including its name, last run time,
+/// next run time, and whether it is currently suspended. It is used internally by the scheduler
+/// to manage and report on scheduled tasks.
+/// </remarks>
 public sealed record JobInfo(string Name,
                              DateTimeOffset? LastRunAt,
                              DateTimeOffset NextRunAt,
                              bool IsSuspended);
 
 
-/// Whole snapshot
+/// <summary>
+/// Represents a report of scheduled jobs at a specific time.
+/// Contains the generation time and a list of job information.
+/// This is useful for monitoring and auditing scheduled tasks.
+/// </summary>
+/// <param name="GeneratedAt">The time the report was generated.</param>
+/// <param name="Jobs">The list of job information.</param>
+/// <remarks>
+/// This report can be used to track the status and execution history of scheduled jobs.
+/// It is particularly useful for debugging and operational monitoring.
+/// </remarks>  
 public sealed record ScheduleReport(
     DateTimeOffset GeneratedAt,
     IReadOnlyList<JobInfo> Jobs);
 
+/// <summary>
+/// Represents a service for managing scheduled tasks.
+/// Provides methods to schedule, cancel, pause, resume, and report on tasks.
+/// This service is designed to run within a Kestrun application context.
+/// It supports both C# and PowerShell jobs, allowing for flexible scheduling options.
+/// </summary>
+/// <remarks>
+/// The service uses a runspace pool for PowerShell jobs and supports scheduling via cron expressions or intervals.
+/// It also provides methods to retrieve task reports in various formats, including typed objects and PowerShell-friendly hashtables.
+/// </remarks>
 public sealed class SchedulerService : IDisposable
 {
+    /// <summary>
+    /// The collection of scheduled tasks.
+    /// This dictionary maps task names to their corresponding <see cref="ScheduledTask"/> instances.
+    /// It is used to manage the lifecycle of scheduled tasks, including scheduling, execution, and cancellation.
+    /// It is thread-safe and allows for concurrent access, ensuring that tasks can be added, removed, and executed
+    /// simultaneously without causing data corruption or inconsistencies.
+    /// </summary>
     private readonly ConcurrentDictionary<string, ScheduledTask> _tasks =
         new(StringComparer.OrdinalIgnoreCase);
-
+    /// <summary>
+    /// The runspace pool manager used for executing PowerShell scripts.
+    /// This manager is responsible for managing the lifecycle of PowerShell runspaces,
+    /// allowing for efficient execution of PowerShell scripts within the scheduler.
+    /// It is used to create and manage runspaces for executing scheduled PowerShell jobs.
+    /// The pool can be configured with various settings such as maximum runspaces, idle timeout, etc.
+    /// </summary>
     private readonly KestrunRunspacePoolManager _pool;
+    /// <summary>
+    /// The logger instance used for logging events within the scheduler service.
+    /// This logger is used to log information, warnings, and errors related to scheduled tasks.
+    /// </summary>
     private readonly ILogger _log;
+    /// <summary>
+    /// The time zone used for scheduling and reporting.
+    /// This is used to convert scheduled times to the appropriate time zone for display and execution.
+    /// </summary>
     private readonly TimeZoneInfo _tz;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SchedulerService"/> class.
+    /// This constructor sets up the scheduler service with a specified runspace pool, logger, and optional time zone.
+    /// The runspace pool is used for executing PowerShell scripts, while the logger is used for logging events.
+    /// </summary>
+    /// <param name="pool">The runspace pool manager for executing PowerShell scripts.</param>
+    /// <param name="log">The logger instance for logging events.</param>
+    /// <param name="tz">The optional time zone information.</param>
     public SchedulerService(KestrunRunspacePoolManager pool, ILogger log, TimeZoneInfo? tz = null)
     {
         _pool = pool;
@@ -44,10 +105,24 @@ public sealed class SchedulerService : IDisposable
     }
 
     /*────────── C# JOBS ──────────*/
+    /// <summary>
+    /// Schedules a C# job to run at a specified interval.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="interval">The interval between job executions.</param>
+    /// <param name="job">The asynchronous job delegate to execute.</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, TimeSpan interval,
         Func<CancellationToken, Task> job, bool runImmediately = false)
         => ScheduleCore(name, job, cron: null, interval: interval, runImmediately);
 
+    /// <summary>
+    /// Schedules a C# job to run according to a cron expression.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="cronExpr">The cron expression specifying the job schedule.</param>
+    /// <param name="job">The asynchronous job delegate to execute.</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, string cronExpr,
         Func<CancellationToken, Task> job, bool runImmediately = false)
     {
@@ -56,18 +131,40 @@ public sealed class SchedulerService : IDisposable
     }
 
     /*────────── PowerShell JOBS ──────────*/
+    /// <summary>
+    /// Schedules a PowerShell job to run according to a cron expression.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="cron">The cron expression specifying the job schedule.</param>
+    /// <param name="scriptblock">The PowerShell script block to execute.</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, string cron, ScriptBlock scriptblock, bool runImmediately = false)
     {
         JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
         var job = JobFactory.Create(config);
         Schedule(name, cron, job, runImmediately);
     }
+    /// <summary>
+    /// Schedules a PowerShell job to run at a specified interval.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="interval">The interval between job executions.</param>
+    /// <param name="scriptblock">The PowerShell script block to execute.</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, TimeSpan interval, ScriptBlock scriptblock, bool runImmediately = false)
     {
         JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
         var job = JobFactory.Create(config);
         Schedule(name, interval, job, runImmediately);
     }
+    /// <summary>
+    /// Schedules a script job to run at a specified interval.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="interval">The interval between job executions.</param>
+    /// <param name="code">The script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, TimeSpan interval, string code, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, code, _log, _pool);
@@ -75,6 +172,14 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, interval, job, runImmediately);
     }
 
+    /// <summary>
+    /// Schedules a script job to run according to a cron expression.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="cron">The cron expression specifying the job schedule.</param>
+    /// <param name="code">The script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, string cron, string code, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, code, _log, _pool);
@@ -82,6 +187,14 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, cron, job, runImmediately);
     }
 
+    /// <summary>
+    /// Schedules a script job from a file to run at a specified interval.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="interval">The interval between job executions.</param>
+    /// <param name="fileInfo">The file containing the script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
@@ -89,6 +202,14 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, interval, job, runImmediately);
     }
 
+    /// <summary>
+    /// Schedules a script job from a file to run according to a cron expression.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="cron">The cron expression specifying the job schedule.</param>
+    /// <param name="fileInfo">The file containing the script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
     public void Schedule(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
@@ -96,6 +217,15 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, cron, job, runImmediately);
     }
 
+    /// <summary>
+    /// Asynchronously schedules a script job from a file to run at a specified interval.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="interval">The interval between job executions.</param>
+    /// <param name="fileInfo">The file containing the script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
+    /// <param name="ct">The cancellation token to cancel the operation.</param>
     public async Task ScheduleAsync(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
@@ -103,6 +233,15 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, interval, job, runImmediately);
     }
 
+    /// <summary>
+    /// Asynchronously schedules a script job from a file to run according to a cron expression.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="cron">The cron expression specifying the job schedule.</param>
+    /// <param name="fileInfo">The file containing the script code to execute.</param>
+    /// <param name="lang">The language of the script (e.g., PowerShell, CSharp).</param>
+    /// <param name="runImmediately">Whether to run the job immediately upon scheduling.</param>
+    /// <param name="ct">The cancellation token to cancel the operation.</param>
     public async Task ScheduleAsync(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
@@ -110,6 +249,11 @@ public sealed class SchedulerService : IDisposable
         Schedule(name, cron, job, runImmediately);
     }
     /*────────── CONTROL ──────────*/
+    /// <summary>
+    /// Cancels a scheduled job by its name.
+    /// </summary>
+    /// <param name="name">The name of the job to cancel.</param>
+    /// <returns>True if the job was found and cancelled; otherwise, false.</returns>
     public bool Cancel(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -124,6 +268,9 @@ public sealed class SchedulerService : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Cancels all scheduled jobs.
+    /// </summary>
     public void CancelAll()
     {
         foreach (var kvp in _tasks.Keys)
@@ -131,6 +278,11 @@ public sealed class SchedulerService : IDisposable
     }
 
 
+    /// <summary>
+    /// Generates a report of all scheduled jobs, including their last and next run times, and suspension status.
+    /// </summary>
+    /// <param name="displayTz">The time zone to display times in; defaults to UTC if not specified.</param>
+    /// <returns>A <see cref="ScheduleReport"/> containing information about all scheduled jobs.</returns>
     public ScheduleReport GetReport(TimeZoneInfo? displayTz = null)
     {
         // default to Zulu
@@ -153,6 +305,11 @@ public sealed class SchedulerService : IDisposable
     }
 
 
+    /// <summary>
+    /// Generates a report of all scheduled jobs in a PowerShell-friendly hashtable format.
+    /// </summary>
+    /// <param name="displayTz">The time zone to display times in; defaults to UTC if not specified.</param>
+    /// <returns>A <see cref="System.Collections.Hashtable"/> containing information about all scheduled jobs.</returns>
     public System.Collections.Hashtable GetReportHashtable(TimeZoneInfo? displayTz = null)
     {
         var rpt = GetReport(displayTz);
@@ -175,10 +332,24 @@ public sealed class SchedulerService : IDisposable
     }
 
 
+    /// <summary>
+    /// Gets a snapshot of all scheduled jobs with their current state.
+    /// </summary>
+    /// <returns>An <see cref="IReadOnlyCollection{JobInfo}"/> containing job information for all scheduled jobs.</returns>
     public IReadOnlyCollection<JobInfo> GetSnapshot()
         => [.. _tasks.Values.Select(t => new JobInfo(t.Name, t.LastRunAt, t.NextRunAt, t.IsSuspended))];
 
 
+    /// <summary>
+    /// Gets a snapshot of all scheduled jobs with their current state, optionally filtered and formatted.
+    /// </summary>
+    /// <param name="tz">The time zone to display times in; defaults to UTC if not specified.</param>
+    /// <param name="asHashtable">Whether to return the result as PowerShell-friendly hashtables.</param>
+    /// <param name="nameFilter">Optional glob patterns to filter job names.</param>
+    /// <returns>
+    /// An <see cref="IReadOnlyCollection{T}"/> containing job information for all scheduled jobs,
+    /// either as <see cref="JobInfo"/> objects or hashtables depending on <paramref name="asHashtable"/>.
+    /// </returns>
     public IReadOnlyCollection<object> GetSnapshot(
        TimeZoneInfo? tz = null,
        bool asHashtable = false,
@@ -224,11 +395,34 @@ public sealed class SchedulerService : IDisposable
     }
 
 
+    /// <summary>
+    /// Pauses a scheduled job by its name.
+    /// </summary>
+    /// <param name="name">The name of the job to pause.</param>
+    /// <returns>True if the job was found and paused; otherwise, false.</returns>
     public bool Pause(string name) => Suspend(name, true);
+    /// <summary>
+    /// Resumes a scheduled job by its name.
+    /// </summary>
+    /// <param name="name">The name of the job to resume.</param>
+    /// <returns>True if the job was found and resumed; otherwise, false.</returns>
     public bool Resume(string name) => Suspend(name, false);
 
     /*────────── INTERNALS ──────────*/
 
+    /// <summary>
+    /// Suspends or resumes a scheduled job by its name.
+    /// This method updates the suspension status of the job, allowing it to be paused or resumed.
+    /// If the job is found, its IsSuspended property is updated accordingly.
+    /// </summary>
+    /// <param name="name">The name of the job to suspend or resume.</param>
+    /// <param name="suspend">True to suspend the job; false to resume it.</param>
+    /// <returns>True if the job was found and its status was updated; otherwise, false.</returns>
+    /// <exception cref="ArgumentException"></exception>
+    /// <remarks>
+    /// This method is used internally to control the execution of scheduled jobs.
+    /// It allows for dynamic control over job execution without needing to cancel and reschedule them.
+    /// </remarks>
     private bool Suspend(string name, bool suspend = true)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -243,6 +437,25 @@ public sealed class SchedulerService : IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Schedules a new job.
+    /// This method is the core implementation for scheduling jobs, allowing for both cron-based and interval-based scheduling.
+    /// It creates a new <see cref="ScheduledTask"/> instance and starts it in a background loop.
+    /// The task is added to the internal collection of tasks, and its next run time is calculated based on the provided cron expression or interval.
+    /// If both cron and interval are null, an exception is thrown.
+    /// </summary>
+    /// <param name="name">The name of the job.</param>
+    /// <param name="job">The job to execute.</param>
+    /// <param name="cron">The cron expression for scheduling.</param>
+    /// <param name="interval">The interval for scheduling.</param>
+    /// <param name="runImmediately">Whether to run the job immediately.</param>
+    /// <exception cref="ArgumentException"></exception>
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <remarks>
+    /// This method is used internally to schedule jobs and should not be called directly.
+    /// It handles the creation of the task, its scheduling, and the management of its execution loop.
+    /// The task is run in a separate background thread to avoid blocking the main application flow.
+    /// </remarks>
     private void ScheduleCore(
         string name,
         Func<CancellationToken, Task> job,
@@ -268,6 +481,18 @@ public sealed class SchedulerService : IDisposable
         _log.Debug("Scheduled job '{Name}' (cron: {Cron}, interval: {Interval})", name, cron?.ToString(), interval);
     }
 
+    /// <summary>
+    /// Runs the scheduled task in a loop.
+    /// This method handles the execution of the task according to its schedule, either immediately or based on a cron expression or interval.
+    /// It checks if the task is suspended and delays accordingly, while also being responsive to cancellation requests.
+    /// </summary>
+    /// <param name="task">The scheduled task to run.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// This method is called internally by the scheduler to manage the execution of scheduled tasks.
+    /// It ensures that tasks are run at the correct times and handles any exceptions that may occur during execution.
+    /// The loop continues until the task is cancelled or the cancellation token is triggered.
+    /// </remarks>
     private async Task LoopAsync(ScheduledTask task)
     {
         var ct = task.TokenSource.Token;
@@ -295,6 +520,19 @@ public sealed class SchedulerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Calculates the next delay for a cron expression.
+    /// This method computes the time until the next occurrence of the cron expression based on the current UTC time.
+    /// If there are no future occurrences, it logs a warning and returns a maximum value.
+    /// </summary>
+    /// <param name="expr">The cron expression to evaluate.</param>
+    /// <param name="tz">The time zone to use for the evaluation.</param>
+    /// <returns>The time span until the next occurrence of the cron expression.</returns>
+    /// <remarks>
+    /// This method is used internally to determine when the next scheduled run of a cron-based task should occur.
+    /// It uses the Cronos library to calculate the next occurrence based on the current UTC time and the specified time zone.
+    /// If no future occurrence is found, it logs a warning and returns a maximum time span.
+    /// </remarks>
     private TimeSpan NextCronDelay(CronExpression expr, TimeZoneInfo tz)
     {
         var next = expr.GetNextOccurrence(DateTimeOffset.UtcNow, tz);
@@ -303,6 +541,18 @@ public sealed class SchedulerService : IDisposable
         return next.HasValue ? next.Value - DateTimeOffset.UtcNow : TimeSpan.MaxValue;
     }
 
+    /// <summary>
+    /// Safely runs the scheduled task, handling exceptions and updating the task's state.
+    /// This method executes the provided work function and updates the task's last run time and next run time accordingly.
+    /// </summary>
+    /// <param name="work">The work function to execute.</param>
+    /// <param name="task">The scheduled task to run.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// This method is called internally by the scheduler to manage the execution of scheduled tasks.
+    /// It ensures that tasks are run at the correct times and handles any exceptions that may occur during execution.
+    /// </remarks>
     private async Task SafeRun(Func<CancellationToken, Task> work, ScheduledTask task, CancellationToken ct)
     {
         try
@@ -324,6 +574,13 @@ public sealed class SchedulerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Disposes the scheduler and cancels all running tasks.
+    /// </summary>
+    /// <remarks>
+    /// This method is called to clean up resources used by the scheduler service.
+    /// It cancels all scheduled tasks and disposes of the runspace pool manager.
+    /// </remarks>
     public void Dispose()
     {
         CancelAll();

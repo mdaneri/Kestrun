@@ -32,11 +32,13 @@ $basic   = "Basic " + [Convert]::ToBase64String(
 $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
  
 Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod https://localhost:5001/secure/key/vb/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
@@ -45,8 +47,7 @@ Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck 
 
 #Form
 Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
-Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession
-Invoke-WebRequest -Uri "https://localhost:5001/cookie/login" -SkipCertificateCheck -Method Post -Form @{ username = 'admin'; password = 'secret' } -WebSession $session -Verbose
+Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession 
 */
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -72,10 +73,12 @@ server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 const string BasicPowershellScheme = "PowershellBasic";
 const string BasicNativeScheme = "NativeBasic";
 const string BasicCSharpScheme = "CSharpBasic";
+const string BasicVBNetScheme = "VBNetBasic";
 const string JwtScheme = "Bearer";
 const string ApiKeySimple = "ApiKeySimple";
 const string ApiKeyPowerShell = "ApiKeyPowerShell";
 const string ApiKeyCSharp = "ApiKeyCSharp";
+const string ApiKeyVBNet = "ApiKeyVBNet";
 string issuer = "KestrunApi";
 string audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
@@ -169,6 +172,19 @@ server.AddResponseCompression(options =>
     """
     };
 })
+/// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
+.AddBasicAuthentication(BasicVBNetScheme, opts =>
+{
+    opts.Realm = "VBNet-Kestrun";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.VBNet,
+
+        Code = """      
+        Return username = "admin" AndAlso password = "password"
+    """
+    };
+})
 
 /// ── WINDOWS AUTHENTICATION ────────────────────────────────────────────
 .AddWindowsAuthentication()
@@ -215,6 +231,20 @@ server.AddResponseCompression(options =>
         ExtraImports = ["System.Text"]
     };
 })
+.AddApiKeyAuthentication(ApiKeyVBNet, opts =>
+{
+    opts.HeaderName = "X-Api-Key";
+    opts.CodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.VBNet,
+        Code = """
+    Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
+    ' or use a simple string comparison:
+    ' Return providedKey = "my-secret-api-key"
+    """,
+        ExtraImports = ["System.Text"]
+    };
+}) 
 
 /// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
 .AddJwtBearerAuthentication(
@@ -346,6 +376,16 @@ server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
 """, ScriptLanguage.PowerShell, [BasicCSharpScheme]);
 
 
+server.AddMapRoute("/secure/vb/hello", HttpVerb.Get, """
+    if (-not $Context.User.Identity.IsAuthenticated) {
+        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+        return
+    }
+
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
+""", ScriptLanguage.PowerShell, [BasicVBNetScheme]);
+
 server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
     if (-not $Context.User.Identity.IsAuthenticated) {
         Write-KrErrorResponse -Message "Access denied" -StatusCode 401
@@ -363,7 +403,7 @@ server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
     API KEY AUTHENTICATION ROUTES
 *********************************************
 */
-server.AddNativeRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
     var user = ctx.User?.Identity?.Name;
     await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated using simple key matching.", 200);
@@ -394,6 +434,17 @@ server.AddMapRoute("/secure/key/cs/hello", HttpVerb.Get, """
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by C# code.", 200);
 """, ScriptLanguage.CSharp, [ApiKeyCSharp]);
 
+server.AddMapRoute("/secure/key/vb/hello", HttpVerb.Get, """
+    if (!Context.User.Identity.IsAuthenticated)
+    {
+        Context.Response.WriteErrorResponse("Access denied", 401);
+        return;
+    }
+
+    var user = Context.User.Identity.Name;
+    Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by VB.NET code.", 200);
+""", ScriptLanguage.CSharp, [ApiKeyVBNet]);
+
 
 server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
     if (!Context.User.Identity.IsAuthenticated)
@@ -407,7 +458,7 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
-server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
     var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
@@ -415,7 +466,7 @@ server.AddNativeRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 }, [JwtScheme]);
 
 
-server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/token/new", HttpVerb.Get, async (ctx) =>
 {
     try
     {
@@ -438,7 +489,7 @@ server.AddNativeRoute("/token/new", HttpVerb.Get, async (ctx) =>
     Cookie authentication routes
 *********************************************
 */
-server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
+server.AddMapRoute("/cookies/login", HttpVerb.Get, async ctx =>
 {
     await ctx.Response.WriteTextResponseAsync(@"
 <!DOCTYPE html>
@@ -463,7 +514,7 @@ server.AddNativeRoute("/cookies/login", HttpVerb.Get, async ctx =>
   </body>
 </html>", statusCode: 200, contentType: "text/html; charset=UTF-8");
 });
-server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
+server.AddMapRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
 {
     var form = ctx.Request.Form;
     if (form == null)
@@ -490,7 +541,7 @@ server.AddNativeRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
     }
 });
 
-server.AddNativeRoute("/cookies/logout", HttpVerb.Get, async ctx =>
+server.AddMapRoute("/cookies/logout", HttpVerb.Get, async ctx =>
 {
     await ctx.HttpContext.SignOutAsync("Cookies");
     // After logout, send them back to login
@@ -538,7 +589,7 @@ server.AddMapRoute("/cookies/secure3", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, ["Cookies"]);
 
 
-server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
 {
     if (ctx.User?.Identity == null || !ctx.User.Identity.IsAuthenticated)
     {
@@ -557,7 +608,7 @@ server.AddNativeRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
 //    This route is protected by Kerberos authentication.
 //    It will only be accessible if the user is authenticated via Kerberos.
 //****************************************************************************************
-server.AddNativeRoute("/kerberos/secure", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/kerberos/secure", HttpVerb.Get, async (ctx) =>
 {
     var userName = ctx.User?.Identity?.Name ?? "Unknown";
     await ctx.Response.WriteTextResponseAsync($"Hello, {userName}");

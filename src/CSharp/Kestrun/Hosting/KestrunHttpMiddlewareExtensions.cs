@@ -7,12 +7,16 @@ using Serilog.Events;
 
 namespace Kestrun.Hosting;
 
+/// <summary>
+/// Provides extension methods for configuring common HTTP middleware in Kestrun.
+/// </summary>
 public static class KestrunHttpMiddlewareExtensions
 {
     /// <summary>
     /// Adds response compression to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="options">The configuration options for response compression.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddResponseCompression(this KestrunHost host, ResponseCompressionOptions? options)
@@ -37,6 +41,7 @@ public static class KestrunHttpMiddlewareExtensions
     /// Adds response compression to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">The configuration options for response compression.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddResponseCompression(this KestrunHost host, Action<ResponseCompressionOptions>? cfg = null)
@@ -56,6 +61,12 @@ public static class KestrunHttpMiddlewareExtensions
         return host.Use(app => app.UseResponseCompression());
     }
 
+    /// <summary>
+    /// Adds rate limiting to the application using the specified <see cref="RateLimiterOptions"/>.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
+    /// <param name="cfg">The configuration options for rate limiting.</param>
+    /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRateLimiter(this KestrunHost host, RateLimiterOptions cfg)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
@@ -72,25 +83,31 @@ public static class KestrunHttpMiddlewareExtensions
     }
 
 
-    public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
-    {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
-
-        // Register the rate limiter service
-        host.AddService(services =>
-        {
-            services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
-        });
-
-        // Apply the middleware
-        return host.Use(app =>
+    /// <summary>
+    /// Adds rate limiting to the application using the specified configuration delegate.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
+    /// <param name="cfg">An optional delegate to configure rate limiting options.</param>
+    /// <returns>The current KestrunHost instance.</returns>
+        public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
         {
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
-                host._Logger.Debug("Registering rate limiter middleware");
-            app.UseRateLimiter();
-        });
-    }
+                host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
+    
+            // Register the rate limiter service
+            host.AddService(services =>
+            {
+                services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
+            });
+    
+            // Apply the middleware
+            return host.Use(app =>
+            {
+                if (host._Logger.IsEnabled(LogEventLevel.Debug))
+                    host._Logger.Debug("Registering rate limiter middleware");
+                app.UseRateLimiter();
+            });
+        }
 
 
 
@@ -98,6 +115,7 @@ public static class KestrunHttpMiddlewareExtensions
     /// Adds antiforgery protection to the application.
     /// This overload allows you to specify configuration options.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="options">The antiforgery options to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddAntiforgery(this KestrunHost host, AntiforgeryOptions? options)
@@ -121,6 +139,7 @@ public static class KestrunHttpMiddlewareExtensions
     /// <summary>
     /// Adds antiforgery protection to the application.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="setupAction">An optional action to configure the antiforgery options.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddAntiforgery(this KestrunHost host, Action<AntiforgeryOptions>? setupAction = null)
@@ -140,10 +159,11 @@ public static class KestrunHttpMiddlewareExtensions
         return host.Use(app => app.UseAntiforgery());
     }
 
-
+ 
     /// <summary>
-    /// Adds a CORS policy that allows all origins, methods, and headers.
+    /// Adds a CORS policy named "AllowAll" that allows any origin, method, and header.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddCorsAllowAll(this KestrunHost host) =>
         host.AddCors("AllowAll", b => b.AllowAnyOrigin()
@@ -154,6 +174,7 @@ public static class KestrunHttpMiddlewareExtensions
     /// Registers a named CORS policy that was already composed with a
     /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="policyName">The name to store/apply the policy under.</param>
     /// <param name="builder">
     ///     A fully‑configured <see cref="CorsPolicyBuilder"/>.
@@ -182,6 +203,7 @@ public static class KestrunHttpMiddlewareExtensions
     /// Registers a named CORS policy that was already composed with a
     /// <see cref="CorsPolicyBuilder"/> and applies that policy in the pipeline.
     /// </summary>
+    /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="policyName">The name to store/apply the policy under.</param>
     /// <param name="buildPolicy">An action to configure the CORS policy.</param>
     /// <returns>The current KestrunHost instance.</returns>
