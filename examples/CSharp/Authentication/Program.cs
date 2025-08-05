@@ -47,8 +47,7 @@ Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck 
 
 #Form
 Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
-Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession
-Invoke-WebRequest -Uri "https://localhost:5001/cookie/login" -SkipCertificateCheck -Method Post -Form @{ username = 'admin'; password = 'secret' } -WebSession $session -Verbose
+Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession 
 */
 
 var currentDir = Directory.GetCurrentDirectory();

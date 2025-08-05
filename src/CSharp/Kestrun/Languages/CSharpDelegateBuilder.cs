@@ -162,7 +162,8 @@ internal static class CSharpDelegateBuilder
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),            // System.Private.CoreLib
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),        // System.Linq
             MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location),       // Microsoft.AspNetCore.Http
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location)          // System Console
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),          // System.Console
+            MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location)          // Serilog
         };
         // 2. Reference *your* Kestrun.dll once (contains Model, Hosting, etc.)
         var kestrunAssembly = typeof(Kestrun.Hosting.KestrunHost).Assembly;               // ← this *is* Kestrun.dll

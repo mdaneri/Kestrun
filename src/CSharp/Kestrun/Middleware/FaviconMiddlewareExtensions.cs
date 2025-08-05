@@ -8,8 +8,17 @@ using System.Reflection;
 
 namespace Kestrun.Middleware;
 
+/// <summary>
+/// Provides extension methods for serving a favicon in ASP.NET Core applications.
+/// </summary>
 public static class FaviconMiddlewareExtensions
 {
+    /// <summary>
+    /// Adds middleware to serve a favicon for the application.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <param name="iconPath">Optional path to a custom favicon file. If not provided, uses the embedded favicon.</param>
+    /// <returns>The application builder.</returns>
     public static IApplicationBuilder UseFavicon(this IApplicationBuilder app, string? iconPath = null)
     {
         if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))

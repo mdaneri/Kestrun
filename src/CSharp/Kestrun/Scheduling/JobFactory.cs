@@ -19,8 +19,10 @@ internal static class JobFactory
            KestrunRunspacePoolManager? Pool = null,
           string[]? ExtraImports = null,
           Assembly[]? ExtraRefs = null,
+            IReadOnlyDictionary<string, object?>? Locals = null,
           LanguageVersion LanguageVersion = LanguageVersion.CSharp12
           );
+
     internal static Func<CancellationToken, Task> Create(JobConfig config)
     {
         return config.Language switch
@@ -30,6 +32,7 @@ internal static class JobFactory
                     ? throw new InvalidOperationException("PowerShell runspace pool must be provided for PowerShell jobs.")
                     : PowerShellJob(config),
             ScriptLanguage.CSharp => RoslynJob(config),
+            ScriptLanguage.VBNet => RoslynJob(config),
             _ => throw new NotSupportedException($"Language {config.Language} not supported.")
         };
     }
@@ -113,6 +116,6 @@ internal static class JobFactory
     /* ----------------  C# (Roslyn) ---------------- */
     private static Func<CancellationToken, Task> RoslynJob(JobConfig config)
     {
-        return RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.LanguageVersion);
+        return RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.Locals, config.LanguageVersion);
     }
 }
