@@ -112,8 +112,21 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- [PowerShell 7+](https://github.com/PowerShell/PowerShell)
+**For Building:**
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download) AND [.NET 9 SDK](https://dotnet.microsoft.com/download) (both required)
+- **PowerShell 7.4+** or **PowerShell 7.5+** - Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases)
+- **InvokeBuild** and **Pester** PowerShell modules:
+
+```pwsh
+Install-Module InvokeBuild, Pester -Force
+```
+
+**For Runtime:**
+
+- [.NET 8 Runtime](https://dotnet.microsoft.com/download) or [.NET 9 Runtime](https://dotnet.microsoft.com/download)
+- **PowerShell 7.4+** (requires .NET 8) or **PowerShell 7.5+** (requires .NET 9)
+  - Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases)
 
 ### Build & Run
 
