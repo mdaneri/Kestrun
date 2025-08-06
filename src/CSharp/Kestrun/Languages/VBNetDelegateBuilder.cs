@@ -10,6 +10,7 @@ using Serilog.Events;
 using Kestrun.Models;
 using Microsoft.CodeAnalysis;
 using Kestrun.Utilities;
+using System.Security.Claims;
 
 namespace Kestrun.Languages;
 
@@ -55,7 +56,7 @@ internal static class VBNetDelegateBuilder
         //    - Use VisualBasicScript.Create() to create a script with the provided code
         //    - Use ScriptOptions to specify imports, references, and language version
         //    - Inject the provided arguments into the globals
-        var script = Compile(code, log, extraImports, extraRefs, null, languageVersion);
+        var script = Compile<bool>(code, log, extraImports, extraRefs, null, languageVersion);
 
         // 2. Build the per-request delegate
         //    - This delegate will be executed for each request
@@ -123,6 +124,19 @@ internal static class VBNetDelegateBuilder
         };
     }
 
+
+    // Decide the VB return type string that matches TResult
+    private static string GetVbReturnType(Type t)
+    {
+        if (t == typeof(bool)) return "Boolean";
+
+        if (t == typeof(IEnumerable<Claim>))
+            return "System.Collections.Generic.IEnumerable(Of System.Security.Claims.Claim)";
+
+        // Fallback so it still compiles even for object / string / etc.
+        return "Object";
+    }
+
     /// <summary>
     /// Compiles the provided VB.NET code into a delegate that can be executed with CsGlobals.
     /// </summary>
@@ -137,7 +151,7 @@ internal static class VBNetDelegateBuilder
     /// <remarks>
     /// This method uses the Roslyn compiler to compile the provided VB.NET code into a delegate.
     /// </remarks>
-    internal static Func<CsGlobals, Task<bool>> Compile(
+    internal static Func<CsGlobals, Task<TResult>> Compile<TResult>(
             string? code, Serilog.ILogger log, string[]? extraImports,
             Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion
         )
@@ -150,15 +164,17 @@ internal static class VBNetDelegateBuilder
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
 
-        var injectAuthVariables = locals?.ContainsKey("username") == true && locals?.ContainsKey("password") == true;
+        var injectUsernameVariable = (locals?.ContainsKey("username") ?? false) || (locals?.ContainsKey("Username") ?? false);
+        var injectPasswordVariable = (locals?.ContainsKey("password") ?? false) || (locals?.ContainsKey("Password") ?? false);
         var injectKeysVariables = locals?.ContainsKey("providedKey") == true && locals?.ContainsKey("providedKeyBytes") == true;
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Injecting auth variables: {InjectAuth}, keys: {InjectKeys}",
-                injectAuthVariables, injectKeysVariables);
+                injectUsernameVariable, injectPasswordVariable, injectKeysVariables);
 
         // 🔧 1.  Build a real VB file around the user snippet
-        string source = BuildWrappedSource(code, extraImports, injectAuthVariables: injectAuthVariables,
-            injectKeysVariables: injectKeysVariables);
+        string source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
+            injectUsernameVariable: injectUsernameVariable,
+            injectPasswordVariable: injectPasswordVariable, injectKeysVariables: injectKeysVariables);
         var startIndex = source.IndexOf(StartMarker);
         if (startIndex < 0)
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.", nameof(code));
@@ -244,11 +260,19 @@ internal static class VBNetDelegateBuilder
         var runMethod = asm.GetType("RouteScript")!
                            .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
 
-        // 👇 produce Func<CsGlobals, Task<object?>> —not Task 
-        return (Func<CsGlobals, Task<bool>>)runMethod.CreateDelegate(typeof(Func<CsGlobals, Task<bool>>));
+        // Build Func<CsGlobals, Task<TResult>> at runtime
+        var delegateType = typeof(Func<,>).MakeGenericType(
+                               typeof(CsGlobals),
+                               typeof(Task<>).MakeGenericType(typeof(TResult)));
+
+        return (Func<CsGlobals, Task<TResult>>)runMethod.CreateDelegate(delegateType);
     }
 
-    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports, bool injectAuthVariables = false, bool injectKeysVariables = false)
+    private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports,
+    string vbReturnType,
+      bool injectUsernameVariable = false,
+      bool injectPasswordVariable = false,
+      bool injectKeysVariables = false)
     {
         var sb = new StringBuilder();
 
@@ -265,21 +289,24 @@ internal static class VBNetDelegateBuilder
                                    .Distinct(StringComparer.Ordinal))
             sb.AppendLine($"Imports {ns}");
 
-        sb.AppendLine("""
+        sb.AppendLine($"""
                 Public Module RouteScript
-                    Public Async Function Run(g As CsGlobals) As Task(Of Boolean)
+                    Public Async Function Run(g As CsGlobals) As Task(Of {vbReturnType})
                         Dim Request  = g.Context?.Request
                         Dim Response = g.Context?.Response
                         Dim Context  = g.Context
         """);
 
         // only emit these _when_ you called Compile with locals:
-        if (injectAuthVariables)
+        if (injectUsernameVariable)
             sb.AppendLine("""
         ' only bind creds if someone passed them in 
-                        Dim username As String = CStr(g.Locals("username"))
+                        Dim username As String = CStr(g.Locals("username"))                
+        """);
+
+        if (injectPasswordVariable)
+            sb.AppendLine("""
                         Dim password As String = CStr(g.Locals("password"))
-                
         """);
 
         if (injectKeysVariables)

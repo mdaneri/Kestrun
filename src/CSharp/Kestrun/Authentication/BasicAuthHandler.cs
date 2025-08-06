@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Management.Automation;
 using System.Net.Http.Headers;
 using System.Security.Claims;
@@ -113,7 +114,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             if (Options.IssueClaims is not null)
             {
                 // Call the IssueClaims function to get additional claims
-                var extra =  await Options.IssueClaims(Context, user);
+                var extra = await Options.IssueClaims(Context, user);
                 if (extra is not null)
                 {
                     foreach (var claim in extra)
@@ -128,7 +129,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             if (Options.NativeIssueClaims is not null)
             {
                 // Call the NativeIssueClaims function to get additional claims
-                var extra =  Options.NativeIssueClaims(Context, user);
+                var extra = Options.NativeIssueClaims(Context, user);
                 if (extra is not null)
                     claims.AddRange(extra);
             }
@@ -315,12 +316,12 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <returns>A function that validates credentials using the provided VB.NET script.</returns>
     public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
     {
-        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        var script = VBNetDelegateBuilder.Compile<bool>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
         codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {
-                    { "username", "" },
-                    { "password", "" }
+                    { "Username", "" },
+                    { "Password", "" }
             }, languageVersion: codeSettings.VisualBasicVersion);
 
         return async (ctx, user, pass) =>
@@ -332,8 +333,8 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var context = new KestrunContext(krRequest, krResponse, ctx);
             var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
-                    { "username", user },
-                    { "password", pass }
+                    { "Username", user },
+                    { "Password", pass }
             });
             // Run the VB.NET script and get the result
             // Note: The script should return a boolean indicating success or failure
@@ -349,6 +350,13 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     }
 
 
+    /// <summary>
+    /// Issues claims for a user by executing a PowerShell script.
+    /// </summary>
+    /// <param name="code">The PowerShell script code used to issue claims.</param>
+    /// <param name="context">The HTTP context containing the PowerShell runspace.</param>
+    /// <param name="username">The username for which to issue claims.</param>
+    /// <returns>A task representing the asynchronous operation, with a collection of issued claims.</returns>
     public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext context, string username)
     {
         try
@@ -380,9 +388,45 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             .AddParameter("username", username);
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
-            return psResults.Select(result => new Claim(ClaimTypes.Name, result.ToString()))
-                .Where(claim => claim != null && !string.IsNullOrEmpty(claim.Value))
-                .ToList();
+            //    return psResults.Select(result => new Claim(ClaimTypes.Name, result.ToString()))
+            //      .Where(claim => claim != null && !string.IsNullOrEmpty(claim.Value))
+            //    .ToList();
+            var claims = new List<Claim>();
+            foreach (var r in psResults)
+            {
+                var obj = r.BaseObject;
+                switch (obj)
+                {
+                    // ① Script returned a Claim object
+                    case Claim c:
+                        claims.Add(c);
+                        break;
+
+                    // ② Script returned a PSCustomObject or hashtable with Type/Value
+                    case IDictionary dict when dict.Contains("Type") && dict.Contains("Value"):
+                        var typeObj = dict["Type"];
+                        var valueObj = dict["Value"];
+                        if (typeObj is not null && valueObj is not null)
+                        {
+                            var typeStr = typeObj.ToString();
+                            var valueStr = valueObj.ToString();
+                            if (!string.IsNullOrEmpty(typeStr) && !string.IsNullOrEmpty(valueStr))
+                            {
+                                claims.Add(new Claim(typeStr, valueStr));
+                            }
+                        }
+                        break;
+
+                    // ③ Script returned "type:value"
+                    case string s when s.Contains(':'):
+                        var idx = s.IndexOf(':');
+                        claims.Add(new Claim(s[..idx], s[(idx + 1)..]));
+                        break;
+                }
+            }
+            return claims;
+
+
         }
         catch (Exception ex)
         {
@@ -391,6 +435,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         }
     }
 
+    /// <summary>
+    /// Builds a PowerShell-based function for issuing claims for a user.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the PowerShell script.</param>
+    /// <returns>A function that issues claims using the provided PowerShell script.</returns>
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings codeSettings)
   => async (ctx, user) =>
         {
@@ -399,6 +448,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         };
 
 
+    /// <summary>
+    /// Builds a C#-based function for issuing claims for a user.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the C# script.</param>
+    /// <returns>A function that issues claims using the provided C# script.</returns>
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings codeSettings)
     {
         var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
@@ -420,18 +474,23 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var result = await script.RunAsync(globals).ConfigureAwait(false);
             return result.ReturnValue is IEnumerable<Claim> claims
                 ? claims
-                : Enumerable.Empty<Claim>();
+                : [];
         };
     }
 
 
+    /// <summary>
+    /// Builds a VB.NET-based function for issuing claims for a user.
+    /// </summary>
+    /// <param name="codeSettings">The authentication code settings containing the VB.NET script.</param>
+    /// <returns>A function that issues claims using the provided VB.NET script.</returns>
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings codeSettings)
     {
-        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
         codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {
-                    { "username", "" }
+                        { "username", "" }
             }, languageVersion: codeSettings.VisualBasicVersion);
 
         return async (ctx, user) =>
@@ -441,16 +500,15 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var context = new KestrunContext(krRequest, krResponse, ctx);
             var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
-                    { "username", user }
+                        { "username", user }
             });
             // Run the VB.NET script and get the result
             // Note: The script should return a boolean indicating success or failure
             var result = await script(glob).ConfigureAwait(false);
-            // return result is IEnumerable<Claim> claims
-            //   ? claims
-            // : Enumerable.Empty<Claim>();
-               
-               return Enumerable.Empty<Claim>(); // TODO: Implement proper VB.NET claims extraction
+            return result is IEnumerable<Claim> claims
+              ? claims
+           : [];
+
         };
     }
 }

@@ -268,25 +268,25 @@ public static class KestrunHostAuthExtensions
             configureAuthz: configureAuthz
         );
     }
-
-    public static KestrunHost AddClientCertificateAuthentication(
-        this KestrunHost host,
-        string scheme = CertificateAuthenticationDefaults.AuthenticationScheme,
-        Action<CertificateAuthenticationOptions>? configure = null,
-        Action<AuthorizationOptions>? configureAuthz = null)
-    {
-        return host.AddAuthentication(
-            defaultScheme: scheme,
-            buildSchemes: ab =>
-            {
-                ab.AddCertificate(
-                    authenticationScheme: scheme,
-                    configureOptions: configure ?? (opts => { }));
-            },
-            configureAuthz: configureAuthz
-        );
-    }
-
+    /*
+        public static KestrunHost AddClientCertificateAuthentication(
+            this KestrunHost host,
+            string scheme = CertificateAuthenticationDefaults.AuthenticationScheme,
+            Action<CertificateAuthenticationOptions>? configure = null,
+            Action<AuthorizationOptions>? configureAuthz = null)
+        {
+            return host.AddAuthentication(
+                defaultScheme: scheme,
+                buildSchemes: ab =>
+                {
+                    ab.AddCertificate(
+                        authenticationScheme: scheme,
+                        configureOptions: configure ?? (opts => { }));
+                },
+                configureAuthz: configureAuthz
+            );
+        }
+    */
     /// <summary>
     /// Adds Windows Authentication to the Kestrun host.
     /// <para>
@@ -423,7 +423,18 @@ public static class KestrunHostAuthExtensions
         );
     }
 
-
+    /// <summary>
+    /// Adds OpenID Connect authentication to the Kestrun host.
+    /// <para>Use this for applications that require OpenID Connect authentication.</para>
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name.</param>
+    /// <param name="clientId">The client ID for the OpenID Connect application.</param>
+    /// <param name="clientSecret">The client secret for the OpenID Connect application.</param>
+    /// <param name="authority">The authority URL for the OpenID Connect provider.</param>
+    /// <param name="configure">An optional action to configure the OpenID Connect options.</param>
+    /// <param name="configureAuthz">An optional action to configure the authorization options.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddOpenIdConnectAuthentication(
         this KestrunHost host,
         string scheme,

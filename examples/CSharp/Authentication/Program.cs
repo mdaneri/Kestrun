@@ -36,7 +36,11 @@ Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -
 Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
- 
+
+Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+
+
 Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
@@ -108,6 +112,7 @@ var claimConfig = new ClaimPolicyConfig
     {
         ["CanDelete"] = new("can_delete", "true"),
         ["CanRead"]   = new("can_read"  , "true"),
+        ["CanWrite"]  = new("can_write" , "true"),
         ["Admin"]     = new(ClaimTypes.Role, "admin")
     }
 };
@@ -152,167 +157,221 @@ server.AddResponseCompression(options =>
             }
         """
     };
-    opts.IssueClaimsCodeSettings= new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.PowerShell,
-        Code = """
-            param(
-                [string]$Username
-            )
-            if ($Username -eq 'admin') {
-                return [System.Security.Claims.Claim[]]@(
-                    [System.Security.Claims.Claim]::New('can_delete', "true")
-                    # or, if you really want it as a role:
-                    # New-Object System.Security.Claims.Claim([System.Security.Claims.ClaimTypes]::Role, 'can_read')
-                )
-            } else {
-                return [System.Security.Claims.Claim[]]@()
-            }
-        """
-    };
-  /*  opts.NativeIssueClaims = (ctx, user) =>
+    /*  // Issue claims code settings for PowerShell
+      // This code will be executed to issue claims based on the username
+      // It can return an array of System.Security.Claims.Claim objects
+      // or an empty array if no claims are issued.
+      opts.IssueClaimsCodeSettings = new AuthenticationCodeSettings
+      {
+          Language = ScriptLanguage.PowerShell,
+          Code = """                
+              param([string]$Username)
+              if ($Username -eq 'admin') {
+                  # ①  Mandatory role claim
+                  $role = [System.Security.Claims.Claim]::new(
+                      [System.Security.Claims.ClaimTypes]::Role, 'admin')
+
+                  # ②  Extra capability claims ─ add or remove as you like
+                  $canRead = [System.Security.Claims.Claim]::new('can_read' , 'true')
+                  $canWrite = [System.Security.Claims.Claim]::new('can_write', 'true')
+                  $canDel = [System.Security.Claims.Claim]::new('can_delete', 'true')
+
+                  return @($role, $canRead, $canWrite, $canDel)
+              }
+              else {
+                  return [System.Security.Claims.Claim[]]@()
+              }
+             """
+      };*/
+
+
+    /*
+    // Native C# code for issuing claims
+    opts.NativeIssueClaims = (ctx, user) =>
     {
         if (user == "admin")
         {
             // ← return the claims you want to add
-            return new[]
-            {
-            new Claim("can_delete", "true")          // custom claim
-            // or, if you really want it as a role:
-            // new Claim(ClaimTypes.Role, "can_read")
-        };
-        }
+              return new[]
+              {
+              new Claim("can_delete", "true")          // custom claim
+              // or, if you really want it as a role:
+              // new Claim(ClaimTypes.Role, "can_read")
+          };
+          }
 
-        // everyone else gets no extra claims
-        return Enumerable.Empty<Claim>();
-    }; */
+          // everyone else gets no extra claims
+          return Enumerable.Empty<Claim>();
+      };   */
+    /*   /// Issue claims code settings for C# 
+       /// This code will be executed to issue claims based on the username
+       /// It can return an array of System.Security.Claims.Claim objects
+       /// or an empty array if no claims are issued.
+       opts.IssueClaimsCodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.CSharp,
+           Code = """
+               if (username == "admin")
+               {
+                   // ← return the claims you want to add
+                   return new[]
+                   {
+                   new System.Security.Claims.Claim("can_delete", "true")          // custom claim
+                   // or, if you really want it as a role:
+                   // new Claim(ClaimTypes.Role, "can_read")
+               };
+               }
+
+               // everyone else gets no extra claims
+               return Enumerable.Empty<System.Security.Claims.Claim>();
+           """
+       };*/
+
+    /// Issue claims code settings for C# 
+    /// This code will be executed to issue claims based on the username
+    /// It can return an array of System.Security.Claims.Claim objects
+    /// or an empty array if no claims are issued.
+    opts.IssueClaimsCodeSettings = new AuthenticationCodeSettings
+    {
+        Language = ScriptLanguage.VBNet,
+        Code = """
+               If Username = "admin" Then          ' (VB is case-insensitive, but keep it consistent)
+                    Return New System.Security.Claims.Claim() {
+                        New System.Security.Claims.Claim("can_delete", "true")
+                    }
+                End If
+
+                ' everyone else gets no extra claims
+                Return Nothing
+           """
+    };
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
 }, configureAuthz: claimConfig.ToAuthzDelegate())
 
-/// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────
-.AddBasicAuthentication(BasicNativeScheme, opts =>
-{
-    opts.Realm = "Native-Kestrun";
-    opts.ValidateCredentials = async (context, username, password) =>
-    {
-        Log.Information("Validating credentials for {Username}", username);
-        // pretend we did some async work:
-        await Task.Yield();
-        // Replace with your real credential validation logic
-        return username == "admin" && password == "password";
-    };
-})
+   /// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────
+   .AddBasicAuthentication(BasicNativeScheme, opts =>
+   {
+       opts.Realm = "Native-Kestrun";
+       opts.ValidateCredentials = async (context, username, password) =>
+       {
+           Log.Information("Validating credentials for {Username}", username);
+           // pretend we did some async work:
+           await Task.Yield();
+           // Replace with your real credential validation logic
+           return username == "admin" && password == "password";
+       };
+   })
 
-/// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
-.AddBasicAuthentication(BasicCSharpScheme, opts =>
-{
-    opts.Realm = "CSharp-Kestrun";
-    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.CSharp,
+   /// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
+   .AddBasicAuthentication(BasicCSharpScheme, opts =>
+   {
+       opts.Realm = "CSharp-Kestrun";
+       opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.CSharp,
 
-        Code = """      
-        return username == "admin" && password == "password";
-    """
-    };
-})
-/// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
-.AddBasicAuthentication(BasicVBNetScheme, opts =>
-{
-    opts.Realm = "VBNet-Kestrun";
-    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.VBNet,
+           Code = """      
+           return username == "admin" && password == "password";
+       """
+       };
+   })
+   /// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
+   .AddBasicAuthentication(BasicVBNetScheme, opts =>
+   {
+       opts.Realm = "VBNet-Kestrun";
+       opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.VBNet,
 
-        Code = """      
-        Return username = "admin" AndAlso password = "password"
-    """
-    };
-})
+           Code = """      
+           Return username = "admin" AndAlso password = "password"
+       """
+       };
+   })
 
-/// ── WINDOWS AUTHENTICATION ────────────────────────────────────────────
-.AddWindowsAuthentication()
+   /// ── WINDOWS AUTHENTICATION ────────────────────────────────────────────
+   .AddWindowsAuthentication()
 
-/// ── API KEY AUTHENTICATION – SIMPLE STRING MATCHING ────────────────────
-.AddApiKeyAuthentication(ApiKeySimple, opts =>
-{
-    opts.HeaderName = "X-Api-Key";
-    opts.ExpectedKey = "my-secret-api-key";
-})
+   /// ── API KEY AUTHENTICATION – SIMPLE STRING MATCHING ────────────────────
+   .AddApiKeyAuthentication(ApiKeySimple, opts =>
+   {
+       opts.HeaderName = "X-Api-Key";
+       opts.ExpectedKey = "my-secret-api-key";
+   })
 
-/// ── API KEY AUTHENTICATION – POWERSHELL CODE ───────────────────────────
-.AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
-{
-    opts.HeaderName = "X-Api-Key";
-    opts.CodeSettings = new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.PowerShell,
-        Code = """
-    param(
-        [string]$ProvidedKey
-    )
-    if ($ProvidedKey -eq 'my-secret-api-key') {
-        return $true
-    } else {
-        return $false
-    }
-    """
-    };
-})
+   /// ── API KEY AUTHENTICATION – POWERSHELL CODE ───────────────────────────
+   .AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
+   {
+       opts.HeaderName = "X-Api-Key";
+       opts.CodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.PowerShell,
+           Code = """
+       param(
+           [string]$ProvidedKey
+       )
+       if ($ProvidedKey -eq 'my-secret-api-key') {
+           return $true
+       } else {
+           return $false
+       }
+       """
+       };
+   })
 
-/// ── API KEY AUTHENTICATION – C# CODE ───────────────────────────────────
-.AddApiKeyAuthentication(ApiKeyCSharp, opts =>
-{
-    opts.HeaderName = "X-Api-Key";
-    opts.CodeSettings = new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.CSharp,
-        Code = """
-    return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
-    // or use a simple string comparison: // or use a simple string comparison:  
-    // return providedKey == "my-secret-api-key";
-    """,
-        ExtraImports = ["System.Text"]
-    };
-})
-.AddApiKeyAuthentication(ApiKeyVBNet, opts =>
-{
-    opts.HeaderName = "X-Api-Key";
-    opts.CodeSettings = new AuthenticationCodeSettings
-    {
-        Language = ScriptLanguage.VBNet,
-        Code = """
-    Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
-    ' or use a simple string comparison:
-    ' Return providedKey = "my-secret-api-key"
-    """,
-        ExtraImports = ["System.Text"]
-    };
-})
+   /// ── API KEY AUTHENTICATION – C# CODE ───────────────────────────────────
+   .AddApiKeyAuthentication(ApiKeyCSharp, opts =>
+   {
+       opts.HeaderName = "X-Api-Key";
+       opts.CodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.CSharp,
+           Code = """
+       return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
+       // or use a simple string comparison: // or use a simple string comparison:  
+       // return providedKey == "my-secret-api-key";
+       """,
+           ExtraImports = ["System.Text"]
+       };
+   })
+   .AddApiKeyAuthentication(ApiKeyVBNet, opts =>
+   {
+       opts.HeaderName = "X-Api-Key";
+       opts.CodeSettings = new AuthenticationCodeSettings
+       {
+           Language = ScriptLanguage.VBNet,
+           Code = """
+       Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
+       ' or use a simple string comparison:
+       ' Return providedKey = "my-secret-api-key"
+       """,
+           ExtraImports = ["System.Text"]
+       };
+   })
 
-/// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
-.AddJwtBearerAuthentication(
-    scheme: JwtScheme,
-     validationParameters: builderResult.GetValidationParameters())
+   /// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
+   .AddJwtBearerAuthentication(
+       scheme: JwtScheme,
+        validationParameters: builderResult.GetValidationParameters())
 
-/// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
-.AddCookieAuthentication(
-    scheme: "Cookies",
-    loginPath: "/cookies/login",
-    configure: opts =>
-    {
-        opts.Cookie.Name = "Kestrun.Cookie";
-        opts.Cookie.HttpOnly = true;
-        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        opts.LoginPath = "/cookies/login";
-        opts.LogoutPath = "/cookies/logout";
-        opts.AccessDeniedPath = "/cookies/access-denied";
-        opts.SlidingExpiration = true;
-        opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-        opts.Cookie.SameSite = SameSiteMode.Strict;
-    }
-);
+   /// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
+   .AddCookieAuthentication(
+       scheme: "Cookies",
+       loginPath: "/cookies/login",
+       configure: opts =>
+       {
+           opts.Cookie.Name = "Kestrun.Cookie";
+           opts.Cookie.HttpOnly = true;
+           opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+           opts.LoginPath = "/cookies/login";
+           opts.LogoutPath = "/cookies/logout";
+           opts.AccessDeniedPath = "/cookies/access-denied";
+           opts.SlidingExpiration = true;
+           opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+           opts.Cookie.SameSite = SameSiteMode.Strict;
+       }
+   );
 
 //***************************************************************************************
 //    CERTIFICATE IMPORT/CREATION
@@ -401,82 +460,90 @@ server.EnableConfiguration();
 //    BASIC AUTHENTICATION ROUTES
 //**********************************************
 server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
-    if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+       if (-not $Context.User.Identity.IsAuthenticated) {
+           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+           return
+       }
 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
-""", ScriptLanguage.PowerShell, [BasicPowershellScheme]);
+       $user = $Context.User.Identity.Name
+       Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
+   """, ScriptLanguage.PowerShell, [BasicPowershellScheme]);
 
 
 server.AddMapRoute(new()
 {
     Pattern = "/secure/ps/policy",
     HttpVerbs = [HttpVerb.Get],
-    Code = """
-         if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-        }
+    Code = """ 
 
-        $user = $Context.User.Identity.Name
-        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
-    """,
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+       """,
     Language = ScriptLanguage.PowerShell,
     RequirePolicies = ["CanRead"],
     RequireSchemes = [BasicPowershellScheme]
-}); 
+});
 
-server.AddMapRoute( new()
+server.AddMapRoute(new()
 {
     Pattern = "/secure/ps/policy",
     HttpVerbs = [HttpVerb.Delete],
-    Code = """
-         if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-        }
+    Code = """ 
 
-        $user = $Context.User.Identity.Name
-        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
-    """,
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+       """,
     Language = ScriptLanguage.PowerShell,
     RequirePolicies = ["CanDelete"],
     RequireSchemes = [BasicPowershellScheme]
-}); 
+});
+
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/ps/policy",
+    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanWrite"],
+    RequireSchemes = [BasicPowershellScheme]
+});
+
 
 server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
-    if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+       if (-not $Context.User.Identity.IsAuthenticated) {
+           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+           return
+       }
 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
-""", ScriptLanguage.PowerShell, [BasicCSharpScheme]);
+       $user = $Context.User.Identity.Name
+       Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
+   """, ScriptLanguage.PowerShell, [BasicCSharpScheme]);
 
 
 server.AddMapRoute("/secure/vb/hello", HttpVerb.Get, """
-    if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+       if (-not $Context.User.Identity.IsAuthenticated) {
+           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+           return
+       }
 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
-""", ScriptLanguage.PowerShell, [BasicVBNetScheme]);
+       $user = $Context.User.Identity.Name
+       Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
+   """, ScriptLanguage.PowerShell, [BasicVBNetScheme]);
 
 server.AddMapRoute("/secure/native/hello", HttpVerb.Get, """
-    if (-not $Context.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+       if (-not $Context.User.Identity.IsAuthenticated) {
+           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
+           return
+       }
 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native C# code." -ContentType "text/plain"
-""", ScriptLanguage.PowerShell, [BasicNativeScheme]);
+       $user = $Context.User.Identity.Name
+       Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native C# code." -ContentType "text/plain"
+   """, ScriptLanguage.PowerShell, [BasicNativeScheme]);
 
 
 

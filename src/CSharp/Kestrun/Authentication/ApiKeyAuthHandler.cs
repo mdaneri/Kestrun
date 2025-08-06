@@ -248,7 +248,7 @@ public class ApiKeyAuthHandler
     /// <returns>A delegate that validates an API key using VB.NET code.</returns>
     public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
     {
-        var script = VBNetDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        var script = VBNetDelegateBuilder.Compile<bool>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
         codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {

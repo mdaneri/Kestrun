@@ -53,7 +53,7 @@ internal static class RoslynJobFactory
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Building C# job, code length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
-        var script = VBNetDelegateBuilder.Compile(code:code, log:log, extraImports:extraImports, extraRefs:extraRefs, locals:locals, languageVersion:languageVersion);
+        var script = VBNetDelegateBuilder.Compile<object>(code:code, log:log, extraImports:extraImports, extraRefs:extraRefs, locals:locals, languageVersion:languageVersion);
 
         return async ct =>
         {
