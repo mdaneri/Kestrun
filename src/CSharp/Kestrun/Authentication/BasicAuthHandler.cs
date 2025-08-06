@@ -140,20 +140,10 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <param name="properties">The authentication properties.</param>
     /// <remarks>
     /// This method is called to challenge the client for credentials if authentication fails.
-    /// </remarks>
-    /// <remarks>
-    /// If the request is not secure, it does not challenge with WWW-Authenticate.
-    /// </remarks>
-    /// <remarks>
-    /// If the SuppressWwwAuthenticate option is set, it does not add the WWW-Authenticate header.
-    /// </remarks>
-    /// <remarks>
-    /// If the Realm is set, it includes it in the WWW-Authenticate header.
-    /// </remarks>
-    /// <remarks>
-    /// If the request is secure, it adds the WWW-Authenticate header with the Basic scheme.
-    /// </remarks>
-    /// <remarks>
+    /// If the request is not secure, it does not challenge with WWW-Authenticate.     
+    /// If the SuppressWwwAuthenticate option is set, it does not add the WWW-Authenticate header.   
+    /// If the Realm is set, it includes it in the WWW-Authenticate header. 
+    /// If the request is secure, it adds the WWW-Authenticate header with the Basic scheme.    
     /// The response status code is set to 401 Unauthorized.
     /// </remarks>
     /// <returns>A task representing the asynchronous operation.</returns>
@@ -185,105 +175,62 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     }
 
     /// <summary>
-    /// Authenticates the user using PowerShell script.
-    /// This method is used to validate the username and password against a PowerShell script.
-    /// </summary>
-    /// <param name="code">The PowerShell script code used for authentication.</param>
-    /// <param name="context">The HTTP context.</param>
-    /// <param name="username">The username to validate.</param>
-    /// <param name="password">The password to validate.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public static async ValueTask<bool> AuthenticatePowerShellAsync(string? code, HttpContext context, string username, string password)
-    {
-        return await IAuthHandler.ValidatePowerShellAsync(code, context, new Dictionary<string, string>
-            {
-                { "username", username },
-                { "password", password }
-            });
-    }
-
-
-    /// <summary>
     /// Builds a PowerShell-based validator function for authenticating users.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the PowerShell script.</param>
+    /// <param name="settings">The authentication code settings containing the PowerShell script.</param>
     /// <returns>A function that validates credentials using the provided PowerShell script.</returns>
-    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
+    /// <remarks>
+    /// This method compiles the PowerShell script and returns a delegate that can be used to validate user credentials.
+    /// </remarks>
+    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings)
       => async (ctx, user, pass) =>
       {
-          return await AuthenticatePowerShellAsync(codeSettings.Code, ctx, user, pass);
+          return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
+            {
+                { "username", user },
+                { "password", pass }
+            });
       };
 
     /// <summary>
     /// Builds a C#-based validator function for authenticating users.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the C# script.</param>
+    /// <param name="settings">The authentication code settings containing the C# script.</param>
     /// <returns>A function that validates credentials using the provided C# script.</returns>
-    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings)
     {
-        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
-        codeSettings.ExtraImports, codeSettings.ExtraRefs,
-        new Dictionary<string, object?>
+        // pass the settings to the core C# validator
+        var core = IAuthHandler.BuildCsValidator(
+            settings,
+            Serilog.Log.ForContext<BasicAuthHandler>(),
+            ("username", string.Empty), ("password", string.Empty)
+            ) ?? throw new InvalidOperationException("Failed to build C# validator delegate from provided settings.");
+        return (ctx, username, password) =>
+            core(ctx, new Dictionary<string, object?>
             {
-                { "username", "" },
-                { "password", "" }
-            }, languageVersion: codeSettings.CSharpVersion);
-
-        return async (ctx, user, pass) =>
-        {
-            var krRequest = await KestrunRequest.NewRequest(ctx);
-            var krResponse = new KestrunResponse(krRequest);
-            var context = new KestrunContext(krRequest, krResponse, ctx);
-            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
-            {
-                { "username", user },
-                { "password", pass }
+                ["username"] = username,
+                ["password"] = password
             });
-            var result = await script.RunAsync(globals).ConfigureAwait(false);
-            return result.ReturnValue is true;
-        };
     }
-
 
     /// <summary>
     /// Builds a VB.NET-based validator function for authenticating users.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the VB.NET script.</param>
+    /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
     /// <returns>A function that validates credentials using the provided VB.NET script.</returns>
-    public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings)
     {
-        var script = VBNetDelegateBuilder.Compile<bool>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
-        codeSettings.ExtraImports, codeSettings.ExtraRefs,
-        new Dictionary<string, object?>
+        // pass the settings to the core VB.NET validator
+        var core = IAuthHandler.BuildVBNetValidator(
+            settings,
+            Serilog.Log.ForContext<BasicAuthHandler>(),
+            "username", "password") ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
+        return (ctx, username, password) =>
+            core(ctx, new Dictionary<string, object?>
             {
-                    { "username", "" },
-                    { "password", "" }
-            }, languageVersion: codeSettings.VisualBasicVersion);
-
-        return async (ctx, user, pass) =>
-        {
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Log.Debug("Running VB.NET authentication script for user: {Username}", user);
-            var krRequest = await KestrunRequest.NewRequest(ctx);
-            var krResponse = new KestrunResponse(krRequest);
-            var context = new KestrunContext(krRequest, krResponse, ctx);
-            var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
-            {
-                    { "username", user },
-                    { "password", pass }
+                ["username"] = username,
+                ["password"] = password
             });
-            // Run the VB.NET script and get the result
-            // Note: The script should return a boolean indicating success or failure
-            var result = await script(glob).ConfigureAwait(false);
-
-            Log.Information("VB.NET authentication result for {Username}: {Result}", user, result);
-            if (result is bool isValid)
-            {
-                return isValid;
-            }
-            return false;
-        };
     }
 
 
@@ -325,9 +272,6 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             .AddParameter("username", username);
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
 
-            //    return psResults.Select(result => new Claim(ClaimTypes.Name, result.ToString()))
-            //      .Where(claim => claim != null && !string.IsNullOrEmpty(claim.Value))
-            //    .ToList();
             var claims = new List<Claim>();
             foreach (var r in psResults)
             {
@@ -362,8 +306,6 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
                 }
             }
             return claims;
-
-
         }
         catch (Exception ex)
         {
@@ -375,12 +317,12 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <summary>
     /// Builds a PowerShell-based function for issuing claims for a user.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the PowerShell script.</param>
+    /// <param name="settings">The authentication code settings containing the PowerShell script.</param>
     /// <returns>A function that issues claims using the provided PowerShell script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings settings)
   => async (ctx, user) =>
         {
-            return await IssueClaimsPowerShellAsync(codeSettings.Code, ctx, user);
+            return await IssueClaimsPowerShellAsync(settings.Code, ctx, user);
 
         };
 
@@ -388,16 +330,16 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <summary>
     /// Builds a C#-based function for issuing claims for a user.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the C# script.</param>
+    /// <param name="settings">The authentication code settings containing the C# script.</param>
     /// <returns>A function that issues claims using the provided C# script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings)
     {
-        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
-        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        var script = CSharpDelegateBuilder.Compile(settings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        settings.ExtraImports, settings.ExtraRefs,
         new Dictionary<string, object?>
             {
                 { "username", "" }
-            }, languageVersion: codeSettings.CSharpVersion);
+            }, languageVersion: settings.CSharpVersion);
 
         return async (ctx, user) =>
         {
@@ -419,16 +361,16 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <summary>
     /// Builds a VB.NET-based function for issuing claims for a user.
     /// </summary>
-    /// <param name="codeSettings">The authentication code settings containing the VB.NET script.</param>
+    /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
     /// <returns>A function that issues claims using the provided VB.NET script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings)
     {
-        var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
-        codeSettings.ExtraImports, codeSettings.ExtraRefs,
+        var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(settings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        settings.ExtraImports, settings.ExtraRefs,
         new Dictionary<string, object?>
             {
                 { "username", "" }
-            }, languageVersion: codeSettings.VisualBasicVersion);
+            }, languageVersion: settings.VisualBasicVersion);
 
         return async (ctx, user) =>
         {

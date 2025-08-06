@@ -3,6 +3,10 @@
 
 using System.Management.Automation;
 using System.Security.Claims;
+using Kestrun.Hosting;
+using Kestrun.Languages;
+using Kestrun.Models;
+using Kestrun.SharedState;
 using Microsoft.AspNetCore.Authentication;
 using Serilog;
 
@@ -120,4 +124,94 @@ public interface IAuthHandler
             return false;
         }
     }
+
+    internal static Func<HttpContext, IDictionary<string, object?>, Task<bool>> BuildCsValidator(
+        AuthenticationCodeSettings settings,
+        Serilog.ILogger log,
+          params (string Name, object? Prototype)[] globals)
+    {
+        if (settings is null)
+            throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        // Place-holders so Roslyn knows the globals that will exist
+        var stencil = globals.ToDictionary(n => n.Name, n => n.Prototype,
+                                                 StringComparer.OrdinalIgnoreCase);
+
+        var script = CSharpDelegateBuilder.Compile(
+            settings.Code,
+            log,                             // already scoped by caller
+            settings.ExtraImports,
+            settings.ExtraRefs,
+            stencil,
+            languageVersion: settings.CSharpVersion);
+
+        // Return the runtime delegate
+        return async (ctx, vars) =>
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("Running C# authentication script with variables: {Variables}", vars);
+            // --- Kestrun plumbing -------------------------------------------------
+            var krReq = await KestrunRequest.NewRequest(ctx);
+            var krRes = new KestrunResponse(krReq);
+            var kCtx = new KestrunContext(krReq, krRes, ctx);
+            // ---------------------------------------------------------------------
+            var globalsDict = new Dictionary<string, object?>(
+                    vars, StringComparer.OrdinalIgnoreCase);
+            // Merge shared state + user variables
+            var globals = new CsGlobals(
+                SharedStateStore.Snapshot(),
+                kCtx,
+                globalsDict);
+
+            var result = await script.RunAsync(globals).ConfigureAwait(false);
+            return result.ReturnValue is true;
+        };
+    }
+
+    internal static Func<HttpContext, IDictionary<string, object?>, Task<bool>> BuildVBNetValidator(
+        AuthenticationCodeSettings settings,
+        Serilog.ILogger log,
+        params string[] variableNames)
+    {
+        if (settings is null)
+            throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        // Place-holders so Roslyn knows the globals that will exist
+        var stencil = variableNames.ToDictionary(n => n, n => (object?)null,
+                                                 StringComparer.OrdinalIgnoreCase);
+
+        var script = VBNetDelegateBuilder.Compile<bool>(
+            settings.Code,
+            log,                             // already scoped by caller
+            settings.ExtraImports,
+            settings.ExtraRefs,
+            stencil,
+            languageVersion: settings.VisualBasicVersion);
+
+        // Return the runtime delegate
+        return async (ctx, vars) =>
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("Running VB.NET authentication script with variables: {Variables}", vars);
+
+            // --- Kestrun plumbing -------------------------------------------------
+            var krReq = await KestrunRequest.NewRequest(ctx);
+            var krRes = new KestrunResponse(krReq);
+            var kCtx = new KestrunContext(krReq, krRes, ctx);
+            // ---------------------------------------------------------------------
+
+            // Merge shared state + user variables
+            var globals = new CsGlobals(
+                SharedStateStore.Snapshot(),
+                kCtx,
+                new Dictionary<string, object?>(vars, StringComparer.OrdinalIgnoreCase));
+
+            var result = await script(globals).ConfigureAwait(false);
+
+            if (result is bool isValid)
+            {
+                return isValid;
+            }
+            return false;
+        };
+    }
+
 }

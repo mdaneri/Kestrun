@@ -10,6 +10,7 @@ using Kestrun.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Org.BouncyCastle.Asn1.Iana;
 using Serilog;
 
 namespace Kestrun.Authentication;
@@ -139,103 +140,64 @@ public class ApiKeyAuthHandler
         return Task.CompletedTask;
     }
     /// <summary>
-    /// Validates the provided API key using a PowerShell script.
-    /// </summary>
-    /// <param name="code">The PowerShell script code to execute for validation.</param>
-    /// <param name="context">The current HTTP context containing the PowerShell runspace.</param>
-    /// <param name="providedKey">The API key to validate.</param>
-    /// <returns>A <see cref="ValueTask{Boolean}"/> indicating whether the API key is valid.</returns>
-    public static async ValueTask<bool> ValidatePowerShellKeyAsync(string? code, HttpContext context, string providedKey)
-    {
-        return await IAuthHandler.ValidatePowerShellAsync(code, context, new Dictionary<string, string>
-        {
-            { "providedKey", providedKey }
-        });
-    }
-
-
-    /// <summary>
     /// Builds a PowerShell-based API key validator delegate using the provided authentication code settings.
     /// </summary>
-    /// <param name="codeSettings">The settings containing the PowerShell authentication code.</param>
-    /// <returns>A delegate that validates an API key using PowerShell.</returns>
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings codeSettings)
+    /// <param name="settings">The settings containing the PowerShell authentication code.</param>
+    /// <returns>A delegate that validates an API key using PowerShell code.</returns>
+    /// <remarks>
+    ///  This method compiles the PowerShell script and returns a delegate that can be used to validate API keys.
+    /// </remarks>
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings)
       => async (ctx, providedKey, providedKeyBytes) =>
-      {
-          return await ValidatePowerShellKeyAsync(codeSettings.Code, ctx, providedKey);
-      };
+            {
+                return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
+                {
+                    { "providedKey", providedKey }
+                });
+            };
 
     /// <summary>
     /// Builds a C#-based API key validator delegate using the provided authentication code settings.
     /// </summary>
-    /// <param name="codeSettings">The settings containing the C# authentication code.</param>
+    /// <param name="settings">The settings containing the C# authentication code.</param>
     /// <returns>A delegate that validates an API key using C# code.</returns>
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings codeSettings)
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings)
     {
-        var script = CSharpDelegateBuilder.Compile(codeSettings.Code, Serilog.Log.ForContext<ApiKeyAuthHandler>(),
-            codeSettings.ExtraImports, codeSettings.ExtraRefs,
-        new Dictionary<string, object?>
+        if (settings is null)
+            throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        // pass the settings to the core C# validator
+        var core = IAuthHandler.BuildCsValidator(
+            settings,
+            Serilog.Log.ForContext<ApiKeyAuthHandler>(),
+            ("providedKey", string.Empty), ("providedKeyBytes", Array.Empty<byte>())
+            ) ?? throw new InvalidOperationException("Failed to build C# validator delegate from provided settings.");
+        return (ctx, providedKey, providedKeyBytes) =>
+            core(ctx, new Dictionary<string, object?>
             {
-                { "providedKey", string.Empty },
-                { "providedKeyBytes", Array.Empty<byte>() }
-            }, languageVersion: codeSettings.CSharpVersion);
-
-        return async (ctx, providedKey, providedKeyBytes) =>
-        {
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Log.Debug("Running C# authentication script for user: {ProvidedKey}", providedKey);
-            var krRequest = await KestrunRequest.NewRequest(ctx);
-            var krResponse = new KestrunResponse(krRequest);
-            var context = new KestrunContext(krRequest, krResponse, ctx);
-            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
-            {
-                { "providedKey", providedKey },
-                { "providedKeyBytes", providedKeyBytes },
+                ["providedKey"] = providedKey,
+                ["providedKeyBytes"] = providedKeyBytes
             });
-            var result = await script.RunAsync(globals).ConfigureAwait(false);
-            Log.Information("C# authentication result for {ProvidedKey}: {Result}", providedKey, result.ReturnValue);
-            return result.ReturnValue is true;
-        };
     }
 
     /// <summary>
     /// Builds a VB.NET-based API key validator delegate using the provided authentication code settings.
     /// </summary>
-    /// <param name="codeSettings">The settings containing the VB.NET authentication code.</param>
+    /// <param name="settings">The settings containing the VB.NET authentication code.</param>
     /// <returns>A delegate that validates an API key using VB.NET code.</returns>
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings codeSettings)
+
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings)
     {
-        var script = VBNetDelegateBuilder.Compile<bool>(codeSettings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
-        codeSettings.ExtraImports, codeSettings.ExtraRefs,
-        new Dictionary<string, object?>
+        // pass the settings to the core VB.NET validator
+        var core = IAuthHandler.BuildVBNetValidator(
+            settings,
+            Serilog.Log.ForContext<BasicAuthHandler>(),
+            "providedKey", "providedKeyBytes") ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
+        return (ctx, providedKey, providedKeyBytes) =>
+            core(ctx, new Dictionary<string, object?>
             {
-                { "providedKey", string.Empty },
-                { "providedKeyBytes", Array.Empty<byte>() }
-            }, languageVersion: codeSettings.VisualBasicVersion);
-
-        return async (ctx, providedKey, providedKeyBytes) =>
-        {
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Log.Debug("Running VB.NET authentication script for user: {ProvidedKey}", providedKey);
-            var krRequest = await KestrunRequest.NewRequest(ctx);
-            var krResponse = new KestrunResponse(krRequest);
-            var context = new KestrunContext(krRequest, krResponse, ctx);
-            var globals = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
-            {
-                { "providedKey", providedKey },
-                { "providedKeyBytes", providedKeyBytes },
+                ["providedKey"] = providedKey,
+                ["providedKeyBytes"] = providedKeyBytes
             });
-            // Run the VB.NET script and get the result
-            // Note: The script should return a boolean indicating success or failure
-            var result = await script(globals).ConfigureAwait(false);
-
-            Log.Information("VB.NET authentication result for {ProvidedKey}: {Result}", providedKey, result);
-            if (result is bool isValid)
-            {
-                return isValid;
-            }
-            return false;
-        };
     }
 
 }
