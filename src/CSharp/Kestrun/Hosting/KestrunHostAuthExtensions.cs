@@ -180,7 +180,7 @@ public static class KestrunHostAuthExtensions
     /// <param name="scheme">The authentication scheme name (e.g. "Bearer").</param>
     /// <param name="validationParameters">Parameters used to validate JWT tokens.</param>
     /// <param name="configureJwt">Optional hook to customize JwtBearerOptions.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <param name="claimPolicy">Optional authorization policy configuration.</param>
     /// <example>
     /// HS512 (HMAC-SHA-512, symmetric)
     /// </example>
@@ -222,12 +222,14 @@ public static class KestrunHostAuthExtensions
     /// </code>
     /// </example>
     /// <returns></returns>
+  
+
     public static KestrunHost AddJwtBearerAuthentication(
       this KestrunHost host,
       string scheme,
       TokenValidationParameters validationParameters,
       Action<JwtBearerOptions>? configureJwt = null,
-      Action<AuthorizationOptions>? configureAuthz = null)
+      ClaimPolicyConfig? claimPolicy = null)
     {
         return host.AddAuthentication(
             defaultScheme: scheme,
@@ -239,7 +241,9 @@ public static class KestrunHostAuthExtensions
                     configureJwt?.Invoke(opts);
                 });
             },
-            configureAuthz: configureAuthz);
+            configureAuthz: claimPolicy?.ToAuthzDelegate()
+            );
+
     }
 
     /// <summary>

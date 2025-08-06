@@ -58,9 +58,12 @@ Invoke-RestMethod https://localhost:5001/secure/key/vb/hello -SkipCertificateChe
 $token = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
 Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-$token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
-Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method GET -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method DELETE -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method POST -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
+$token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" } 
 #Form
 Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
 Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession 
@@ -416,7 +419,9 @@ server.AddResponseCompression(options =>
    /// ── JWT AUTHENTICATION – C# CODE ───────────────────────────────────────
    .AddJwtBearerAuthentication(
        scheme: JwtScheme,
-        validationParameters: builderResult.GetValidationParameters())
+        validationParameters: builderResult.GetValidationParameters(),
+        claimPolicy: claimConfig
+    )
 
    /// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
    .AddCookieAuthentication(
@@ -757,6 +762,51 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
 
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/jwt/policy",
+    HttpVerbs = [HttpVerb.Get],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_read' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanRead"],
+    RequireSchemes = [JwtScheme]
+});
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/jwt/policy",
+    HttpVerbs = [HttpVerb.Delete],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_delete' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanDelete"],
+    RequireSchemes = [JwtScheme]
+});
+
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/jwt/policy",
+    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_write' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanWrite"],
+    RequireSchemes = [JwtScheme]
+});
+
+
 server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
     var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
@@ -769,7 +819,7 @@ server.AddMapRoute("/token/new", HttpVerb.Get, async (ctx) =>
 {
     try
     {
-        var build = tokenBuilder.WithSubject("admin").Build();
+        var build = tokenBuilder.WithSubject("admin").AddClaim("role", "admin").AddClaim("can_read", "true").Build();
         var token = build.Token();
 
         await ctx.Response.WriteJsonResponseAsync(new { access_token = token, token_type = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL
