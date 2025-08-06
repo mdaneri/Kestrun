@@ -92,7 +92,7 @@ public class ApiKeyAuthHandler
                 return Fail($"Invalid API Key: {providedKey}");
             }
             var identity = Options.ResolveUsername?.Invoke(providedKey) ?? "ApiKeyClient";
-            
+
             // If we reach here, the API key is valid
             var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, identity, Options, Scheme);
             // Log the successful authentication
@@ -147,48 +147,10 @@ public class ApiKeyAuthHandler
     /// <returns>A <see cref="ValueTask{Boolean}"/> indicating whether the API key is valid.</returns>
     public static async ValueTask<bool> ValidatePowerShellKeyAsync(string? code, HttpContext context, string providedKey)
     {
-        try
+        return await IAuthHandler.ValidatePowerShellAsync(code, context, new Dictionary<string, string>
         {
-            if (!context.Items.ContainsKey("PS_INSTANCE"))
-            {
-                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-            if (string.IsNullOrWhiteSpace(providedKey))
-            {
-                Log.Warning("API Key is null or empty.");
-                return false;
-            }
-            if (string.IsNullOrEmpty(code))
-            {
-                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
-            }
-
-            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
-                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-            if (ps.Runspace == null)
-            {
-                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-
-            ps.AddScript(code, useLocalScope: true)
-            .AddParameter("providedKey", providedKey);
-            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-
-            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
-            {
-                Log.Error("PowerShell script did not return a valid boolean result.");
-                return false;
-            }
-            Log.Information("Basic authentication result for {ProvidedKey}: {IsValid}", providedKey, isValid);
-            return isValid;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error during Basic authentication for {ProvidedKey}", providedKey);
-            return false;
-        }
+            { "providedKey", providedKey }
+        });
     }
 
 

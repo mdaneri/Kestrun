@@ -69,8 +69,7 @@ public interface IAuthHandler
     /// </summary>
     /// <param name="code">The PowerShell script code used for authentication.</param>
     /// <param name="context">The HTTP context.</param>
-    /// <param name="username">The username to validate.</param>
-    /// <param name="password">The password to validate.</param>
+    /// <param name="credentials">A dictionary containing the credentials to validate (e.g., username and password).</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="InvalidOperationException"></exception>
     public static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials)

@@ -18,11 +18,11 @@ namespace Kestrun.Authentication;
 /// <summary>
 /// Handles Basic Authentication for HTTP requests.
 /// </summary>
-public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>,IAuthHandler
+public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>, IAuthHandler
 {
 
-   // private Serilog.ILogger Logger => Options.Logger;
-    
+    // private Serilog.ILogger Logger => Options.Logger;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BasicAuthHandler"/> class.
     /// </summary>
@@ -196,49 +196,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <exception cref="InvalidOperationException"></exception>
     public static async ValueTask<bool> AuthenticatePowerShellAsync(string? code, HttpContext context, string username, string password)
     {
-        try
-        {
-            if (!context.Items.ContainsKey("PS_INSTANCE"))
+        return await IAuthHandler.ValidatePowerShellAsync(code, context, new Dictionary<string, string>
             {
-                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                Log.Warning("Username  is null or empty.");
-                return false;
-            }
-            if (string.IsNullOrEmpty(code))
-            {
-                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
-            }
-
-            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
-                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-            if (ps.Runspace == null)
-            {
-                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-
-            ps.AddScript(code, useLocalScope: true)
-            .AddParameter("username", username)
-            .AddParameter("password", password);
-            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-
-            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
-            {
-                Log.Error("PowerShell script did not return a valid boolean result.");
-                return false;
-            }
-            Log.Information("Basic authentication result for {Username}: {IsValid}", username, isValid);
-            return isValid;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error during Basic authentication for {Username}", username);
-            return false;
-        }
+                { "username", username },
+                { "password", password }
+            });
     }
 
 
