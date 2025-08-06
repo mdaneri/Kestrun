@@ -249,7 +249,9 @@ server.AddResponseCompression(options =>
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
     opts.ClaimPolicyConfig = claimConfig;
-}, configureAuthz: claimConfig.ToAuthzDelegate())
+}
+   //, configureAuthz: claimConfig.ToAuthzDelegate())
+)
 
    /// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────
    .AddBasicAuthentication(BasicNativeScheme, opts =>

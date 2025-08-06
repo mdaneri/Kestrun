@@ -490,7 +490,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {
-                        { "username", "" }
+                { "username", "" }
             }, languageVersion: codeSettings.VisualBasicVersion);
 
         return async (ctx, user) =>
@@ -500,7 +500,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var context = new KestrunContext(krRequest, krResponse, ctx);
             var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
-                        { "username", user }
+                { "username", user }
             });
             // Run the VB.NET script and get the result
             // Note: The script should return a boolean indicating success or failure

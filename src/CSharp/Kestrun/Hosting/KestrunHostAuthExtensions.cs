@@ -33,80 +33,85 @@ public static class KestrunHostAuthExtensions
     /// <param name="host">The Kestrun host instance.</param>
     /// <param name="scheme">The authentication scheme name (e.g. "Basic").</param>
     /// <param name="configure">Optional configuration for BasicAuthenticationOptions.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
-    /// <returns></returns>
+    /// <returns>returns the KestrunHost instance.</returns>
     public static KestrunHost AddBasicAuthentication(
     this KestrunHost host,
     string scheme = "Basic",
-    Action<BasicAuthenticationOptions>? configure = null,
-    Action<AuthorizationOptions>? configureAuthz = null)
+    Action<BasicAuthenticationOptions>? configure = null
+    )
     {
-        return host.AddAuthentication(
-            defaultScheme: scheme,
-            buildSchemes: ab =>
-            {
-                // ← TOptions == BasicAuthenticationOptions
-                //    THandler == BasicAuthHandler
-                ab.AddScheme<BasicAuthenticationOptions, BasicAuthHandler>(
-                    authenticationScheme: scheme,
-                    displayName: "Basic Authentication",
-                     configureOptions: opts =>
-                    {
-                        // let caller mutate everything first
-                        configure?.Invoke(opts);
+        var h = host.AddAuthentication(
+           defaultScheme: scheme,
+           buildSchemes: ab =>
+           {
+               // ← TOptions == BasicAuthenticationOptions
+               //    THandler == BasicAuthHandler
+               ab.AddScheme<BasicAuthenticationOptions, BasicAuthHandler>(
+                   authenticationScheme: scheme,
+                   displayName: "Basic Authentication",
+                    configureOptions: opts =>
+                   {
+                       // let caller mutate everything first
+                       configure?.Invoke(opts);
 
-                        // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
-                        {
-                            // Build the PowerShell script validator
-                            // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
-                        }
-                        else   // ── C# pathway ─────────────────────────────────
-                        if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
-                        {
-                            // Build the C# script validator
-                            // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
-                        }
-                        else
-                          if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.VBNet
-                            && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
-                        {
-                            // Build the VB.NET script validator
-                            // This will be used to validate credentials
-                            opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCredentialCodeSettings);
-                        }
+                       // ── SPECIAL POWER-SHELL PATH ────────────────────
+                       if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
+                           !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                       {
+                           // Build the PowerShell script validator
+                           // This will be used to validate credentials
+                           opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
+                       }
+                       else   // ── C# pathway ─────────────────────────────────
+                       if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                       {
+                           // Build the C# script validator
+                           // This will be used to validate credentials
+                           opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
+                       }
+                       else
+                         if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.VBNet
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                       {
+                           // Build the VB.NET script validator
+                           // This will be used to validate credentials
+                           opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCredentialCodeSettings);
+                       }
 
-                        // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
-                        // script validator
-                        if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
-                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                        {
-                            opts.IssueClaims = BasicAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
-                        }
-                        else   // ── C# pathway ─────────────────────────────────
-                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
-                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                        {
-                            opts.IssueClaims = BasicAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
-                        }
-                        else
-                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
-                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                        {
-                            opts.IssueClaims = BasicAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
-                        }
-
-
-                    });
-
-            },
-            configureAuthz: configureAuthz
-        );
+                       // ── SPECIAL POWER-SHELL PATH ────────────────────
+                       // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
+                       // script validator
+                       if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
+                          !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = BasicAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                       else   // ── C# pathway ─────────────────────────────────
+                      if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
+                          && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = BasicAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                       else
+                        if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
+                          && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = BasicAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                   });
+           }
+       );
+        //  register the post-configurer **after** the scheme so it can
+        //    read BasicAuthenticationOptions for <scheme>
+        return h.AddService(services =>
+        {
+            services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
+                sp => new ClaimPolicyPostConfigurer(
+                          scheme,
+                          sp.GetRequiredService<
+                              IOptionsMonitor<BasicAuthenticationOptions>>()));
+        });
     }
     /// <summary>
     /// Adds Basic Authentication to the Kestrun host using the provided options object.
@@ -114,13 +119,12 @@ public static class KestrunHostAuthExtensions
     /// <param name="host">The Kestrun host instance.</param>
     /// <param name="scheme">The authentication scheme name (e.g. "Basic").</param>
     /// <param name="configure">The BasicAuthenticationOptions object to configure the authentication.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
     /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddBasicAuthentication(
         this KestrunHost host,
         string scheme,
-        BasicAuthenticationOptions configure,
-        Action<AuthorizationOptions>? configureAuthz = null)
+        BasicAuthenticationOptions configure
+        )
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding Basic Authentication with scheme: {Scheme}", scheme);
@@ -159,8 +163,10 @@ public static class KestrunHostAuthExtensions
                     // This will be used to validate credentials
                     opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
                 }
-            },
-            configureAuthz: configureAuthz
+                // Claims policy configuration
+                if (configure.ClaimPolicyConfig is not null)
+                    opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
+            }
         );
 
     }
