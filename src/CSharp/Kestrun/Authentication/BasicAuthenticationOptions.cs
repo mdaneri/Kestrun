@@ -70,11 +70,7 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
     public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
-    /// <summary>
-    /// After credentials are valid, this is called to add extra Claims synchronously.
-    /// Parameters: HttpContext, username → IEnumerable of extra claims.
-    /// </summary>
-    public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
+
     /// <summary>
     /// Settings for the claims issuing code, if using a script.
     /// </summary>

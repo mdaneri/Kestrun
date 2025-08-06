@@ -21,12 +21,7 @@ public interface IAuthenticationCommonOptions
   /// After credentials are valid, this is called to add extra Claims.
   /// Parameters: HttpContext, username → IEnumerable of extra claims.
   /// </summary>
-  public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
-  /// <summary>
-  /// After credentials are valid, this is called to add extra Claims synchronously.
-  /// Parameters: HttpContext, username → IEnumerable of extra claims.
-  /// </summary>
-  public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
+  public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; } 
   /// <summary>
   /// Settings for the claims issuing code, if using a script.
   /// </summary>

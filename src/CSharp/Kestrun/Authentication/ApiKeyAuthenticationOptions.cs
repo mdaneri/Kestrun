@@ -54,8 +54,6 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// </summary>
     public bool RequireHttps { get; set; } = true;
 
-
-
     /// <summary>
     /// If provided, returns the username associated with a given API key.
     /// Used to populate ClaimTypes.Name.
@@ -98,11 +96,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
     public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
-    /// <summary>
-    /// After credentials are valid, this is called to add extra Claims synchronously.
-    /// Parameters: HttpContext, username → IEnumerable of extra claims.
-    /// </summary>
-    public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
+    
     /// <summary>
     /// Settings for the claims issuing code, if using a script.
     /// </summary>

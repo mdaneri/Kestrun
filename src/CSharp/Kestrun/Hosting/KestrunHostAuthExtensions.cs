@@ -85,19 +85,19 @@ public static class KestrunHostAuthExtensions
                        if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = BasicAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
                        }
                        else   // ── C# pathway ─────────────────────────────────
                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = BasicAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
                        }
                        else
                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = BasicAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
                        }
                    });
            }
@@ -319,57 +319,84 @@ public static class KestrunHostAuthExtensions
     /// <param name="host">The Kestrun host instance.</param>
     /// <param name="scheme">The authentication scheme name (default is "ApiKey").</param>
     /// <param name="configure">Optional configuration for ApiKeyAuthenticationOptions.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
     /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddApiKeyAuthentication(
     this KestrunHost host,
     string scheme = "ApiKey",
-    Action<ApiKeyAuthenticationOptions>? configure = null,
-    Action<AuthorizationOptions>? configureAuthz = null)
+    Action<ApiKeyAuthenticationOptions>? configure = null)
     {
-        return host.AddAuthentication(
-            defaultScheme: scheme,
-            buildSchemes: ab =>
-            {
-                // ← TOptions == ApiKeyAuthenticationOptions
-                //    THandler == ApiKeyAuthHandler
-                ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
-                    authenticationScheme: scheme,
-                    displayName: "API Key",
-                    configureOptions: opts =>
-                    {
-                        // let caller mutate everything first
-                        configure?.Invoke(opts);
+        var h = host.AddAuthentication(
+           defaultScheme: scheme,
+           buildSchemes: ab =>
+           {
+               // ← TOptions == ApiKeyAuthenticationOptions
+               //    THandler == ApiKeyAuthHandler
+               ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
+                   authenticationScheme: scheme,
+                   displayName: "API Key",
+                   configureOptions: opts =>
+                   {
+                       // let caller mutate everything first
+                       configure?.Invoke(opts);
 
-                        // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                        {
-                            // Build the PowerShell script validator
-                            // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
-                        }
-                        else   // ── C# pathway ─────────────────────────────────
-                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                        {
-                            // Build the C# script validator
-                            // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
-                        }
-                        else   // ── VB.NET pathway ─────────────────────────────────
-                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
-                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                        {
-                            // Build the VB.NET script validator
-                            // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
-                        }
-                    });
+                       // ── SPECIAL POWER-SHELL PATH ────────────────────
+                       if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
+                           !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
+                       {
+                           // Build the PowerShell script validator
+                           // This will be used to validate credentials
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
+                       }
+                       else   // ── C# pathway ─────────────────────────────────
+                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
+                       {
+                           // Build the C# script validator
+                           // This will be used to validate credentials
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
+                       }
+                       else   // ── VB.NET pathway ─────────────────────────────────
+                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
+                       {
+                           // Build the VB.NET script validator
+                           // This will be used to validate credentials
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
+                       }
 
-            },
-            configureAuthz: configureAuthz
-        );
+                       // ── SPECIAL POWER-SHELL PATH ────────────────────
+                       // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
+                       // script validator
+                       if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
+                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                       else   // ── C# pathway ─────────────────────────────────
+                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
+                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                       else
+                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
+                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
+                       {
+                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                       }
+                   });
+           }
+       );
+        //  register the post-configurer **after** the scheme so it can
+        //    read BasicAuthenticationOptions for <scheme>
+        return h.AddService(services =>
+        {
+            services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
+                sp => new ClaimPolicyPostConfigurer(
+                          scheme,
+                          sp.GetRequiredService<
+                              IOptionsMonitor<BasicAuthenticationOptions>>()));
+        });
     }
 
 
@@ -378,14 +405,12 @@ public static class KestrunHostAuthExtensions
     /// </summary>
     /// <param name="host">The Kestrun host instance.</param>
     /// <param name="scheme">The authentication scheme name.</param>
-    /// <param name="configure">The ApiKeyAuthenticationOptions object to configure the authentication.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <param name="configure">The ApiKeyAuthenticationOptions object to configure the authentication.</param> 
     /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddApiKeyAuthentication(
     this KestrunHost host,
     string scheme,
-    ApiKeyAuthenticationOptions configure,
-    Action<AuthorizationOptions>? configureAuthz = null)
+    ApiKeyAuthenticationOptions configure)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding API Key Authentication with scheme: {Scheme}", scheme);
@@ -422,10 +447,10 @@ public static class KestrunHostAuthExtensions
                     // This will be used to validate credentials
                     opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
                 }
-
-
-            },
-            configureAuthz: configureAuthz
+                // Claims policy configuration
+                if (configure.ClaimPolicyConfig is not null)
+                    opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
+            }
         );
     }
 

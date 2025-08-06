@@ -164,17 +164,10 @@ internal static class VBNetDelegateBuilder
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
 
-        var injectUsernameVariable = (locals?.ContainsKey("username") ?? false) || (locals?.ContainsKey("Username") ?? false);
-        var injectPasswordVariable = (locals?.ContainsKey("password") ?? false) || (locals?.ContainsKey("Password") ?? false);
-        var injectKeysVariables = locals?.ContainsKey("providedKey") == true && locals?.ContainsKey("providedKeyBytes") == true;
-        if (log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("Injecting auth variables: {InjectAuth}, keys: {InjectKeys}",
-                injectUsernameVariable, injectPasswordVariable, injectKeysVariables);
 
         // 🔧 1.  Build a real VB file around the user snippet
         string source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
-            injectUsernameVariable: injectUsernameVariable,
-            injectPasswordVariable: injectPasswordVariable, injectKeysVariables: injectKeysVariables);
+            locals: locals);
         var startIndex = source.IndexOf(StartMarker);
         if (startIndex < 0)
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.", nameof(code));
@@ -269,11 +262,10 @@ internal static class VBNetDelegateBuilder
     }
 
     private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports,
-    string vbReturnType,
-      bool injectUsernameVariable = false,
-      bool injectPasswordVariable = false,
-      bool injectKeysVariables = false)
+    string vbReturnType, IReadOnlyDictionary<string, object?>? locals = null
+       )
     {
+
         var sb = new StringBuilder();
 
         // common + caller-supplied Imports
@@ -298,22 +290,30 @@ internal static class VBNetDelegateBuilder
         """);
 
         // only emit these _when_ you called Compile with locals:
-        if (injectUsernameVariable)
+        if (locals?.ContainsKey("username") ?? false)
             sb.AppendLine("""
         ' only bind creds if someone passed them in 
                         Dim username As String = CStr(g.Locals("username"))                
         """);
 
-        if (injectPasswordVariable)
+        if (locals?.ContainsKey("password") ?? false)
             sb.AppendLine("""
                         Dim password As String = CStr(g.Locals("password"))
         """);
 
-        if (injectKeysVariables)
+        if (locals?.ContainsKey("providedKey") == true)
             sb.AppendLine("""
         ' only bind keys if someone passed them in
                         Dim providedKey As String = CStr(g.Locals("providedKey"))
+        """);
+        if (locals?.ContainsKey("providedKeyBytes") == true)
+            sb.AppendLine("""
                         Dim providedKeyBytes As Byte() = CType(g.Locals("providedKeyBytes"), Byte())
+        """);
+
+        if (locals?.ContainsKey("identity") == true)
+            sb.AppendLine("""
+                        Dim identity As String = CStr(g.Locals("identity"))
         """);
 
         // add the Marker for user code
