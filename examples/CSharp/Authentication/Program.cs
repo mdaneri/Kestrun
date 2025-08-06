@@ -39,6 +39,7 @@ Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateChe
 
 Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
 Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
 
 
 Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
@@ -247,6 +248,7 @@ server.AddResponseCompression(options =>
     };
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
+    opts.ClaimPolicyConfig = claimConfig;
 }, configureAuthz: claimConfig.ToAuthzDelegate())
 
    /// ── BASIC AUTHENTICATION – NATIVE C# CODE ──────────────────────────────

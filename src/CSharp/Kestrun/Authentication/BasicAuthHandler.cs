@@ -320,8 +320,8 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         codeSettings.ExtraImports, codeSettings.ExtraRefs,
         new Dictionary<string, object?>
             {
-                    { "Username", "" },
-                    { "Password", "" }
+                    { "username", "" },
+                    { "password", "" }
             }, languageVersion: codeSettings.VisualBasicVersion);
 
         return async (ctx, user, pass) =>
@@ -333,8 +333,8 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             var context = new KestrunContext(krRequest, krResponse, ctx);
             var glob = new CsGlobals(SharedStateStore.Snapshot(), context, new Dictionary<string, object?>
             {
-                    { "Username", user },
-                    { "Password", pass }
+                    { "username", user },
+                    { "password", pass }
             });
             // Run the VB.NET script and get the result
             // Note: The script should return a boolean indicating success or failure
