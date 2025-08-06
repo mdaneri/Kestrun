@@ -1,8 +1,10 @@
 
 
 
+using System.Management.Automation;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Serilog;
 
 namespace Kestrun.Authentication;
 
@@ -57,5 +59,66 @@ public interface IAuthHandler
         // Create the authentication ticket
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
         return ticket;
+    }
+
+
+
+    /// <summary>
+    /// Authenticates the user using PowerShell script.
+    /// This method is used to validate the username and password against a PowerShell script.
+    /// </summary>
+    /// <param name="code">The PowerShell script code used for authentication.</param>
+    /// <param name="context">The HTTP context.</param>
+    /// <param name="username">The username to validate.</param>
+    /// <param name="password">The password to validate.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials)
+    {
+        try
+        {
+            if (!context.Items.ContainsKey("PS_INSTANCE"))
+            {
+                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+            // Validate that the credentials dictionary is not null or empty
+            if (credentials == null || credentials.Count == 0)
+            {
+                Log.Warning("Credentials are null or empty.");
+                return false;
+            }
+            // Validate that the code is not null or empty
+            if (string.IsNullOrEmpty(code))
+            {
+                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
+            }
+            // Retrieve the PowerShell instance from the context
+            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
+                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
+            if (ps.Runspace == null)
+            {
+                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
+            }
+
+            ps.AddScript(code, useLocalScope: true);
+            foreach (var kvp in credentials)
+            {
+                ps.AddParameter(kvp.Key, kvp.Value);
+            }
+
+            var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+
+            if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
+            {
+                Log.Error("PowerShell script did not return a valid boolean result.");
+                return false;
+            }
+            return isValid;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during validating PowerShell authentication.");
+            return false;
+        }
     }
 }
