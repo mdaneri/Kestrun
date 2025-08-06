@@ -143,7 +143,7 @@ server.AddResponseCompression(options =>
 {
     opts.Realm = "Power-Kestrun";
 
-    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.PowerShell,
         Code = """
@@ -257,7 +257,7 @@ server.AddResponseCompression(options =>
    .AddBasicAuthentication(BasicNativeScheme, opts =>
    {
        opts.Realm = "Native-Kestrun";
-       opts.ValidateCredentials = async (context, username, password) =>
+       opts.ValidateCredentialsAsync = async (context, username, password) =>
        {
            Log.Information("Validating credentials for {Username}", username);
            // pretend we did some async work:
@@ -271,7 +271,7 @@ server.AddResponseCompression(options =>
    .AddBasicAuthentication(BasicCSharpScheme, opts =>
    {
        opts.Realm = "CSharp-Kestrun";
-       opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+       opts.ValidateCodeSettings = new AuthenticationCodeSettings
        {
            Language = ScriptLanguage.CSharp,
 
@@ -284,7 +284,7 @@ server.AddResponseCompression(options =>
    .AddBasicAuthentication(BasicVBNetScheme, opts =>
    {
        opts.Realm = "VBNet-Kestrun";
-       opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+       opts.ValidateCodeSettings = new AuthenticationCodeSettings
        {
            Language = ScriptLanguage.VBNet,
 
@@ -308,7 +308,7 @@ server.AddResponseCompression(options =>
    .AddApiKeyAuthentication(ApiKeyPowerShell, opts =>
    {
        opts.HeaderName = "X-Api-Key";
-       opts.CodeSettings = new AuthenticationCodeSettings
+       opts.ValidateCodeSettings = new AuthenticationCodeSettings
        {
            Language = ScriptLanguage.PowerShell,
            Code = """
@@ -328,7 +328,7 @@ server.AddResponseCompression(options =>
    .AddApiKeyAuthentication(ApiKeyCSharp, opts =>
    {
        opts.HeaderName = "X-Api-Key";
-       opts.CodeSettings = new AuthenticationCodeSettings
+       opts.ValidateCodeSettings = new AuthenticationCodeSettings
        {
            Language = ScriptLanguage.CSharp,
            Code = """
@@ -342,7 +342,7 @@ server.AddResponseCompression(options =>
    .AddApiKeyAuthentication(ApiKeyVBNet, opts =>
    {
        opts.HeaderName = "X-Api-Key";
-       opts.CodeSettings = new AuthenticationCodeSettings
+       opts.ValidateCodeSettings = new AuthenticationCodeSettings
        {
            Language = ScriptLanguage.VBNet,
            Code = """

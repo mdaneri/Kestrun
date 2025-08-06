@@ -62,7 +62,7 @@ server.AddResponseCompression(options =>
 {
     opts.Realm = "Power-Kestrun";
 
-    opts.ValidateCredentialCodeSettings = new AuthenticationCodeSettings
+    opts.ValidateCodeSettings = new AuthenticationCodeSettings
     {
         Language = ScriptLanguage.PowerShell,
         Code = """

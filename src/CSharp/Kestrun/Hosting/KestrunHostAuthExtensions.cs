@@ -55,28 +55,28 @@ public static class KestrunHostAuthExtensions
                        configure?.Invoke(opts);
 
                        // ── SPECIAL POWER-SHELL PATH ────────────────────
-                       if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
-                           !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                       if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
+                           !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
                            // Build the PowerShell script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
                        }
                        else   // ── C# pathway ─────────────────────────────────
-                       if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
                            // Build the C# script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
                        }
                        else
-                         if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.VBNet
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                         if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
+                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
                            // Build the VB.NET script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentials = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCredentialCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
                        }
 
                        // ── SPECIAL POWER-SHELL PATH ────────────────────
@@ -146,22 +146,22 @@ public static class KestrunHostAuthExtensions
                 opts.SuppressWwwAuthenticate = configure.SuppressWwwAuthenticate;
                 opts.Logger = configure.Logger;
                 // Copy properties from the provided configure object
-                opts.ValidateCredentialCodeSettings = configure.ValidateCredentialCodeSettings;
+                opts.ValidateCodeSettings = configure.ValidateCodeSettings;
                 // ── SPECIAL POWER-SHELL PATH ────────────────────
-                if (opts.ValidateCredentialCodeSettings.Language == ScriptLanguage.PowerShell &&
-                    !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
+                    !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                 {
                     // Build the PowerShell script validator
                     // This will be used to validate credentials
-                    opts.ValidateCredentials = BasicAuthHandler.BuildPsValidator(opts.ValidateCredentialCodeSettings);
+                    opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
                 }
                 else   // ── C# pathway ─────────────────────────────────
-                if (opts.ValidateCredentialCodeSettings.Language is ScriptLanguage.CSharp
-                    && !string.IsNullOrWhiteSpace(opts.ValidateCredentialCodeSettings.Code))
+                if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
+                    && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                 {
                     // Build the C# script validator
                     // This will be used to validate credentials
-                    opts.ValidateCredentials = BasicAuthHandler.BuildCsValidator(opts.ValidateCredentialCodeSettings);
+                    opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
                 }
                 // Claims policy configuration
                 if (configure.ClaimPolicyConfig is not null)
@@ -342,28 +342,28 @@ public static class KestrunHostAuthExtensions
                         configure?.Invoke(opts);
 
                         // ── SPECIAL POWER-SHELL PATH ────────────────────
-                        if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
-                            !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
+                            !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                         {
                             // Build the PowerShell script validator
                             // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
                         }
                         else   // ── C# pathway ─────────────────────────────────
-                        if (opts.CodeSettings.Language is ScriptLanguage.CSharp
-                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
+                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                         {
                             // Build the C# script validator
                             // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
                         }
                         else   // ── VB.NET pathway ─────────────────────────────────
-                        if (opts.CodeSettings.Language is ScriptLanguage.VBNet
-                            && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
+                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                         {
                             // Build the VB.NET script validator
                             // This will be used to validate credentials
-                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.CodeSettings);
+                            opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
                         }
                     });
 
@@ -405,22 +405,22 @@ public static class KestrunHostAuthExtensions
                 opts.RequireHttps = configure.RequireHttps;
                 opts.EmitChallengeHeader = configure.EmitChallengeHeader;
                 opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;
-                opts.CodeSettings = configure.CodeSettings;
+                opts.ValidateCodeSettings = configure.ValidateCodeSettings;
                 // ── SPECIAL POWER-SHELL PATH ────────────────────
-                if (opts.CodeSettings.Language == ScriptLanguage.PowerShell &&
-                    !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
+                    !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                 {
                     // Build the PowerShell script validator
                     // This will be used to validate credentials
-                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.CodeSettings);
+                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
                 }
                 else   // ── C# pathway ─────────────────────────────────
-                if (opts.CodeSettings.Language is ScriptLanguage.CSharp
-                    && !string.IsNullOrWhiteSpace(opts.CodeSettings.Code))
+                if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
+                    && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                 {
                     // Build the C# script validator
                     // This will be used to validate credentials
-                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.CodeSettings);
+                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
                 }
 
 

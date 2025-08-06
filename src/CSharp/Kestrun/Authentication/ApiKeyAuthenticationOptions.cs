@@ -9,13 +9,13 @@ namespace Kestrun.Authentication;
 /// <summary>
 /// Options for API key authentication, including header names, validation, and claims issuance.
 /// </summary>
-public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
+public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthenticationCommonOptions
 {
     /// <summary>
     /// Name of the header to look for the API key.
     /// </summary>
     public string HeaderName { get; set; } = "X-Api-Key";
- 
+
     /// <summary>
     /// Other headers to try if the primary one is missing.
     /// <para>Defaults to empty.</para>
@@ -37,18 +37,12 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// <para>Use this for simple scenarios where you have a known key.</para>
     /// </summary>
     public string? ExpectedKey { get; set; }
-    
+
     /// <summary>
     /// Gets the expected API key as a UTF-8 byte array, or null if <see cref="ExpectedKey"/> is not set.
     /// </summary>
     public byte[]? ExpectedKeyBytes => ExpectedKey is not null ? Encoding.UTF8.GetBytes(ExpectedKey) : null;
 
-    /// <summary>
-    /// Called to validate the raw key string. Return true if valid.
-    /// <para>This is called for every request, so it should be fast.</para>
-    /// </summary>
-    //public Func<string, bool> ValidateKey { get; set; } = _ => false;
-    public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (context, key, keyBytes) => Task.FromResult(false);
     /// <summary>
     /// Logger for this authentication scheme.
     /// <para>Defaults to Serilog's global logger.</para>
@@ -60,11 +54,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public bool RequireHttps { get; set; } = true;
 
-    /// <summary>
-    /// After credentials are valid, this is called to add extra Claims.
-    /// Parameters: HttpContext, username → IEnumerable of extra claims.
-    /// </summary>
-    public Func<HttpContext, string, IEnumerable<Claim>>? IssueClaims { get; set; }
+
 
     /// <summary>
     /// If provided, returns the username associated with a given API key.
@@ -88,6 +78,12 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// </summary>
     public ApiKeyChallengeFormat ChallengeHeaderFormat { get; set; } = ApiKeyChallengeFormat.ApiKeyHeader;
 
+    /// <summary>
+    /// Called to validate the raw key string. Return true if valid.
+    /// <para>This is called for every request, so it should be fast.</para>
+    /// </summary>
+    //public Func<string, bool> ValidateKey { get; set; } = _ => false;
+    public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (context, key, keyBytes) => Task.FromResult(false);
 
     /// <summary>
     /// Settings for the authentication code, if using a script.
@@ -95,9 +91,32 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
     /// <remarks>
     /// This allows you to specify the language, code, and additional imports/refs.
     /// </remarks>
-    public AuthenticationCodeSettings CodeSettings { get; set; } = new();
- 
+    public AuthenticationCodeSettings ValidateCodeSettings { get; set; } = new();
 
+    /// <summary>
+    /// After credentials are valid, this is called to add extra Claims.
+    /// Parameters: HttpContext, username → IEnumerable of extra claims.
+    /// </summary>
+    public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
+    /// <summary>
+    /// After credentials are valid, this is called to add extra Claims synchronously.
+    /// Parameters: HttpContext, username → IEnumerable of extra claims.
+    /// </summary>
+    public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
+    /// <summary>
+    /// Settings for the claims issuing code, if using a script.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to specify the language, code, and additional imports/refs for claims issuance.
+    /// </remarks>
+    public AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets the claim policy configuration.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to define multiple authorization policies based on claims.
+    /// Each policy can specify a claim type and allowed values.
+    /// </remarks>
+    public ClaimPolicyConfig? ClaimPolicyConfig { get; set; }
 }
-
- 

@@ -9,20 +9,13 @@ namespace Kestrun.Authentication;
 /// <summary>
 /// Options for configuring Basic Authentication in Kestrun.
 /// </summary>
-public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
+public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, IAuthenticationCommonOptions
 {
 
     /// <summary>
     /// Gets or sets the name of the HTTP header used for authentication.
     /// </summary>
     public string HeaderName { get; set; } = "Authorization";
-
-    /// <summary>
-    /// Delegate to validate user credentials.
-    /// Parameters: HttpContext, username, password. Returns: Task&lt;bool&gt; indicating validity.
-    /// </summary>
-    public Func<HttpContext, string, string, Task<bool>> ValidateCredentials { get; set; } = (context, username, password) => Task.FromResult(false);
-
     /// <summary>
     /// Gets or sets a value indicating whether the credentials are Base64 encoded.
     /// </summary>
@@ -55,7 +48,22 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// <summary>
     /// Gets or sets a value indicating whether to suppress the WWW-Authenticate header in responses.
     /// </summary>
-    public bool SuppressWwwAuthenticate { get; set; }
+    public bool SuppressWwwAuthenticate { get; set; }= false;
+
+
+    /// <summary>
+    /// Delegate to validate user credentials.
+    /// Parameters: HttpContext, username, password. Returns: Task&lt;bool&gt; indicating validity.
+    /// </summary>
+    public Func<HttpContext, string, string, Task<bool>> ValidateCredentialsAsync { get; set; } = (context, username, password) => Task.FromResult(false);
+
+    /// <summary>
+    /// Settings for the authentication code, if using a script.
+    /// </summary>
+    /// <remarks>
+    /// This allows you to specify the language, code, and additional imports/refs.
+    /// </remarks>
+    public AuthenticationCodeSettings ValidateCodeSettings { get; set; } = new();
 
     /// <summary>
     /// After credentials are valid, this is called to add extra Claims.
@@ -67,15 +75,6 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
     public Func<HttpContext, string, IEnumerable<Claim>>? NativeIssueClaims { get; set; }
-
-    /// <summary>
-    /// Settings for the authentication code, if using a script.
-    /// </summary>
-    /// <remarks>
-    /// This allows you to specify the language, code, and additional imports/refs.
-    /// </remarks>
-    public AuthenticationCodeSettings ValidateCredentialCodeSettings { get; set; } = new();
-
     /// <summary>
     /// Settings for the claims issuing code, if using a script.
     /// </summary>
@@ -83,8 +82,6 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions
     /// This allows you to specify the language, code, and additional imports/refs for claims issuance.
     /// </remarks>
     public AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; } = new();
-
-
      
     /// <summary>
     /// Gets or sets the claim policy configuration.

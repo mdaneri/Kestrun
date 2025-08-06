@@ -91,21 +91,16 @@ public class ApiKeyAuthHandler
             {
                 return Fail($"Invalid API Key: {providedKey}");
             }
-            var username = Options.ResolveUsername?.Invoke(providedKey) ?? "ApiKeyClient";
-
-            var claims = new List<Claim> { new(ClaimTypes.Name, username) };
-
-            // If the consumer wired up IssueClaims, invoke it now:
-            if (Options.IssueClaims is not null)
+            var identity = Options.ResolveUsername?.Invoke(providedKey) ?? "ApiKeyClient";
+            
+            // If we reach here, the API key is valid
+            var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, identity, Options, Scheme);
+            // Log the successful authentication
+            if (ticket.Principal is null)
             {
-                var extra = Options.IssueClaims(Context, username);
-                if (extra is not null)
-                    claims.AddRange(extra);
+                return Fail("Authentication ticket has no principal");
             }
-            var identity = new ClaimsIdentity(claims, Scheme.Name);
-            var principal = new ClaimsPrincipal(identity);
-            var ticket = new AuthenticationTicket(principal, Scheme.Name);
-            Options.Logger.Information("API Key authentication succeeded for identity: {Username}", username);
+            Options.Logger.Information("API Key authentication succeeded for identity: {Identity}", identity);
 
             // ⑥ Return success
             return AuthenticateResult.Success(ticket);

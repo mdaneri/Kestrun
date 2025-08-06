@@ -11,14 +11,18 @@ using Kestrun.SharedState;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Core;
 
 namespace Kestrun.Authentication;
 
 /// <summary>
 /// Handles Basic Authentication for HTTP requests.
 /// </summary>
-public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>
+public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>,IAuthHandler
 {
+
+    private Serilog.ILogger Logger => Options.Logger;
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="BasicAuthHandler"/> class.
     /// </summary>
@@ -56,7 +60,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     {
         try
         {
-            if (Options.ValidateCredentials is null)
+            if (Options.ValidateCredentialsAsync is null)
                 return Fail("No credentials validation function provided");
 
             // Check if the request is secure (HTTPS) if required
@@ -102,43 +106,14 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             // Check if username or password is empty
             if (string.IsNullOrEmpty(user))
                 return Fail("Username cannot be empty");
-            var valid = await Options.ValidateCredentials(Context, user, pass);
+            var valid = await Options.ValidateCredentialsAsync(Context, user, pass);
             if (!valid)
                 return Fail("Invalid credentials");
 
             // If credentials are valid, create claims
             Options.Logger.Information("Basic auth succeeded for user: {User}", user);
-            var claims = new List<Claim> { new(ClaimTypes.Name, user) };
 
-            // If the consumer wired up IssueClaims, invoke it now:
-            if (Options.IssueClaims is not null)
-            {
-                // Call the IssueClaims function to get additional claims
-                var extra = await Options.IssueClaims(Context, user);
-                if (extra is not null)
-                {
-                    foreach (var claim in extra)
-                    {
-                        if (claim is not null && !string.IsNullOrEmpty(claim.Value) && claim is Claim)
-                            claims.Add(claim);
-                    }
-                    //claims.AddRange(extra);
-                }
-            }
-
-            if (Options.NativeIssueClaims is not null)
-            {
-                // Call the NativeIssueClaims function to get additional claims
-                var extra = Options.NativeIssueClaims(Context, user);
-                if (extra is not null)
-                    claims.AddRange(extra);
-            }
-            // Create the ClaimsIdentity and ClaimsPrincipal
-            var identity = new ClaimsIdentity(claims, Scheme.Name);
-            // Create the AuthenticationTicket with the principal and scheme name
-            var principal = new ClaimsPrincipal(identity);
-            // Create the authentication ticket
-            var ticket = new AuthenticationTicket(principal, Scheme.Name);
+            var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, user, Options, Scheme);
             Options.Logger.Information("Basic auth ticket created for user: {User}", user);
             // Return a successful authentication result
             return AuthenticateResult.Success(ticket);
