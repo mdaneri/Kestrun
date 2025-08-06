@@ -11,6 +11,7 @@ using Serilog;
 using Serilog.Events;
 using Kestrun.Models;
 using System.Security.Claims;
+using Kestrun.Logging;
 
 namespace Kestrun.Languages;
 
@@ -68,7 +69,7 @@ internal static class CSharpDelegateBuilder
                 var krResponse = new KestrunResponse(krRequest);
                 var Context = new KestrunContext(krRequest, krResponse, ctx);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Kestrun context created for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Kestrun context created for {Path}", ctx.Request.Path);
 
                 // Create a shared state dictionary that will be used to store global variables
                 // This will be shared across all requests and can be used to store state
@@ -90,7 +91,7 @@ internal static class CSharpDelegateBuilder
                 }
 
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Executing C# script for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
 
                 // Create a new CsGlobals instance with the current context and shared state
                 // This will provide access to the globals and locals in the script
@@ -98,14 +99,14 @@ internal static class CSharpDelegateBuilder
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Executing C# script for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
                 await script.RunAsync(globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("C# script executed successfully for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("C# script executed successfully for {Path}", ctx.Request.Path);
 
                 // Apply the response to the Kestrun context
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Applying response to Kestrun context for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {
                     ctx.Response.Redirect(krResponse.RedirectUrl);
@@ -114,7 +115,7 @@ internal static class CSharpDelegateBuilder
 
                 await krResponse.ApplyTo(ctx.Response).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
             }
             finally
             {

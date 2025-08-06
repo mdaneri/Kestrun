@@ -11,6 +11,7 @@ using Kestrun.Models;
 using Microsoft.CodeAnalysis;
 using Kestrun.Utilities;
 using System.Security.Claims;
+using Kestrun.Logging;
 
 namespace Kestrun.Languages;
 
@@ -73,7 +74,7 @@ internal static class VBNetDelegateBuilder
                 var krResponse = new KestrunResponse(krRequest);
                 var Context = new KestrunContext(krRequest, krResponse, ctx);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Kestrun context created for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Kestrun context created for {Path}", ctx.Request.Path);
 
                 // Create a shared state dictionary that will be used to store global variables
                 // This will be shared across all requests and can be used to store state
@@ -99,14 +100,14 @@ internal static class VBNetDelegateBuilder
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Executing VB.NET script for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Executing VB.NET script for {Path}", ctx.Request.Path);
                 await script(globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("VB.NET script executed successfully for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("VB.NET script executed successfully for {Path}", ctx.Request.Path);
 
                 // Apply the response to the Kestrun context
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Applying response to Kestrun context for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
                 if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
                 {
                     ctx.Response.Redirect(krResponse.RedirectUrl);
@@ -115,7 +116,7 @@ internal static class VBNetDelegateBuilder
 
                 await krResponse.ApplyTo(ctx.Response).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
             }
             finally
             {
