@@ -62,7 +62,7 @@ public sealed class ClaimPolicyPostConfigurer
     : IPostConfigureOptions<AuthorizationOptions>
 {
     private readonly string _scheme;
-    private readonly IOptionsMonitor<BasicAuthenticationOptions> _basics;
+    private readonly IOptionsMonitor<IClaimsCommonOptions> _basics;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ClaimPolicyPostConfigurer"/> class.
@@ -71,7 +71,7 @@ public sealed class ClaimPolicyPostConfigurer
     /// <param name="basics">The options monitor for <see cref="BasicAuthenticationOptions"/>.</param>
     public ClaimPolicyPostConfigurer(
         string scheme,
-        IOptionsMonitor<BasicAuthenticationOptions> basics)
+        IOptionsMonitor<IClaimsCommonOptions> basics)
     {
         _scheme = scheme;
         _basics = basics;
