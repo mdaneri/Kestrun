@@ -10,6 +10,8 @@ updates:
     ignore:
       - dependency-name: "Microsoft.NET.Test.Sdk"
         versions: [">= 20.0.0"]
+      - dependency-name: "Microsoft.Extensions.Hosting.Abstractions"
+        versions: ["8.x"] # Ignore updates from 8.x to 9.x
   - package-ecosystem: "github-actions"
     directory: "/"                # updates GitHub Actions versions
     schedule:
