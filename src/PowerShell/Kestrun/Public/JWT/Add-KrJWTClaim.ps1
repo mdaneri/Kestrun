@@ -7,8 +7,11 @@ function Add-KrJWTClaim {
         This function adds a claim to the JWT token builder, allowing for the specification of additional data.
     .PARAMETER Builder
         The JWT token builder to modify.
-    .PARAMETER Type
+    .PARAMETER ClaimType
         The type of the claim to add.
+    .PARAMETER UserClaimType
+        The user-specific type of the claim to add, such as "Admin", "User", etc.
+        This parameter is used when the claim type is based on user identity claims.
     .PARAMETER Value
         The value of the claim to add.
     .OUTPUTS
@@ -23,17 +26,24 @@ function Add-KrJWTClaim {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
         [Kestrun.Security.JwtTokenBuilder] $Builder,
-        [Parameter(Mandatory)]
-        [string] $Type,
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory = $true, ParameterSetName = 'ClaimType')]
+        [string] $ClaimType,
+        [Parameter(Mandatory = $true, ParameterSetName = 'UserClaimType')]
+        [Kestrun.Claims.UserIdentityClaim] $UserClaimType,
+        [Parameter(Mandatory = $true)]
         [string] $Value
     )
     process {
-        return $Builder.AddClaim($Type, $Value) 
+        # resolve ClaimType if the user chose the enum parameter-set
+        if ($UserClaimType) {
+            $ClaimType = [Kestrun.Claims.KestrunClaimExtensions]::ToClaimUri($UserClaimType)
+        }
+
+        return $Builder.AddClaim($ClaimType, $Value)
     }
 }

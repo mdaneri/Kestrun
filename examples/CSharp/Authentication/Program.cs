@@ -179,9 +179,9 @@ server.AddResponseCompression(options =>
                 param([string]$Identity)
                 if ($Identity -eq 'admin') {
                     return  (Add-KrUserClaim -UserClaimType Role -Value "admin" |
-                    Add-KrUserClaim -ClaimType "can_read" -Value "true" |
-                    Add-KrUserClaim -ClaimType "can_write" -Value "true" |
-                    Add-KrUserClaim -ClaimType "can_delete" -Value "false")
+                        Add-KrUserClaim -ClaimType "can_read" -Value "true" |
+                        Add-KrUserClaim -ClaimType "can_write" -Value "true" |
+                        Add-KrUserClaim -ClaimType "can_delete" -Value "false")
                 }
                 else {
                     return [System.Security.Claims.Claim[]]@()
@@ -727,7 +727,7 @@ server.AddMapRoute("/secure/key/vb/hello", HttpVerb.Get, """
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated by VB.NET code.", 200);
 """, ScriptLanguage.CSharp, [ApiKeyVBNet]);
 
-
+/* KESTRUN JWT AUTHENTICATION ROUTES */
 server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
     if (!Context.User.Identity.IsAuthenticated)
     {
@@ -797,7 +797,8 @@ server.AddMapRoute("/token/new", HttpVerb.Get, async (ctx) =>
 {
     try
     {
-        var build = tokenBuilder.WithSubject("admin").AddClaim("role", "admin").AddClaim("can_read", "true").Build();
+        var user = ctx.User.Identity?.Name ?? "admin";
+        var build = tokenBuilder.WithSubject(user).AddClaim("role", "admin").AddClaim("can_read", "true").Build();
         var token = build.Token();
 
         await ctx.Response.WriteJsonResponseAsync(new { access_token = token, token_type = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL

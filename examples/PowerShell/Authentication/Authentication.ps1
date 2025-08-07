@@ -13,8 +13,7 @@ param()
 
         $creds   = "admin:password"
         $basic   = "Basic " + [Convert]::ToBase64String(
-                            [Text.Encoding]::ASCII.GetBytes($creds))
-        $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+                            [Text.Encoding]::ASCII.GetBytes($creds)) 
         Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
         Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
         Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
@@ -23,15 +22,28 @@ param()
         Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
         Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
 
+        Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+        Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+        Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+
         Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
         Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
         Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-
+        Invoke-RestMethod https://localhost:5001/secure/key/vb/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+        
+        $token = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
         Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-        $token2   = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
-        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+        Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method GET -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+        Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method DELETE -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+        Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method POST -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+
+        $token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+        Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" } 
+        #Form
+        Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
+        Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession 
+
     #>
 
 try {
@@ -161,9 +173,9 @@ Add-KrBasicAuthentication -Name $BasicVBNetScheme -Realm "VBNet-Kestrun" -AllowI
     Return Nothing
 "@ -IssueClaimsCodeLanguage VBNet -ClaimPolicyConfig $claimConfig -Logger $logger
 
+# ── WINDOWS AUTHENTICATION ────────────────────────────────────────────
+Add-KrWindowsAuthentication
 
-
-######TODO: Add more authentication methods like OAuth, OpenID Connect, etc.
 
 
 Add-KrApiKeyAuthentication -Name $ApiKeySimple -AllowInsecureHttp -HeaderName "X-Api-Key" -ExpectedKey "my-secret-api-key"
@@ -180,7 +192,21 @@ Add-KrApiKeyAuthentication -Name $ApiKeyPowerShell -AllowInsecureHttp -HeaderNam
     else {
         return $false
     }
-}
+} -IssueClaimsCode @'
+    if (identity == "admin")
+    {
+        // ← return the claims you want to add
+        return new[]
+        {
+        new System.Security.Claims.Claim("can_read", "true")          // custom claim
+        // or, if you really want it as a role:
+        // new Claim(ClaimTypes.Role, "can_read")
+    };
+    }
+
+    // everyone else gets no extra claims
+    return Enumerable.Empty<System.Security.Claims.Claim>();
+'@ -ClaimPolicyConfig $claimConfig -Logger $logger
 
 
 Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X-Api-Key" -Code @"
@@ -189,6 +215,15 @@ Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X
     //return providedKey == "my-secret-api-key";
 "@
 
+Add-KrApiKeyAuthentication -Name $ApiKeyVBNet -AllowInsecureHttp -HeaderName "X-Api-Key" -Code @"
+    Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
+    ' or use a simple string comparison:
+    ' Return providedKey = "my-secret-api-key"
+"@ -CodeLanguage VBNet
+
+
+
+######TODO: Add more authentication methods like OAuth, OpenID Connect, etc.
 
 $secretB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('my-passphrase'))  # or any base64url
 
@@ -203,7 +238,7 @@ $result = Build-KrJWT -Builder $JwtTokenBuilder
 #$jwt     = Get-JwtToken -Result $result
 $jwtOptions = $result | Get-KrJWTValidationParameter
 
-Add-KrJWTBearerAuthentication -Name $JwtScheme -Options $jwtOptions
+Add-KrJWTBearerAuthentication -Name $JwtScheme -ValidationParameter $jwtOptions -ClaimPolicy $claimConfig
 <#
 $JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
 $jwtKeyBytes = ([Convert]::FromHexString($JwtKeyHex))
@@ -280,6 +315,49 @@ Add-KrMapRoute -Verbs Get -Path "/secure/vb/hello" -AuthorizationSchema $BasicVB
 }
 
 
+
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/vb/policy"
+        HttpVerbs       = 'Get'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code because you have the 'can_read' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanRead")
+        RequireSchemes  = @($BasicVBNetScheme)
+    })
+
+
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/vb/policy"
+        HttpVerbs       = 'Delete'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code because you have the 'can_delete' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanDelete")
+        RequireSchemes  = @($BasicVBNetScheme)
+    })
+
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/vb/policy"
+        HttpVerbs       = 'Post', 'Put'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code because you have the 'can_write' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanWrite")
+        RequireSchemes  = @($BasicVBNetScheme)
+    })
+
+
+
+
+
+
 Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -AuthorizationSchema $ApiKeySimple -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
@@ -287,8 +365,6 @@ Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -AuthorizationSchema 
  
 
 Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
- 
-
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
 }
@@ -298,14 +374,38 @@ Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -AuthorizationSchema $Api
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
 }
- 
 
+Add-KrMapRoute -Verbs Get -Path "/secure/key/Vb/hello" -AuthorizationSchema $ApiKeyVB -ScriptBlock {
+
+    $user = $Context.HttpContext.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching VB.NET Code." -ContentType "text/plain"
+}
+
+
+
+# KESTRUN JWT AUTHENTICATION ROUTES 
 
 Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -AuthorizationSchema $JwtScheme -ScriptBlock {
 
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
 }
+
+Add-KrMapRoute -Verbs Get -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_read' permission." -ContentType "text/plain"
+} -AuthorizationPolicy "CanRead"
+
+Add-KrMapRoute -Verbs Post,Put -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_write' permission." -ContentType "text/plain"
+} -AuthorizationPolicy "CanWrite"
+
+Add-KrMapRoute -Verbs Delete -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_delete' permission." -ContentType "text/plain"
+} -AuthorizationPolicy "CanDelete"
+
 
 Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
@@ -340,7 +440,8 @@ Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershe
     Write-Output "Audience : $($JwtTokenBuilder.Audience)"
     Write-Output "Algorithm: $($JwtTokenBuilder.Algorithm)" 
 
-    $build = Add-KrJWTSubject -Builder $JwtTokenBuilder -Subject $user | Build-KrJWT
+    $build = Add-KrJWTSubject -Builder $JwtTokenBuilder -Subject $user | Add-KrJWTClaim -UserClaimType Role -Value "admin" |
+    Add-KrJWTClaim -ClaimType "can_read" -Value "true" | Build-KrJWT
     $accessToken = $build | Get-KrJWTToken
     Write-KrJsonResponse -InputObject @{
         access_token = $accessToken

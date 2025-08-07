@@ -39,7 +39,7 @@ function Add-KrBasicAuthentication {
     .PARAMETER IssueClaimsCodeLanguage
         The scripting language of the code used for issuing claims.
     .PARAMETER IssueClaimsCodeFilePath
-        Path to a file containing C# code that contains the logic for issuing claims after successful authentication
+        Path to a file containing the code that contains the logic for issuing claims after successful authentication
     .PARAMETER PassThru
         If specified, returns the modified server instance after adding the authentication.
     #>
@@ -177,15 +177,12 @@ function Add-KrBasicAuthentication {
         [Parameter(ParameterSetName = 'v3_i3')]
         [Serilog.ILogger]$Logger,
 
-        [Parameter(ParameterSetName = 'v1')]
         [Parameter(ParameterSetName = 'v1_i1')]
         [Parameter(ParameterSetName = 'v1_i2')]
         [Parameter(ParameterSetName = 'v1_i3')]
-        [Parameter(ParameterSetName = 'v2')]
         [Parameter(ParameterSetName = 'v2_i1')]
         [Parameter(ParameterSetName = 'v2_i2')]
         [Parameter(ParameterSetName = 'v2_i3')]
-        [Parameter(ParameterSetName = 'v3')]
         [Parameter(ParameterSetName = 'v3_i1')]
         [Parameter(ParameterSetName = 'v3_i2')]
         [Parameter(ParameterSetName = 'v3_i3')]
