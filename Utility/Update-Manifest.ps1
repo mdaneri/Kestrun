@@ -173,21 +173,21 @@ $module = @"
                 'cross-platform', 'file-monitoring', 'multithreaded', 'schedule', 'middleware', 'session',
                 'authentication', 'authorisation', 'arm', 'swagger', 'openapi', 'webserver', 'secrets', 'fim'
             )
-            $Prerelease
+
             # A URL to the license for this module.
-            LicenseUri = 'https://raw.githubusercontent.com/mdaneri/Kestrun/refs/heads/main/LICENSE'
+            LicenseUri = 'https://raw.githubusercontent.com/Kestrun/Kestrun/refs/heads/main/LICENSE.txt'
 
             # A URL to the main website for this project.
-            ProjectUri = 'https://github.com/mdaneri/Kestrun'
+            ProjectUri = 'https://github.com/Kestrun/Kestrun'
 
             # A URL to an icon representing this module.
-            # IconUri = ''
+            IconUri = 'https://raw.githubusercontent.com/Kestrun/Kestrun/refs/heads/main/docs/images/kestrun_favicon.ico'
 
             # ReleaseNotes of this module
             # ReleaseNotes = ''
 
             # Prerelease string of this module
-            # Prerelease = ''
+            $Prerelease
 
             # Flag to indicate whether the module requires explicit user acceptance for install/update/save
             # RequireLicenseAcceptance = $false

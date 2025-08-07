@@ -17,6 +17,7 @@ using Kestrun.Authentication;
 using Serilog.Events;
 using Kestrun.Scripting;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Kestrun.Claims;
 
 
 namespace Kestrun.Hosting;
@@ -222,8 +223,6 @@ public static class KestrunHostAuthExtensions
     /// </code>
     /// </example>
     /// <returns></returns>
-  
-
     public static KestrunHost AddJwtBearerAuthentication(
       this KestrunHost host,
       string scheme,

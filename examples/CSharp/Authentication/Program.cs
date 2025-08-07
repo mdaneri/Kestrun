@@ -24,7 +24,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Org.BouncyCastle.Bcpg;
-using Kestrun.Hosting.Options;          // ISecurityTokenValidator
+using Kestrun.Hosting.Options;
+using Kestrun.Claims;          // ISecurityTokenValidator
 
 
 /*
@@ -119,16 +120,13 @@ var tokenBuilder = JwtTokenBuilder.New()
 
 var builderResult = tokenBuilder.Build();
 
-var claimConfig = new ClaimPolicyConfig
-{
-    Policies =
-    {
-        ["CanDelete"] = new("can_delete", "true"),
-        ["CanRead"]   = new("can_read"  , "true"),
-        ["CanWrite"]  = new("can_write" , "true"),
-        ["Admin"]     = new(ClaimTypes.Role, "admin")
-    }
-};
+var claimConfig = new ClaimPolicyBuilder().
+AddPolicy("CanDelete", "can_delete", "true").
+AddPolicy("CanRead", "can_read", "true").
+AddPolicy("CanWrite", "can_write", "true").
+//AddPolicy("Admin", System.Security.Claims.ClaimTypes.Role, "admin").
+ AddPolicy("Admin",  UserIdentityClaim.Role, "admin").
+Build();
 
 /// Add compression
 server.AddResponseCompression(options =>

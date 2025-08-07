@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Kestrun.Claims;
 
 namespace Kestrun.Authentication;
 

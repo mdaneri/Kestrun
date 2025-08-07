@@ -92,12 +92,24 @@ Add-Favicon
 
 $BasicPowershellScheme = "PowershellBasic"; 
 $BasicCSharpScheme = "CSharpBasic";
+$BasicVBNetScheme = "VBNetBasic";
 $JwtScheme = "Bearer";
 $ApiKeySimple = "ApiKeySimple";
 $ApiKeyPowerShell = "ApiKeyPowerShell";
 $ApiKeyCSharp = "ApiKeyCSharp";
+$ApiKeyVBNet = "ApiKeyVBNet";
 $issuer = "KestrunApi";
 $audience = "KestrunClients";
+
+
+
+$claimConfig = New-KrClaimPolicy |
+Add-KrClaimPolicy -PolicyName "CanCreate" -ClaimType "can_create" -AllowedValues "true" |
+Add-KrClaimPolicy -PolicyName "CanDelete" -ClaimType "can_delete" -AllowedValues "true" |
+Add-KrClaimPolicy -PolicyName "CanRead" -ClaimType "can_read" -AllowedValues "true" |
+Add-KrClaimPolicy -PolicyName "CanWrite" -ClaimType "can_write" -AllowedValues "true" |
+Add-KrClaimPolicy -PolicyName "Admin" -UserClaimType Role -AllowedValues "admin" |
+Build-KrClaimPolicy
 
 Add-KrBasicAuthentication -Name $BasicPowershellScheme -Realm "Power-Kestrun" -AllowInsecureHttp -ScriptBlock {
     param($username, $password)
