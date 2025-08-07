@@ -178,16 +178,10 @@ server.AddResponseCompression(options =>
         Code = """                
                 param([string]$Identity)
                 if ($Identity -eq 'admin') {
-                    # ①  Mandatory role claim
-                    $role = [System.Security.Claims.Claim]::new(
-                        [System.Security.Claims.ClaimTypes]::Role, 'admin')
-
-                    # ②  Extra capability claims ─ add or remove as you like
-                    $canRead = [System.Security.Claims.Claim]::new('can_read' , 'true')
-                    $canWrite = [System.Security.Claims.Claim]::new('can_write', 'true')
-                    $canDel = [System.Security.Claims.Claim]::new('can_delete', 'true')
-
-                    return @($role, $canRead, $canWrite, $canDel)
+                    return  (Add-KrUserClaim -UserClaimType Role -Value "admin" |
+                    Add-KrUserClaim -ClaimType "can_read" -Value "true" |
+                    Add-KrUserClaim -ClaimType "can_write" -Value "true" |
+                    Add-KrUserClaim -ClaimType "can_delete" -Value "false")
                 }
                 else {
                     return [System.Security.Claims.Claim[]]@()

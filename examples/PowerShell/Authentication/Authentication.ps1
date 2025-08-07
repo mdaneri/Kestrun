@@ -127,19 +127,12 @@ Add-KrBasicAuthentication -Name $BasicPowershellScheme -Realm "Power-Kestrun" -A
     }
 } -IssueClaimsScriptBlock {
     param([string]$Identity)
-    write-host "User Identity: $Identity"
     if ($Identity -eq 'admin') {
         # Return claims for the admin user
-         return [System.Security.Claims.Claim[]]@(
-            [System.Security.Claims.Claim]::new([System.Security.Claims.ClaimTypes]::Role, 'admin'),
-            [System.Security.Claims.Claim]::new('can_read', 'true'),
-            [System.Security.Claims.Claim]::new('can_write', 'true'),
-            [System.Security.Claims.Claim]::new('can_delete', 'true') )
-
-     <#    return Add-KrUserClaim -UserClaimType Role -Value "admin" |
-        Add-KrUserClaim -ClaimType "can_read" -Value "true" |
-        Add-KrUserClaim -ClaimType "can_write" -Value "true" |
-        Add-KrUserClaim -ClaimType "can_delete" -Value "true"#>
+        return (Add-KrUserClaim -UserClaimType Role -Value "admin" |
+            Add-KrUserClaim -ClaimType "can_read" -Value "true" |
+            Add-KrUserClaim -ClaimType "can_write" -Value "true" |
+            Add-KrUserClaim -ClaimType "can_delete" -Value "false")
     }
     else {
         return [System.Security.Claims.Claim[]]@()
