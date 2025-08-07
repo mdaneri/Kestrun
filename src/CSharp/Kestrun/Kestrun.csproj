@@ -135,10 +135,10 @@
     <PackageReference Include="Serilog.Sinks.Http" Version="9.1.0" />
     
     <!-- Hosting & DI -->
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
 
     <!-- Roslyn Scripting -->
@@ -174,10 +174,10 @@
     <!--<PackageReference Update="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
     <PackageReference Update="Microsoft.Extensions.ObjectPool" Version="9.0.7" />
     <PackageReference Update="Microsoft.Extensions.Primitives" Version="9.0.7" />-->
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.7" />
 
     <!-- Roslyn Scripting -->
