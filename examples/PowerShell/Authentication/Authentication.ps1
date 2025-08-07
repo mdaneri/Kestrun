@@ -1,7 +1,7 @@
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
 param()
-    <#
+<#
     .SYNOPSIS
         Kestrun PowerShell Example: Multi Routes
     .DESCRIPTION
@@ -17,7 +17,12 @@ param()
         $token   = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
         Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
         Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-    
+        Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+
+        Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+        Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+        Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+
         Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
         Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
         Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
@@ -120,12 +125,53 @@ Add-KrBasicAuthentication -Name $BasicPowershellScheme -Realm "Power-Kestrun" -A
     else {
         $false
     }
-}
+} -IssueClaimsScriptBlock {
+    param([string]$Identity)
+    write-host "User Identity: $Identity"
+    if ($Identity -eq 'admin') {
+        # Return claims for the admin user
+         return [System.Security.Claims.Claim[]]@(
+            [System.Security.Claims.Claim]::new([System.Security.Claims.ClaimTypes]::Role, 'admin'),
+            [System.Security.Claims.Claim]::new('can_read', 'true'),
+            [System.Security.Claims.Claim]::new('can_write', 'true'),
+            [System.Security.Claims.Claim]::new('can_delete', 'true') )
 
-Add-KrBasicAuthentication -Name $BasicCSharpScheme -Realm "CSharp-Kestrun" -AllowInsecureHttp -csCode @"
+     <#    return Add-KrUserClaim -UserClaimType Role -Value "admin" |
+        Add-KrUserClaim -ClaimType "can_read" -Value "true" |
+        Add-KrUserClaim -ClaimType "can_write" -Value "true" |
+        Add-KrUserClaim -ClaimType "can_delete" -Value "true"#>
+    }
+    else {
+        return [System.Security.Claims.Claim[]]@()
+    }
+} -Logger $logger -ClaimPolicyConfig $claimConfig
+
+
+
+Add-KrBasicAuthentication -Name $BasicCSharpScheme -Realm "CSharp-Kestrun" -AllowInsecureHttp -Code @"
    // Log.Information("Validating credentials for {Username}", username);
     return username == "admin" && password == "password";
-"@
+"@ -CodeLanguage CSharp
+
+
+Add-KrBasicAuthentication -Name $BasicVBNetScheme -Realm "VBNet-Kestrun" -AllowInsecureHttp -Code @"
+    ' Log.Information("Validating credentials for {Username}", username)
+    Return username = "admin" AndAlso password = "password"
+"@ -CodeLanguage VBNet -IssueClaimsCode @"
+    If Identity = "admin" Then          ' (VB is case-insensitive, but keep it consistent)
+        Return New System.Security.Claims.Claim() {
+            New System.Security.Claims.Claim("can_write", "true")
+        }
+    End If
+
+    ' everyone else gets no extra claims
+    Return Nothing
+"@ -IssueClaimsCodeLanguage VBNet -ClaimPolicyConfig $claimConfig -Logger $logger
+
+
+
+######TODO: Add more authentication methods like OAuth, OpenID Connect, etc.
+
 
 Add-KrApiKeyAuthentication -Name $ApiKeySimple -AllowInsecureHttp -HeaderName "X-Api-Key" -ExpectedKey "my-secret-api-key"
 
@@ -144,7 +190,7 @@ Add-KrApiKeyAuthentication -Name $ApiKeyPowerShell -AllowInsecureHttp -HeaderNam
 }
 
 
-Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X-Api-Key" -csCode @"
+Add-KrApiKeyAuthentication -Name $ApiKeyCSharp -AllowInsecureHttp -HeaderName "X-Api-Key" -Code @"
     return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
     // or use a simple string comparison:
     //return providedKey == "my-secret-api-key";
@@ -177,42 +223,84 @@ Add-KrJWTBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudie
 # Enable configuration
 Enable-KrConfiguration
 
-# Set-KrPythonRuntime
+<#
+***************************************************************************************
+    ROUTES
+    ──────────────────────────────────────────
+    These routes are protected by the authentication schemes defined above.
+    They will only be accessible if the user is authenticated.
+****************************************************************************************
+#>
 
 # Add a route with a script block
-Add-KrMapRoute -Verbs Get -Path "/secure/ps/hello" -Authorization $BasicPowershellScheme -ScriptBlock {
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+Add-KrMapRoute -Verbs Get -Path "/secure/ps/hello" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
 }
 
-Add-KrMapRoute -Verbs Get -Path "/secure/cs/hello" -Authorization $BasicCSharpScheme -ScriptBlock {
-    if (-not $Context.HttpContext.User.Identity.IsAuthenticated) {
-        Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-        return
-    }
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/ps/policy"
+        HttpVerbs       = 'Get'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanRead")
+        RequireSchemes  = @($BasicPowershellScheme)
+    })
+
+
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/ps/policy"
+        HttpVerbs       = 'Delete'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanDelete")
+        RequireSchemes  = @($BasicPowershellScheme)
+    })
+
+Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+        Pattern         = "/secure/ps/policy"
+        HttpVerbs       = 'Post', 'Put'
+        Code            = {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
+        }
+        Language        = 'PowerShell'
+        RequirePolicies = @("CanWrite")
+        RequireSchemes  = @($BasicPowershellScheme)
+    })
+
+
+Add-KrMapRoute -Verbs Get -Path "/secure/cs/hello" -AuthorizationSchema $BasicCSharpScheme -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain" 
 }
 
+Add-KrMapRoute -Verbs Get -Path "/secure/vb/hello" -AuthorizationSchema $BasicVBNetScheme -ScriptBlock {
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
+}
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -Authorization $ApiKeySimple -ScriptBlock {
+
+Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -AuthorizationSchema $ApiKeySimple -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
 }
  
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -Authorization $ApiKeyPowerShell -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
  
 
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
 }
  
-Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -Authorization $ApiKeyCSharp -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
  
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
@@ -220,13 +308,13 @@ Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -Authorization $ApiKeyCSh
  
 
 
-Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -Authorization $JwtScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -AuthorizationSchema $JwtScheme -ScriptBlock {
 
     $user = $Context.HttpContext.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
 }
 
-Add-KrMapRoute -Verbs Get -Path "/token/renew" -Authorization $JwtScheme  -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
 
     write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user 
@@ -245,7 +333,7 @@ Add-KrMapRoute -Verbs Get -Path "/token/renew" -Authorization $JwtScheme  -Scrip
 } -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder |  Build-KrJWT }
 
 
-Add-KrMapRoute -Verbs Get -Path "/token/new" -Authorization $BasicPowershellScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
     $user = $Context.HttpContext.User.Identity.Name
 
     write-KrInformationLog -MessageTemplate "Regenerating JWT token for user {0}" -PropertyValues $user

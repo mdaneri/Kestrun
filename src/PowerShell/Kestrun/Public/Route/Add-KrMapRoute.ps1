@@ -8,6 +8,9 @@ function Add-KrMapRoute {
     .PARAMETER Server
         The Kestrun server instance to which the route will be added.
         If not specified, the function will attempt to resolve the current server context.
+    .PARAMETER Options
+        An instance of `Kestrun.Hosting.Options.MapRouteOptions` that contains the configuration for the route.
+        This parameter is used to specify various options for the route, such as HTTP verbs, path, authorization schemes, and more.
     .PARAMETER Verbs
         The HTTP verbs (GET, POST, etc.) that the route should respond to.
     .PARAMETER Path
@@ -18,8 +21,12 @@ function Add-KrMapRoute {
         The code to be executed when the route is accessed, used in conjunction with the Language parameter.
     .PARAMETER Language
         The scripting language of the code to be executed.
-    .PARAMETER Authorization
-        An optional array of authorization strings for the route.
+    .PARAMETER CodeFilePath
+        The file path to the code to be executed when the route is accessed.
+    .PARAMETER AuthorizationSchema
+        An optional array of authorization schemes that the route requires.
+    .PARAMETER AuthorizationPolicy
+        An optional array of authorization policies that the route requires.
     .PARAMETER ExtraImports
         An optional array of additional namespaces to import for the route.
     .PARAMETER ExtraRefs
@@ -27,7 +34,7 @@ function Add-KrMapRoute {
     .PARAMETER PassThru
         If specified, the function will return the created route object.
     .OUTPUTS
-        Returns a Kestrun.Hosting.MapRoute object representing the newly created route if PassThru is specified.
+        Returns the Kestrun server instance with the new route added.
     .EXAMPLE
         Add-KrMapRoute -Server $myServer -Path "/myroute" -ScriptBlock { Write-Host "Hello, World!" }
         Adds a new map route to the specified Kestrun server with the given path and script block.
@@ -42,15 +49,22 @@ function Add-KrMapRoute {
         This function is part of the Kestrun PowerShell module and is used to manage routes
     #>
     [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
-    [OutputType([Microsoft.AspNetCore.Builder.RouteHandlerBuilder])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.Hosting.KestrunHost]$Server,
 
-        [Parameter()]
+        [Parameter(Mandatory = $true, ParameterSetName = "Options")]
+        [Kestrun.Hosting.Options.MapRouteOptions]$Options,
+
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
 
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
+        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
+        [Parameter(Mandatory = $true, ParameterSetName = "CodeFilePath")]
         [string]$Path,
 
         [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
@@ -62,16 +76,32 @@ function Add-KrMapRoute {
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
         [Kestrun.Scripting.ScriptLanguage]$Language,
 
-        [Parameter()]
-        [string[]]$Authorization = $null,
+        [Parameter(Mandatory = $true, ParameterSetName = 'CodeFilePath')]
+        [string]$CodeFilePath,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
+        [string[]]$AuthorizationSchema = $null,
+
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
+        [string[]]$AuthorizationPolicy = $null,
+
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
         [string[]]$ExtraImports = $null,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
         [System.Reflection.Assembly[]]$ExtraRefs = $null,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
         [hashtable]$Arguments,
 
         [Parameter()]
@@ -82,34 +112,64 @@ function Add-KrMapRoute {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
-        $options.HttpVerbs = $Verbs
-        $options.Pattern = $Path
-        $options.ExtraImports = $ExtraImports
-        $options.ExtraRefs = $ExtraRefs
-        $options.RequireAuthorization = $Authorization
-
-        if ($null -ne $Arguments) {
-            $dict = [System.Collections.Generic.Dictionary[string, object]]::new()
-            foreach ($key in $Arguments.Keys) {
-                $dict[$key] = $Arguments[$key]
+        # -- if Options parameter is used, we can skip the rest of the parameters
+        if ($PSCmdlet.ParameterSetName -ne 'Options') {
+            $Options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
+            $Options.HttpVerbs = $Verbs
+            $Options.Pattern = $Path
+            $Options.ExtraImports = $ExtraImports
+            $Options.ExtraRefs = $ExtraRefs
+            if ($null -ne $AuthorizationSchema) {
+                $Options.RequireSchemes = $AuthorizationSchema
             }
-            $options.Arguments = $dict
+            if ($null -ne $AuthorizationPolicy) {
+                $Options.RequirePolicies = $AuthorizationPolicy
+            }
+
+            if ($null -ne $Arguments) {
+                $dict = [System.Collections.Generic.Dictionary[string, object]]::new()
+                foreach ($key in $Arguments.Keys) {
+                    $dict[$key] = $Arguments[$key]
+                }
+                $Options.Arguments = $dict
+            }
+            switch ($PSCmdlet.ParameterSetName) {
+                'ScriptBlock' {
+                    $Options.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                    $Options.Code = $ScriptBlock.ToString()
+                }
+                'Code' {
+                    $Options.Language = $Language
+                    $Options.Code = $Code
+                }
+                'CodeFilePath' {
+                    if (-not (Test-Path -Path $CodeFilePath)) {
+                        throw "The specified code file path does not exist: $CodeFilePath"
+                    }
+                    $extension = Split-Path -Path $CodeFilePath -Extension
+                    switch ($extension) {
+                        ".ps1" {
+                            $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                        }
+                        ".cs" {
+                            $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                        }
+                        ".vb" {
+                            $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
+                        }
+                        Default {
+                            throw "Unsupported '$extension' code file extension."
+                        }
+                    }
+                    $Options.ValidateCodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
+                }
+            }
         }
 
-        if ($PSCmdlet.ParameterSetName -eq "Code") {
-            $options.Language = $Language
-            $options.Code = $Code
-        }
-        else {
-            $options.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
-            $options.Code = $ScriptBlock.ToString()
-        }
-
-        $map = [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $options)
+        [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | out-Null
 
         if ($PassThru) {
-            return $map
+            return $Server
         }
     }
 }

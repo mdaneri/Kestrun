@@ -148,25 +148,10 @@ public static class KestrunHostAuthExtensions
                 opts.Logger = configure.Logger;
                 // Copy properties from the provided configure object
                 opts.ValidateCodeSettings = configure.ValidateCodeSettings;
-                // ── SPECIAL POWER-SHELL PATH ────────────────────
-                if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
-                    !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                {
-                    // Build the PowerShell script validator
-                    // This will be used to validate credentials
-                    opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
-                }
-                else   // ── C# pathway ─────────────────────────────────
-                if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
-                    && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                {
-                    // Build the C# script validator
-                    // This will be used to validate credentials
-                    opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
-                }
+                opts.IssueClaimsCodeSettings = configure.IssueClaimsCodeSettings;
+
                 // Claims policy configuration
-                if (configure.ClaimPolicyConfig is not null)
-                    opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
+                opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
             }
         );
 
@@ -434,25 +419,10 @@ public static class KestrunHostAuthExtensions
                 opts.EmitChallengeHeader = configure.EmitChallengeHeader;
                 opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;
                 opts.ValidateCodeSettings = configure.ValidateCodeSettings;
-                // ── SPECIAL POWER-SHELL PATH ────────────────────
-                if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
-                    !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                {
-                    // Build the PowerShell script validator
-                    // This will be used to validate credentials
-                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
-                }
-                else   // ── C# pathway ─────────────────────────────────
-                if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
-                    && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                {
-                    // Build the C# script validator
-                    // This will be used to validate credentials
-                    opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
-                }
-                // Claims policy configuration
-                if (configure.ClaimPolicyConfig is not null)
-                    opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
+                // IssueClaimsCodeSettings
+                opts.IssueClaimsCodeSettings = configure.IssueClaimsCodeSettings;
+                // Claims policy configuration 
+                opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
             }
         );
     }

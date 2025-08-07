@@ -526,11 +526,6 @@ server.EnableConfiguration();
 //    BASIC AUTHENTICATION ROUTES
 //**********************************************
 server.AddMapRoute("/secure/ps/hello", HttpVerb.Get, """
-       if (-not $Context.User.Identity.IsAuthenticated) {
-           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-           return
-       }
-
        $user = $Context.User.Identity.Name
        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
    """, ScriptLanguage.PowerShell, [BasicPowershellScheme]);
@@ -581,10 +576,6 @@ server.AddMapRoute(new()
 
 
 server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
-       if (-not $Context.User.Identity.IsAuthenticated) {
-           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-           return
-       }
 
        $user = $Context.User.Identity.Name
        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain"
@@ -592,11 +583,6 @@ server.AddMapRoute("/secure/cs/hello", HttpVerb.Get, """
 
 
 server.AddMapRoute("/secure/vb/hello", HttpVerb.Get, """
-       if (-not $Context.User.Identity.IsAuthenticated) {
-           Write-KrErrorResponse -Message "Access denied" -StatusCode 401
-           return
-       }
-
        $user = $Context.User.Identity.Name
        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType "text/plain"
    """, ScriptLanguage.PowerShell, [BasicVBNetScheme]);

@@ -157,4 +157,57 @@ public static class HttpVerbExtensions
     /// Convert the verb enum to its uppercase HTTP method string.
     /// </summary>
     public static string ToMethodString(this HttpVerb v) => v.ToString().ToUpperInvariant();
+
+    /// <summary>
+    /// Convert a HTTP method string to its corresponding HttpVerb enum value.
+    /// </summary>
+    /// <param name="method">The HTTP method string (case-insensitive).</param>
+    /// <returns>The corresponding HttpVerb enum value.</returns>
+    /// <exception cref="ArgumentException">Thrown when the method string is not recognized.</exception>
+    public static HttpVerb FromMethodString(string method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+            throw new ArgumentException("Method cannot be null or whitespace.", nameof(method));
+
+        // Handle special cases where enum names don't match HTTP method strings
+        var normalizedMethod = method.Trim().ToUpperInvariant() switch
+        {
+            "PROPFIND" => "PropFind",
+            "PROPPATCH" => "PropPatch",
+            "MKCOL" => "MkCol",
+            "VERSION-CONTROL" => "VersionControl",
+            "MKWORKSPACE" => "MkWorkspace",
+            "ORDERPATCH" => "OrderPatch",
+            _ => method.Trim()
+        };
+
+        if (Enum.TryParse<HttpVerb>(normalizedMethod, true, out var result))
+            return result;
+
+        throw new ArgumentException($"Unknown HTTP method: {method}", nameof(method));
+    }
+
+    /// <summary>
+    /// Try to convert a HTTP method string to its corresponding HttpVerb enum value.
+    /// </summary>
+    /// <param name="method">The HTTP method string (case-insensitive).</param>
+    /// <param name="verb">When this method returns, contains the HttpVerb value if conversion succeeded, or default value if it failed.</param>
+    /// <returns>true if the conversion succeeded; otherwise, false.</returns>
+    public static bool TryFromMethodString(string method, out HttpVerb verb)
+    {
+        verb = default;
+        
+        if (string.IsNullOrWhiteSpace(method))
+            return false;
+
+        try
+        {
+            verb = FromMethodString(method);
+            return true;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 }

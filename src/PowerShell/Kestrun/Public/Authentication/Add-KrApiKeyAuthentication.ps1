@@ -12,8 +12,8 @@ function Add-KrApiKeyAuthentication {
         The options to configure the API key authentication.
     .PARAMETER ScriptBlock
         A script block that contains the logic for validating the API key.
-    .PARAMETER CsCode
-        C# code that contains the logic for validating the API key.
+    .PARAMETER Code
+        C# or VBNet code that contains the logic for validating the API key.
     .PARAMETER CodeFilePath
         Path to a file containing C# code that contains the logic for validating the API key.
     .PARAMETER ExpectedKey
@@ -44,7 +44,7 @@ function Add-KrApiKeyAuthentication {
         }
         This example adds API key authentication using a script block to validate the API key.
     .EXAMPLE
-        Add-KrApiKeyAuthentication -Name 'MyApiKey' -CsCode @"
+        Add-KrApiKeyAuthentication -Name 'MyApiKey' -Code @"
             return username == "admin" && password == "password";
         "@
         This example adds API key authentication using C# code to validate the API key.
@@ -71,8 +71,8 @@ function Add-KrApiKeyAuthentication {
         [Parameter(Mandatory = $true, ParameterSetName = 'ItemsScriptBlock')]
         [scriptblock]$ScriptBlock,
 
-        [Parameter(Mandatory = $true, ParameterSetName = 'ItemsCsCode')]
-        [string]$CsCode,
+        [Parameter(Mandatory = $true, ParameterSetName = 'ItemsCode')]
+        [string]$Code,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'ItemsCodeFilePath')]
         [string]$CodeFilePath,
@@ -82,44 +82,44 @@ function Add-KrApiKeyAuthentication {
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [string]$HeaderName,
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [string[]]$AdditionalHeaderNames,
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [switch]$AllowQueryStringFallback,
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [Serilog.ILogger]$Logger,
 
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [switch]$AllowInsecureHttp,
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [switch]$EmitChallengeHeader,
 
         [Parameter(ParameterSetName = 'ItemsCodeFilePath')]
         [Parameter(ParameterSetName = 'ItemsScriptBlock')]
-        [Parameter(ParameterSetName = 'ItemsCsCode')]
+        [Parameter(ParameterSetName = 'ItemsCode')]
         [Parameter(ParameterSetName = 'ItemsExpectedKey')]
         [Kestrun.Authentication.ApiKeyChallengeFormat]$ChallengeHeaderFormat,
  
@@ -129,18 +129,18 @@ function Add-KrApiKeyAuthentication {
     process {
         if ($PSCmdlet.ParameterSetName -ne 'Options') {
             $Options = [Kestrun.Authentication.ApiKeyAuthenticationOptions]::new()
-            $Options.CodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
+            $Options.ValidateCodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
             if (-not [string]::IsNullOrWhiteSpace($ExpectedKey)) {
                 $Options.ExpectedKey = $ExpectedKey
             }
             elseif ($null -ne $ScriptBlock) {
-                $Options.CodeSettings.Code = $ScriptBlock.ToString()
-                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                $Options.ValidateCodeSettings.Code = $ScriptBlock.ToString()
+                $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
 
             }
-            elseif (-not [string]::IsNullOrWhiteSpace($CsCode)) {
-                $Options.CodeSettings.Code = $CsCode
-                $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+            elseif (-not [string]::IsNullOrWhiteSpace($Code)) {
+                $Options.ValidateCodeSettings.Code = $Code
+                $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
             }
             elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
                 if (-not (Test-Path -Path $CodeFilePath)) {
@@ -149,16 +149,19 @@ function Add-KrApiKeyAuthentication {
                 $extension = Split-Path -Path $CodeFilePath -Extension
                 switch ($extension) {
                     ".ps1" {
-                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
+                        $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                     }
                     ".cs" {
-                        $Options.CodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                        $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
+                    }
+                    ".vb" {
+                        $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                     }
                     Default {
-                        throw "Unsupported code file extension. Only .ps1 and .cs files are supported."
+                        throw "Unsupported '$extension' code file extension."
                     }
                 }
-                $Options.CodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
+                $Options.ValidateCodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
             }
 
             if (-not [string]::IsNullOrWhiteSpace($HeaderName)) {
