@@ -67,7 +67,7 @@ Add-BuildTask "Clean" {
     dotnet clean .\Kestrun.sln -c $Configuration -v:detailed
 }
 
-Add-BuildTask "Build" "Clean", {
+Add-BuildTask "Build" {
     Write-Host "Building solution..."
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {

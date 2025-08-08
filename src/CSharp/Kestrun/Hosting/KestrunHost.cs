@@ -693,6 +693,19 @@ public class KestrunHost : IDisposable
         // This initiates a graceful shutdown.
         _app?.Lifetime.StopApplication();
     }
+ 
+    /// <summary>
+    /// Determines whether the Kestrun web application is currently running.
+    /// </summary>
+    /// <returns>True if the application is running; otherwise, false.</returns>
+    public bool IsRunning()
+    {
+        var appField = typeof(KestrunHost)
+            .GetField("_app", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        return appField?.GetValue(this) is WebApplication app && !app.Lifetime.ApplicationStopping.IsCancellationRequested;
+    }
+
 
     #endregion
 
@@ -706,6 +719,7 @@ public class KestrunHost : IDisposable
     /// Creates and returns a new <see cref="KestrunRunspacePoolManager"/> instance with the specified maximum number of runspaces.
     /// </summary>
     /// <param name="maxRunspaces">The maximum number of runspaces to create. If not specified or zero, defaults to twice the processor count.</param>
+    /// <param name="userVariables">A dictionary of user-defined variables to inject into the runspace pool.</param>
     /// <returns>A configured <see cref="KestrunRunspacePoolManager"/> instance.</returns>
     public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0, Dictionary<string, object>? userVariables = null)
     {
