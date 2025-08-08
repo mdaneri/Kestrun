@@ -25,7 +25,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Org.BouncyCastle.Bcpg;
 using Kestrun.Hosting.Options;
-using Kestrun.Claims;          // ISecurityTokenValidator
+using Kestrun.Claims;
+using Microsoft.AspNetCore.Authentication.Cookies;          // ISecurityTokenValidator
 
 
 /*
@@ -125,7 +126,7 @@ AddPolicy("CanDelete", "can_delete", "true").
 AddPolicy("CanRead", "can_read", "true").
 AddPolicy("CanWrite", "can_write", "true").
 //AddPolicy("Admin", System.Security.Claims.ClaimTypes.Role, "admin").
- AddPolicy("Admin",  UserIdentityClaim.Role, "admin").
+ AddPolicy("Admin", UserIdentityClaim.Role, "admin").
 Build();
 
 /// Add compression
@@ -415,24 +416,44 @@ server.AddResponseCompression(options =>
         claimPolicy: claimConfig
     )
 
-   /// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
-   .AddCookieAuthentication(
+/// ── COOKIE AUTHENTICATION – C# CODE ────────────────────────────────────
+/*
+.AddCookieAuthentication(
+    scheme: "Cookies",
+    configure: opts =>
+    {
+        opts.Cookie.Name = "Kestrun.Cookie";
+        opts.Cookie.HttpOnly = true;
+        opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        opts.LoginPath = "/cookies/login";
+        opts.LogoutPath = "/cookies/logout";
+        opts.AccessDeniedPath = "/cookies/access-denied";
+        opts.SlidingExpiration = true;
+        opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        opts.Cookie.SameSite = SameSiteMode.Strict;
+    },
+      claimPolicy: claimConfig
+);*/
+.AddCookieAuthentication(
        scheme: "Cookies",
-       loginPath: "/cookies/login",
-       configure: opts =>
+       configure: new CookieAuthenticationOptions()
        {
-           opts.Cookie.Name = "Kestrun.Cookie";
-           opts.Cookie.HttpOnly = true;
-           opts.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-           opts.LoginPath = "/cookies/login";
-           opts.LogoutPath = "/cookies/logout";
-           opts.AccessDeniedPath = "/cookies/access-denied";
-           opts.SlidingExpiration = true;
-           opts.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-           opts.Cookie.SameSite = SameSiteMode.Strict;
-       }
+           Cookie = new CookieBuilder
+           {
+               Name = "Kestrun.Cookie",
+               HttpOnly = true,
+               SecurePolicy = CookieSecurePolicy.Always,
+               SameSite = SameSiteMode.Strict
+           },
+           LoginPath = "/cookies/login",
+           LogoutPath = "/cookies/logout",
+           AccessDeniedPath = "/cookies/access-denied",
+           SlidingExpiration = true,
+           ExpireTimeSpan = TimeSpan.FromMinutes(60),
+           
+       },
+         claimPolicy: claimConfig
    );
-
 //***************************************************************************************
 //    CERTIFICATE IMPORT/CREATION
 //    ──────────────────────────────────────────
@@ -865,7 +886,7 @@ server.AddMapRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
     }
     else
     {
-        await ctx.Response.WriteJsonResponseAsync(new { success = false });
+        await ctx.Response.WriteJsonResponseAsync(new { success = false }, statusCode: 401);
     }
 });
 

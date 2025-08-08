@@ -222,8 +222,7 @@ Add-KrApiKeyAuthentication -Name $ApiKeyVBNet -AllowInsecureHttp -HeaderName "X-
 "@ -CodeLanguage VBNet
 
 
-
-######TODO: Add more authentication methods like OAuth, OpenID Connect, etc.
+# ── JWT AUTHENTICATION ────────────────────────────────────────────────
 
 $secretB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('my-passphrase'))  # or any base64url
 
@@ -232,21 +231,26 @@ $JwtTokenBuilder = New-KrJWTBuilder |
 Add-KrJWTIssuer    -Issuer   $issuer |
 Add-KrJWTAudience  -Audience $audience |
 #| Set-JwtSubject   -Subject  'admin' `
-Protect-KrJWT -HexadecimalKey $JwtKeyHex -Algorithm HS256 
+Protect-KrJWT -HexadecimalKey $JwtKeyHex -Algorithm HS256
 
 $result = Build-KrJWT -Builder $JwtTokenBuilder
 #$jwt     = Get-JwtToken -Result $result
 $jwtOptions = $result | Get-KrJWTValidationParameter
 
 Add-KrJWTBearerAuthentication -Name $JwtScheme -ValidationParameter $jwtOptions -ClaimPolicy $claimConfig
-<#
-$JwtKeyHex = "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0";
-$jwtKeyBytes = ([Convert]::FromHexString($JwtKeyHex))
-$jwtSecurityKey = [Microsoft.IdentityModel.Tokens.SymmetricSecurityKey]::new($jwtKeyBytes)
-Add-KrJWTBearerAuthentication -Name $JwtScheme  -ValidIssuer $issuer -ValidAudience $audience `
-    -IssuerSigningKey $jwtSecurityKey -ValidAlgorithms @([Microsoft.IdentityModel.Tokens.SecurityAlgorithms]::HmacSha256) `
-    -ClockSkew (New-TimeSpan -Minutes 5) `
-#>
+
+
+$cookie = [Microsoft.AspNetCore.Http.CookieBuilder]::new()
+
+$cookie.Name = "KestrunAuth"
+$cookie.HttpOnly = $true
+$cookie.SecurePolicy = [Microsoft.AspNetCore.Http.CookieSecurePolicy]::Always
+$cookie.SameSite = [Microsoft.AspNetCore.Http.SameSiteMode]::Strict
+
+# ---- Cookies Authentication ----
+Add-KrCookiesAuthentication -Name "Cookies" -LoginPath "/cookies/login" -LogoutPath "/cookies/logout" `
+    -AccessDeniedPath "/cookies/access-denied" -SlidingExpiration -expireTimeSpan (New-TimeSpan -Minutes 60) `
+    -ClaimPolicy $claimConfig -Cookie $cookie
 
 # Enable configuration
 Enable-KrConfiguration
@@ -396,7 +400,7 @@ Add-KrMapRoute -Verbs Get -Path "/secure/jwt/policy" -AuthorizationSchema $JwtSc
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_read' permission." -ContentType "text/plain"
 } -AuthorizationPolicy "CanRead"
 
-Add-KrMapRoute -Verbs Post,Put -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Post, Put -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_write' permission." -ContentType "text/plain"
 } -AuthorizationPolicy "CanWrite"
@@ -450,6 +454,75 @@ Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershe
     } -ContentType "application/json"
 
 } -Arguments @{"JwtTokenBuilder" = $JwtTokenBuilder }
+
+<#
+********************************************
+    Cookie authentication routes
+*********************************************
+#>
+Add-KrMapRoute -Verbs Get -Path "/cookies/login" -ScriptBlock {
+    Write-KrTextResponse -InputObject @"
+       <!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <title>Login</title>
+  </head>
+  <body>
+    <h1>Login</h1>
+    <form method='post' action='/cookies/login'>
+      <label>
+        Username:
+        <input type='text' name='username' required />
+      </label><br/>
+      <label>
+        Password:
+        <input type='password' name='password' required />
+      </label><br/>
+      <button type='submit'>Log In</button>
+    </form>
+  </body>
+</html>
+"@ -ContentType "text/html"
+}
+
+Add-KrMapRoute -Verbs Post -Path "/cookies/login" -ScriptBlock {
+    $form = $Context.Request.Form;
+    if ($null -eq $form) {
+        Write-KrJsonResponse -InputObject @{ success = $false; error = "Form data missing" } -ContentType "application/json"
+        return;
+    }
+    $username = $form["username"];
+    $password = $form["password"];
+
+    if ($username -eq "admin" -and $password -eq "secret") {
+
+        $claims = Add-KrUserClaim -UserClaimType Name -Value $username |
+        Add-KrUserClaim -UserClaimType Role -Value "admin" |
+        Add-KrUserClaim -ClaimType "can_read" -Value "true" 
+
+        $identity = [System.Security.Claims.ClaimsIdentity]::new( $claims, "Cookies")
+        $principal = [System.Security.Claims.ClaimsPrincipal]::new($identity)
+        [Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions]::SignInAsync($Context.HttpContext, "Cookies", $principal).Wait()
+        Write-KrJsonResponse -InputObject @{ success = $true; message = "Login successful" }
+    }
+    else {
+        Write-KrJsonResponse -InputObject @{ success = $false; message = "Invalid credentials." } -StatusCode 401
+    }
+}
+
+
+Add-KrMapRoute -Verbs Get -Path "/cookies/logout" -ScriptBlock {
+
+    [Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions]::SignOutAsync($Context.HttpContext, "Cookies").Wait()
+    Write-KrRedirectResponse -Location "/cookies/login"
+} -AuthorizationSchema "Cookies"
+
+
+Add-KrMapRoute -Verbs Get -Path "/cookies/secure" -ScriptBlock {
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies Authentication." -ContentType "text/plain"
+} -AuthorizationSchema "Cookies"
 
 # Start the server asynchronously
 Start-KrServer -Server $server

@@ -235,17 +235,15 @@ public static class KestrunHostAuthExtensions
     /// <para>Use this for browser-based authentication using cookies.</para>
     /// </summary>
     /// <param name="host">The Kestrun host instance.</param>
-    /// <param name="scheme">The authentication scheme name (default is CookieAuthenticationDefaults.AuthenticationScheme).</param>
-    /// <param name="loginPath">The login path for unauthenticated users (default is "/account/login").</param>
+    /// <param name="scheme">The authentication scheme name (default is CookieAuthenticationDefaults.AuthenticationScheme).</param>    
     /// <param name="configure">Optional configuration for CookieAuthenticationOptions.</param>
-    /// <param name="configureAuthz">Optional authorization policy configuration.</param>
+    /// <param name="claimPolicy">Optional authorization policy configuration.</param>
     /// <returns>The configured KestrunHost instance.</returns>
     public static KestrunHost AddCookieAuthentication(
         this KestrunHost host,
         string scheme = CookieAuthenticationDefaults.AuthenticationScheme,
-        string loginPath = "/account/login",
         Action<CookieAuthenticationOptions>? configure = null,
-        Action<AuthorizationOptions>? configureAuthz = null)
+     ClaimPolicyConfig? claimPolicy = null)
     {
         return host.AddAuthentication(
             defaultScheme: scheme,
@@ -255,13 +253,40 @@ public static class KestrunHostAuthExtensions
                     authenticationScheme: scheme,
                     configureOptions: opts =>
                     {
-                        opts.LoginPath = loginPath;
                         configure?.Invoke(opts);
                     });
             },
-            configureAuthz: configureAuthz
+             configureAuthz: claimPolicy?.ToAuthzDelegate()
         );
     }
+
+
+    /// <summary>
+    /// Adds Cookie Authentication to the Kestrun host using the provided options object.
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="scheme">The authentication scheme name (default is CookieAuthenticationDefaults.AuthenticationScheme).</param>
+    /// <param name="configure">The CookieAuthenticationOptions object to configure the authentication.</param>
+    /// <param name="claimPolicy">Optional authorization policy configuration.</param>
+    /// <returns>The configured KestrunHost instance.</returns>
+        public static KestrunHost AddCookieAuthentication(
+              this KestrunHost host,
+              string scheme = CookieAuthenticationDefaults.AuthenticationScheme,
+              CookieAuthenticationOptions? configure = null,
+           ClaimPolicyConfig? claimPolicy = null)
+        {
+            return host.AddCookieAuthentication(
+                scheme: scheme,
+                configure: opts =>
+                {
+                    opts = configure ?? new CookieAuthenticationOptions();
+    
+                },
+                 claimPolicy: claimPolicy
+            );
+        }
+
+
     /*
         public static KestrunHost AddClientCertificateAuthentication(
             this KestrunHost host,
