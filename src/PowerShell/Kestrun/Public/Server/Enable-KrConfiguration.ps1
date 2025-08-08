@@ -29,14 +29,26 @@ function Enable-KrConfiguration {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
-        $Server.EnableConfiguration() | Out-Null
+
+        $dict = [System.Collections.Generic.Dictionary[string, System.Object]]::new()
+        # Get the user-defined variables
+        $userVars = Get-Variable  -Scope Script
+        $userVars += Get-Variable  -Scope Global
+
+        $userVars | Where-Object { [Kestrun.KestrunHostManager]::VariableBaseline -notcontains $_.Name -and
+            $_.Name -notmatch '^_' } | ForEach-Object {
+            $dict[$_.Name] = $_.Value
+        }
+ 
+        # Set the user-defined variables in the server configuration
+        $Server.EnableConfiguration($dict) | Out-Null
         if (-not $Quiet.IsPresent) {
             Write-Host "Kestrun server configuration enabled successfully."
             Write-Host "Server Name: $($Server.Options.ApplicationName)"
         }
 
-        if ($PassThru.IsPresent) { # if the PassThru switch is specified, return the server instance
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
             # Return the modified server instance
             return $Server
         }

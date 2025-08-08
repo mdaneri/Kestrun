@@ -89,6 +89,8 @@ function Start-KrServer {
                     if (-not $Quiet.IsPresent) {
                         Write-Host "Kestrun server stopped."
                     }
+                    # Clear Kestrun variables
+                    Clear-KsVariable
                 }
             }
         }

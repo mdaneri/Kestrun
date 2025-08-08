@@ -127,6 +127,8 @@ $ApiKeyVBNet = "ApiKeyVBNet"
 $issuer = "KestrunApi"
 $audience = "KestrunClients"
 
+$incremental = [System.Collections.Concurrent.ConcurrentDictionary[string, int]]::New([System.StringComparer]::OrdinalIgnoreCase)
+$incremental['Count'] = 0
 
 # Claim Policies
 $claimConfig = New-KrClaimPolicy |
@@ -563,11 +565,32 @@ Add-KrMapRoute -Verbs Get -Path "/cookies/logout" -ScriptBlock {
 } -AuthorizationSchema $CookieScheme
 
 
+
 Add-KrMapRoute -Verbs Get -Path "/secure/cookies" -ScriptBlock {
     $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies Authentication." -ContentType "text/plain"
 } -AuthorizationSchema $CookieScheme
 
+
+Add-KrMapRoute -Verbs Get -Path "/secure/cookies/map" -ScriptBlock {
+    $incremental['Count'] = $incremental['Count'] + 1
+    @{
+        'BasicPowershellScheme' = $BasicPowershellScheme
+        'BasicCSharpScheme'     = $BasicCSharpScheme
+        'BasicVBNetScheme'      = $BasicVBNetScheme
+        'CookieScheme'          = $CookieScheme
+        'JwtScheme'             = $JwtScheme
+        'ApiKeySimple'          = $ApiKeySimple
+        'ApiKeyPowerShell'      = $ApiKeyPowerShell
+        'ApiKeyCSharp'          = $ApiKeyCSharp
+        'ApiKeyVBNet'           = $ApiKeyVBNet
+        'Issuer'                = $issuer
+        'Audience'              = $audience
+        'ClaimConfig'           = $claimConfig
+        'Incremental'           = $incremental
+    } | Write-KrJsonResponse -ContentType "application/json"
+ 
+} -AuthorizationSchema $CookieScheme
 
 
 Add-KrMapRoute -Verbs Get -Path "secure/cookies/policy" -AuthorizationSchema $CookieScheme -ScriptBlock {

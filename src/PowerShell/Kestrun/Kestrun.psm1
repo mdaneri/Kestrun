@@ -147,4 +147,5 @@ if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
     # Set the Kestrun root path for the host manager
     [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
 }
+[Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
 # Ensure that the Kestrun host manager is destroyed to clean up resources.

@@ -340,7 +340,7 @@ public class KestrunHost : IDisposable
     /// <summary>
     /// Applies the configured options to the Kestrel server and initializes the runspace pool.
     /// </summary>
-    public void EnableConfiguration()
+    public void EnableConfiguration(Dictionary<string, object>? userVariables = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("EnableConfiguration(options) called");
@@ -356,7 +356,7 @@ public class KestrunHost : IDisposable
 
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
-            _runspacePool = CreateRunspacePool(Options.MaxRunspaces);
+            _runspacePool = CreateRunspacePool(Options.MaxRunspaces, userVariables);
             if (_runspacePool == null)
             {
                 throw new InvalidOperationException("Failed to create runspace pool.");
@@ -707,7 +707,7 @@ public class KestrunHost : IDisposable
     /// </summary>
     /// <param name="maxRunspaces">The maximum number of runspaces to create. If not specified or zero, defaults to twice the processor count.</param>
     /// <returns>A configured <see cref="KestrunRunspacePoolManager"/> instance.</returns>
-    public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0)
+    public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0, Dictionary<string, object>? userVariables = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
             _Logger.Debug("CreateRunspacePool() called: {@MaxRunspaces}", maxRunspaces);
@@ -739,6 +739,30 @@ public class KestrunHost : IDisposable
                     "Global variable"
                 )
             );
+        }
+
+        foreach (var kvp in userVariables ?? [])
+        {
+            if (kvp.Value is PSVariable psVar)
+            {
+                iss.Variables.Add(
+                    new SessionStateVariableEntry(
+                        kvp.Key,
+                        psVar.Value,
+                        psVar.Description ?? "User-defined variable"
+                    )
+                );
+            }
+            else
+            {
+                iss.Variables.Add(
+                    new SessionStateVariableEntry(
+                        kvp.Key,
+                        kvp.Value,
+                        "User-defined variable"
+                    )
+                );
+            }
         }
         int maxRs = (maxRunspaces.HasValue && maxRunspaces.Value > 0) ? maxRunspaces.Value : Environment.ProcessorCount * 2;
 

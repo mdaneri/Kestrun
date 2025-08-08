@@ -9,7 +9,7 @@
 #>
 function Write-KrJsonResponse {
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [object]$InputObject,
 
         [Parameter()]
@@ -25,11 +25,12 @@ function Write-KrJsonResponse {
         [Parameter()]
         [string]$ContentType
     )
-    if ($null -ne $Context.Response) {
-        $ContentType = [string]::IsNullOrEmpty($ContentType) ? "application/json" : $ContentType;
-        $Context.Response.WriteTextResponse((ConvertTo-Json -InputObject $InputObject -Depth $Depth -Compress:$Compress), $StatusCode, $ContentType)
+    process {
+        if ($null -ne $Context.Response) {
+            $ContentType = [string]::IsNullOrEmpty($ContentType) ? "application/json" : $ContentType;
+            $Context.Response.WriteTextResponse((ConvertTo-Json -InputObject $InputObject -Depth $Depth -Compress:$Compress), $StatusCode, $ContentType)
 
-        <# To use the C# method directly, uncomment the following lines:
+            <# To use the C# method directly, uncomment the following lines:
         # Create a new JsonSerializerSettings object with the specified options
         $serializerSettings = [Newtonsoft.Json.JsonSerializerSettings]::new()
         $serializerSettings.Formatting = if ($Compress) { [Newtonsoft.Json.Formatting]::None } else { [Newtonsoft.Json.Formatting]::Indented }
@@ -41,5 +42,6 @@ function Write-KrJsonResponse {
         $serializerSettings.DateFormatHandling = [Newtonsoft.Json.DateFormatHandling]::IsoDateFormat
         # Call the C# method on the $Context.Response object
         $Context.Response.WriteJsonResponse($InputObject, $serializerSettings, $StatusCode, $ContentType)#>
+        }
     }
 }

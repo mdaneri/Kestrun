@@ -1,4 +1,4 @@
-using System.Collections.Concurrent; 
+using System.Collections.Concurrent;
 using Kestrun.Hosting;
 using Serilog;
 using Serilog.Events;
@@ -19,24 +19,28 @@ public static class KestrunHostManager
     public static IReadOnlyCollection<string> InstanceNames => (IReadOnlyCollection<string>)_instances.Keys;
 
 
+    /// <summary>
+    /// Gets or sets the baseline variables for Kestrun operations.
+    /// </summary>
+    public static object[]? VariableBaseline { get; set; }
     private static string? _kestrunRoot;
     /// <summary>
     /// Gets or sets the root path for Kestrun operations.
     /// </summary>
-        public static string? KestrunRoot
+    public static string? KestrunRoot
+    {
+        get => _kestrunRoot;
+        set
         {
-            get => _kestrunRoot;
-            set
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Kestrun root path cannot be null or empty.", nameof(value));
+            if (Directory.GetCurrentDirectory() != value)
             {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Kestrun root path cannot be null or empty.", nameof(value));
-                if (Directory.GetCurrentDirectory() != value)
-                {
-                    Directory.SetCurrentDirectory(value);
-                }
-                _kestrunRoot = value;
+                Directory.SetCurrentDirectory(value);
             }
+            _kestrunRoot = value;
         }
+    }
 
 
     /// <summary>
