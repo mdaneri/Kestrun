@@ -180,7 +180,8 @@ internal static class CSharpDelegateBuilder
             .Distinct()
             .ToArray();
         // Convert to MetadataReference for each namespace
-        string[] platformImports = ["System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http"];
+        string[] platformImports = ["System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http",
+            "System.Collections.Generic", "System.Security.Claims"];
         // Convert to MetadataReference for each namespace
         var allImports = platformImports.Concat(kestrunNamespaces);
         if (allImports is null)

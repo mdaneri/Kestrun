@@ -31,44 +31,51 @@ using Microsoft.AspNetCore.Authentication.Cookies;          // ISecurityTokenVal
 
 /*
 $creds   = "admin:password"
-$basic   = "Basic " + [Convert]::ToBase64String(
-                       [Text.Encoding]::ASCII.GetBytes($creds))
+$basic   = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($creds))
 
-Invoke-RestMethod https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/ps/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/cs/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/vb/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/native/hello -SkipCertificateCheck -Headers @{Authorization=$basic}
 
-Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/ps/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/ps/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/ps/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/ps/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/ps/policy -Method PUT -SkipCertificateCheck -Headers @{Authorization=$basic}
 
-Invoke-RestMethod https://localhost:5001/secure/native/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/native/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/native/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/native/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/native/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/native/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/native/policy -Method PUT -SkipCertificateCheck -Headers @{Authorization=$basic}
 
-Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
-Invoke-RestMethod https://localhost:5001/secure/vb/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/vb/policy -Method GET -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/vb/policy -Method DELETE -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/vb/policy -Method POST -SkipCertificateCheck -Headers @{Authorization=$basic}
+Invoke-RestMethod -Uri https://localhost:5001/secure/vb/policy -Method PUT -SkipCertificateCheck -Headers @{Authorization=$basic}
 
-Invoke-RestMethod https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-Invoke-RestMethod https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-Invoke-RestMethod https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
-Invoke-RestMethod https://localhost:5001/secure/key/vb/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/key/simple/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/key/ps/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/key/cs/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/key/vb/hello -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
 
 
-$token = (Invoke-RestMethod https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
-Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+$token = (Invoke-RestMethod -Uri https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $basic }).access_token
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method GET -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method DELETE -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-Invoke-RestMethod https://localhost:5001/secure/jwt/policy -Method POST -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/policy -Method GET -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/policy -Method DELETE -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/policy -Method POST -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/policy -Method PUT -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
 
-$token2 = (Invoke-RestMethod https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
-Invoke-RestMethod https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" } 
+$token2 = (Invoke-RestMethod -Uri https://localhost:5001/token/renew -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" } 
 #Form
 Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
-Invoke-WebRequest -Uri https://localhost:5001/cookies/secure -SkipCertificateCheck -WebSession $authSession 
+Invoke-WebRequest -Uri https://localhost:5001/secure/cookies -SkipCertificateCheck -WebSession $authSession 
+Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method GET -SkipCertificateCheck -WebSession $authSession
+Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method DELETE -SkipCertificateCheck -WebSession $authSession
+Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method POST -SkipCertificateCheck -WebSession $authSession
+Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method PUT -SkipCertificateCheck -WebSession $authSession
 */
 
 var currentDir = Directory.GetCurrentDirectory();
@@ -95,11 +102,13 @@ const string BasicPowershellScheme = "PowershellBasic";
 const string BasicNativeScheme = "NativeBasic";
 const string BasicCSharpScheme = "CSharpBasic";
 const string BasicVBNetScheme = "VBNetBasic";
+const string CookieScheme = "Cookie";
 const string JwtScheme = "Bearer";
 const string ApiKeySimple = "ApiKeySimple";
 const string ApiKeyPowerShell = "ApiKeyPowerShell";
 const string ApiKeyCSharp = "ApiKeyCSharp";
 const string ApiKeyVBNet = "ApiKeyVBNet";
+
 string issuer = "KestrunApi";
 string audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
@@ -125,8 +134,8 @@ var claimConfig = new ClaimPolicyBuilder().
 AddPolicy("CanDelete", "can_delete", "true").
 AddPolicy("CanRead", "can_read", "true").
 AddPolicy("CanWrite", "can_write", "true").
-//AddPolicy("Admin", System.Security.Claims.ClaimTypes.Role, "admin").
- AddPolicy("Admin", UserIdentityClaim.Role, "admin").
+AddPolicy("CanCreate", "can_create", "true").
+AddPolicy("Admin", UserIdentityClaim.Role, "admin").
 Build();
 
 /// Add compression
@@ -182,7 +191,8 @@ server.AddResponseCompression(options =>
                     return  (Add-KrUserClaim -UserClaimType Role -Value "admin" |
                         Add-KrUserClaim -ClaimType "can_read" -Value "true" |
                         Add-KrUserClaim -ClaimType "can_write" -Value "true" |
-                        Add-KrUserClaim -ClaimType "can_delete" -Value "false")
+                        Add-KrUserClaim -ClaimType "can_delete" -Value "false"|
+                        Add-KrUserClaim -ClaimType "can_create" -Value "true")
                 }
                 else {
                     return [System.Security.Claims.Claim[]]@()
@@ -264,8 +274,8 @@ server.AddResponseCompression(options =>
                // ← return the claims you want to add
                return
                [
-                   new System.Security.Claims.Claim("can_read", "true"),        // custom claim
-                   new System.Security.Claims.Claim("can_delete", "true")     
+                   new Claim("can_read", "true"),        // custom claim
+                   new Claim("can_delete", "true")     
                    // or, if you really want it as a role:
                    // new Claim(ClaimTypes.Role, "can_read")
                ];
@@ -310,16 +320,18 @@ server.AddResponseCompression(options =>
        /// or an empty array if no claims are issued.
        opts.IssueClaimsCodeSettings = new AuthenticationCodeSettings
        {
+        //   ExtraImports = new[] { "System.Collections.Generic", "System.Linq" },
            Language = ScriptLanguage.VBNet,
            Code = """
                If Identity = "admin" Then          ' (VB is case-insensitive, but keep it consistent)
-                    Return New System.Security.Claims.Claim() {
-                        New System.Security.Claims.Claim("can_write", "true")
+                    Return New List(Of Claim) From {
+                        New Claim("can_write", "true"),
+                        New Claim("can_create", "true")
                     }
                 End If
 
                 ' everyone else gets no extra claims
-                Return Nothing
+                Return Enumerable.Empty(Of Claim)()
            """
        };
        opts.ClaimPolicyConfig = claimConfig;
@@ -435,7 +447,7 @@ server.AddResponseCompression(options =>
       claimPolicy: claimConfig
 );*/
 .AddCookieAuthentication(
-       scheme: "Cookies",
+       scheme: CookieScheme,
        configure: new CookieAuthenticationOptions()
        {
            Cookie = new CookieBuilder
@@ -450,7 +462,7 @@ server.AddResponseCompression(options =>
            AccessDeniedPath = "/cookies/access-denied",
            SlidingExpiration = true,
            ExpireTimeSpan = TimeSpan.FromMinutes(60),
-           
+
        },
          claimPolicy: claimConfig
    );
@@ -578,7 +590,7 @@ server.AddMapRoute(new()
 server.AddMapRoute(new()
 {
     Pattern = "/secure/ps/policy",
-    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    HttpVerbs = [HttpVerb.Put],
     Code = """ 
 
            $user = $Context.User.Identity.Name
@@ -586,6 +598,19 @@ server.AddMapRoute(new()
        """,
     Language = ScriptLanguage.PowerShell,
     RequirePolicies = ["CanWrite"],
+    RequireSchemes = [BasicPowershellScheme]
+});
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/ps/policy",
+    HttpVerbs = [HttpVerb.Post],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanCreate"],
     RequireSchemes = [BasicPowershellScheme]
 });
 
@@ -635,7 +660,7 @@ server.AddMapRoute(new()
 server.AddMapRoute(new()
 {
     Pattern = "/secure/vb/policy",
-    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    HttpVerbs = [HttpVerb.Put],
     Code = """ 
 
            $user = $Context.User.Identity.Name
@@ -643,6 +668,20 @@ server.AddMapRoute(new()
        """,
     Language = ScriptLanguage.PowerShell,
     RequirePolicies = ["CanWrite"],
+    RequireSchemes = [BasicVBNetScheme]
+});
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/vb/policy",
+    HttpVerbs = [HttpVerb.Post],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET code because you have the 'can_create' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanCreate"],
     RequireSchemes = [BasicVBNetScheme]
 });
 
@@ -689,7 +728,7 @@ server.AddMapRoute(new()
 server.AddMapRoute(new()
 {
     Pattern = "/secure/native/policy",
-    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    HttpVerbs = [HttpVerb.Put],
     Code = """ 
 
            $user = $Context.User.Identity.Name
@@ -697,6 +736,20 @@ server.AddMapRoute(new()
        """,
     Language = ScriptLanguage.PowerShell,
     RequirePolicies = ["CanWrite"],
+    RequireSchemes = [BasicNativeScheme]
+});
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/native/policy",
+    HttpVerbs = [HttpVerb.Post],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native C# code because you have the 'can_create' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanCreate"],
     RequireSchemes = [BasicNativeScheme]
 });
 
@@ -794,7 +847,7 @@ server.AddMapRoute(new()
 server.AddMapRoute(new()
 {
     Pattern = "/secure/jwt/policy",
-    HttpVerbs = [HttpVerb.Post, HttpVerb.Put],
+    HttpVerbs = [HttpVerb.Put],
     Code = """ 
 
            $user = $Context.User.Identity.Name
@@ -805,6 +858,19 @@ server.AddMapRoute(new()
     RequireSchemes = [JwtScheme]
 });
 
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/jwt/policy",
+    HttpVerbs = [HttpVerb.Post],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_create' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanCreate"],
+    RequireSchemes = [JwtScheme]
+});
 
 server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
@@ -877,11 +943,15 @@ server.AddMapRoute("/cookies/login", HttpVerb.Post, async (ctx) =>
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, username)
+            new(ClaimTypes.Name, username),
+            new(ClaimTypes.Role, "admin"),
+            new("can_read", "true"),
+            new("can_write", "true"),
+            new("can_create", "true")
         };
-        var identity = new ClaimsIdentity(claims, "Cookies");
+        var identity = new ClaimsIdentity(claims, CookieScheme);
         var principal = new ClaimsPrincipal(identity);
-        await ctx.HttpContext.SignInAsync("Cookies", principal);
+        await ctx.HttpContext.SignInAsync(CookieScheme, principal);
         await ctx.Response.WriteJsonResponseAsync(new { success = true });
     }
     else
@@ -896,8 +966,8 @@ server.AddMapRoute("/cookies/logout", HttpVerb.Get, async ctx =>
     // After logout, send them back to login
     ctx.Response.StatusCode = 302;
     ctx.Response.Headers["Location"] = "/cookies/login";
-}, ["Cookies"]);
-
+}, [CookieScheme]);
+/*
 server.AddMapRoute("/cookies/login2", HttpVerb.Post, """
     write-host 'Processing login request...'
     # Check if the form contains the expected fields
@@ -917,16 +987,16 @@ server.AddMapRoute("/cookies/login2", HttpVerb.Post, """
     }
 """, ScriptLanguage.PowerShell);
 
-server.AddMapRoute("/cookies/secure2", HttpVerb.Get, """
+server.AddMapRoute("/secure/cookies2", HttpVerb.Get, """
     # Check if the user is authenticated
     if (!$Context.User.Identity.IsAuthenticated) {
         Write-KrRedirectResponse -Location '/cookies/login'
     } else {
         Write-KrTextResponse -InputObject ('Hello, '+$Context.User.Identity.Name) -ContentType 'text/plain'
     }
-  """, ScriptLanguage.PowerShell, ["Cookies"]);
+  """, ScriptLanguage.PowerShell, [CookieScheme]);
 
-server.AddMapRoute("/cookies/secure3", HttpVerb.Get, """
+server.AddMapRoute("/secure/cookies3", HttpVerb.Get, """
    if (Context.User?.Identity == null || !Context.User.Identity.IsAuthenticated)
     {
         Context.Response.WriteRedirectResponse("/cookies/login");
@@ -935,10 +1005,10 @@ server.AddMapRoute("/cookies/secure3", HttpVerb.Get, """
     {
        await Context.Response.WriteTextResponseAsync($"Hello, {Context.User.Identity.Name}");
     }
-""", ScriptLanguage.CSharp, ["Cookies"]);
+""", ScriptLanguage.CSharp, [CookieScheme]);
+*/
 
-
-server.AddMapRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
+server.AddMapRoute("/secure/cookies", HttpVerb.Get, async (ctx) =>
 {
     if (ctx.User?.Identity == null || !ctx.User.Identity.IsAuthenticated)
     {
@@ -948,7 +1018,66 @@ server.AddMapRoute("/cookies/secure", HttpVerb.Get, async (ctx) =>
     {
         await ctx.Response.WriteTextResponseAsync($"Hello, {ctx.User.Identity.Name}");
     }
-}, ["Cookies"]);
+}, [CookieScheme]);
+
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/cookies/policy",
+    HttpVerbs = [HttpVerb.Get],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookie checker because you have the 'can_read' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanRead"],
+    RequireSchemes = [CookieScheme]
+});
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/cookies/policy",
+    HttpVerbs = [HttpVerb.Delete],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookie checker because you have the 'can_delete' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanDelete"],
+    RequireSchemes = [CookieScheme]
+});
+
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/cookies/policy",
+    HttpVerbs = [HttpVerb.Put],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookie checker because you have the 'can_write' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanWrite"],
+    RequireSchemes = [CookieScheme]
+});
+
+server.AddMapRoute(new()
+{
+    Pattern = "/secure/cookies/policy",
+    HttpVerbs = [HttpVerb.Post],
+    Code = """ 
+
+           $user = $Context.User.Identity.Name
+           Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookie checker because you have the 'can_create' permission." -ContentType "text/plain"
+       """,
+    Language = ScriptLanguage.PowerShell,
+    RequirePolicies = ["CanCreate"],
+    RequireSchemes = [CookieScheme]
+});
+
 
 
 //***************************************************************************************

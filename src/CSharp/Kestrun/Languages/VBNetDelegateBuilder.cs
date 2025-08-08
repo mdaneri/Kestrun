@@ -164,7 +164,8 @@ internal static class VBNetDelegateBuilder
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
-
+        extraImports ??= [];
+        extraImports = extraImports.Concat(["System.Collections.Generic", "System.Linq", "System.Security.Claims"]).ToArray();
 
         // 🔧 1.  Build a real VB file around the user snippet
         string source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
@@ -188,9 +189,14 @@ internal static class VBNetDelegateBuilder
                      .Select(a => MetadataReference.CreateFromFile(a.Location))
                      .Concat(extraRefs?.Select(r => MetadataReference.CreateFromFile(r.Location))
                              ?? Enumerable.Empty<MetadataReference>())
-                              .Append(             // ⬅ add VB runtime explicitly
-                 MetadataReference.CreateFromFile(
-                     typeof(Microsoft.VisualBasic.Constants).Assembly.Location));
+                                .Append(MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location))
+                                .Append(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))            // System.Private.CoreLib
+                                .Append(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location))        // System.Linq
+                                .Append(MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location))       // Microsoft.AspNetCore.Http
+                                .Append(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))          // System.Console
+                                .Append(MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location))       // Serilog
+                                .Append(MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location))    // System.Security.Claims
+                                ;
 
         // 🔧 3.  Normal DLL compilation
         var compilation = VisualBasicCompilation.Create(
@@ -285,6 +291,7 @@ internal static class VBNetDelegateBuilder
         sb.AppendLine($"""
                 Public Module RouteScript
                     Public Async Function Run(g As CsGlobals) As Task(Of {vbReturnType})
+                        Await Task.Yield() ' placeholder await
                         Dim Request  = g.Context?.Request
                         Dim Response = g.Context?.Response
                         Dim Context  = g.Context
