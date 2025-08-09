@@ -30,13 +30,13 @@ $funcsExport = ($funcs | ForEach-Object -Begin { $i = 0 } -Process {
     [PSCustomObject]@{ Index = [math]::Floor($i++ / 3); Name = $_ }
 } | Group-Object Index | ForEach-Object {
     ($_.Group | ForEach-Object { $_.Name }) -join "','"
-}) -join "'`n`t`t'"
+}) -join "',`n`t`t'"
 
 $aliasesExport = ($aliases | ForEach-Object -Begin { $i = 0 } -Process {
     [PSCustomObject]@{ Index = [math]::Floor($i++ / 3); Name = $_ }
 } | Group-Object Index | ForEach-Object {
     ($_.Group | ForEach-Object { $_.Name }) -join "','"
-}) -join "'`n`t`t'"
+}) -join "',`n`t`t'"
 
 
 

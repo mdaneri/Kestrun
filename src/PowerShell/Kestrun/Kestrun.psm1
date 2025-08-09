@@ -116,15 +116,15 @@ function Add-CodeAnalysisType {
     )
     $codeAnalysisassemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Microsoft.CodeAnalysis", $Version
 
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Workspaces.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.Scripting.dll" -Verbose:$Verbose
-    #Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Razor.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.VisualBasic.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.Workspaces.dll" -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Scripting.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Workspaces.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.Scripting.dll") -Verbose:$Verbose
+    #Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Razor.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.VisualBasic.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.Workspaces.dll") -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Scripting.dll") -Verbose:$Verbose
 }
 
 
