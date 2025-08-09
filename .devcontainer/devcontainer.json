@@ -1,10 +1,11 @@
 {
-    "name": "Codespace with PowerShell, Pester, and .NET 8",
+    "name": "Codespace with PowerShell, Pester, and .NET 8 & 9",
     "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
     "features": {
         "ghcr.io/devcontainers/features/powershell:1": {},
-        "ghcr.io/devcontainers/features/dotnet:1": {
-            "version": "8.0"
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "9.0",
+            "additionalVersions": "8.0"
         },
         "ghcr.io/devcontainers/features/node:1": {
             "version": "lts"
@@ -14,7 +15,9 @@
         "vscode": {
             "extensions": [
                 "ms-vscode.powershell",
-                "pspester.pester-test"
+                "pspester.pester-test",
+                "ms-dotnettools.csdevkit",
+                "davidanson.vscode-markdownlint"  // Markdownlint extension
             ],
             "settings": {
                 "terminal.integrated.defaultProfile.linux": "pwsh",
@@ -23,5 +26,5 @@
             }
         }
     },
-    "postCreateCommand": "pwsh -Command \"Install-Module Pester -Force -Scope CurrentUser\""
+    "postCreateCommand": "pwsh -Command \"Install-Module Pester,InvokeBuild -Force -Scope CurrentUser\""
 }

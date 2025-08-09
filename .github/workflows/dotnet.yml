@@ -28,7 +28,20 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Try both runners; ubuntu-24.04 vs 22.04 can matter for native deps/resolution
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+
+    env:
+      # Super verbose host/loader tracing (turn off when green)
+      COREHOST_TRACE: 1
+      COREHOST_TRACE_VERBOSITY: 3
+      DOTNET_HOST_TRACE: 1
+      DOTNET_HOST_TRACE_VERBOSITY: 3
+      # Keep PowerShell clean; no surprises from profiles
+      POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
 
     steps:
     - name: 🛎️ Checkout
@@ -47,29 +60,84 @@ jobs:
     - name: 🧰 Install Module Invoke-Build
       shell: pwsh
       run: |
-        if (-not (Get-Module -ListAvailable -Name InvokeBuild)) {
-          Install-Module -Name InvokeBuild -Force -Scope CurrentUser
-        }
+        $ErrorActionPreference = 'Stop'
+        Install-Module InvokeBuild -Force -Scope CurrentUser
 
-    - name: 🧰 Install Module Pester
+    - name: 🧰 Install Module Pester (pin for determinism)
       shell: pwsh
       run: |
-        if (-not (Get-Module -ListAvailable -Name Pester)) {
-          Install-Module -Name Pester -Force -Scope CurrentUser
-        }
+        $ErrorActionPreference = 'Stop'
+        # Pin a version you know works; adjust if needed
+        Install-Module Pester -Force -Scope CurrentUser -RequiredVersion 5.6.1
+        Get-Module Pester -ListAvailable | Select Name,Version,Path
 
-    - name: 🧾 Log Pester Version
+    - name: 🔎 Print runtime context
       shell: pwsh
       run: |
-        Get-Module Pester -ListAvailable | Select-Object Name, Version, Path
+        $PSVersionTable
+        dotnet --info
+        [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+        [System.Environment]::Version
+
+    - name: 📦 Restore (and list transitive Roslyn versions)
+      shell: pwsh
+      run: |
+        dotnet restore
+        # Show exactly which Roslyn packages/versions are in play
+        dotnet list . package --include-transitive | Select-String -SimpleMatch "Microsoft.CodeAnalysis"
+
+    - name: 📂 List Roslyn candidates in repo
+      shell: pwsh
+      run: |
+        Get-ChildItem -Recurse -File -Include Microsoft.CodeAnalysis*.dll,System.Collections.Immutable*.dll,System.Reflection.Metadata*.dll |
+          Sort-Object FullName |
+          Select-Object FullName, Length |
+          Format-Table -Auto
 
     - name: 🔧 Run C# Build
       shell: pwsh
       run: |
+        $ErrorActionPreference = 'Stop'
         Invoke-Build Build
+
+    - name: 🧪 Mini Roslyn sanity check (before Pester)
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        # Import your module exactly like tests do
+        Import-Module ./src/PowerShell/Kestrun/Kestrun.psd1 -Force
+        # Dump which *CodeAnalysis* assemblies are loaded and from where
+        [AppDomain]::CurrentDomain.GetAssemblies() |
+          Where-Object { $_.GetName().Name -like 'Microsoft.CodeAnalysis*' -or $_.GetName().Name -in 'System.Collections.Immutable','System.Reflection.Metadata' } |
+          Select FullName, Location | Format-Table -Auto
+
+        # Optional: touch the same code path your tests touch
+        # e.g. a tiny compile to force Roslyn load:
+        if ([type]::GetType('Kestrun.Scripting.CSharpDelegateBuilder')) {
+          [Kestrun.Scripting.CSharpDelegateBuilder]::Compile('int x=1;')
+        }
 
     - name: 🧪 Run Tests
       shell: pwsh
       run: |
-        Invoke-Build Test
-    
+        $ErrorActionPreference = 'Stop'
+        # No profiles; fewer surprises
+        pwsh -NoLogo -NoProfile -Command 'Invoke-Build Test'
+
+    - name: 📤 Upload diagnostics on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: diagnostics-${{ matrix.os }}
+        path: |
+          **/TestResults/**
+          **/bin/**
+          **/obj/project.assets.json
+          src/PowerShell/Kestrun/**/*
+          ./*.log
+
+    - name: 🧑‍💻 Live SSH (only if failed)
+      if: failure()
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
