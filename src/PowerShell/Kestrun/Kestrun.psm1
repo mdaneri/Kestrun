@@ -43,7 +43,13 @@ function Add-AspNetCoreType {
     )
     $versionNumber = $Version -replace 'net(\d+).*', '$1'
     $dotnetPath = (Get-Command -Name "dotnet" -ErrorAction Stop).Source
-    $dotnetDir = Split-Path -Path $dotnetPath -Parent
+    $realDotnetPath = (Get-Item $dotnetPath).Target
+    if (-not $realDotnetPath) { $realDotnetPath = $dotnetPath }elseif ($realDotnetPath -notmatch '^/') {
+        # If the target is a relative path, resolve it from the parent of $dotnetPath
+        $realDotnetPath = Join-Path -Path (Split-Path -Parent $dotnetPath) -ChildPath $realDotnetPath
+        $realDotnetPath = [System.IO.Path]::GetFullPath($realDotnetPath)
+    }
+    $dotnetDir = Split-Path -Path $realDotnetPath -Parent
     if (-not $dotnetDir) {
         throw "Could not determine the path to the dotnet executable."
     }

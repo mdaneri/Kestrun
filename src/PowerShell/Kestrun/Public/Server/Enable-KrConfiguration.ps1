@@ -39,7 +39,7 @@ function Enable-KrConfiguration {
             $_.Name -notmatch '^_' } | ForEach-Object {
             $dict[$_.Name] = $_.Value
         }
- 
+
         # Set the user-defined variables in the server configuration
         $Server.EnableConfiguration($dict) | Out-Null
         if (-not $Quiet.IsPresent) {

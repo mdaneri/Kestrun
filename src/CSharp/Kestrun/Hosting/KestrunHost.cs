@@ -58,6 +58,8 @@ using Kestrun.Scripting;
 using Kestrun.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Kestrun.Hosting.Options;
+using System.Runtime.InteropServices;
+using Microsoft.PowerShell;
 /*#if NET8_0_OR_GREATER
 [assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
 #endif
@@ -693,7 +695,7 @@ public class KestrunHost : IDisposable
         // This initiates a graceful shutdown.
         _app?.Lifetime.StopApplication();
     }
- 
+
     /// <summary>
     /// Determines whether the Kestrun web application is currently running.
     /// </summary>
@@ -728,8 +730,11 @@ public class KestrunHost : IDisposable
 
         // Create a default InitialSessionState with an unrestricted policy:
         var iss = InitialSessionState.CreateDefault();
-
-        iss.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Unrestricted;
+        
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            iss.ExecutionPolicy = ExecutionPolicy.Unrestricted;
+        }
 
         foreach (var p in _modulePaths)
         {
