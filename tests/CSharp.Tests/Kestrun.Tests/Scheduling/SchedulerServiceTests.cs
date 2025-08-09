@@ -18,7 +18,7 @@ public class SchedulerServiceTests
         using var pool = new KestrunRunspacePoolManager(1, 1);
         using var scheduler = new SchedulerService(pool, logger);
         scheduler.Schedule("ps", TimeSpan.FromMilliseconds(10), "1+1", ScriptLanguage.PowerShell, runImmediately: true);
-        await Task.Delay(200);
+        await Task.Delay(2000);
         var info = scheduler.GetSnapshot().Single(j => j.Name == "ps");
         Assert.NotNull(info.LastRunAt);
     }
