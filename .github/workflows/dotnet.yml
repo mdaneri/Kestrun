@@ -47,9 +47,15 @@ jobs:
     env:
       POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
 
+    
     steps:
     - name: 🛎️ Checkout
       uses: actions/checkout@v4
+
+    - name: 🧰 Install PowerShell
+      uses: PSModule/install-powershell@v1
+      with:
+        Version: 7.5.0
 
     - name: 🧰 Setup .NET 8
       uses: actions/setup-dotnet@v4
@@ -78,9 +84,13 @@ jobs:
           echo "DOTNET_HOST_TRACE=1"
           echo "DOTNET_HOST_TRACE_VERBOSITY=3"
         } >> "$GITHUB_ENV"
+    
+    - name: 🔧 Echo debug flag
+      run: echo "debug=${{ inputs.debug }}  event=${{ github.event_name }}"
+      if: ${{ always() && github.event_name != '' }}
 
     # 🔊 decide verbosity once, early
-    - name: Set build verbosity
+    - name: 🔊 Set build verbosity
       shell: bash
       run: |
         if [[ "${{ inputs.debug }}" == "true" ]]; then
@@ -188,7 +198,7 @@ jobs:
 
     # 🔐 Only open an interactive shell when YOU asked for debug and it failed
     - name: 🧑‍💻 Live SSH (only if failed and debug enabled)
-      if: ${{ failure() && inputs.debug }}
+      if: ${{ failure() && fromJSON(inputs.debug || 'false') }}
       uses: mxschmitt/action-tmate@v3
       with:
         limit-access-to-actor: true
