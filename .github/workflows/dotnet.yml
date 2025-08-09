@@ -25,24 +25,26 @@ on:
       - '**/*.yml'
       - '**/*.yaml'
       - tests/**
+  workflow_dispatch:
+    inputs:
+      debug:
+        type: boolean
+        default: false
+        description: Enable debug logging
 
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
 
-    # 👇 ensure every step runs from repo root unless overridden
     defaults:
       run:
         working-directory: ${{ github.workspace }}
 
     env:
-      COREHOST_TRACE: 1
-      COREHOST_TRACE_VERBOSITY: 3
-      DOTNET_HOST_TRACE: 1
-      DOTNET_HOST_TRACE_VERBOSITY: 3
       POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
 
     steps:
@@ -62,6 +64,20 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
+
+    # 🔊 Only enable super-verbose logs in debug runs
+    - name: 🔧 Enable debug flags
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      shell: bash
+      run: |
+        {
+          echo "ACTIONS_STEP_DEBUG=true"
+          echo "ACTIONS_RUNNER_DEBUG=true"
+          echo "COREHOST_TRACE=1"
+          echo "COREHOST_TRACE_VERBOSITY=3"
+          echo "DOTNET_HOST_TRACE=1"
+          echo "DOTNET_HOST_TRACE_VERBOSITY=3"
+        } >> "$GITHUB_ENV"
 
     - name: 🧰 Install Module Invoke-Build
       shell: pwsh
@@ -84,19 +100,24 @@ jobs:
         [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
         [System.Environment]::Version
 
-    # ✅ restore BEFORE any 'dotnet list'
     - name: 📦 Restore solution
       shell: pwsh
-      run: |
-        dotnet restore ./Kestrun.sln
+      run: dotnet restore ./Kestrun.sln
 
+    # 🐛 Debug-only; non-fatal if it exits 1
     - name: 🔎 List Roslyn packages (transitive)
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      continue-on-error: true
       shell: pwsh
       run: |
-        dotnet list ./Kestrun.sln package --include-transitive |
+        dotnet list ./Kestrun.sln package --include-transitive --verbosity normal |
           Select-String -SimpleMatch "Microsoft.CodeAnalysis"
+        Write-Host "Exit code was $LASTEXITCODE (ignored in debug)"
 
+    # 🐛 Debug-only; non-fatal inventory
     - name: 📂 List Roslyn candidates in repo
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      continue-on-error: true
       shell: pwsh
       run: |
         Get-ChildItem -Recurse -File -Include Microsoft.CodeAnalysis*.dll,System.Collections.Immutable*.dll,System.Reflection.Metadata*.dll |
@@ -104,22 +125,34 @@ jobs:
           Select-Object FullName, Length |
           Format-Table -Auto
 
-    - name: 🔧 Run C# Build
+    - name: 🔧 Run C# Build (normal)
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
         Invoke-Build Build
 
-    - name: 🧪 Mini Roslyn sanity check (before Pester)
+    # 🐛 Optional deep-dive build with binlog in debug (non-fatal)
+    - name: 🧰 Debug build with binlog
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      continue-on-error: true
       shell: pwsh
       run: |
-        $ErrorActionPreference = 'Stop'
+        dotnet build ./Kestrun.sln -c Debug -bl:msbuild.binlog || $true
+
+    # 🐛 Debug-only; force Roslyn load (non-fatal)
+    - name: 🧪 Mini Roslyn sanity check (before Pester)
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
         Import-Module ./src/PowerShell/Kestrun/Kestrun.psd1 -Force
         [AppDomain]::CurrentDomain.GetAssemblies() |
           Where-Object { $_.GetName().Name -like 'Microsoft.CodeAnalysis*' -or $_.GetName().Name -in 'System.Collections.Immutable','System.Reflection.Metadata' } |
           Select FullName, Location | Format-Table -Auto
+
         if ([type]::GetType('Kestrun.Scripting.CSharpDelegateBuilder')) {
-          [Kestrun.Scripting.CSharpDelegateBuilder]::Compile('int x=1;')
+          try { [Kestrun.Scripting.CSharpDelegateBuilder]::Compile('int x=1;') } catch { $_ | Out-String | Write-Host }
         }
 
     - name: 🧪 Run Tests
@@ -139,12 +172,12 @@ jobs:
           **/obj/project.assets.json
           src/PowerShell/Kestrun/**/*
           ./*.log
+          ./msbuild.binlog
 
-    - name: 🧑‍💻 Live SSH (only if failed)
-      if: failure()
+    # 🔐 Only open an interactive shell when YOU asked for debug and it failed
+    - name: 🧑‍💻 Live SSH (tmate) — debug only on failure
+      if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.debug }}
       uses: mxschmitt/action-tmate@v3
       with:
-        # If you don't add a personal SSH key in GitHub → Settings → “SSH and GPG keys”,
-        # set this to false to get a browser URL.
-        limit-access-to-actor: true
-
+        # set to true if your SSH key is on your GitHub profile; false gives you a browser URL
+        limit-access-to-actor: false

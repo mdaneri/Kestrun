@@ -1,4 +1,4 @@
-name: "CodeQL Advanced"
+name: CodeQL Advanced
 on:
   push:
     branches: [main]
@@ -8,13 +8,20 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write   # <-- required for SARIF upload
     steps:
       - uses: actions/checkout@v4
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: actions
+
       - name: Autobuild
         run: echo "No build step required"
+
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v3
