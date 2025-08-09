@@ -82,7 +82,7 @@ BeforeAll {
     $logger = New-KrLogger  |
     Set-KrMinimumLevel -Value Debug  |
     Add-KrSinkFile -Path ".\logs\Authentication.log" -RollingInterval Hour |
-   # Add-KrSinkConsole |
+    # Add-KrSinkConsole |
     Register-KrLogger   -Name "DefaultLogger" -PassThru -SetAsDefault
 
     New-KrServer -Name "Kestrun Authentication"
@@ -685,6 +685,34 @@ Describe 'Kestrun Authentication' {
         it "ps/policy (CanPatch)" {
             { Invoke-WebRequest -Uri "$url/secure/ps/policy" -Method PATCH -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
         }
+
+        it "vb/policy (CanRead)" {
+            { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method GET -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "vb/policy (CanDelete)" {
+            { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method DELETE -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "vb/policy (CanCreate)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method POST -SkipCertificateCheck -Headers @{Authorization = $script:basic }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by VB.Net Code because you have the 'can_create' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        it "vb/policy (CanUpdate)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method PUT -SkipCertificateCheck -Headers @{Authorization = $script:basic }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by VB.Net Code because you have the 'can_write' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        it "vb/policy (CanPatch)" {
+            { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method PATCH -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
+        }
+ 
+
     }
 
     <#   It 'responds back with 405 for incorrect method' {

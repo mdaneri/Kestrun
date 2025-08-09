@@ -8,12 +8,19 @@ param(
     [Parameter(Mandatory = $false, ParameterSetName = 'Version')]
     [ValidateSet('Stable', 'ReleaseCandidate', 'Beta', 'Alpha')]
     [string]$Release = 'Beta',
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('net8.0', 'net9.0', 'net10.0')]
+    [string[]]$Frameworks = @('net8.0', 'net9.0'),
     [Parameter(Mandatory = $true, ParameterSetName = 'Version')]
     [string]$Version  ,
     [Parameter(Mandatory = $false, ParameterSetName = 'Version')]
     [string]$Iteration = "",
     [Parameter(Mandatory = $false, ParameterSetName = 'FileVersion')]
-    [string]$FileVersion = "./version.json"
+    [string]$FileVersion = "./version.json",
+    [Parameter(Mandatory = $false)]
+    [string]
+    [ValidateSet('None', 'Normal' , 'Detailed', 'Minimal')]
+    $PesterVerbosity = 'Normal'
 )
 
 if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.MyInvocation.PSCommandPath)) -or (-not $PSCmdlet.MyInvocation.PSCommandPath.EndsWith('Invoke-Build.ps1'))) {
@@ -64,7 +71,9 @@ Add-BuildTask Help {
 
 Add-BuildTask "Clean" {
     Write-Host "Cleaning solution..."
-    dotnet clean .\Kestrun.sln -c $Configuration -v:detailed
+    foreach ($framework in $Frameworks) {
+        dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:detailed
+    }
 }
 
 Add-BuildTask "Build" {
@@ -88,18 +97,54 @@ Add-BuildTask "Build" {
         throw "Invalid parameter set. Use either 'FileVersion' or 'Version'."
     }
 
-    dotnet build .\Kestrun.sln -c $Configuration -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion
+    foreach ($framework in $Frameworks) {
+        dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion
+    }
 }
-
 Add-BuildTask "Test" {
     Write-Host "Running tests..."
-    dotnet test .\Kestrun.sln -c $Configuration --no-build
-    Invoke-Pester -CI -Path tests/PowerShell.Tests
+    foreach ($framework in $Frameworks) {
+        dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:detailed
+    }
+
+    Import-Module Pester -Force
+    $cfg = [PesterConfiguration]::Default
+    $cfg.Run.Path = @("$($PWD.Path)/tests/PowerShell.Tests")
+    $cfg.Output.Verbosity = $PesterVerbosity
+    $cfg.TestResult.Enabled = $true
+    $cfg.Run.Exit = $true
+
+    $excludeTag = @()
+    if ($IsLinux) { $excludeTag += 'Exclude_Linux' }
+    if ($IsMacOS) { $excludeTag += 'Exclude_MacOs' }
+    if ($IsWindows) { $excludeTag += 'Exclude_Windows' }
+    $cfg.Filter.ExcludeTag = $excludeTag
+
+    $json = $cfg | ConvertTo-Json -Depth 10
+
+    $child = Join-Path $env:TEMP "run-pester-$([guid]::NewGuid()).ps1"
+    @'
+param([string]$ConfigJson)
+Import-Module Pester -Force
+$hash = $ConfigJson | ConvertFrom-Json -AsHashtable
+$cfg  = New-PesterConfiguration -Hashtable $hash
+Invoke-Pester -Configuration $cfg
+'@ | Set-Content -Path $child -Encoding UTF8
+
+    try {
+        pwsh -NoProfile -File $child -ConfigJson $json
+    }
+    finally {
+        Remove-Item $child -ErrorAction SilentlyContinue
+    }
 }
+
 
 Add-BuildTask "Package" "Build", {
     Write-Host "Packaging the solution..."
-    dotnet pack .\Kestrun.sln -c $Configuration -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build  
+    foreach ($framework in $Frameworks) {
+        dotnet pack .\Kestrun.sln -c $Configuration -f $framework -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
+    }
 }
 
 Add-BuildTask "Manifest" {

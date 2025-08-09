@@ -67,7 +67,7 @@ jobs:
 
     # 🔊 Only enable super-verbose logs in debug runs
     - name: 🔧 Enable debug flags
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug }}
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug  == 'true' }}
       shell: bash
       run: |
         {
@@ -158,8 +158,8 @@ jobs:
     - name: 🧪 Run Tests
       shell: pwsh
       run: |
-        $ErrorActionPreference = 'Stop'
-        pwsh -NoLogo -NoProfile -Command 'Invoke-Build Test'
+          $ErrorActionPreference = 'Stop'
+          Invoke-Build Test
 
     - name: 📤 Upload diagnostics on failure
       if: failure()
