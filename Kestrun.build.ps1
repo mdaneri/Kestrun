@@ -121,8 +121,7 @@ Add-BuildTask "Test" {
     $cfg.Filter.ExcludeTag = $excludeTag
 
     $json = $cfg | ConvertTo-Json -Depth 10
-
-    $child = Join-Path $env:TEMP "run-pester-$([guid]::NewGuid()).ps1"
+    $child = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "run-pester-$([guid]::NewGuid()).ps1"
     @'
 param([string]$ConfigJson)
 Import-Module Pester -Force
