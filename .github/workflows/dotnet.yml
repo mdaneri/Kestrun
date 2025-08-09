@@ -49,6 +49,14 @@ jobs:
 
     
     steps:
+    # Detect if GH "Enable debug logging" is ON
+    - name: 🔎 Detect GH debug flag
+      id: detect_debug
+      shell: bash
+      run: |
+        # ACTIONS_STEP_DEBUG is set to 'true' when GH debug logging is enabled
+        echo "gh_debug=${ACTIONS_STEP_DEBUG:-false}" >> "$GITHUB_OUTPUT"
+
     - name: 🛎️ Checkout
       uses: actions/checkout@v4
 
@@ -73,7 +81,7 @@ jobs:
 
     # 🔊 Only enable super-verbose logs in debug runs
     - name: 🔧 Enable debug flags
-      if: ${{ inputs.debug == 'true' }}
+      if: ${{ steps.detect_debug.outputs.enabled == 'true' }}
       shell: bash
       run: |
         {
@@ -86,14 +94,14 @@ jobs:
         } >> "$GITHUB_ENV"
     
     - name: 🔧 Echo debug flag
-      run: echo "debug=${{ inputs.debug }}  event=${{ github.event_name }}"
+      run: echo "debug=${{ steps.detect_debug.outputs.enabled }}  event=${{ github.event_name }}"
       if: ${{ always() && github.event_name != '' }}
 
     # 🔊 decide verbosity once, early
     - name: 🔊 Set build verbosity
       shell: bash
       run: |
-        if [[ "${{ inputs.debug }}" == "true" ]]; then
+        if [[ "${{ steps.detect_debug.outputs.enabled == 'true' }}" == "true" ]]; then
           echo "DOTNET_VERBOSITY=diag" >> "$GITHUB_ENV"
           echo "PESTER_VERBOSITY=Detailed" >> "$GITHUB_ENV"
         else
@@ -128,7 +136,7 @@ jobs:
 
     # 🐛 Debug-only; non-fatal if it exits 1
     - name: 🔎 List Roslyn packages (transitive)
-      if: ${{ inputs.debug }}
+      if: ${{ steps.detect_debug.outputs.enabled == 'true' }}
       continue-on-error: true
       shell: pwsh
       run: |
@@ -138,7 +146,7 @@ jobs:
 
     # 🐛 Debug-only; non-fatal inventory
     - name: 📂 List Roslyn candidates in repo
-      if: ${{ inputs.debug }}
+      if: ${{ steps.detect_debug.outputs.enabled == 'true' }}
       continue-on-error: true
       shell: pwsh
       run: |
@@ -155,7 +163,7 @@ jobs:
 
     # 🐛 Optional deep-dive build with binlog in debug (non-fatal)
     - name: 🧰 Debug build with binlog
-      if: ${{ inputs.debug }}
+      if: ${{ steps.detect_debug.outputs.enabled == 'true' }}
       continue-on-error: true
       shell: pwsh
       run: |
@@ -163,7 +171,7 @@ jobs:
 
     # 🐛 Debug-only; force Roslyn load (non-fatal)
     - name: 🧪 Mini Roslyn sanity check (before Pester)
-      if: ${{ inputs.debug }}
+      if: ${{ steps.detect_debug.outputs.enabled == 'true' }}
       continue-on-error: true
       shell: pwsh
       run: |
@@ -198,7 +206,7 @@ jobs:
 
     # 🔐 Only open an interactive shell when YOU asked for debug and it failed
     - name: 🧑‍💻 Live SSH (only if failed and debug enabled)
-      if: ${{ failure() && fromJSON(inputs.debug || 'false') }}
+      if: ${{ failure() && steps.detect_debug.outputs.gh_debug == 'true' }}
       uses: mxschmitt/action-tmate@v3
       with:
         limit-access-to-actor: true
