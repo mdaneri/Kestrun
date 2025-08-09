@@ -1,4 +1,52 @@
 #requires -Module InvokeBuild
+<#
+    .SYNOPSIS
+    Build script for Kestrun
+
+    .DESCRIPTION
+    This script contains the build tasks for the Kestrun project.
+
+    .PARAMETER Configuration
+    The build configuration to use (Debug or Release).
+
+    .PARAMETER Release
+    The release stage (Stable, ReleaseCandidate, Beta, Alpha).
+
+    .PARAMETER Frameworks
+    The target frameworks to build for.
+
+    .PARAMETER Version
+    The version of the Kestrun project.
+
+    .PARAMETER Iteration
+    The iteration of the Kestrun project.
+
+    .PARAMETER FileVersion
+    The file version to use.
+
+    .PARAMETER PesterVerbosity
+    The verbosity level for Pester tests.
+
+    .PARAMETER DotNetVerbosity
+    The verbosity level for .NET commands.
+
+    .PARAMETER RunPesterInProcess
+    Whether to run Pester tests in the same process.
+
+    .EXAMPLE
+    .\Kestrun.build.ps1 -Configuration Release -Frameworks net9.0 -Version 1.0.0
+    This example demonstrates how to build the Kestrun project for the Release configuration,
+    targeting the net9.0 framework, and specifying the version as 1.0.0.
+
+    .EXAMPLE
+    .\Kestrun.build.ps1 -Configuration Debug -Frameworks net8.0 -Version 1.0.0
+    This example demonstrates how to build the Kestrun project for the Debug configuration,
+    targeting the net8.0 framework, and specifying the version as 1.0.0.
+
+    .NOTES
+    This script is intended to be run with Invoke-Build.
+
+#>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '')]
 [CmdletBinding( DefaultParameterSetName = 'FileVersion')]
@@ -20,7 +68,13 @@ param(
     [Parameter(Mandatory = $false)]
     [string]
     [ValidateSet('None', 'Normal' , 'Detailed', 'Minimal')]
-    $PesterVerbosity = 'Normal'
+    $PesterVerbosity = 'Detailed',
+    [Parameter(Mandatory = $false)]
+    [string]
+    [ValidateSet('quiet', 'minimal' , 'normal', 'detailed', 'diagnostic')]
+    $DotNetVerbosity = 'detailed',
+    [Parameter(Mandatory = $false)]
+    [switch]$RunPesterInProcess
 )
 
 if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.MyInvocation.PSCommandPath)) -or (-not $PSCmdlet.MyInvocation.PSCommandPath.EndsWith('Invoke-Build.ps1'))) {
@@ -72,7 +126,7 @@ Add-BuildTask Help {
 Add-BuildTask "Clean" {
     Write-Host "Cleaning solution..."
     foreach ($framework in $Frameworks) {
-        dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:detailed
+        dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
 
@@ -98,14 +152,18 @@ Add-BuildTask "Build" {
     }
 
     foreach ($framework in $Frameworks) {
-        dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion
+        dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
     }
 }
-Add-BuildTask "Test" {
-    Write-Host "Running tests..."
+
+Add-BuildTask "Kestrun.Tests" {
+    Write-Host "Running Kestrun DLL tests..."
     foreach ($framework in $Frameworks) {
-        dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:detailed
+        dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
+}
+
+Add-BuildTask "Test-Pester" {
 
     Import-Module Pester -Force
     $cfg = [PesterConfiguration]::Default
@@ -120,9 +178,13 @@ Add-BuildTask "Test" {
     if ($IsWindows) { $excludeTag += 'Exclude_Windows' }
     $cfg.Filter.ExcludeTag = $excludeTag
 
-    $json = $cfg | ConvertTo-Json -Depth 10
-    $child = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "run-pester-$([guid]::NewGuid()).ps1"
-    @'
+    if ($RunPesterInProcess) {
+        Invoke-Pester -Configuration $cfg
+    }
+    else {
+        $json = $cfg | ConvertTo-Json -Depth 10
+        $child = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "run-pester-$([guid]::NewGuid()).ps1"
+        @'
 param([string]$ConfigJson)
 Import-Module Pester -Force
 $hash = $ConfigJson | ConvertFrom-Json -AsHashtable
@@ -130,19 +192,21 @@ $cfg  = New-PesterConfiguration -Hashtable $hash
 Invoke-Pester -Configuration $cfg
 '@ | Set-Content -Path $child -Encoding UTF8
 
-    try {
-        pwsh -NoProfile -File $child -ConfigJson $json
-    }
-    finally {
-        Remove-Item $child -ErrorAction SilentlyContinue
+        try {
+            pwsh -NoProfile -File $child -ConfigJson $json
+        }
+        finally {
+            Remove-Item $child -ErrorAction SilentlyContinue
+        }
     }
 }
 
+Add-BuildTask "Test" "Kestrun.Tests", "Test-Pester"
 
 Add-BuildTask "Package" "Build", {
     Write-Host "Packaging the solution..."
     foreach ($framework in $Frameworks) {
-        dotnet pack .\Kestrun.sln -c $Configuration -f $framework -v:detailed -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
+        dotnet pack .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
     }
 }
 

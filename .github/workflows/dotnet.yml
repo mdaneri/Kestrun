@@ -85,8 +85,10 @@ jobs:
       run: |
         if [[ "${{ inputs.debug }}" == "true" ]]; then
           echo "DOTNET_VERBOSITY=diag" >> "$GITHUB_ENV"
+          echo "PESTER_VERBOSITY=Detailed" >> "$GITHUB_ENV"
         else
           echo "DOTNET_VERBOSITY=minimal" >> "$GITHUB_ENV"
+          echo "PESTER_VERBOSITY=Normal" >> "$GITHUB_ENV"
         fi
 
     - name: 🧰 Install Module Invoke-Build
@@ -169,7 +171,7 @@ jobs:
       shell: pwsh
       run: |
           $ErrorActionPreference = 'Stop'
-          Invoke-Build Test
+          Invoke-Build Test -DotNetVerbosity $Env:DOTNET_VERBOSITY -PesterVerbosity $Env:PESTER_VERBOSITY -RunPesterInProcess
 
     - name: 📤 Upload diagnostics on failure
       if: failure()
