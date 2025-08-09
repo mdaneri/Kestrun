@@ -141,14 +141,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
 
-    <!-- Roslyn Scripting -->
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />  
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.11.0" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.11.0" />  
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.11.0" />
+ 
 
   </ItemGroup>
 
@@ -180,19 +173,20 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.8" />
 
-    <!-- Roslyn Scripting -->
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.13.0" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" /> 
-    <!-- common scripting API -->
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.13.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.13.0" />
+ 
 
   </ItemGroup>
 
   <ItemGroup>
+
+     <!-- Roslyn Scripting -->
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.9.2" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.9.2" />
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
@@ -232,9 +226,14 @@
 
   <Target Name="CopyToPowerShellLib" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <ItemGroup>
-      <KestrunOutputFiles Include="$(OutputPath)*.*" />
+      <!-- include all files in output except Microsoft.CodeAnalysis* -->
+      <KestrunOutputFiles Include="$(OutputPath)*.*" 
+                          Exclude="$(OutputPath)Microsoft.CodeAnalysis*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\" SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="@(KestrunOutputFiles)"
+          DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyPowerShellModuleOnPublish" AfterTargets="Publish">

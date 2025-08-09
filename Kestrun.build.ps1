@@ -123,14 +123,18 @@ Add-BuildTask Help {
     Write-Host
 }
 
-Add-BuildTask "Clean" {
+Add-BuildTask "Clean" "Clean-CodeAnalysis",{
     Write-Host "Cleaning solution..."
     foreach ($framework in $Frameworks) {
         dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
+Add-BuildTask "Restore" {
+    Write-Host "Restore Packages"
+    dotnet restore .\Kestrun.sln -v:$DotNetVerbosity
+}, "Nuget-CodeAnalysis"
 
-Add-BuildTask "Build" {
+Add-BuildTask "Build"  "Restore", {
     Write-Host "Building solution..."
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
@@ -154,6 +158,16 @@ Add-BuildTask "Build" {
     foreach ($framework in $Frameworks) {
         dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
     }
+}
+
+Add-BuildTask "Nuget-CodeAnalysis" {
+    Write-Host "Update CodeAnalysis..."
+    & .\Utility\Download-CodeAnalysis.ps1
+}
+
+Add-BuildTask "Clean-CodeAnalysis" {
+    Write-Host "Cleaning CodeAnalysis..."
+    Remove-Item -Path './src/PowerShell/Kestrun/lib/Microsoft.CodeAnalysis/' -Force -Recurse
 }
 
 Add-BuildTask "Kestrun.Tests" {

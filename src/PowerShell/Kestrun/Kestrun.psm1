@@ -10,7 +10,8 @@
 #>
 function Assert-AssemblyLoaded {
     param (
-        [string]$AssemblyPath
+        [string]$AssemblyPath,
+        [switch]$Verbose
     )
     if (-not (Test-Path -Path $AssemblyPath -PathType Leaf)) {
         throw "Assembly not found at path: $AssemblyPath"
@@ -18,7 +19,12 @@ function Assert-AssemblyLoaded {
     $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($AssemblyPath).Name
     $loaded = [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq $assemblyName }
     if (-not $loaded) {
-        Add-Type -Path $AssemblyPath
+        Add-Type -LiteralPath $AssemblyPath
+    }
+    else {
+        if ($Verbose) {
+            Write-Host "Assembly already loaded: $AssemblyPath"
+        }
     }
 }
 function Import-KestrunAccelerator {
@@ -101,18 +107,64 @@ function Add-AspNetCoreType {
     }
     throw "Microsoft.AspNetCore.App version $Version.* not found in $baseDir."
 }
+
+
+function Add-CodeAnalysisType {
+    param (
+        [string]$Version,
+        [switch]$Verbose
+    )
+    $codeAnalysisassemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Microsoft.CodeAnalysis", $Version
+
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Workspaces.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.Scripting.dll" -Verbose:$Verbose
+    #Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Razor.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.VisualBasic.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.CSharp.Workspaces.dll" -Verbose:$Verbose
+    Assert-AssemblyLoaded -AssemblyPath "$codeAnalysisassemblyLoadPath\Microsoft.CodeAnalysis.Scripting.dll" -Verbose:$Verbose
+}
+
+
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
 # root path
 $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
-if ($PSVersionTable.PSVersion.Minor -lt 6) {
-    $netVersion = "net8.0"
+
+
+if ($PSVersionTable.PSVersion.Major -ne 7) {
+    Throw "Unsupported PowerShell version. Please use PowerShell 7.4."
 }
-else {
-    $netVersion = "net9.0"
+
+switch ($PSVersionTable.PSVersion.Minor) {
+    0 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
+    1 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
+    2 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
+    3 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
+    4 {
+        $netVersion = "net8.0" 
+        $codeAnalysisVersion = "4.9.2"
+    }
+    5 {
+        $netVersion = "net8.0" 
+        $codeAnalysisVersion = "4.11.0"
+    }
+    6 {
+        $netVersion = "net9.0" 
+        $codeAnalysisVersion = "4.13.0"
+    }
+    Default {
+        $netVersion = "net9.0" 
+        $codeAnalysisVersion = "4.13.0"
+    }
 }
+
 # Usage
 Add-AspNetCoreType -Version $netVersion
 # Add-AspNetCoreType -Version "net8.0.*"
+
+Add-CodeAnalysisType -Version $codeAnalysisVersion
 
 $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
 # Assert that the assembly is loaded and load it if not
