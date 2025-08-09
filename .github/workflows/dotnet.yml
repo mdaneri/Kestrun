@@ -28,19 +28,21 @@ on:
 
 jobs:
   build:
-    # Try both runners; ubuntu-24.04 vs 22.04 can matter for native deps/resolution
     strategy:
       matrix:
         os: [ubuntu-24.04, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
 
+    # 👇 ensure every step runs from repo root unless overridden
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
     env:
-      # Super verbose host/loader tracing (turn off when green)
       COREHOST_TRACE: 1
       COREHOST_TRACE_VERBOSITY: 3
       DOTNET_HOST_TRACE: 1
       DOTNET_HOST_TRACE_VERBOSITY: 3
-      # Keep PowerShell clean; no surprises from profiles
       POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
 
     steps:
@@ -51,6 +53,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
+        cache: true
+        cache-dependency-path: |
+          **/*.csproj
+          **/packages.lock.json
 
     - name: 🧰 Setup .NET 9
       uses: actions/setup-dotnet@v4
@@ -63,11 +69,10 @@ jobs:
         $ErrorActionPreference = 'Stop'
         Install-Module InvokeBuild -Force -Scope CurrentUser
 
-    - name: 🧰 Install Module Pester (pin for determinism)
+    - name: 🧰 Install Module Pester (pin)
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
-        # Pin a version you know works; adjust if needed
         Install-Module Pester -Force -Scope CurrentUser -RequiredVersion 5.6.1
         Get-Module Pester -ListAvailable | Select Name,Version,Path
 
@@ -79,12 +84,17 @@ jobs:
         [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
         [System.Environment]::Version
 
-    - name: 📦 Restore (and list transitive Roslyn versions)
+    # ✅ restore BEFORE any 'dotnet list'
+    - name: 📦 Restore solution
       shell: pwsh
       run: |
-        dotnet restore
-        # Show exactly which Roslyn packages/versions are in play
-        dotnet list . package --include-transitive | Select-String -SimpleMatch "Microsoft.CodeAnalysis"
+        dotnet restore ./Kestrun.sln
+
+    - name: 🔎 List Roslyn packages (transitive)
+      shell: pwsh
+      run: |
+        dotnet list ./Kestrun.sln package --include-transitive |
+          Select-String -SimpleMatch "Microsoft.CodeAnalysis"
 
     - name: 📂 List Roslyn candidates in repo
       shell: pwsh
@@ -104,15 +114,10 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
-        # Import your module exactly like tests do
         Import-Module ./src/PowerShell/Kestrun/Kestrun.psd1 -Force
-        # Dump which *CodeAnalysis* assemblies are loaded and from where
         [AppDomain]::CurrentDomain.GetAssemblies() |
           Where-Object { $_.GetName().Name -like 'Microsoft.CodeAnalysis*' -or $_.GetName().Name -in 'System.Collections.Immutable','System.Reflection.Metadata' } |
           Select FullName, Location | Format-Table -Auto
-
-        # Optional: touch the same code path your tests touch
-        # e.g. a tiny compile to force Roslyn load:
         if ([type]::GetType('Kestrun.Scripting.CSharpDelegateBuilder')) {
           [Kestrun.Scripting.CSharpDelegateBuilder]::Compile('int x=1;')
         }
@@ -121,7 +126,6 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
-        # No profiles; fewer surprises
         pwsh -NoLogo -NoProfile -Command 'Invoke-Build Test'
 
     - name: 📤 Upload diagnostics on failure
@@ -140,4 +144,7 @@ jobs:
       if: failure()
       uses: mxschmitt/action-tmate@v3
       with:
+        # If you don't add a personal SSH key in GitHub → Settings → “SSH and GPG keys”,
+        # set this to false to get a browser URL.
         limit-access-to-actor: true
+
