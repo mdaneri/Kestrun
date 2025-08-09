@@ -175,9 +175,8 @@ jobs:
           ./msbuild.binlog
 
     # 🔐 Only open an interactive shell when YOU asked for debug and it failed
-    - name: 🧑‍💻 Live SSH (tmate) — debug only on failure
-      if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.debug }}
+    - name: 🧑‍💻 Live SSH (only if failed and debug enabled)
+      if: ${{ failure() && github.event_name == 'workflow_dispatch' && inputs.debug == 'true' }}
       uses: mxschmitt/action-tmate@v3
       with:
-        # set to true if your SSH key is on your GitHub profile; false gives you a browser URL
-        limit-access-to-actor: false
+        limit-access-to-actor: true
