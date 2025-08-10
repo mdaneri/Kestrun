@@ -11,7 +11,7 @@ branding:
 inputs:
   Version:
     description: |
-      PowerShell version to install (e.g. `7.4.1`).
+      PowerShell version to install (e.g. `7.4.1`, `lts`, or `latest`).
       Defaults to install the latest stable release.
     required: false
     default: 'latest'
@@ -44,8 +44,28 @@ runs:
                 )
                 echo "Latest stable PowerShell release detected: $REQUESTED_VERSION"
                 ;;
-            "")
-                echo "Error: Version input is required (or use 'latest')"
+                            [Ll][Tt][Ss])
+                                # Resolve latest LTS: choose highest version with an even minor (e.g., 7.4.x), excluding prereleases
+                                REQUESTED_VERSION=$(
+                                  curl -s -f \
+                                    -H "Accept: application/vnd.github+json" \
+                                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                                    https://api.github.com/repos/PowerShell/PowerShell/releases |
+                                    jq -r '[.[] | select(.prerelease==false) | .tag_name | ltrimstr("v") | select(test("^\\d+\\.\\d+\\.\\d+$"))]
+                                           | map(split(".") | map(tonumber))
+                                           | map(select(.[1] % 2 == 0))
+                                           | sort_by(.[0], .[1], .[2])
+                                           | last | join(".")'
+                                )
+                                if [[ -z "$REQUESTED_VERSION" || "$REQUESTED_VERSION" == "null" ]]; then
+                                  echo "Error: could not resolve latest LTS version from GitHub releases."
+                                  exit 1
+                                fi
+                                echo "Latest LTS PowerShell release detected: $REQUESTED_VERSION"
+                                ;;
+"")
+                echo "Error: Version input is required (or use 'latest' or 'lts')"
                 exit 1
                 ;;
         esac
@@ -118,8 +138,28 @@ runs:
                 )
                 echo "Latest stable PowerShell release detected: $REQUESTED_VERSION"
                 ;;
-            "")
-                echo "Error: Version input is required (or use 'latest')"
+                            [Ll][Tt][Ss])
+                                # Resolve latest LTS: choose highest version with an even minor (e.g., 7.4.x), excluding prereleases
+                                REQUESTED_VERSION=$(
+                                  curl -s -f \
+                                    -H "Accept: application/vnd.github+json" \
+                                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                                    https://api.github.com/repos/PowerShell/PowerShell/releases |
+                                    jq -r '[.[] | select(.prerelease==false) | .tag_name | ltrimstr("v") | select(test("^\\d+\\.\\d+\\.\\d+$"))]
+                                           | map(split(".") | map(tonumber))
+                                           | map(select(.[1] % 2 == 0))
+                                           | sort_by(.[0], .[1], .[2])
+                                           | last | join(".")'
+                                )
+                                if [[ -z "$REQUESTED_VERSION" || "$REQUESTED_VERSION" == "null" ]]; then
+                                  echo "Error: could not resolve latest LTS version from GitHub releases."
+                                  exit 1
+                                fi
+                                echo "Latest LTS PowerShell release detected: $REQUESTED_VERSION"
+                                ;;
+"")
+                echo "Error: Version input is required (or use 'latest' or 'lts')"
                 exit 1
                 ;;
         esac
@@ -178,8 +218,39 @@ runs:
             ).tag_name.TrimStart('v')
             Write-Host "Latest stable PowerShell release detected: $latest"
             $env:REQUESTED_VERSION = $latest
+        } elseif ($req -and $req.Trim().ToLower() -eq 'lts') {
+            # Resolve latest LTS: choose highest version with an even minor (e.g., 7.4.x), excluding prereleases
+            $releases = Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases' `
+              -Headers @{
+                'Accept' = 'application/vnd.github+json'
+                'Authorization' = "Bearer $($env:GITHUB_TOKEN)"
+                'X-GitHub-Api-Version' = '2022-11-28'
+              }
+            $versions =
+              $releases |
+              Where-Object { -not $_.prerelease } |
+              ForEach-Object { $_.tag_name.TrimStart('v') } |
+              Where-Object { $_ -match '^\d+\.\d+\.\d+$' } |
+              ForEach-Object {
+                $p = $_.Split('.'); 
+                [pscustomobject]@{ Major=[int]$p[0]; Minor=[int]$p[1]; Patch=[int]$p[2]; Version=$_ }
+              }
+            if (-not $versions) {
+              Write-Host "Error: could not resolve latest LTS version from GitHub releases."
+              exit 1
+            }
+            $even = $versions | Where-Object { $_.Minor % 2 -eq 0 }
+            $latestEven = $even | Sort-Object Major, Minor, Patch | Select-Object -Last 1
+            $latestLts = ($versions | Where-Object { $_.Minor -eq $latestEven.Minor } | Sort-Object Major, Minor, Patch | Select-Object -Last 1).Version
+            if (-not $latestLts) {
+              Write-Host "Error: could not resolve latest LTS version from GitHub releases."
+              exit 1
+            }
+            Write-Host "Latest LTS PowerShell release detected: $latestLts"
+            $env:REQUESTED_VERSION = $latestLts
+    
         } elseif ([string]::IsNullOrWhiteSpace($req)) {
-            Write-Host "Error: Version input is required (or use 'latest')"
+            Write-Host "Error: Version input is required (or use 'latest' or 'lts')"
             exit 1
         }
 
