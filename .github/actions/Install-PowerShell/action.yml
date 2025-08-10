@@ -68,7 +68,11 @@ runs:
         if command -v apt-get >/dev/null || command -v dpkg >/dev/null; then
           # Debian/Ubuntu based
           echo "Detected Debian/Ubuntu based system..."
-          DEB_NAME="powershell_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
+          if [[ "${REQUESTED_VERSION}" == *"-preview"* ]]; then
+              DEB_NAME="powershell-preview_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
+          else
+              DEB_NAME="powershell_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
+          fi
           URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${DEB_NAME}"
           echo "Downloading from: $URL"
           wget -q "$URL" -O "$DEB_NAME"

@@ -38,7 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, ubuntu-22.04,ubuntu-22.04-arm64, macos-15, macos-14,windows-2022, windows-2022-arm64,windows-2025]
-        pwsh: ['7.4.11', 'latest', '7.6.0-preview.3']
+        pwsh: ['7.4.11', 'latest', '7.6.0-preview.4']
     runs-on: ${{ matrix.os }}
 
     defaults:
