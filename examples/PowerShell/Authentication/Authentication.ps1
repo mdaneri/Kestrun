@@ -77,7 +77,6 @@ try {
 }
 catch {
     Write-Error "Failed to import Kestrun module: $_"
-    Write-Error "Ensure the Kestrun module is installed or the path is correct."
     exit 1
 }
 $logger = New-KrLogger  |

@@ -1,14 +1,15 @@
-<#
-.SYNOPSIS
-    Ensures that a .NET assembly is loaded only once.
-
-.DESCRIPTION
-    Checks the currently loaded assemblies for the specified path. If the
-    assembly has not been loaded yet, it is added to the current AppDomain.
-.PARAMETER AssemblyPath
-    Path to the assembly file to load.
-#>
 function Assert-AssemblyLoaded {
+    <#
+    .SYNOPSIS
+        Ensures that a .NET assembly is loaded only once.
+
+    .DESCRIPTION
+        Checks the currently loaded assemblies for the specified path. If the
+        assembly has not been loaded yet, it is added to the current AppDomain.
+    .PARAMETER AssemblyPath
+        Path to the assembly file to load.
+    #> 
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     param (
         [string]$AssemblyPath,
         [switch]$Verbose
@@ -32,8 +33,7 @@ function Import-KestrunAccelerator {
 
     $ta::Add('KestrunHelpers', [Kestrun.Scriptable.KestrunHelpers])
     $ta::Add('KestrunCerts', [Kestrun.Scriptable.CertificateUtils])
-    $ta::Add('KestrunLogger', [Kestrun.Logging.LogUtility])
-    Kestrun.Authentication
+    $ta::Add('KestrunLogger', [Kestrun.Logging.LogUtility]) 
 }
 function Add-AspNetCoreType {
     <#
@@ -65,22 +65,7 @@ function Add-AspNetCoreType {
     }
     $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
     foreach ($verDir in $versionDirs) {
-        <#   $assemblies = @(
-            "Microsoft.AspNetCore.dll",
-            "Microsoft.AspNetCore.Server.Kestrel.Core.dll",
-            "Microsoft.AspNetCore.ResponseCompression.dll",
-            "Microsoft.AspNetCore.Http.Results.dll",
-            "Microsoft.AspNetCore.StaticFiles.dll",
-            "Microsoft.AspNetCore.Mvc.RazorPages.dll",
-            "Microsoft.AspNetCore.Mvc.dll",
-            "Microsoft.AspNetCore.Mvc.Core.dll",
-            "Microsoft.AspNetCore.SignalR.Core.dll",
-            "Microsoft.AspNetCore.Cors.dll",
-            "Microsoft.AspNetCore.Authentication.dll",
-            "Microsoft.AspNetCore.Http.Abstractions.dll",
-            "Microsoft.AspNetCore.Antiforgery.dll"
-
-        )#>$assemblies = @()
+        $assemblies = @()
 
         Get-ChildItem -Path $verDir.FullName -Filter "Microsoft.*.dll" | ForEach-Object {
             if ($assemblies -notcontains $_.Name) {
@@ -105,11 +90,25 @@ function Add-AspNetCoreType {
             return $verDir.Name
         }
     }
-    throw "Microsoft.AspNetCore.App version $Version.* not found in $baseDir."
+
+    Write-Error "Could not find ASP.NET Core assemblies for version $Version in $baseDir."
+    Write-Warning "Please download the Runtime $Version from https://dotnet.microsoft.com/en-us/download/dotnet/$versionNumber.0"
+
+    throw "Microsoft.AspNetCore.App version $Version not found in $baseDir."
 }
 
 
 function Add-CodeAnalysisType {
+    <#
+    .SYNOPSIS
+        Adds the specified version of the Microsoft.CodeAnalysis assemblies to the session.
+    .DESCRIPTION
+        This function loads the specified version of the Microsoft.CodeAnalysis assemblies into the current session.
+    .PARAMETER Version
+        The version of the Microsoft.CodeAnalysis assemblies to load.
+    .PARAMETER Verbose
+        If specified, verbose output will be shown.
+    #>
     param (
         [string]$Version,
         [switch]$Verbose
@@ -127,23 +126,26 @@ function Add-CodeAnalysisType {
     Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Scripting.dll") -Verbose:$Verbose
 }
 
+# Main Kestrun module path
 
+# This is the root path for the application
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
-# root path
+
+# This is the root path for the Kestrun module
 $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 
-
+# check PowerShell version
 if ($PSVersionTable.PSVersion.Major -ne 7) {
     Throw "Unsupported PowerShell version. Please use PowerShell 7.4."
 }
-
+# Check PowerShell minor version
 switch ($PSVersionTable.PSVersion.Minor) {
     0 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
     1 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
     2 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
     3 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
     4 {
-        $netVersion = "net8.0" 
+        $netVersion = "net8.0"
         $codeAnalysisVersion = "4.9.2"
     }
     5 {
