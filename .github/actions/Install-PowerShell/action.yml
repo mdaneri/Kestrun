@@ -44,6 +44,18 @@ runs:
                 )
                 echo "Latest stable PowerShell release detected: $REQUESTED_VERSION"
                 ;;
+            [Pp][Rr][Ee][Vv][Ii][Ee][Ww])
+                REQUESTED_VERSION=$(
+                  curl -s -f \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    https://api.github.com/repos/PowerShell/PowerShell/releases |
+                    jq -r '.[].tag_name' | grep -i 'preview' | sed 's/^v//' | sort -V | tail -n 1
+                )
+                echo "Latest preview PowerShell release detected: $REQUESTED_VERSION"
+                PREVIEW_MODE=true
+                ;;
             "")
                 echo "Error: Version input is required (or use 'latest')"
                 exit 1
@@ -68,7 +80,7 @@ runs:
         if command -v apt-get >/dev/null || command -v dpkg >/dev/null; then
           # Debian/Ubuntu based
           echo "Detected Debian/Ubuntu based system..."
-          if [[ "${REQUESTED_VERSION}" == *"-preview"* ]]; then
+          if [[ "$PREVIEW_MODE" == "true" ]]; then
               DEB_NAME="powershell-preview_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
           else
               DEB_NAME="powershell_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
@@ -81,10 +93,18 @@ runs:
         elif command -v rpm >/dev/null; then
           # RHEL/Fedora/CentOS based
           echo "Detected RHEL/Fedora/CentOS based system..."
-          if [[ "$ARCH" == "aarch64" ]]; then
-            RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.${ARCH}.rpm"
-          else
-            RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.x86_64.rpm"
+          if [[ "$PREVIEW_MODE" == "true" ]]; then
+            if [[ "$ARCH" == "aarch64" ]]; then
+              RPM_NAME="powershell-preview_${REQUESTED_VERSION}-1.rh.${ARCH}.rpm"
+            else
+              RPM_NAME="powershell-preview_${REQUESTED_VERSION}-1.rh.x86_64.rpm"
+            fi
+            else
+              if [[ "$ARCH" == "aarch64" ]]; then
+              RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.${ARCH}.rpm"
+            else
+              RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.x86_64.rpm"
+            fi
           fi
           URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${RPM_NAME}"
           echo "Downloading from: $URL"
@@ -96,6 +116,19 @@ runs:
           exit 1
         fi
         echo "Installation complete. PowerShell [$REQUESTED_VERSION] is now available."
+
+        # If we installed preview, make it the default 'pwsh'
+        if [[ "$PREVIEW_MODE" == "true" ]]; then
+            echo "Setting PowerShell Preview as the default 'pwsh'..."
+            PREVIEW_PATH=$(command -v pwsh-preview || true)
+            if [[ -n "$PREVIEW_PATH" ]]; then
+                sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_PATH" 100
+                sudo update-alternatives --set pwsh "$PREVIEW_PATH"
+                echo "Default 'pwsh' now points to: $(command -v pwsh)"
+            else
+                echo "Warning: pwsh-preview not found in PATH after install."
+            fi
+        fi
 
     - name: Install PowerShell (macOS)
       if: runner.os == 'macOS'
