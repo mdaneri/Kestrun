@@ -1,0 +1,285 @@
+name: Install PowerShell
+description: |
+  Install a specific version, or the latest stable version, of PowerShell Core
+  on any GitHub runner (Linux, macOS, Windows).
+  Skips the install if the requested version is already present.
+author: PSModule
+branding:
+  icon: terminal
+  color: purple
+
+inputs:
+  Version:
+    description: |
+      PowerShell version to install (e.g. `7.4.1`).
+      Defaults to install the latest stable release.
+    required: false
+    default: 'latest'
+
+runs:
+  using: composite
+  steps:
+    - name: Install PowerShell (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        REQUESTED_VERSION: ${{ inputs.Version }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # Install-PowerShell
+        set -e
+        echo "Requested version: [$REQUESTED_VERSION]"
+
+        # Only resolve to latest version if explicitly set to 'latest' (case-insensitive)
+        case "${REQUESTED_VERSION:-}" in
+            [Ll][Aa][Tt][Ee][Ss][Tt])
+                REQUESTED_VERSION=$(
+                  curl -s -f \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    https://api.github.com/repos/PowerShell/PowerShell/releases/latest |
+                    jq -r '.tag_name' | sed 's/^v//'
+                )
+                echo "Latest stable PowerShell release detected: $REQUESTED_VERSION"
+                ;;
+            "")
+                echo "Error: Version input is required (or use 'latest')"
+                exit 1
+                ;;
+        esac
+
+        DETECTED_VERSION=$(pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()' 2>/dev/null || true)
+        if [[ -n "$DETECTED_VERSION" ]]; then
+          echo "Currently installed PowerShell version: $DETECTED_VERSION"
+        else
+          echo "PowerShell is not currently installed"
+        fi
+
+        if [[ "$DETECTED_VERSION" == "$REQUESTED_VERSION" ]]; then
+          echo "PowerShell $DETECTED_VERSION already installed. Skipping."
+          exit 0
+        fi
+
+        # Determine Linux distribution type
+        ARCH=$(dpkg --print-architecture 2>/dev/null || rpm --eval '%{_arch}' 2>/dev/null || echo "x86_64")
+
+        if command -v apt-get >/dev/null || command -v dpkg >/dev/null; then
+          # Debian/Ubuntu based
+          echo "Detected Debian/Ubuntu based system..."
+          DEB_NAME="powershell_${REQUESTED_VERSION}-1.deb_${ARCH}.deb"
+          URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${DEB_NAME}"
+          echo "Downloading from: $URL"
+          wget -q "$URL" -O "$DEB_NAME"
+          echo "Starting installation of PowerShell [$REQUESTED_VERSION]..."
+          sudo dpkg -i "$DEB_NAME" || sudo apt-get -f install -y
+        elif command -v rpm >/dev/null; then
+          # RHEL/Fedora/CentOS based
+          echo "Detected RHEL/Fedora/CentOS based system..."
+          if [[ "$ARCH" == "aarch64" ]]; then
+            RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.${ARCH}.rpm"
+          else
+            RPM_NAME="powershell-${REQUESTED_VERSION}-1.rh.x86_64.rpm"
+          fi
+          URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${RPM_NAME}"
+          echo "Downloading from: $URL"
+          wget -q "$URL" -O "$RPM_NAME"
+          echo "Starting installation of PowerShell [$REQUESTED_VERSION]..."
+          sudo rpm -i "$RPM_NAME" || sudo yum install -y "$RPM_NAME"
+        else
+          echo "Unsupported Linux distribution. Cannot determine package format."
+          exit 1
+        fi
+        echo "Installation complete. PowerShell [$REQUESTED_VERSION] is now available."
+
+    - name: Install PowerShell (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        REQUESTED_VERSION: ${{ inputs.Version }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # Install-PowerShell
+        set -e
+        echo "Requested version: [$REQUESTED_VERSION]"
+
+        # Only resolve to latest version if explicitly set to 'latest' (case-insensitive)
+        case "${REQUESTED_VERSION:-}" in
+            [Ll][Aa][Tt][Ee][Ss][Tt])
+                REQUESTED_VERSION=$(
+                  curl -s -f \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "Authorization: Bearer $GITHUB_TOKEN" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    https://api.github.com/repos/PowerShell/PowerShell/releases/latest |
+                    jq -r '.tag_name' | sed 's/^v//'
+                )
+                echo "Latest stable PowerShell release detected: $REQUESTED_VERSION"
+                ;;
+            "")
+                echo "Error: Version input is required (or use 'latest')"
+                exit 1
+                ;;
+        esac
+
+        DETECTED_VERSION=$(pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()' 2>/dev/null || true)
+        if [[ -n "$DETECTED_VERSION" ]]; then
+          echo "Currently installed PowerShell version: $DETECTED_VERSION"
+        else
+          echo "PowerShell is not currently installed"
+        fi
+
+        if [[ "$DETECTED_VERSION" == "$REQUESTED_VERSION" ]]; then
+          echo "PowerShell $DETECTED_VERSION already installed. Skipping."
+          exit 0
+        fi
+
+        # Determine architecture and download appropriate package
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          "arm64") PKG_NAME="powershell-${REQUESTED_VERSION}-osx-arm64.pkg" ;;
+          *)       PKG_NAME="powershell-${REQUESTED_VERSION}-osx-x64.pkg" ;;
+        esac
+
+        URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG_NAME}"
+        echo "Downloading from: $URL"
+        echo "Starting installation of PowerShell [$REQUESTED_VERSION]..."
+
+        if ! curl -sSL "$URL" -o "$PKG_NAME"; then
+          echo "Error: Failed to download PowerShell package"
+          exit 1
+        fi
+        sudo installer -pkg "$PKG_NAME" -target /
+        echo "Installation complete. PowerShell [$REQUESTED_VERSION] is now available."
+
+    - name: Install PowerShell (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      working-directory: ${{ github.action_path }}
+      env:
+        REQUESTED_VERSION: ${{ inputs.Version }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # Install-PowerShell
+        Write-Host "Requested version: [$env:REQUESTED_VERSION]"
+
+        # Resolve 'latest' → concrete version
+        $req = $env:REQUESTED_VERSION
+        if ($req -and $req.Trim().ToLower() -eq 'latest') {
+            $latest = (
+              Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases/latest' `
+              -Headers @{
+                'Accept' = 'application/vnd.github+json'
+                'Authorization' = "Bearer $($env:GITHUB_TOKEN)"
+                'X-GitHub-Api-Version' = '2022-11-28'
+              }
+            ).tag_name.TrimStart('v')
+            Write-Host "Latest stable PowerShell release detected: $latest"
+            $env:REQUESTED_VERSION = $latest
+        } elseif ([string]::IsNullOrWhiteSpace($req)) {
+            Write-Host "Error: Version input is required (or use 'latest')"
+            exit 1
+        }
+
+        # Detect currently installed version (if any)
+        $detected = $null
+        try {
+          $detected = (pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')
+          Write-Host "Currently installed PowerShell version: $detected"
+        } catch {
+          Write-Host "PowerShell is not currently installed"
+        }
+
+        if ($detected -eq $env:REQUESTED_VERSION) {
+          Write-Host "PowerShell $detected already installed. Skipping."
+          exit 0
+        }
+
+        # Downgrade detection
+        $isDowngrade = $false
+        if ($detected -and $detected -ne $env:REQUESTED_VERSION) {
+          try {
+            $detectedVersion  = [version]$detected
+            $requestedVersion = [version]$env:REQUESTED_VERSION
+            if ($detectedVersion -gt $requestedVersion) {
+              Write-Host "Downgrade detected: $detected → $($env:REQUESTED_VERSION)"
+              $isDowngrade = $true
+            } else {
+              Write-Host "Upgrade detected: $detected → $($env:REQUESTED_VERSION)"
+            }
+          } catch {
+            Write-Host "Warning: Could not compare versions, proceeding with regular installation"
+          }
+        }
+
+        # If downgrade → fully uninstall current PowerShell 7
+        if ($isDowngrade) {
+          Write-Host "Uninstalling existing PowerShell version before downgrade..."
+
+          # Search both 64-bit and 32-bit uninstall hives
+          $regPaths = @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+
+          $pwshEntries = Get-ItemProperty -Path $regPaths -ErrorAction SilentlyContinue |
+            Where-Object {
+              $_.Publisher     -eq 'Microsoft Corporation'     -and
+              $_.DisplayName   -like 'PowerShell 7*'           -and
+              $_.DisplayName   -notlike '*Preview*'            -and
+              $_.DisplayVersion -and
+              $_.DisplayVersion.StartsWith($detected)
+            }
+
+          $targetEntry = $pwshEntries | Select-Object -First 1
+          if (-not $targetEntry) {
+            Write-Host "Warning: Could not find an uninstall entry for PowerShell $detected"
+          } else {
+            $uninstallCmd = if ($targetEntry.QuietUninstallString) {
+                              $targetEntry.QuietUninstallString
+                            } else {
+                              $targetEntry.UninstallString
+                            }
+
+            # If the uninstall command is MSI-based and lacks /quiet, add it
+            if ($uninstallCmd -match 'msiexec') {
+              if ($uninstallCmd -notmatch '/quiet')   { $uninstallCmd += ' /quiet' }
+              if ($uninstallCmd -notmatch '/norestart') { $uninstallCmd += ' /norestart' }
+            }
+
+            Write-Host "Running uninstall command:`n$uninstallCmd"
+            $proc = Start-Process 'cmd.exe' -ArgumentList '/c', $uninstallCmd -Wait -PassThru
+            if ($proc.ExitCode -ne 0) {
+              Write-Host "Error: Uninstall failed (exit code $($proc.ExitCode))."
+              exit 1
+            }
+
+            # Double-check removal
+            try {
+              $after = (pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')
+              if ($after) {
+                Write-Host "Error: PowerShell is still present ($after) after uninstall. Aborting downgrade."
+                exit 1
+              }
+            } catch { }
+          }
+        }
+
+        # Download requested MSI
+        $msi = "PowerShell-$($env:REQUESTED_VERSION)-win-x64.msi"
+        $url = "https://github.com/PowerShell/PowerShell/releases/download/v$($env:REQUESTED_VERSION)/$msi"
+        Write-Host "Downloading from: $url"
+
+        $null = Invoke-WebRequest -Uri $url -OutFile $msi -UseBasicParsing -ErrorAction Stop
+
+        # Install requested version
+        Write-Host "Starting installation of PowerShell [$($env:REQUESTED_VERSION)]..."
+        $msiProcess = Start-Process msiexec.exe -ArgumentList '/i', $msi, '/quiet', '/norestart' -Wait -PassThru
+        if ($msiProcess.ExitCode -ne 0) {
+          Write-Host "Error: Installation failed (exit code $($msiProcess.ExitCode))."
+          exit 1
+        }
+
+        Write-Host "Installation complete. PowerShell [$($env:REQUESTED_VERSION)] is now available."
