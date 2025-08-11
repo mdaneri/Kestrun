@@ -787,7 +787,7 @@ Describe 'Kestrun Authentication' {
         BeforeAll {
             $creds = "admin:password"
             $basic = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($creds))
-            $script:token = (Invoke-RestMethod -Uri https://localhost:5001/token/new -SkipCertificateCheck -Headers @{ Authorization = $script:basic }).access_token
+            $script:token = (Invoke-RestMethod -Uri "$url/token/new" -SkipCertificateCheck -Headers @{ Authorization = $script:basic }).access_token
         }
 
         it "New Token" {
@@ -795,8 +795,10 @@ Describe 'Kestrun Authentication' {
         }
 
         it "Hello JWT" {
-            $result = Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
-            $result | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result = Invoke-WebRequest -Uri "$url/secure/jwt/hello" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
         }
         it "jwt/policy (CanRead)" {
             $result = Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method Get -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
@@ -820,6 +822,54 @@ Describe 'Kestrun Authentication' {
         it "jwt/policy (CanPatch)" {
             { Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method PATCH -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
         }
-    }
 
+        it "Renew Token" {
+            $token2 = (Invoke-RestMethod -Uri "$url/token/renew" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+            $token2 | Should -Not -BeNullOrEmpty
+            $result = Invoke-WebRequest -Uri "$url/secure/jwt/hello" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+            $result.StatusCode | Should -Be 200
+       #     $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+    }
+    Describe "Cookies Authentication" {
+        BeforeAll {
+            $script:authSession = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+            $result = Invoke-WebRequest -Uri "$url/cookies/login" -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
+            $result.StatusCode | Should -Be 200
+        }
+        AfterAll {
+            $script:authSession = $null
+        }
+        It "Can access secure cookies endpoint" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies" -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies Authentication."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (GET)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method GET -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be  "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_read' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
+        }
+        It "Can access secure cookies policy (DELETE)" {
+            { Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method DELETE -SkipCertificateCheck -WebSession $authSession -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*404*'
+        }
+        It "Can access secure cookies policy (POST)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method POST -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_create' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (PUT)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method PUT -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_write' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (PATCH)" {
+            { Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method PATCH -SkipCertificateCheck -WebSession $authSession -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
+        }
+    }
 }

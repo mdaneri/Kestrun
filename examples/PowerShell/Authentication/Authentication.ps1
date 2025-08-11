@@ -474,7 +474,7 @@ Add-KrMapRoute -Verbs Delete -Path "/secure/jwt/policy" -AuthorizationSchema $Jw
 Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
     $user = $Context.User.Identity.Name
 
-    write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user 
+    write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user
   
     Write-Output "JwtTokenBuilder Type : $($JwtBuilderResult.GetType().FullName)"
     Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
