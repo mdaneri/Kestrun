@@ -16,7 +16,8 @@ using Serilog.Events;
 using Microsoft.IdentityModel.JsonWebTokens;
 using System.Text;
 using System.Security;
-using System.Runtime.InteropServices;  // For Base64UrlEncoder
+using System.Runtime.InteropServices;
+using Kestrun.Hosting;  // For Base64UrlEncoder
 namespace Kestrun.Security;
 
 /// <summary>
@@ -356,7 +357,10 @@ public sealed class JwtTokenBuilder
         SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
         Algorithm = signCreds.Algorithm;
         EncryptingCredentials? encCreds = BuildEncryptingCredentials();
-
+        if (_nbf < DateTime.UtcNow)
+        {
+            _nbf = DateTime.UtcNow;
+        }
         var token = handler.CreateJwtSecurityToken(
             issuer: _issuer,
             audience: _aud,
@@ -528,7 +532,7 @@ public sealed class JwtTokenBuilder
     /// <summary>
     /// Gets the claims to be included in the JWT token.
     /// </summary>
-    private   List<Claim> _claims = [];
+    private List<Claim> _claims = [];
     /// <summary>
     /// Gets the headers to be included in the JWT token.
     /// </summary>
@@ -742,6 +746,91 @@ public sealed class JwtTokenBuilder
                 Map.KeyAlg[KeyAlg.ToUpper()],          // 'dir', 'A256KW', …
                 Map.EncAlg[encEff.ToUpper()]);         // validated / auto-picked enc
         }
+    }
+
+    /// <summary>
+    /// Renews a JWT token from the current request context, optionally extending its lifetime.
+    /// </summary>
+    /// <param name="ctx">The Kestrun context containing the request and authorization header.</param>
+    /// <param name="lifetime">The new lifetime for the renewed token. If null, uses the builder's default lifetime.</param>
+
+    /// <returns>The renewed JWT token as a compact string.</returns>
+    /// <exception cref="UnauthorizedAccessException">Thrown if no Bearer token is provided in the request.</exception>
+    public string RenewJwt(
+            KestrunContext ctx,
+            TimeSpan? lifetime = null)
+    {
+        if (ctx.Request.Authorization == null || (!ctx.Request.Authorization?.StartsWith("Bearer ") ?? true))
+        {
+            return string.Empty;
+        }
+        var authHeader = ctx.Request.Authorization;
+        var strToken = authHeader != null ? authHeader["Bearer ".Length..].Trim() : throw new UnauthorizedAccessException("No Bearer token provided");
+        return RenewJwt(jwt: strToken, lifetime: lifetime);
+    }
+    
+    /// <summary>
+    /// Extends the validity period of an existing JWT token by creating a new token with updated lifetime.
+    /// </summary>
+    /// <param name="jwt">The original JWT token to extend.</param>
+    /// <param name="lifetime">The new lifetime for the extended token. If null, uses the builder's default lifetime.</param>
+    /// <returns>The extended JWT token as a compact string.</returns>
+    public string RenewJwt(
+        string jwt,
+        TimeSpan? lifetime = null)
+    {
+        var handler = new JwtSecurityTokenHandler();
+
+        // Read raw token (no mapping, no validation)
+        var old = handler.ReadJwtToken(jwt);
+        var _builder = CloneBuilder();
+        // Copy all non-time claims
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "exp", "nbf", "iat"  };
+
+        var claims = old.Claims.Where(c => !reserved.Contains(c.Type)).ToList();
+
+        // If you rely on "sub", make sure it’s there (some libs put it into NameIdentifier)
+        if (!claims.Any(c => c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub))
+        {
+            var sub = old.Claims.FirstOrDefault(c =>
+                         c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub ||
+                         c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(sub))
+                claims.Add(new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, sub));
+        }
+
+        SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
+        Algorithm = signCreds.Algorithm;
+        EncryptingCredentials? encCreds = BuildEncryptingCredentials();
+
+        // Keep the same kid if present by setting it on the signing key
+        // signing.Key.KeyId = old.Header.Kid; // uncomment if you must mirror the old 'kid'
+        if (_nbf < DateTime.UtcNow)
+        {
+            _nbf = DateTime.UtcNow;
+        }
+        if (lifetime is null)
+        {
+            lifetime = _lifetime;
+        }
+        else if (lifetime < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lifetime), "Lifetime must be a positive TimeSpan.");
+        }
+        var token = handler.CreateJwtSecurityToken(
+                issuer: _issuer,
+                audience: _aud,
+                subject: new ClaimsIdentity(claims),
+                notBefore: _nbf,
+                expires: _nbf.Add((TimeSpan)lifetime),
+                issuedAt: DateTime.UtcNow,
+                signingCredentials: signCreds,
+                encryptingCredentials: encCreds);
+
+        foreach (var kv in _header) token.Header[kv.Key] = kv.Value;
+
+        return handler.WriteToken(token);
     }
     /*
         public JwtTokenPackage BuildPackage()

@@ -3,15 +3,14 @@ function Update-KrJWT {
     .SYNOPSIS
         Updates an existing JWT token.
     .DESCRIPTION
-        This function allows you to update an existing JWT token by renewing it with a new expiration time.
-    .PARAMETER Result
-        The JWT builder result containing the token to update.
+        This function updates an existing JWT token by renewing it with a new lifetime.
+        It can either take a token directly or extract it from the current HTTP context.
+    .PARAMETER Builder
+        The JWT token builder used to renew the token.
     .PARAMETER Lifetime
         The new duration for which the JWT token will be valid.
-    .EXAMPLE
-        # Updates the JWT token with a new expiration time
-        $token = Get-KrJWT -Name "MyToken"
-        $newToken = Update-KrJWT -Result $token -Lifetime (New-TimeSpan -Minutes 30)
+    .PARAMETER Token
+        The existing JWT token to update.
     .OUTPUTS
         [string]
         The updated JWT token.
@@ -22,17 +21,29 @@ function Update-KrJWT {
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler?view=azure-dotnet
     #>
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [CmdletBinding(SupportsShouldProcess = $true, defaultParameterSetName = "Token")]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtBuilderResult] $Result,
+        [Kestrun.Security.JwtTokenBuilder] $Builder,
+        [Parameter(Mandatory = $true, ParameterSetName = "Token")]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true, ParameterSetName = "Context")]
+        [switch] $FromContext,
         [Parameter()]
         [TimeSpan] $Lifetime
     )
     process {
-        if ($PSCmdlet.ShouldProcess("JWT token", "Renew token with new lifetime")) {
-            return $Result.Renew($Lifetime)
+        if ($PSCmdlet.ParameterSetName -eq 'Token') {
+            if ($PSCmdlet.ShouldProcess("JWT token", "Renew token with new lifetime")) {
+                return $Builder.RenewJwt($Token, $Lifetime)
+            }
+        }
+        if ($FromContext.IsPresent -and $null -ne $Context.Request) {
+            if ($PSCmdlet.ShouldProcess("JWT token", "Renew token with new lifetime")) {
+                return $Builder.RenewJwt($Context, $Lifetime)
+            }
         }
     }
 }

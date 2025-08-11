@@ -475,19 +475,15 @@ Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  
     $user = $Context.User.Identity.Name
 
     write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user
-  
-    Write-Output "JwtTokenBuilder Type : $($JwtBuilderResult.GetType().FullName)"
-    Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
-    Write-Output "Expires : $($JwtBuilderResult.Expires)"
- 
-    $accessToken = $JwtBuilderResult | Update-KrJWT
+    Write-Output "JwtTokenBuilder Type : $($JwtTokenBuilder.GetType().FullName)"
+    $accessToken = $JwtTokenBuilder | Update-KrJWT -FromContext
     Write-KrJsonResponse -InputObject @{
         access_token = $accessToken
         token_type   = "Bearer"
         expires_in   = $build.Expires
     } -ContentType "application/json"
 
-} -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder |  Build-KrJWT }
+}
 
 
 Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {

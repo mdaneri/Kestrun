@@ -879,7 +879,13 @@ server.AddMapRoute(new()
 
 server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
-    var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
+    var token = tokenBuilder.RenewJwt(ctx);
+    if (string.IsNullOrEmpty(token))
+    {
+        await ctx.Response.WriteErrorResponseAsync("Failed to renew token", 400);
+        return;
+    }
+    // var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
 
 }, [JwtScheme]);

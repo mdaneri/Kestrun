@@ -466,23 +466,20 @@ BeforeAll {
     } -AuthorizationPolicy "CanDelete"
 
 
+    
     Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
         $user = $Context.User.Identity.Name
 
-        write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user 
-  
-        Write-Output "JwtTokenBuilder Type : $($JwtBuilderResult.GetType().FullName)"
-        Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
-        Write-Output "Expires : $($JwtBuilderResult.Expires)"
- 
-        $accessToken = $JwtBuilderResult | Update-KrJWT
+        write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user
+        Write-Output "JwtTokenBuilder Type : $($JwtTokenBuilder.GetType().FullName)"
+        $accessToken = $JwtTokenBuilder | Update-KrJWT -FromContext
         Write-KrJsonResponse -InputObject @{
             access_token = $accessToken
             token_type   = "Bearer"
             expires_in   = $build.Expires
         } -ContentType "application/json"
 
-    } -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder |  Build-KrJWT }
+    }
 
 
     Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
@@ -828,7 +825,7 @@ Describe 'Kestrun Authentication' {
             $token2 | Should -Not -BeNullOrEmpty
             $result = Invoke-WebRequest -Uri "$url/secure/jwt/hello" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
             $result.StatusCode | Should -Be 200
-       #     $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
             $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
         }
     }
