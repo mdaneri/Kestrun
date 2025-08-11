@@ -576,4 +576,30 @@ public static class KestrunHostAuthExtensions
         });
     }
 
+    /// <summary>
+    /// Checks if the specified authentication scheme is registered in the Kestrun host.
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="schemeName">The name of the authentication scheme to check.</param>
+    /// <returns>True if the scheme is registered; otherwise, false.</returns>
+    public static bool HasAuthScheme(this KestrunHost host, string schemeName)
+    {
+        var schemeProvider = host.App.Services.GetRequiredService<IAuthenticationSchemeProvider>();
+        var scheme = schemeProvider.GetSchemeAsync(schemeName).GetAwaiter().GetResult();
+        return scheme != null;
+    }
+
+    /// <summary>
+    /// Checks if the specified authorization policy is registered in the Kestrun host.
+    /// </summary>
+    /// <param name="host">The Kestrun host instance.</param>
+    /// <param name="policyName">The name of the authorization policy to check.</param>
+    /// <returns>True if the policy is registered; otherwise, false.</returns>
+    public static bool HasAuthPolicy(this KestrunHost host, string policyName)
+    {
+        var policyProvider = host.App.Services.GetRequiredService<IAuthorizationPolicyProvider>();
+        var policy = policyProvider.GetPolicyAsync(policyName).GetAwaiter().GetResult();
+        return policy != null;
+    }
+
 }
