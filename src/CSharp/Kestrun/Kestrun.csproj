@@ -183,13 +183,13 @@
   <ItemGroup>
 
      <!-- Roslyn Scripting -->
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.9.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.9.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />  
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.9.2" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />  
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.14.0" /> 
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.14.0" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.14.0" />
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
