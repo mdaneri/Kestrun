@@ -25,7 +25,6 @@ public sealed class JwtBuilderResult(
     private readonly string _token = token;
     private readonly SymmetricSecurityKey? _key = key;
     private readonly JwtTokenBuilder _builder = builder;
-    private TimeSpan _expires;
 
     /// <summary>
     /// Gets the time at which the token was issued.
