@@ -138,6 +138,7 @@ Add-KrClaimPolicy -PolicyName "CanWrite" -ClaimType "can_write" -AllowedValues "
 Add-KrClaimPolicy -PolicyName "Admin" -UserClaimType Role -AllowedValues "admin" |
 Build-KrClaimPolicy
 
+# ── BASIC AUTHENTICATION ────────────────────────────────────────────────
 Add-KrBasicAuthentication -Name $BasicPowershellScheme -Realm "Power-Kestrun" -AllowInsecureHttp -ScriptBlock {
     param($Username, $Password)
     write-KrInformationLog -MessageTemplate "Basic Authentication: User {0} is trying to authenticate." -PropertyValues $Username

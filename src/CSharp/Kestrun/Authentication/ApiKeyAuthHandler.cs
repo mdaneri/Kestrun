@@ -31,7 +31,11 @@ public class ApiKeyAuthHandler
         IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder)
-        : base(options, logger, encoder) { }
+        : base(options, logger, encoder)
+    {
+        if (options.CurrentValue.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            options.CurrentValue.Logger.Debug("ApiKeyAuthHandler initialized");
+    }
 
     /// <summary>
     /// Authenticates the incoming request using an API key.
@@ -41,6 +45,8 @@ public class ApiKeyAuthHandler
     {
         try
         {
+            if (Options.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Options.Logger.Debug("Handling API Key authentication for request: {Request}", Request);
             if (Options.RequireHttps && !Request.IsHttps)
                 return Fail("HTTPS required");
 
@@ -92,16 +98,16 @@ public class ApiKeyAuthHandler
             {
                 return Fail($"Invalid API Key: {providedKey}");
             }
-            var identity = Options.ResolveUsername?.Invoke(providedKey) ?? "ApiKeyClient";
+
 
             // If we reach here, the API key is valid
-            var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, identity, Options, Scheme);
+            var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, providedKey, Options, Scheme, "ApiKeyClient");
             // Log the successful authentication
             if (ticket.Principal is null)
             {
                 return Fail("Authentication ticket has no principal");
             }
-            Options.Logger.Information("API Key authentication succeeded for identity: {Identity}", identity);
+            Options.Logger.Information("API Key authentication succeeded for identity: {Identity}", ticket.Principal.Identity?.Name ?? "Unknown");
 
             // ⑥ Return success
             return AuthenticateResult.Success(ticket);
@@ -143,32 +149,38 @@ public class ApiKeyAuthHandler
     /// Builds a PowerShell-based API key validator delegate using the provided authentication code settings.
     /// </summary>
     /// <param name="settings">The settings containing the PowerShell authentication code.</param>
+    /// <param name="logger">The logger to use for debug output.</param>
     /// <returns>A delegate that validates an API key using PowerShell code.</returns>
     /// <remarks>
     ///  This method compiles the PowerShell script and returns a delegate that can be used to validate API keys.
     /// </remarks>
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings)
-      => async (ctx, providedKey, providedKeyBytes) =>
-            {
-                return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
-                {
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
+    {
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildPsValidator  settings: {Settings}", settings);
+        return async (ctx, providedKey, providedKeyBytes) =>
+               {
+                   return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
+                   {
                     { "providedKey", providedKey }
-                });
-            };
+                   },logger);
+               };
+    }
 
     /// <summary>
     /// Builds a C#-based API key validator delegate using the provided authentication code settings.
     /// </summary>
     /// <param name="settings">The settings containing the C# authentication code.</param>
+    /// <param name="logger">The logger to use for debug output.</param>
     /// <returns>A delegate that validates an API key using C# code.</returns>
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
-        if (settings is null)
-            throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildCsValidator  settings: {Settings}", settings);
         // pass the settings to the core C# validator
         var core = IAuthHandler.BuildCsValidator(
             settings,
-            Serilog.Log.ForContext<ApiKeyAuthHandler>(),
+            logger,
             ("providedKey", string.Empty), ("providedKeyBytes", Array.Empty<byte>())
             ) ?? throw new InvalidOperationException("Failed to build C# validator delegate from provided settings.");
         return (ctx, providedKey, providedKeyBytes) =>
@@ -183,15 +195,19 @@ public class ApiKeyAuthHandler
     /// Builds a VB.NET-based API key validator delegate using the provided authentication code settings.
     /// </summary>
     /// <param name="settings">The settings containing the VB.NET authentication code.</param>
+    /// <param name="logger">The logger to use for debug output.</param>
     /// <returns>A delegate that validates an API key using VB.NET code.</returns>
 
-    public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildVBNetValidator  settings: {Settings}", settings);
         // pass the settings to the core VB.NET validator
         var core = IAuthHandler.BuildVBNetValidator(
             settings,
-            Serilog.Log.ForContext<BasicAuthHandler>(),
-            "providedKey", "providedKeyBytes") ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
+            logger,
+            ("providedKey", string.Empty), ("providedKeyBytes", Array.Empty<byte>())
+            ) ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
         return (ctx, providedKey, providedKeyBytes) =>
             core(ctx, new Dictionary<string, object?>
             {

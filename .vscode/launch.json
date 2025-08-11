@@ -126,6 +126,23 @@
             "cwd": "${workspaceFolder}/examples/CSharp/HtmlTemplate",
             "stopAtEntry": false,
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Launch pwsh with script",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "pwsh",
+            "args": [
+                "-NoLogo",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/examples/PowerShell/Authentication/Authentication.ps1"
+            ],
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true,
+            "console": "integratedTerminal"
         }
     ]
 }

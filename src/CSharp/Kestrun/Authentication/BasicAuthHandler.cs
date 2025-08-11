@@ -36,8 +36,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         IOptionsMonitor<BasicAuthenticationOptions> options,
         ILoggerFactory loggerFactory,
         UrlEncoder encoder)
-        : base(options, loggerFactory, encoder) { }
-
+        : base(options, loggerFactory, encoder)
+    {
+        if (options.CurrentValue.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            options.CurrentValue.Logger.Debug("BasicAuthHandler initialized");
+    }
 
     /// <summary>
     /// Handles the authentication process for Basic Authentication.
@@ -178,31 +181,40 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// Builds a PowerShell-based validator function for authenticating users.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the PowerShell script.</param>
+    /// <param name="logger">The logger instance.</param>
     /// <returns>A function that validates credentials using the provided PowerShell script.</returns>
     /// <remarks>
     /// This method compiles the PowerShell script and returns a delegate that can be used to validate user credentials.
     /// </remarks>
-    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings)
-      => async (ctx, user, pass) =>
-      {
-          return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
+    public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
+    {
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildPsValidator  settings: {Settings}", settings);
+
+        return async (ctx, user, pass) =>
+        {
+            return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
             {
                 { "username", user },
                 { "password", pass }
-            });
-      };
-
+            },logger);
+        };
+    }
     /// <summary>
     /// Builds a C#-based validator function for authenticating users.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the C# script.</param>
+    /// <param name="logger">The logger instance.</param>
     /// <returns>A function that validates credentials using the provided C# script.</returns>
-    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildCsValidator  settings: {Settings}", settings);
+
         // pass the settings to the core C# validator
         var core = IAuthHandler.BuildCsValidator(
             settings,
-            Serilog.Log.ForContext<BasicAuthHandler>(),
+            logger.ForContext<BasicAuthHandler>(),
             ("username", string.Empty), ("password", string.Empty)
             ) ?? throw new InvalidOperationException("Failed to build C# validator delegate from provided settings.");
         return (ctx, username, password) =>
@@ -217,14 +229,17 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// Builds a VB.NET-based validator function for authenticating users.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
+    /// <param name="logger">The logger instance.</param>
     /// <returns>A function that validates credentials using the provided VB.NET script.</returns>
-    public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("BuildCsValidator  settings: {Settings}", settings);
         // pass the settings to the core VB.NET validator
         var core = IAuthHandler.BuildVBNetValidator(
             settings,
-            Serilog.Log.ForContext<BasicAuthHandler>(),
-            "username", "password") ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
+            logger.ForContext<BasicAuthHandler>(),
+            ("username", string.Empty), ("password", string.Empty)) ?? throw new InvalidOperationException("Failed to build VB.NET validator delegate from provided settings.");
         return (ctx, username, password) =>
             core(ctx, new Dictionary<string, object?>
             {
@@ -236,7 +251,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
 
 
-  
 
-    
+
+
 }

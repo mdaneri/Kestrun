@@ -56,12 +56,6 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     public bool RequireHttps { get; set; } = true;
 
     /// <summary>
-    /// If provided, returns the username associated with a given API key.
-    /// Used to populate ClaimTypes.Name.
-    /// </summary>
-    public Func<string, string>? ResolveUsername { get; set; }
-
-    /// <summary>
     /// If true, includes the <c>WWW-Authenticate</c> header in 401 responses.
     /// <para>Default: <c>true</c>.</para>
     /// <para>Set to <c>false</c> to suppress automatic hints to clients.</para>

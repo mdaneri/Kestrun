@@ -28,12 +28,13 @@ public interface IAuthHandler
     /// <param name="user">The user name for whom the ticket is being generated.</param>
     /// <param name="Options">Authentication options including claim issuance delegates.</param>
     /// <param name="Scheme">The authentication scheme to use.</param>
+    /// <param name="alias">An optional alias for the user.</param>
     /// <returns>An <see cref="AuthenticationTicket"/> representing the authenticated user.</returns>
     public static async Task<AuthenticationTicket> GetAuthenticationTicketAsync(
         HttpContext Context, string user,
-    IAuthenticationCommonOptions Options, AuthenticationScheme Scheme)
+    IAuthenticationCommonOptions Options, AuthenticationScheme Scheme, string? alias = null)
     {
-        var claims = new List<Claim> { new(ClaimTypes.Name, user) };
+        var claims = new List<Claim>();
 
         // If the consumer wired up IssueClaims, invoke it now:
         if (Options.IssueClaims is not null)
@@ -48,7 +49,18 @@ public interface IAuthHandler
                         claims.Add(claim);
                 }
             }
-        } 
+        }
+
+        // if claimstypes.Name is not present add it
+        if (!claims.Any(c => c.Type == ClaimTypes.Name))
+        {
+            if (Options.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Options.Logger.Debug("No Name claim found, adding default Name claim");
+            if (string.IsNullOrEmpty(alias))
+                claims.Add(new Claim(ClaimTypes.Name, user));
+            else
+                claims.Add(new Claim(ClaimTypes.Name, alias));
+        }
         // Create the ClaimsIdentity and ClaimsPrincipal
         var claimsIdentity = new ClaimsIdentity(claims, Scheme.Name);
         // Create the AuthenticationTicket with the principal and scheme name
@@ -67,9 +79,10 @@ public interface IAuthHandler
     /// <param name="code">The PowerShell script code used for authentication.</param>
     /// <param name="context">The HTTP context.</param>
     /// <param name="credentials">A dictionary containing the credentials to validate (e.g., username and password).</param>
+    /// <param name="logger">The logger instance.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials)
+    public static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials, Serilog.ILogger logger)
     {
         try
         {
@@ -80,7 +93,7 @@ public interface IAuthHandler
             // Validate that the credentials dictionary is not null or empty
             if (credentials == null || credentials.Count == 0)
             {
-                Log.Warning("Credentials are null or empty.");
+                logger.Warning("Credentials are null or empty.");
                 return false;
             }
             // Validate that the code is not null or empty
@@ -106,14 +119,14 @@ public interface IAuthHandler
 
             if (psResults.Count == 0 || psResults[0] == null || psResults[0].BaseObject is not bool isValid)
             {
-                Log.Error("PowerShell script did not return a valid boolean result.");
+                logger.Error("PowerShell script did not return a valid boolean result.");
                 return false;
             }
             return isValid;
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error during validating PowerShell authentication.");
+            logger.Error(ex, "Error during validating PowerShell authentication.");
             return false;
         }
     }
@@ -123,12 +136,14 @@ public interface IAuthHandler
         Serilog.ILogger log,
           params (string Name, object? Prototype)[] globals)
     {
-        if (settings is null)
-            throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            log.Debug("Building C# authentication script with globals: {Globals}", globals);
+
         // Place-holders so Roslyn knows the globals that will exist
         var stencil = globals.ToDictionary(n => n.Name, n => n.Prototype,
-                                                 StringComparer.OrdinalIgnoreCase);
-
+                                             StringComparer.OrdinalIgnoreCase);
+        if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            log.Debug("Compiling C# authentication script with variables: {Variables}", stencil);
         var script = CSharpDelegateBuilder.Compile(
             settings.Code,
             log,                             // already scoped by caller
@@ -140,8 +155,8 @@ public interface IAuthHandler
         // Return the runtime delegate
         return async (ctx, vars) =>
         {
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Log.Debug("Running C# authentication script with variables: {Variables}", vars);
+            if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                log.Debug("Running C# authentication script with variables: {Variables}", vars);
             // --- Kestrun plumbing -------------------------------------------------
             var krReq = await KestrunRequest.NewRequest(ctx);
             var krRes = new KestrunResponse(krReq);
@@ -163,14 +178,18 @@ public interface IAuthHandler
     internal static Func<HttpContext, IDictionary<string, object?>, Task<bool>> BuildVBNetValidator(
         AuthenticationCodeSettings settings,
         Serilog.ILogger log,
-        params string[] variableNames)
+      params (string Name, object? Prototype)[] globals)
     {
         if (settings is null)
             throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
         // Place-holders so Roslyn knows the globals that will exist
-        var stencil = variableNames.ToDictionary(n => n, n => (object?)null,
+        var stencil = globals.ToDictionary(n => n.Name, n => n.Prototype,
                                                  StringComparer.OrdinalIgnoreCase);
 
+        if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            log.Debug("Compiling VB.NET authentication script with variables: {Variables}", stencil);
+
+        // Compile the VB.NET script with the provided settings
         var script = VBNetDelegateBuilder.Compile<bool>(
             settings.Code,
             log,                             // already scoped by caller
@@ -182,8 +201,8 @@ public interface IAuthHandler
         // Return the runtime delegate
         return async (ctx, vars) =>
         {
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Log.Debug("Running VB.NET authentication script with variables: {Variables}", vars);
+            if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                log.Debug("Running VB.NET authentication script with variables: {Variables}", vars);
 
             // --- Kestrun plumbing -------------------------------------------------
             var krReq = await KestrunRequest.NewRequest(ctx);
@@ -208,15 +227,16 @@ public interface IAuthHandler
     }
 
 
-/// <summary>
+    /// <summary>
     /// Builds a PowerShell-based function for issuing claims for a user.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the PowerShell script.</param>
+    /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided PowerShell script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
   => async (ctx, identity) =>
         {
-            return await IAuthHandler.IssueClaimsPowerShellAsync(settings.Code, ctx, identity);
+            return await IAuthHandler.IssueClaimsPowerShellAsync(settings.Code, ctx, identity, logger);
         };
     /// <summary>
     /// Issues claims for a user by executing a PowerShell script.
@@ -224,8 +244,9 @@ public interface IAuthHandler
     /// <param name="code">The PowerShell script code used to issue claims.</param>
     /// <param name="ctx">The HTTP context containing the PowerShell runspace.</param>
     /// <param name="identity">The username for which to issue claims.</param>
+    /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A task representing the asynchronous operation, with a collection of issued claims.</returns>
-    public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity)
+    public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity, Serilog.ILogger logger)
     {
         try
         {
@@ -236,7 +257,7 @@ public interface IAuthHandler
 
             if (string.IsNullOrWhiteSpace(identity))
             {
-                Log.Warning("Identity is null or empty.");
+                logger.Warning("Identity is null or empty.");
                 return [];
             }
             if (string.IsNullOrEmpty(code))
@@ -293,20 +314,25 @@ public interface IAuthHandler
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error during Issue Claims for {Identity}", identity);
+            logger.Error(ex, "Error during Issue Claims for {Identity}", identity);
             return [];
         }
     }
 
 
-     /// <summary>
+    /// <summary>
     /// Builds a C#-based function for issuing claims for a user.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the C# script.</param>
+    /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided C# script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
-        var script = CSharpDelegateBuilder.Compile(settings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("Compiling C# script for issuing claims.");
+
+        // Compile the C# script with the provided settings
+        var script = CSharpDelegateBuilder.Compile(settings.Code, logger,
         settings.ExtraImports, settings.ExtraRefs,
         new Dictionary<string, object?>
             {
@@ -335,9 +361,13 @@ public interface IAuthHandler
     /// </summary>
     /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
     /// <returns>A function that issues claims using the provided VB.NET script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings)
+    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
-        var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(settings.Code, Serilog.Log.ForContext<BasicAuthHandler>(),
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("Compiling VB.NET script for issuing claims.");
+
+        // Compile the VB.NET script with the provided settings
+        var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(settings.Code, logger,
         settings.ExtraImports, settings.ExtraRefs,
         new Dictionary<string, object?>
             {

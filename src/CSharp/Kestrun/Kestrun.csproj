@@ -14,6 +14,9 @@
 
     <!-- Enable implicit usings for common namespaces -->
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Portable PDBs -->
+    <DebugType>portable</DebugType>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
 
     <EnablePreviewFeatures>False</EnablePreviewFeatures>
 

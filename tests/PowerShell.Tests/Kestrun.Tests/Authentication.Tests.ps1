@@ -78,7 +78,7 @@ BeforeAll {
     }
     # Load the helper functions
     # . "$PWD$TestPath/helper.ps1"
-    $Script:Url = 'http://localhost:5000'
+    $Script:Url = 'https://localhost:5001'
     $logger = New-KrLogger  |
     Set-KrMinimumLevel -Value Debug  |
     Add-KrSinkFile -Path ".\logs\Authentication.log" -RollingInterval Hour |
@@ -90,11 +90,11 @@ BeforeAll {
     if (Test-Path "$ScriptPath\devcert.pfx" ) {
         $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
     }
-    else {
-        $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
-        Export-KsCertificate -Certificate $cert `
-            -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
-    }
+    else {#>
+    $cert = New-KsSelfSignedCertificate -DnsName 'localhost'
+    #    Export-KsCertificate -Certificate $cert `
+    #       -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
+    
 
     if (-not (Test-KsCertificate -Certificate $cert )) {
         Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
@@ -106,7 +106,7 @@ BeforeAll {
  
     Set-KrServerLimit -MaxRequestBodySize 10485760 -MaxConcurrentConnections 100 -MaxRequestHeaderCount 100 -KeepAliveTimeoutSeconds 120
     # Configure the listener (adjust port, cert path, and password)
-    #  Add-KrListener -Port 5001 -IPAddress ([IPAddress]::Loopback) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
+    Add-KrListener -Port 5001 -IPAddress ([IPAddress]::Loopback) -X509Certificate $cert -Protocols Http1AndHttp2AndHttp3
     Add-KrListener -Port 5000 -IPAddress ([IPAddress]::Loopback)
 
     Add-KrResponseCompression -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
@@ -225,13 +225,13 @@ BeforeAll {
     return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key");
     // or use a simple string comparison:
     //return providedKey == "my-secret-api-key";
-"@
+"@ -Logger $logger -CodeLanguage CSharp
 
     Add-KrApiKeyAuthentication -Name $ApiKeyVBNet -AllowInsecureHttp -HeaderName "X-Api-Key" -Code @"
     Return FixedTimeEquals.Test(providedKeyBytes, "my-secret-api-key")
     ' or use a simple string comparison:
     ' Return providedKey = "my-secret-api-key"
-"@ -CodeLanguage VBNet
+"@ -CodeLanguage VBNet -Logger $logger
 
 
     # ── JWT AUTHENTICATION ────────────────────────────────────────────────
@@ -637,25 +637,20 @@ Describe 'Kestrun Authentication' {
         }
 
         It "ps/hello in PowerShell" {
-            $result = Invoke-WebRequest -Uri "$url/secure/ps/hello" -Headers @{Authorization = $script:basic }
+            $result = Invoke-WebRequest -Uri "$url/secure/ps/hello" -SkipCertificateCheck -Headers @{Authorization = $script:basic }
             $result.StatusCode | Should -Be 200
             $result.Content | Should -Be "Welcome, admin! You are authenticated by PowerShell Code."
             $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
         }
 
         It "ps/hello in C#" {
-            $result = Invoke-WebRequest -Uri "$url/secure/cs/hello" -Headers @{Authorization = $script:basic }
+            $result = Invoke-WebRequest -Uri "$url/secure/cs/hello" -SkipCertificateCheck -Headers @{Authorization = $script:basic }
             $result.StatusCode | Should -Be 200
             $result.Content | Should -Be "Welcome, admin! You are authenticated by C# Code."
             $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
         }
 
-        It "ps/hello in VB.Net" {
-            $result = Invoke-WebRequest -Uri "$url/secure/vb/hello" -Headers @{Authorization = $script:basic }
-            $result.StatusCode | Should -Be 200
-            $result.Content | Should -Be "Welcome, admin! You are authenticated by VB.Net Code."
-            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
-        }
+       
 
         it "ps/policy (CanRead)" {
             $result = Invoke-WebRequest -Uri "$url/secure/ps/policy" -Method GET -SkipCertificateCheck -Headers @{Authorization = $script:basic }
@@ -686,6 +681,14 @@ Describe 'Kestrun Authentication' {
             { Invoke-WebRequest -Uri "$url/secure/ps/policy" -Method PATCH -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
         }
 
+
+        It "vb/hello in VB.Net" {
+            $result = Invoke-WebRequest -Uri "$url/secure/vb/hello" -SkipCertificateCheck -Headers @{Authorization = $script:basic }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by VB.Net Code."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
+        }
+
         it "vb/policy (CanRead)" {
             { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method GET -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
         }
@@ -711,8 +714,30 @@ Describe 'Kestrun Authentication' {
         it "vb/policy (CanPatch)" {
             { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method PATCH -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
         }
- 
 
+
+        It "key authentication Hello Simple mode" {
+            $result = Invoke-WebRequest -Uri "$url/secure/key/simple/hello" -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+            $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated using simple key matching."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        It "key authentication Hello in powershell" {
+            $result = Invoke-WebRequest -Uri "$url/secure/key/ps/hello" -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+            $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated by Key Matching PowerShell Code."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "key authentication Hello in CSharp" {
+            $result = Invoke-WebRequest -Uri "$url/secure/key/cs/hello" -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+            $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated by Key Matching C# Code."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        It "key authentication Hello in VB.Net" {
+            $result = Invoke-WebRequest -Uri "$url/secure/key/vb/hello" -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+            $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated by Key Matching VB.Net Code."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
     }
 
     <#   It 'responds back with 405 for incorrect method' {

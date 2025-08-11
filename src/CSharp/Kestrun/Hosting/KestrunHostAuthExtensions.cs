@@ -59,25 +59,31 @@ public static class KestrunHostAuthExtensions
                        if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
                            !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building PowerShell validator for Basic authentication");
                            // Build the PowerShell script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
                        else   // ── C# pathway ─────────────────────────────────
                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building C# validator for Basic authentication");
                            // Build the C# script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
                        else
                          if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building VB.NET validator for Basic authentication");
                            // Build the VB.NET script validator
                            // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
+                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
 
                        // ── SPECIAL POWER-SHELL PATH ────────────────────
@@ -86,19 +92,25 @@ public static class KestrunHostAuthExtensions
                        if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building PowerShell Issue Claims for API Basic authentication");
+                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                        else   // ── C# pathway ─────────────────────────────────
                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building C# Issue Claims for API Basic authentication");
+                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                        else
                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building VB.NET Issue Claims for API Basic authentication");
+                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                    });
            }
@@ -145,7 +157,10 @@ public static class KestrunHostAuthExtensions
                 opts.Realm = configure.Realm;
                 opts.RequireHttps = configure.RequireHttps;
                 opts.SuppressWwwAuthenticate = configure.SuppressWwwAuthenticate;
-                opts.Logger = configure.Logger;
+                // Logger configuration
+                opts.Logger = configure.Logger == Serilog.Log.ForContext<BasicAuthenticationOptions>() ?
+                            host._Logger.ForContext<BasicAuthenticationOptions>() : configure.Logger;
+
                 // Copy properties from the provided configure object
                 opts.ValidateCodeSettings = configure.ValidateCodeSettings;
                 opts.IssueClaimsCodeSettings = configure.IssueClaimsCodeSettings;
@@ -269,22 +284,22 @@ public static class KestrunHostAuthExtensions
     /// <param name="configure">The CookieAuthenticationOptions object to configure the authentication.</param>
     /// <param name="claimPolicy">Optional authorization policy configuration.</param>
     /// <returns>The configured KestrunHost instance.</returns>
-        public static KestrunHost AddCookieAuthentication(
-              this KestrunHost host,
-              string scheme = CookieAuthenticationDefaults.AuthenticationScheme,
-              CookieAuthenticationOptions? configure = null,
-           ClaimPolicyConfig? claimPolicy = null)
-        {
-            return host.AddCookieAuthentication(
-                scheme: scheme,
-                configure: opts =>
-                {
-                    opts = configure ?? new CookieAuthenticationOptions();
-    
-                },
-                 claimPolicy: claimPolicy
-            );
-        }
+    public static KestrunHost AddCookieAuthentication(
+          this KestrunHost host,
+          string scheme = CookieAuthenticationDefaults.AuthenticationScheme,
+          CookieAuthenticationOptions? configure = null,
+       ClaimPolicyConfig? claimPolicy = null)
+    {
+        return host.AddCookieAuthentication(
+            scheme: scheme,
+            configure: opts =>
+            {
+                opts = configure ?? new CookieAuthenticationOptions();
+
+            },
+             claimPolicy: claimPolicy
+        );
+    }
 
 
     /*
@@ -356,25 +371,31 @@ public static class KestrunHostAuthExtensions
                        if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
                            !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building PowerShell validator for API Key authentication");
                            // Build the PowerShell script validator
                            // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings);
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
                        else   // ── C# pathway ─────────────────────────────────
                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building C# validator for API Key authentication");
                            // Build the C# script validator
                            // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings);
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
                        else   // ── VB.NET pathway ─────────────────────────────────
                        if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
                            && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
                        {
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building VB.NET validator for API Key authentication");
                            // Build the VB.NET script validator
                            // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings);
+                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings, opts.Logger);
                        }
 
                        // ── SPECIAL POWER-SHELL PATH ────────────────────
@@ -383,19 +404,25 @@ public static class KestrunHostAuthExtensions
                        if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
                            !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building PowerShell Issue Claims for API Key authentication");
+                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                        else   // ── C# pathway ─────────────────────────────────
                        if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
                            && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building C# Issue Claims for API Key authentication");
+                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                        else
                          if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
                            && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
                        {
-                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings);
+                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                               opts.Logger.Debug("Building VB.NET Issue Claims for API Key authentication");
+                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
                        }
                    });
            }
@@ -408,7 +435,7 @@ public static class KestrunHostAuthExtensions
                 sp => new ClaimPolicyPostConfigurer(
                           scheme,
                           sp.GetRequiredService<
-                              IOptionsMonitor<BasicAuthenticationOptions>>()));
+                              IOptionsMonitor<ApiKeyAuthenticationOptions>>()));
         });
     }
 
@@ -439,7 +466,10 @@ public static class KestrunHostAuthExtensions
                 opts.HeaderName = configure.HeaderName;
                 opts.AdditionalHeaderNames = configure.AdditionalHeaderNames;
                 opts.AllowQueryStringFallback = configure.AllowQueryStringFallback;
-                opts.Logger = configure.Logger;
+                // Logger configuration
+                opts.Logger = configure.Logger == Serilog.Log.ForContext<ApiKeyAuthenticationOptions>() ?
+                        host._Logger.ForContext<ApiKeyAuthenticationOptions>() : configure.Logger;
+
                 opts.RequireHttps = configure.RequireHttps;
                 opts.EmitChallengeHeader = configure.EmitChallengeHeader;
                 opts.ChallengeHeaderFormat = configure.ChallengeHeaderFormat;

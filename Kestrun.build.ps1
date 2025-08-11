@@ -134,12 +134,12 @@ Add-BuildTask "Restore" {
     dotnet restore .\Kestrun.sln -v:$DotNetVerbosity
 }, "Nuget-CodeAnalysis"
 
-Add-BuildTask "Build"  "Restore", {
+Add-BuildTask "Build" {
     Write-Host "Building solution..."
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
         $Version = Get-Version -FileVersion $FileVersion 
- 
+
     }
     elseif ($PSCmdlet.ParameterSetName -eq 'Version') {
         if (-not (Test-Path -Path $FileVersion)) {
