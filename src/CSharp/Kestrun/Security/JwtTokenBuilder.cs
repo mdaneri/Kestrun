@@ -149,6 +149,17 @@ public sealed class JwtTokenBuilder
 
 
     /// <summary>
+    /// Creates a new token builder instance by cloning the current configuration.
+    /// </summary>
+    /// <returns>A new <see cref="JwtTokenBuilder"/> instance with the same configuration.</returns>
+    public JwtTokenBuilder CloneBuilder()
+    {
+        var clone = (JwtTokenBuilder)MemberwiseClone();
+        clone._claims = [.. _claims];
+        return clone;
+    }
+
+    /// <summary>
     /// Signs the JWT using a symmetric key provided as a hexadecimal string.
     /// </summary>
     /// <param name="hex">The symmetric key as a hexadecimal string.</param>
@@ -517,7 +528,7 @@ public sealed class JwtTokenBuilder
     /// <summary>
     /// Gets the claims to be included in the JWT token.
     /// </summary>
-    private readonly List<Claim> _claims = [];
+    private   List<Claim> _claims = [];
     /// <summary>
     /// Gets the headers to be included in the JWT token.
     /// </summary>

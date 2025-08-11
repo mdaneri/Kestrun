@@ -56,7 +56,11 @@ public sealed class JwtBuilderResult(
             RequireSignedTokens = _key is not null,
             ValidateIssuerSigningKey = _key is not null,
             IssuerSigningKey = _key,
-            ValidAlgorithms = _builder.Algorithm != null ? [_builder.Algorithm] : []
+            ValidAlgorithms = _builder.Algorithm != null ? [_builder.Algorithm] : [],
+            NameClaimType = ClaimTypes.Name,
+            //    NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = ClaimTypes.Role
+
         };
         return tvp;
     }

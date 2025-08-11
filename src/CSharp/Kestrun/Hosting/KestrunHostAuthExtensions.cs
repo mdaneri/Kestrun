@@ -237,6 +237,7 @@ public static class KestrunHostAuthExtensions
                 ab.AddJwtBearer(scheme, opts =>
                 {
                     opts.TokenValidationParameters = validationParameters;
+                    opts.MapInboundClaims = true;
                     configureJwt?.Invoke(opts);
                 });
             },

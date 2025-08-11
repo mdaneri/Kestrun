@@ -35,14 +35,13 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             ps.Runspace = runspace;
             var krRequest = await KestrunRequest.NewRequest(context);
             var krResponse = new KestrunResponse(krRequest);
-
-            // keep a reference for any C# code later in the pipeline
-            context.Items[PowerShellDelegateBuilder.KR_REQUEST_KEY] = krRequest;
-            context.Items[PowerShellDelegateBuilder.KR_RESPONSE_KEY] = krResponse;
+ 
             // Store the PowerShell instance in the context for later use
             context.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
 
             KestrunContext kestrunContext = new(krRequest, krResponse, context);
+            // Set the KestrunContext in the HttpContext.Items for later use
+            context.Items[PowerShellDelegateBuilder.KR_CONTEXT_KEY] = kestrunContext;
 
             if (Log.IsEnabled(LogEventLevel.Debug))
                 Log.Debug("PowerShellRunspaceMiddleware - Setting KestrunContext in HttpContext.Items for {Path}", context.Request.Path);

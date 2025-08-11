@@ -360,6 +360,7 @@ public interface IAuthHandler
     /// Builds a VB.NET-based function for issuing claims for a user.
     /// </summary>
     /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
+    /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided VB.NET script.</returns>
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
