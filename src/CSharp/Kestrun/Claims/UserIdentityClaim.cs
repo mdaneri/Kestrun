@@ -1,7 +1,9 @@
+using System.Security.Claims;
+
 namespace Kestrun.Claims;
 /// <summary>
 /// Represents the set of claims supported by Kestrun for authentication and authorization purposes.
-/// </summary>
+/// </summary> 
 public enum UserIdentityClaim
 {
     /// <summary>
@@ -54,10 +56,10 @@ public enum UserIdentityClaim
     /// http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarygroupsid
     /// </summary>
     DenyOnlyPrimaryGroupSid,
-       /// <summary>
-     /// Specifies the deny only primary sid claim, representing a security identifier for a user.
-     /// http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarysid
-     /// </summary>
+    /// <summary>
+    /// Specifies the deny only primary sid claim, representing a security identifier for a user.
+    /// http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlyprimarysid
+    /// </summary>
     DenyOnlyPrimarySid,
     /// <summary>
     /// Specifies the deny only sid claim, representing a security identifier.
@@ -69,11 +71,6 @@ public enum UserIdentityClaim
     /// http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlywindowsdevicegroup
     /// </summary>
     DenyOnlyWindowsDeviceGroup,
-    /// <summary>
-    /// Specifies the deny only Windows device claim, representing a security identifier for a Windows device.
-    /// http://schemas.microsoft.com/ws/2008/06/identity/claims/denyonlywindowsdevice
-    /// </summary>
-    DenyOnlyWindowsDevice,
     /// <summary>
     /// Specifies the email claim, representing the user's email address.
     /// http://schemas.microsoft.com/ws/2008/06/identity/claims/email
@@ -168,7 +165,7 @@ public enum UserIdentityClaim
     /// Specifies the private personal identifier claim, representing the user's private personal identifier.
     /// http://schemas.xmlsoap.org/ws/2005/05/identity/claims/privateppid
     /// </summary>
-    privateppid,
+    PrivatePpid,
     /// <summary>
     /// Specifies the role claim, representing the user's role in the system.
     /// http://schemas.microsoft.com/ws/2008/06/identity/claims/role
@@ -301,7 +298,66 @@ public enum UserIdentityClaim
 /// </summary>
 public static class KestrunClaimExtensions
 {
-    private const string Prefix = "http://schemas.microsoft.com/ws/2008/06/identity/claims/";
+    private static readonly Dictionary<UserIdentityClaim, string> _map = new()
+    {
+        [UserIdentityClaim.Actor] = ClaimTypes.Actor,
+        [UserIdentityClaim.Anonymous] = ClaimTypes.Anonymous,
+        [UserIdentityClaim.Authentication] = ClaimTypes.Authentication,
+        [UserIdentityClaim.AuthenticationInstant] = ClaimTypes.AuthenticationInstant,
+        [UserIdentityClaim.AuthenticationMethod] = ClaimTypes.AuthenticationMethod,
+        [UserIdentityClaim.AuthorizationDecision] = ClaimTypes.AuthorizationDecision,
+        [UserIdentityClaim.Country] = ClaimTypes.Country,
+        [UserIdentityClaim.DateOfBirth] = ClaimTypes.DateOfBirth,
+        [UserIdentityClaim.Dns] = ClaimTypes.Dns,
+        [UserIdentityClaim.DenyOnlyPrimaryGroupSid] = ClaimTypes.DenyOnlyPrimaryGroupSid,
+        [UserIdentityClaim.DenyOnlyPrimarySid] = ClaimTypes.DenyOnlyPrimarySid,
+        [UserIdentityClaim.DenyOnlySid] = ClaimTypes.DenyOnlySid,
+        [UserIdentityClaim.DenyOnlyWindowsDeviceGroup] = ClaimTypes.DenyOnlyWindowsDeviceGroup,
+        [UserIdentityClaim.Email] = "http://schemas.microsoft.com/ws/2008/06/identity/claims/email",
+        [UserIdentityClaim.EmailAddress] = ClaimTypes.Email,
+        [UserIdentityClaim.Expiration] = "http://schemas.microsoft.com/ws/2008/06/identity/claims/expiration",
+        [UserIdentityClaim.GivenName] = ClaimTypes.GivenName,
+        [UserIdentityClaim.Gender] = ClaimTypes.Gender,
+        [UserIdentityClaim.GroupSid] = ClaimTypes.GroupSid,
+        [UserIdentityClaim.Hash] = ClaimTypes.Hash,
+        [UserIdentityClaim.HomePhone] = ClaimTypes.HomePhone,
+        [UserIdentityClaim.IsPersistent] = ClaimTypes.IsPersistent,
+        [UserIdentityClaim.Issuer] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/issuer",
+        [UserIdentityClaim.Locality] = ClaimTypes.Locality,
+        [UserIdentityClaim.MobilePhone] = ClaimTypes.MobilePhone,
+        [UserIdentityClaim.Name] = ClaimTypes.Name,
+        [UserIdentityClaim.NameIdentifier] = ClaimTypes.NameIdentifier,
+        [UserIdentityClaim.OtherPhone] = ClaimTypes.OtherPhone,
+        [UserIdentityClaim.PostalCode] = ClaimTypes.PostalCode,
+        [UserIdentityClaim.PrimaryGroupSid] = ClaimTypes.PrimaryGroupSid,
+        [UserIdentityClaim.Ppid] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/ppid",
+        [UserIdentityClaim.PrivatePpid] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/privateppid",
+        [UserIdentityClaim.Role] = ClaimTypes.Role,
+        [UserIdentityClaim.Rsa] = ClaimTypes.Rsa,
+        [UserIdentityClaim.SerialNumber] = ClaimTypes.SerialNumber,
+        [UserIdentityClaim.Sid] = ClaimTypes.Sid,
+        [UserIdentityClaim.StateOrProvince] = ClaimTypes.StateOrProvince,
+        [UserIdentityClaim.Spn] = ClaimTypes.Spn,
+        [UserIdentityClaim.StreetAddress] = ClaimTypes.StreetAddress,
+        [UserIdentityClaim.Surname] = ClaimTypes.Surname,
+        [UserIdentityClaim.Thumbprint] = ClaimTypes.Thumbprint,
+        [UserIdentityClaim.UserData] = ClaimTypes.UserData,
+        [UserIdentityClaim.Upn] = ClaimTypes.Upn,
+        [UserIdentityClaim.Uri] = ClaimTypes.Uri,
+        [UserIdentityClaim.Version] = ClaimTypes.Version,
+        [UserIdentityClaim.Webpage] = ClaimTypes.Webpage,
+        [UserIdentityClaim.System] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/system",
+        [UserIdentityClaim.WindowsAccountName] = ClaimTypes.WindowsAccountName,
+        [UserIdentityClaim.WindowsDevice] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsdevice",
+        [UserIdentityClaim.WindowsDeviceGroup] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsdevicegroup",
+        [UserIdentityClaim.WindowsFqbnVersion] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsfqbnversion",
+        [UserIdentityClaim.WindowsGroupSid] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsgroupsid",
+        [UserIdentityClaim.WindowsGroup] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsgroup",
+        [UserIdentityClaim.WindowsDeviceClaim] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsdeviceClaim",
+        [UserIdentityClaim.WindowsSubAuthority] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowssubauthority",
+        [UserIdentityClaim.WindowsSid] = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/windowsid",
+        [UserIdentityClaim.PrimarySid] = ClaimTypes.PrimarySid
+    };
 
     /// <summary>
     /// Converts the specified <see cref="UserIdentityClaim"/> to its corresponding claim URI string.
@@ -309,5 +365,7 @@ public static class KestrunClaimExtensions
     /// <param name="claim">The claim to convert.</param>
     /// <returns>The URI string representation of the claim.</returns>
     public static string ToClaimUri(this UserIdentityClaim claim)
-        => $"{Prefix}{claim.ToString().ToLowerInvariant()}";
+        => _map[claim];
 }
+
+ 

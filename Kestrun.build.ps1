@@ -112,18 +112,26 @@ Add-BuildTask Help {
     Write-Host '- Default: Lists all available tasks.'
     Write-Host '- Help: Displays this help message.'
     Write-Host '- Clean: Cleans the solution.'
+    Write-Host '- Restore: Restores NuGet packages.'
     Write-Host '- Build: Builds the solution.'
     Write-Host '- Test: Runs tests and Pester tests.'
+    Write-Host '- All: Runs Clean, Build, and Test tasks in sequence.'
+    Write-Host '-----------------------------------------------------'
+    Write-Host 'Additional Tasks:' -ForegroundColor Green
+    Write-Host '- Nuget-CodeAnalysis: Updates CodeAnalysis packages.'
+    Write-Host '- Clean-CodeAnalysis: Cleans the CodeAnalysis packages.'
+    Write-Host '- Test: Runs tests and Pester tests.'
+    Write-Host '- Kestrun.Tests: Runs Kestrun DLL tests.'
     Write-Host '- Package: Packages the solution.'
     Write-Host '- Manifest: Updates the Kestrun.psd1 manifest.'
     Write-Host '- Generate-LargeFile: Generates a large test file.'
     Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
     Write-Host '- ThirdPartyNotices: Generates third-party notices.'
-    Write-Host '- All: Runs Clean, Build, and Test tasks in sequence.'
+
     Write-Host
 }
 
-Add-BuildTask "Clean" "Clean-CodeAnalysis",{
+Add-BuildTask "Clean" "Clean-CodeAnalysis", {
     Write-Host "Cleaning solution..."
     foreach ($framework in $Frameworks) {
         dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
@@ -167,7 +175,7 @@ Add-BuildTask "Nuget-CodeAnalysis" {
 
 Add-BuildTask "Clean-CodeAnalysis" {
     Write-Host "Cleaning CodeAnalysis..."
-    Remove-Item -Path './src/PowerShell/Kestrun/lib/Microsoft.CodeAnalysis/' -Force -Recurse
+    Remove-Item -Path './src/PowerShell/Kestrun/lib/Microsoft.CodeAnalysis/' -Force -Recurse -ErrorAction SilentlyContinue
 }
 
 Add-BuildTask "Kestrun.Tests" {
@@ -202,7 +210,7 @@ Add-BuildTask "Test-Pester" {
 param([string]$ConfigJson)
 Import-Module Pester -Force
 $hash = $ConfigJson | ConvertFrom-Json -AsHashtable
-$cfg  = New-PesterConfiguration -Hashtable $hash
+$cfg = New-PesterConfiguration -Hashtable $hash
 Invoke-Pester -Configuration $cfg
 '@ | Set-Content -Path $child -Encoding UTF8
 
@@ -249,4 +257,4 @@ Add-BuildTask "ThirdPartyNotices" {
     & .\Utility\Generate-ThirdPartyNotices.ps1 -Project ".\src\CSharp\Kestrun\Kestrun.csproj" -Path ".\THIRD-PARTY-NOTICES.md" -Version (Get-Version -FileVersion $FileVersion)
 }
 
-Add-BuildTask All "Clean", "Build", "Test"
+Add-BuildTask All "Clean", "Restore", "Build", "Test"

@@ -1,4 +1,5 @@
 using System.Management.Automation;
+using Kestrun.Hosting;
 using Kestrun.Models;
 using Kestrun.Utilities;
 using Serilog;
@@ -8,9 +9,9 @@ namespace Kestrun.Languages;
 
 internal static class PowerShellDelegateBuilder
 {
-    public const string PS_INSTANCE_KEY = "PS_INSTANCE";
-    public const string KR_REQUEST_KEY = "KR_REQUEST";
-    public const string KR_RESPONSE_KEY = "KR_RESPONSE";
+    public const string PS_INSTANCE_KEY = "PS_INSTANCE"; 
+    public const string KR_CONTEXT_KEY = "KR_CONTEXT";
+
     internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object?>? arguments)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
@@ -47,10 +48,8 @@ internal static class PowerShellDelegateBuilder
                     }
                 }
                 log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
-                var krRequest = context.Items[KR_REQUEST_KEY] as KestrunRequest
-                    ?? throw new InvalidOperationException($"{KR_REQUEST_KEY} key not found in context items.");
-                var krResponse = context.Items[KR_RESPONSE_KEY] as KestrunResponse
-                    ?? throw new InvalidOperationException($"{KR_RESPONSE_KEY} key not found in context items.");
+                var krContext = context.Items[KR_CONTEXT_KEY] as KestrunContext
+                    ?? throw new InvalidOperationException($"{KR_CONTEXT_KEY} key not found in context items.");
                 ps.AddScript(code);
                 // Execute the PowerShell script block 
                 log.Verbose("Executing PowerShell script...");
@@ -78,16 +77,16 @@ internal static class PowerShellDelegateBuilder
 
                 log.Verbose("PowerShell script completed successfully.");
                 // If redirect, nothing to return
-                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                if (!string.IsNullOrEmpty(krContext.Response.RedirectUrl))
                 {
-                    log.Verbose($"Redirecting to {krResponse.RedirectUrl}");
-                    context.Response.Redirect(krResponse.RedirectUrl);
+                    log.Verbose($"Redirecting to {krContext.Response.RedirectUrl}");
+                    context.Response.Redirect(krContext.Response.RedirectUrl);
                     return;
                 }
                 log.Verbose("Applying response to HttpResponse...");
                 // Apply the response to the HttpResponse
 
-                await krResponse.ApplyTo(context.Response);
+                await krContext.Response.ApplyTo(context.Response);
                 return;
             }
             // optional: catch client cancellation to avoid noisy logs

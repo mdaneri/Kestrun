@@ -320,7 +320,7 @@ server.AddResponseCompression(options =>
        /// or an empty array if no claims are issued.
        opts.IssueClaimsCodeSettings = new AuthenticationCodeSettings
        {
-        //   ExtraImports = new[] { "System.Collections.Generic", "System.Linq" },
+           //   ExtraImports = new[] { "System.Collections.Generic", "System.Linq" },
            Language = ScriptLanguage.VBNet,
            Code = """
                If Identity = "admin" Then          ' (VB is case-insensitive, but keep it consistent)
@@ -802,7 +802,7 @@ server.AddMapRoute("/secure/key/vb/hello", HttpVerb.Get, """
 """, ScriptLanguage.CSharp, [ApiKeyVBNet]);
 
 /* KESTRUN JWT AUTHENTICATION ROUTES */
-server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
+server.AddMapRoute("/secure/jwt/cs/hello", HttpVerb.Get, """
     if (!Context.User.Identity.IsAuthenticated)
     {
         Context.Response.WriteErrorResponse("Access denied", 401);
@@ -813,6 +813,11 @@ server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
     Context.Response.WriteTextResponse($"Welcome, {user}! You are authenticated.", 200);
 """, ScriptLanguage.CSharp, [JwtScheme]);
 
+server.AddMapRoute("/secure/jwt/hello", HttpVerb.Get, """
+     Expand-KrObject $Context
+    $user = $Context.User.Identity.Name
+    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
+""", ScriptLanguage.PowerShell, [JwtScheme]);
 
 
 server.AddMapRoute(new()
@@ -874,7 +879,13 @@ server.AddMapRoute(new()
 
 server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
 {
-    var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
+    var token = tokenBuilder.RenewJwt(ctx);
+    if (string.IsNullOrEmpty(token))
+    {
+        await ctx.Response.WriteErrorResponseAsync("Failed to renew token", 400);
+        return;
+    }
+    // var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
 
 }, [JwtScheme]);
@@ -885,7 +896,8 @@ server.AddMapRoute("/token/new", HttpVerb.Get, async (ctx) =>
     try
     {
         var user = ctx.User.Identity?.Name ?? "admin";
-        var build = tokenBuilder.WithSubject(user).AddClaim("role", "admin").AddClaim("can_read", "true").Build();
+        var build = tokenBuilder.CloneBuilder().WithSubject(user).AddClaim(ClaimTypes.Name, user).AddClaim(ClaimTypes.Role, "admin")
+        .AddClaim("can_read", "true").Build();
         var token = build.Token();
 
         await ctx.Response.WriteJsonResponseAsync(new { access_token = token, token_type = "Bearer", ExpiresIn = build.Expires }); // 1 hour TTL

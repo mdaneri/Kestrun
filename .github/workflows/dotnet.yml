@@ -133,7 +133,7 @@ jobs:
 
     - name: 📦 Restore solution
       shell: pwsh
-      run: dotnet restore ./Kestrun.sln -v $Env:DOTNET_VERBOSITY
+      run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
     # 🐛 Debug-only; non-fatal if it exits 1
     - name: 🔎 List Roslyn packages (transitive)
@@ -160,7 +160,7 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
-        Invoke-Build Build
+        Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
     # 🐛 Optional deep-dive build with binlog in debug (non-fatal)
     - name: 🧰 Debug build with binlog

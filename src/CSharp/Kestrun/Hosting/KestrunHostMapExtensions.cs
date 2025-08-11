@@ -33,9 +33,7 @@ public static class KestrunHostMapExtensions
     /// <param name="requireSchemes">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireSchemes = null)
-    {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, httpVerb={HttpVerb}", pattern, httpVerb);
+    { 
         return host.AddMapRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireSchemes: requireSchemes);
     }
 
@@ -49,9 +47,7 @@ public static class KestrunHostMapExtensions
     /// <param name="requireSchemes">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireSchemes = null)
-    {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, httpVerbs={HttpVerbs}", pattern, string.Join(", ", httpVerbs));
+    { 
 
         return host.AddMapRoute(new MapRouteOptions
         {
@@ -73,7 +69,7 @@ public static class KestrunHostMapExtensions
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, MapRouteOptions options, KestrunHandler handler)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
-            host._Logger.Debug("AddMapRoute called with pattern={Pattern}, method={Methods}", options.Pattern, string.Join(", ", options.HttpVerbs));
+            host._Logger.Debug("AddMapRoute called with options={Options}", options);
         // Ensure the WebApplication is initialized
         if (host.App is null)
             throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
@@ -265,8 +261,16 @@ public static class KestrunHostMapExtensions
             // Ensure RateLimiting is configured in the app
             map.RequireRateLimiting(options.RateLimitPolicyName);
         }
+
         if (options.RequireSchemes is { Length: > 0 })
         {
+            foreach (var schema in options.RequireSchemes)
+            {
+                if (!host.HasAuthScheme(schema))
+                {
+                    throw new ArgumentException($"Authentication scheme '{schema}' is not registered.", nameof(options.RequireSchemes));
+                }
+            }
             host._Logger.Verbose("Requiring authorization for route: {Pattern} with policies: {Policies}", options.Pattern, string.Join(", ", options.RequireSchemes));
             map.RequireAuthorization(new AuthorizeAttribute
             {
@@ -280,6 +284,13 @@ public static class KestrunHostMapExtensions
 
         if (options.RequirePolicies is { Length: > 0 })
         {
+            foreach (var policy in options.RequirePolicies)
+            {
+                if (!host.HasAuthPolicy(policy))
+                {
+                    throw new ArgumentException($"Authorization policy '{policy}' is not registered.", nameof(options.RequirePolicies));
+                }
+            }
             map.RequireAuthorization(options.RequirePolicies);
         }
         else

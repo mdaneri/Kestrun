@@ -100,7 +100,7 @@ BeforeAll {
         Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
         exit 1
     }
- #>
+    #>
     # Example usage:
     Set-KrServerOption -DenyServerHeader
  
@@ -205,19 +205,13 @@ BeforeAll {
             return $false
         }
     } -IssueClaimsCode @'
-    if (identity == "admin")
+    // ← return the claims you want to add
+    return new[]
     {
-        // ← return the claims you want to add
-        return new[]
-        {
-        new System.Security.Claims.Claim("can_read", "true")          // custom claim
-        // or, if you really want it as a role:
-        // new Claim(ClaimTypes.Role, "can_read")
+        new System.Security.Claims.Claim(ClaimTypes.Role, "admin"),
+        new System.Security.Claims.Claim("can_create", "true")          // custom claim
     };
-    }
 
-    // everyone else gets no extra claims
-    return Enumerable.Empty<System.Security.Claims.Claim>();
 '@ -ClaimPolicyConfig $claimConfig -Logger $logger
 
 
@@ -278,7 +272,7 @@ BeforeAll {
 
     # Add a route with a script block
     Add-KrMapRoute -Verbs Get -Path "/secure/ps/hello" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
     }
 
@@ -333,7 +327,7 @@ BeforeAll {
 
 
     Add-KrMapRoute -Verbs Get -Path "/secure/cs/hello" -AuthorizationSchema $BasicCSharpScheme -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType "text/plain" 
     }
 
@@ -399,35 +393,55 @@ BeforeAll {
 
 
     Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -AuthorizationSchema $ApiKeySimple -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
     }
  
 
     Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
     }
  
     Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
  
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
     }
 
-    Add-KrMapRoute -Verbs Get -Path "/secure/key/Vb/hello" -AuthorizationSchema $ApiKeyVB -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Path "/secure/key/Vb/hello" -AuthorizationSchema $ApiKeyVBNet -ScriptBlock {
 
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching VB.NET Code." -ContentType "text/plain"
     }
 
+
+    Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+    } -AuthorizationPolicy "CanRead"
+
+    Add-KrMapRoute -Verbs Put -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
+    } -AuthorizationPolicy "CanWrite"
+
+    Add-KrMapRoute -Verbs Post -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
+    } -AuthorizationPolicy "CanCreate"
+
+    Add-KrMapRoute -Verbs Delete -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+    } -AuthorizationPolicy "CanDelete"
 
 
     # KESTRUN JWT AUTHENTICATION ROUTES 
 
     Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -AuthorizationSchema $JwtScheme -ScriptBlock {
 
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
     }
 
@@ -452,27 +466,24 @@ BeforeAll {
     } -AuthorizationPolicy "CanDelete"
 
 
+    
     Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
 
-        write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user 
-  
-        Write-Output "JwtTokenBuilder Type : $($JwtBuilderResult.GetType().FullName)"
-        Write-Output "IssuedAt : $($JwtBuilderResult.IssuedAt)"
-        Write-Output "Expires : $($JwtBuilderResult.Expires)"
- 
-        $accessToken = $JwtBuilderResult | Update-KrJWT
+        write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user
+        Write-Output "JwtTokenBuilder Type : $($JwtTokenBuilder.GetType().FullName)"
+        $accessToken = $JwtTokenBuilder | Update-KrJWT -FromContext
         Write-KrJsonResponse -InputObject @{
             access_token = $accessToken
             token_type   = "Bearer"
             expires_in   = $build.Expires
         } -ContentType "application/json"
 
-    } -Arguments @{"JwtBuilderResult" = $JwtTokenBuilder |  Build-KrJWT }
+    }
 
 
     Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
-        $user = $Context.HttpContext.User.Identity.Name
+        $user = $Context.User.Identity.Name
 
         write-KrInformationLog -MessageTemplate "Regenerating JWT token for user {0}" -PropertyValues $user
         write-KrInformationLog -MessageTemplate "JWT Token Builder: {0}" -PropertyValues $JwtTokenBuilder
@@ -485,7 +496,10 @@ BeforeAll {
         Write-Output "Audience : $($JwtTokenBuilder.Audience)"
         Write-Output "Algorithm: $($JwtTokenBuilder.Algorithm)" 
 
-        $build = Add-KrJWTSubject -Builder $JwtTokenBuilder -Subject $user | Add-KrJWTClaim -UserClaimType Role -Value "admin" |
+        $build = Copy-KrJWTTokenBuilder -Builder $JwtTokenBuilder |
+        Add-KrJWTSubject -Subject $user |
+        Add-KrJWTClaim -UserClaimType Name -Value $user |
+        Add-KrJWTClaim -UserClaimType Role -Value "admin" |
         Add-KrJWTClaim -ClaimType "can_read" -Value "true" | Build-KrJWT
         $accessToken = $build | Get-KrJWTToken
         Write-KrJsonResponse -InputObject @{
@@ -633,7 +647,6 @@ Describe 'Kestrun Authentication' {
         BeforeAll {
             $creds = "admin:password"
             $script:basic = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($creds))
-         
         }
 
         It "ps/hello in PowerShell" {
@@ -714,7 +727,9 @@ Describe 'Kestrun Authentication' {
         it "vb/policy (CanPatch)" {
             { Invoke-WebRequest -Uri "$url/secure/vb/policy" -Method PATCH -SkipCertificateCheck -Headers @{Authorization = $script:basic } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
         }
+    }
 
+    Describe 'Key Authentication' {
 
         It "key authentication Hello Simple mode" {
             $result = Invoke-WebRequest -Uri "$url/secure/key/simple/hello" -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
@@ -738,17 +753,120 @@ Describe 'Kestrun Authentication' {
             $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated by Key Matching VB.Net Code."
             $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
         }
-    }
 
-    <#   It 'responds back with 405 for incorrect method' {
-        # test curl
-        if ($useCurl) {
-            $status_code = (curl -X POST -s -o /dev/null -w '%{http_code}' "$Endpoint/ping" -k)
-            $status_code | Should -be 405
+
+        it "key/policy (CanRead)" {
+            { Invoke-WebRequest -Uri "$url/secure/key/ps/policy" -Method GET -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
         }
 
-        # test Invoke-RestMethod
-        { Invoke-RestMethod -Uri "$($Endpoint)/ping" -Method Post -ErrorAction Stop @splatter } | Should -Throw -ExpectedMessage '*405*'
+        it "key/policy (CanDelete)" {
+            { Invoke-WebRequest -Uri "$url/secure/key/ps/policy" -Method DELETE -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "key/policy (CanCreate)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/key/ps/policy" -Method Post -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, ApiKeyClient! You are authenticated by Key Matching PowerShell Code because you have the 'can_create' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        it "key/policy (CanUpdate)" {
+            { Invoke-WebRequest -Uri "$url/secure/key/ps/policy" -Method Put -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "key/policy (CanPatch)" {
+            { Invoke-WebRequest -Uri "$url/secure/key/ps/policy" -Method PATCH -SkipCertificateCheck -Headers @{ "X-Api-Key" = "my-secret-api-key" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
+        }
     }
-#>
+
+    Describe "JWT Authentication" {
+
+        BeforeAll {
+            $creds = "admin:password"
+            $basic = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes($creds))
+            $script:token = (Invoke-RestMethod -Uri "$url/token/new" -SkipCertificateCheck -Headers @{ Authorization = $script:basic }).access_token
+        }
+
+        it "New Token" {
+            $Script:token | Should -Not -BeNullOrEmpty
+        }
+
+        it "Hello JWT" {
+            $result = Invoke-WebRequest -Uri "$url/secure/jwt/hello" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        it "jwt/policy (CanRead)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method Get -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Native JWT checker because you have the 'can_read' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+
+        it "jwt/policy (CanDelete)" {
+            { Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method Delete -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" } } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "jwt/policy (CanCreate)" {
+            { Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method Post -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" } } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "jwt/policy (CanUpdate)" {
+            { Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method Put -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" } } | Should -Throw -ExpectedMessage '*403*'
+        }
+
+        it "jwt/policy (CanPatch)" {
+            { Invoke-WebRequest -Uri "$url/secure/jwt/policy" -Method PATCH -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" } -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
+        }
+
+        it "Renew Token" {
+            $token2 = (Invoke-RestMethod -Uri "$url/token/renew" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token" }).access_token
+            $token2 | Should -Not -BeNullOrEmpty
+            $result = Invoke-WebRequest -Uri "$url/secure/jwt/hello" -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" }
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by JWT Bearer Token."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+    }
+    Describe "Cookies Authentication" {
+        BeforeAll {
+            $script:authSession = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+            $result = Invoke-WebRequest -Uri "$url/cookies/login" -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
+            $result.StatusCode | Should -Be 200
+        }
+        AfterAll {
+            $script:authSession = $null
+        }
+        It "Can access secure cookies endpoint" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies" -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies Authentication."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (GET)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method GET -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be  "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_read' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8" 
+        }
+        It "Can access secure cookies policy (DELETE)" {
+            { Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method DELETE -SkipCertificateCheck -WebSession $authSession -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*404*'
+        }
+        It "Can access secure cookies policy (POST)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method POST -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_create' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (PUT)" {
+            $result = Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method PUT -SkipCertificateCheck -WebSession $authSession
+            $result.StatusCode | Should -Be 200
+            $result.Content | Should -Be "Welcome, admin! You are authenticated by Cookies checker because you have the 'can_write' permission."
+            $result.Headers.'Content-Type' | Should -Be "text/plain; charset=utf-8"
+        }
+        It "Can access secure cookies policy (PATCH)" {
+            { Invoke-WebRequest -Uri "$url/secure/cookies/policy" -Method PATCH -SkipCertificateCheck -WebSession $authSession -ErrorAction SilentlyContinue } | Should -Throw -ExpectedMessage '*405*'
+        }
+    }
 }

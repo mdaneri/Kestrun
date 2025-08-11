@@ -1,5 +1,8 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+
+//using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using YamlDotNet.Serialization;
 namespace Kestrun.Security;
@@ -56,7 +59,11 @@ public sealed class JwtBuilderResult(
             RequireSignedTokens = _key is not null,
             ValidateIssuerSigningKey = _key is not null,
             IssuerSigningKey = _key,
-            ValidAlgorithms = _builder.Algorithm != null ? [_builder.Algorithm] : []
+            ValidAlgorithms = _builder.Algorithm != null ? [_builder.Algorithm] : [],
+            NameClaimType = ClaimTypes.Name,
+            //    NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = ClaimTypes.Role
+
         };
         return tvp;
     }
@@ -92,65 +99,4 @@ public sealed class JwtBuilderResult(
         return ValidateAsync(jwt, clockSkew).GetAwaiter().GetResult();
     }
 
-    /// <summary>
-    /// Re-issues a fresh token with the same claims, issuer, audience, and a new TTL synchronously.
-    /// </summary>
-    /// <param name="lifetime">Optional lifetime for the renewed token.</param>
-    /// <returns>The renewed JWT compact string.</returns>
-    public string Renew(TimeSpan? lifetime = null)
-    {
-        if (_key is null)
-            throw new InvalidOperationException("Cannot renew: no symmetric key available.");
-        return RenewAsync(_token, _key, lifetime).GetAwaiter().GetResult();
-    }
-    /// <summary>
-    /// Asynchronously re-issues a fresh token with the same claims, issuer, audience, and a new TTL.
-    /// </summary>
-    /// <param name="lifetime">Optional lifetime for the renewed token.</param>
-    /// <returns>A task that represents the asynchronous operation, containing the renewed JWT compact string.</returns>
-    public async Task<string> RenewAsync(TimeSpan? lifetime = null)
-    {
-        if (_key is null)
-            throw new InvalidOperationException("Cannot renew: no symmetric key available.");
-        return await RenewAsync(_token, _key, lifetime);
-    }
-
-    /// <summary>
-    /// Re-issues a fresh token using the provided JWT, signing key, and optional lifetime.
-    /// </summary>
-    /// <param name="jwt">The JWT compact string to renew.</param>
-    /// <param name="signingKey">The symmetric security key used for signing.</param>
-    /// <param name="lifetime">Optional lifetime for the renewed token.</param>
-    /// <param name="allowExpired">Whether to allow expired tokens to be renewed.</param>
-    /// <returns>The renewed JWT compact string.</returns>
-    /// <exception cref="SecurityTokenException"></exception>
-    private async Task<string> RenewAsync(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null, bool allowExpired = false)
-    {
-        var handler = new JsonWebTokenHandler();      // supports JWE & JWS
-        var validationParameters = GetValidationParameters();
-        validationParameters.ValidateLifetime = !allowExpired; // validate lifetime only if not allowing expired tokens
-        // ①  quick validation (signature only; ignore exp, aud, iss)
-        var result = await handler.ValidateTokenAsync(jwt, validationParameters);
-
-        if (!result.IsValid)
-            throw new SecurityTokenException(
-                $"Input token not valid: {result.Exception?.Message}");
-
-        var orig = (JsonWebToken)result.SecurityToken!;
-        _expires = lifetime ?? (orig.ValidTo - orig.ValidFrom);
-
-        return _builder.ValidFor(_expires).Build().Token();
-    }
-
-    /// <summary>
-    /// Synchronously re-issues a fresh token using the provided JWT, signing key, and optional lifetime.
-    /// </summary>
-    /// <param name="jwt">The JWT compact string to renew.</param>
-    /// <param name="signingKey">The symmetric security key used for signing.</param>
-    /// <param name="lifetime">Optional lifetime for the renewed token.</param>
-    /// <returns>The renewed JWT compact string.</returns>
-    public string Renew(string jwt, SymmetricSecurityKey signingKey, TimeSpan? lifetime = null)
-    {
-        return RenewAsync(jwt, signingKey, lifetime).GetAwaiter().GetResult();
-    }
 }
