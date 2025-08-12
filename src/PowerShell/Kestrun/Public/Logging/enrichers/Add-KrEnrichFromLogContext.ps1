@@ -1,4 +1,4 @@
-function Add-EnrichFromLogContext {
+function Add-KrEnrichFromLogContext {
 	<#
 	.SYNOPSIS
 		Enriches log events with properties from LogContext
@@ -11,7 +11,7 @@ function Add-EnrichFromLogContext {
 	.OUTPUTS
 		Instance of LoggerConfiguration
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichFromLogContext | Add-KrSinkConsole | Register-KrLogger
+		PS> New-KrLogger | Add-KrEnrichFromLogContext | Add-KrSinkConsole | Register-KrLogger
 	#>
 
 	[Cmdletbinding()]

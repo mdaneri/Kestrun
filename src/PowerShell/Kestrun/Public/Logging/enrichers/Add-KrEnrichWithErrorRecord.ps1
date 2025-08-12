@@ -1,4 +1,4 @@
-function Add-EnrichWithErrorRecord {
+function Add-KrEnrichWithErrorRecord {
 	<#
 	.SYNOPSIS
 		Enriches log events with ErrorRecord property if available.
@@ -13,7 +13,7 @@ function Add-EnrichWithErrorRecord {
 	.OUTPUTS
 		Instance of LoggerConfiguration
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichWithErrorRecord | Add-KrSinkPowerShell | Register-KrLogger
+		PS> New-KrLogger | Add-KrEnrichWithErrorRecord | Add-KrSinkPowerShell | Register-KrLogger
 	#>
 
 	[Cmdletbinding()]

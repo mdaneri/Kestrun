@@ -700,12 +700,15 @@ public class KestrunHost : IDisposable
     /// Determines whether the Kestrun web application is currently running.
     /// </summary>
     /// <returns>True if the application is running; otherwise, false.</returns>
-    public bool IsRunning()
+    public bool IsRunning
     {
-        var appField = typeof(KestrunHost)
-            .GetField("_app", BindingFlags.NonPublic | BindingFlags.Instance);
+        get
+        {
+            var appField = typeof(KestrunHost)
+                .GetField("_app", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        return appField?.GetValue(this) is WebApplication app && !app.Lifetime.ApplicationStopping.IsCancellationRequested;
+            return appField?.GetValue(this) is WebApplication app && !app.Lifetime.ApplicationStopping.IsCancellationRequested;
+        }
     }
 
 
@@ -730,7 +733,7 @@ public class KestrunHost : IDisposable
 
         // Create a default InitialSessionState with an unrestricted policy:
         var iss = InitialSessionState.CreateDefault();
-        
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             iss.ExecutionPolicy = ExecutionPolicy.Unrestricted;

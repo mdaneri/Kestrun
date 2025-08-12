@@ -162,22 +162,30 @@ switch ($PSVersionTable.PSVersion.Minor) {
     }
 }
 
-# Usage
-Add-AspNetCoreType -Version $netVersion
-# Add-AspNetCoreType -Version "net8.0.*"
+$inRouteRunspace = $null -ne $ExecutionContext.SessionState.PSVariable.GetValue("KestrunHost")
 
-Add-CodeAnalysisType -Version $codeAnalysisVersion
+if (-not $inRouteRunspace) {
+    # Usage
+    Add-AspNetCoreType -Version $netVersion
+    # Add-AspNetCoreType -Version "net8.0.*"
 
-$assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
-# Assert that the assembly is loaded and load it if not
-Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
+    Add-CodeAnalysisType -Version $codeAnalysisVersion
 
-# 1️⃣  Load & register your DLL folders (as before):
-[Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
+    $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
+ 
+    # Assert that the assembly is loaded and load it if not
+    Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
 
-# 2️⃣  When the runspace or script is finished:
-[Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
+    # 1️⃣  Load & register your DLL folders (as before):
+    [Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
 
+    # 2️⃣  When the runspace or script is finished:
+    [Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
+}
+else {
+    # Assert that the assembly is loaded and load it if not
+    Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
+}
 # 3️⃣  Load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
@@ -186,7 +194,19 @@ $sysfuncs = Get-ChildItem Function:
 
 # only import public alias
 $sysaliases = Get-ChildItem Alias:
-
+if ( $inRouteRunspace) {
+    $sysfuncs += (
+        'Add-KrFavicon', 'Add-KrAntiforgery',
+        'Add-KrApiKeyAuthentication', 'Add-KrBasicAuthentication', 'Add-KrClaimPolicy',
+        'Add-KrCookiesAuthentication', 'Add-KrCorsPolicy', 'Add-KrDefaultFile',
+        'Add-KrFileServer', 'Add-KrHtmlTemplateRoute', 'Add-KrJWTBearerAuthentication',
+        'Add-KrMapRoute', 'Add-KrPowerShellRazorPagesRuntime', 'Add-KrPowerShellRuntime',
+        'Add-KrRazorPageService', 'Add-KrResponseCompression', 'Add-KrWindowsAuthentication',
+        'Enable-KrConfiguration', 'Get-KrJWTValidationParameter', 'New-KrServer',
+        'Set-KrPythonRuntime', 'Set-KrServerLimit',
+        'Set-KrServerOption', 'Start-KrServer', 'Add-KrListener', 'Stop-KrServer'
+    )
+}
 # load public functions
 Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
@@ -203,9 +223,11 @@ if ($funcs) {
     }
 }
 
-if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
-    # Set the Kestrun root path for the host manager
-    [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
+if (-not $inRouteRunspace) {
+    if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
+        # Set the Kestrun root path for the host manager
+        [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
+    }
+    [Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
+    # Ensure that the Kestrun host manager is destroyed to clean up resources.
 }
-[Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
-# Ensure that the Kestrun host manager is destroyed to clean up resources.

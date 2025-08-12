@@ -109,6 +109,15 @@ public static class KestrunHostManager
         return host;
     }
 
+    /// <summary>
+    /// Determines whether a KestrunHost instance with the specified name exists.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to check for existence.</param>
+    /// <returns>True if an instance with the specified name exists; otherwise, false.</returns>
+    public static bool Contains(string name)
+    {
+        return _instances.ContainsKey(name);
+    }
 
     /// <summary>
     /// Attempts to retrieve a KestrunHost instance by its name.
@@ -143,6 +152,20 @@ public static class KestrunHostManager
             throw new InvalidOperationException($"No KestrunHost instance named '{name}' exists.");
 
         _defaultName = name;
+    }
+
+    /// <summary>
+    /// Determines whether the specified KestrunHost instance is currently running.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to check.</param>
+    /// <returns>True if the instance is running; otherwise, false.</returns>
+    public static bool IsRunning(string name)
+    {
+        if (TryGet(name, out var host))
+        {
+            return host != null && host.IsRunning;
+        }
+        return false;
     }
 
     /// <summary>
@@ -194,6 +217,18 @@ public static class KestrunHostManager
         else
         {
             throw new InvalidOperationException($"No KestrunHost instance named '{name}' exists.");
+        }
+    }
+
+    /// <summary>
+    /// Stops the specified KestrunHost instance synchronously.
+    /// </summary>
+    /// <param name="name">The name of the KestrunHost instance to stop.</param>
+    public static void Stop(string name)
+    {
+        if (_instances.TryGetValue(name, out var host))
+        {
+            host.Stop();
         }
     }
 

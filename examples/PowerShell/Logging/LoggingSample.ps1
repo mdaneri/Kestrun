@@ -36,9 +36,9 @@ $levelSwitch = New-KrLevelSwitch -MinimumLevel Verbose
 
 $l0 = New-KrLogger  |
 Set-KrMinimumLevel -Value Verbose -ToPreference |
-Add-EnrichWithEnvironment |
+Add-KrEnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
-Add-EnrichFromLogContext |
+Add-KrEnrichFromLogContext |
 Add-KrSinkPowerShell |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" | 
 Register-KrLogger -PassThru -SetAsDefault -Name "DefaultLogger"
@@ -50,7 +50,7 @@ Close-KrLogger -Logger $l0
 # Setup new logger
 New-KrLogger |
 Set-KrMinimumLevel -Value Verbose |
-Add-EnrichWithEnvironment |
+Add-KrEnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
 Add-KrSinkFile -Path ".\logs\test-.log" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
@@ -85,7 +85,7 @@ catch {
 
 New-KrLogger |
 Set-KrMinimumLevel -Value Verbose |
-Add-EnrichWithEnvironment |
+Add-KrEnrichWithEnvironment |
 Add-EnrichWithExceptionDetail |
  
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |

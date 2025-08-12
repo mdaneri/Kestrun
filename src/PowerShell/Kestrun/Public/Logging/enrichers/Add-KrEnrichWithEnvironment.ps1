@@ -1,4 +1,18 @@
-function Add-EnrichWithEnvironment {
+function Add-KrEnrichWithEnvironment {
+    <#
+    .SYNOPSIS
+        Adds environment information to the log context.
+    .DESCRIPTION
+        Adds environment information such as UserName and MachineName to the log context, allowing it to be included in log events.
+    .PARAMETER LoggerConfig
+        Instance of LoggerConfiguration
+    .INPUTS
+        None
+    .OUTPUTS
+        LoggerConfiguration object allowing method chaining
+    .EXAMPLE
+        PS> New-KrLogger | Add-KrEnrichWithEnvironment | Register-KrLogger
+    #>
     [CmdletBinding()]
 	[OutputType([Serilog.LoggerConfiguration])]
     param(

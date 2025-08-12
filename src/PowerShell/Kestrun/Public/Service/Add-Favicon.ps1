@@ -1,4 +1,4 @@
-function Add-Favicon {
+function Add-KrFavicon {
     <#
 .SYNOPSIS
     Adds a favicon to the Kestrun server.
@@ -10,10 +10,10 @@ function Add-Favicon {
 .PARAMETER IconPath
     The path to the favicon file. If not specified, a default embedded favicon will be used.
 .EXAMPLE
-    $server | Add-Favicon -IconPath 'C:\path\to\favicon.ico'
+    $server | Add-KrFavicon -IconPath 'C:\path\to\favicon.ico'
     This example adds a custom favicon to the server from the specified path.
 .EXAMPLE
-    $server | Add-Favicon
+    $server | Add-KrFavicon
     This example adds the default embedded favicon to the server.
 .NOTES
     This cmdlet is used to register a favicon for the Kestrun server, allowing you to set a custom favicon for the server's web interface.

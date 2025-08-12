@@ -115,7 +115,7 @@ Add-KrListener -Port 5000 -IPAddress ([IPAddress]::Loopback)
 
 Add-KrResponseCompression -EnableForHttps -MimeTypes @("text/plain", "text/html", "application/json", "application/xml", "application/x-www-form-urlencoded")
 Add-KrPowerShellRuntime
-Add-Favicon
+Add-KrFavicon
 
 # Authentication Schemes Names definitions
 $BasicPowershellScheme = "PowershellBasic"

@@ -1,4 +1,4 @@
-function Add-EnrichWithProperty {
+function Add-KrEnrichWithProperty {
 	<#
 	.SYNOPSIS
 		Enriches log events with custom property.
@@ -17,7 +17,7 @@ function Add-EnrichWithProperty {
 	.OUTPUTS
 		LoggerConfiguration object allowing method chaining
 	.EXAMPLE
-		PS> New-KrLogger | Add-EnrichWithProperty -Name ScriptName -Value 'Test' | Add-KrSinkConsole | Register-KrLogger
+		PS> New-KrLogger | Add-KrEnrichWithProperty -Name ScriptName -Value 'Test' | Add-KrSinkConsole | Register-KrLogger
 	#>
 
 	[Cmdletbinding()]
