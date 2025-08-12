@@ -124,7 +124,7 @@ function Add-KrMapRoute {
 
         if ($exists) {
             if ($AllowDuplicate -or $DuplicateAction -eq 'Allow') {
-                 Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Path, ($Verbs -join ',')
+                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Path, ($Verbs -join ',')
             }
             elseif ($DuplicateAction -eq 'Skip') {
                 Write-KrVerboseLog -Message "Route '{Path}' ({Verbs}) exists; skipping." -Values $Path, ($Verbs -join ',')
@@ -191,42 +191,13 @@ function Add-KrMapRoute {
                     $Options.ValidateCodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
                 }
             }
+        }else{
+            Write-Verbose "Using provided MapRouteOptions instance."
         }
-        # --- BEGIN: inherit from current route group (if any) ---
         if ($script:KrRouteGroupStack -and $script:KrRouteGroupStack.Count -gt 0) {
             $grp = $script:KrRouteGroupStack.Peek()
-
-            # Prefix the pattern
-            if ($Options.Pattern) {
-                $Options.Pattern = _KrJoin-Route $grp.Prefix $Options.Pattern
-            }
-            else {
-                $Options.Pattern = $grp.Prefix
-            }
-
-            # Merge arrays / refs
-            $Options.ExtraImports = _KrMerge-Unique $grp.ExtraImports $Options.ExtraImports
-            if ($grp.ExtraRefs) {
-                # Create a new array to avoid mutating external references
-                $Options.ExtraRefs = @($grp.ExtraRefs + $Options.ExtraRefs)
-            }
-
-            # Merge auth
-            if ($grp.AuthorizationSchema) {
-                $Options.RequireSchemes = _KrMerge-Unique $grp.AuthorizationSchema $Options.RequireSchemes
-            }
-            if ($grp.AuthorizationPolicy) {
-                $Options.RequirePolicies = _KrMerge-Unique $grp.AuthorizationPolicy $Options.RequirePolicies
-            }
-
-            # Merge arguments (child overrides)
-            if ($grp.Arguments) {
-                $Options.Arguments = _KrMerge-Args $grp.Arguments $Options.Arguments
-            }
-        }
-        # --- END: inherit from current route group (if any) ---
-
-
+            $Options = _KrMerge-MRO -Parent $grp -Child $Options
+        } 
         [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | out-Null
 
         if ($PassThru) {

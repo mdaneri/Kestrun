@@ -40,35 +40,47 @@ function Add-KrRouteGroup {
     #>
     [CmdletBinding(DefaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = "ScriptBlockWithOptions")]
+        [Parameter(Mandatory, ParameterSetName = "FileNameWithOptions")]
+        [Kestrun.Hosting.Options.MapRouteOptions]$Options,
+
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [string]$Prefix,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [string[]]$AuthorizationSchema,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [string[]]$AuthorizationPolicy,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [string[]]$ExtraImports,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [System.Reflection.Assembly[]]$ExtraRefs,
 
-        [Parameter()]
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "FileName")]
         [hashtable]$Arguments,
 
         [Parameter(Mandatory, Position = 0, ParameterSetName = "ScriptBlock")]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = "ScriptBlockWithOptions")]
         [ScriptBlock]$ScriptBlock,
 
         [Parameter(Mandatory, ParameterSetName = "FileName")]
+        [Parameter(Mandatory, ParameterSetName = "FileNameWithOptions")]
         [string]$FileName,
 
         [Parameter()]
         [switch]$NoInherit
     )
 
-    if ($PSCmdlet.ParameterSetName -eq 'FileName') {
+    if ($PSCmdlet.ParameterSetName -like 'FileName*') {
         if (-not (Test-Path -Path $FileName)) {
             throw "The specified file path does not exist: $FileName"
         }
@@ -80,39 +92,36 @@ function Add-KrRouteGroup {
     if (-not [string]::IsNullOrWhiteSpace($Prefix) -and -not $Prefix.StartsWith('/')) {
         $Prefix = "/$Prefix"
     }
+    # Discover parent template (stack always aims to hold MapRouteOptions)
+    $parentOpts = $null
+    if (-not $NoInherit -and $script:KrRouteGroupStack.Count) {
+        $parentOpts = $script:KrRouteGroupStack.Peek()
+    }
 
-    # Compute inheritance
-    $parent = if (-not $NoInherit -and $script:KrRouteGroupStack.Count) {
-        $script:KrRouteGroupStack.Peek()
+    $curr = if ($PSCmdlet.ParameterSetName -like '*WithOptions') {
+        $Options
     }
     else {
-        @{
-            Prefix              = ''
-            AuthorizationSchema = @()
-            AuthorizationPolicy = @()
-            ExtraImports        = @()
-            ExtraRefs           = @()
-            Arguments           = @{}
+        $dict = $null
+        if ($Arguments) {
+            $dict = [System.Collections.Generic.Dictionary[string, object]]::new()
+            foreach ($k in $Arguments.Keys) { $dict[$k] = $Arguments[$k] }
+        }
+        New-MapRouteOption -Property @{
+            RequireSchemes  = $AuthorizationSchema
+            RequirePolicies = $AuthorizationPolicy
+            ExtraImports    = $ExtraImports
+            ExtraRefs       = $ExtraRefs
+            Arguments       = $dict
+            Pattern         = $Prefix
         }
     }
-
-    $current = @{
-        Prefix              = _KrJoin-Route $parent.Prefix $Prefix
-        AuthorizationSchema = _KrMerge-Unique $parent.AuthorizationSchema $AuthorizationSchema
-        AuthorizationPolicy = _KrMerge-Unique $parent.AuthorizationPolicy $AuthorizationPolicy
-        ExtraImports        = _KrMerge-Unique $parent.ExtraImports        $ExtraImports
-        ExtraRefs           = @($parent.ExtraRefs + $ExtraRefs)
-        Arguments           = _KrMerge-Args    $parent.Arguments          $Arguments
+    # Merge with parent (parent first, then current overrides)
+    if ($parentOpts) {
+        $curr = _KrMerge-MRO -Parent $parentOpts -Child $curr
     }
 
-    # If executing from a file, temporarily set location to the file’s directory
-    $restorePath = $null
-    if ($PSCmdlet.ParameterSetName -eq 'FileName') {
-        $restorePath = Get-Location
-        Set-Location (Split-Path -Path $FileName -Parent)
-    }
-
-    $script:KrRouteGroupStack.Push($current)
+    $script:KrRouteGroupStack.Push($curr)
     try {
         & $ScriptBlock
     }
