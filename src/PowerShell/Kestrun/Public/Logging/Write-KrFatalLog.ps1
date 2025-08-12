@@ -34,7 +34,8 @@ function Write-KrFatalLog {
 		It can be used in scripts and modules that utilize Kestrun for logging.
 	#>
 
-	[Cmdletbinding(DefaultParameterSetName = 'MsgTemp')]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(DefaultParameterSetName = 'MsgTemp')]
 	[OutputType([string])]
 	param(
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]

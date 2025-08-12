@@ -20,6 +20,7 @@ function Limit-KrJWTNotBefore {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param(

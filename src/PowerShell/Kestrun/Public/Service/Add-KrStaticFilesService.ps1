@@ -32,6 +32,7 @@ function Add-KrStaticFilesService {
 .NOTES
     ContentTypeProvider and ContentTypeProviderOptions are not supported yet.
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

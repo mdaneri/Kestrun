@@ -28,7 +28,8 @@ function Set-KrLevelSwitch {
 		Sets the minimum logging level of the specified level switch to Information and outputs the LevelSwitch object into the pipeline.
 	#>
 
-	[CmdletBinding(SupportsShouldProcess = $true)]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.Core.LoggingLevelSwitch])]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]

@@ -13,6 +13,7 @@ function Add-KrEnrichWithEnvironment {
     .EXAMPLE
         PS> New-KrLogger | Add-KrEnrichWithEnvironment | Register-KrLogger
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding()]
 	[OutputType([Serilog.LoggerConfiguration])]
     param(

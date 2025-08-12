@@ -28,7 +28,8 @@ function Register-KrLogger {
 		Initializes the Kestrun logger using a pre-configured Serilog logger configuration object and sets it as the default logger.
 	#>
 
-	[CmdletBinding(SupportsShouldProcess = $true)]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.ILogger])]
 	param(
 		[Parameter(Mandatory = $true)]

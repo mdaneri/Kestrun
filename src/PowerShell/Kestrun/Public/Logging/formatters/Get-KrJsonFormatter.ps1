@@ -11,6 +11,9 @@ function Get-KrJsonFormatter {
 	.EXAMPLE
 		PS> New-KrLogger | Add-KrSinkFile -Path 'C:\Data\Log\test.log' -Formatter (Get-KrJsonFormatter) | Register-KrLogger
 	#>
-
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[CmdletBinding()]
+	[OutputType([Serilog.Formatting.Json.JsonFormatter])]
+	param()
 	[Serilog.Formatting.Json.JsonFormatter]::new()
 }

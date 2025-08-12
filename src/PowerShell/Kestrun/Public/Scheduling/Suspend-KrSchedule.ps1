@@ -14,6 +14,8 @@ function Suspend-KrSchedule {
     .NOTES
         This function is part of the Kestrun scheduling module.
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -28,7 +30,7 @@ function Suspend-KrSchedule {
         if (-not $Server.Scheduler) {
             throw "SchedulerService is not enabled."
         }
-        
+
         if ($Server.Scheduler.Pause($Name)) {
             Write-Information "🛑 schedule '$Name' is now paused."
         }

@@ -91,8 +91,8 @@ BeforeAll {
         $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
     }
     else {#>
-    $cert = New-KsSelfSignedCertificate -DnsName 'localhost'
-    #    Export-KsCertificate -Certificate $cert `
+    $cert = New-KrSelfSignedCertificate -DnsName 'localhost'
+    #    Export-KrCertificate -Certificate $cert `
     #       -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
     
 

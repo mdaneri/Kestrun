@@ -15,6 +15,7 @@
     This function is designed to be used in the context of a Kestrun server setup.
 #>
 function New-KrServer {
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

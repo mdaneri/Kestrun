@@ -11,6 +11,7 @@ function Get-KestrunRoot {
         This function is designed to be used in the context of a Kestrun server to ensure consistent path resolution.
     #>
     [CmdletBinding()]
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [OutputType([string])]
     param()
     return $script:KestrunRoot

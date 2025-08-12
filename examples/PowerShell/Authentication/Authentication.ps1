@@ -95,8 +95,8 @@ if (Test-Path "$ScriptPath\devcert.pfx" ) {
     $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
 else {
-    $cert = New-KsSelfSignedCertificate -DnsName 'localhost' -Exportable
-    Export-KsCertificate -Certificate $cert `
+    $cert = New-KrSelfSignedCertificate -DnsName 'localhost' -Exportable
+    Export-KrCertificate -Certificate $cert `
         -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
 }
 

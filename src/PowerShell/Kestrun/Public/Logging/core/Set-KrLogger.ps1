@@ -19,7 +19,8 @@ function Set-KrDefaultLogger {
 		Sets the specified logger as the current logger for the session.
 	#>
 
-	[CmdletBinding(SupportsShouldProcess = $true)]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[string]$Name

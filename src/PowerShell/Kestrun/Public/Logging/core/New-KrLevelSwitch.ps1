@@ -19,7 +19,8 @@ function New-KrLevelSwitch {
 		PS> $levelSwitch = New-KrLevelSwitch -MinimumLevel Debug -ToPreference
 		Creates a new level switch with the minimum level set to Debug and updates the user's logging preference.
 	#>
-	[CmdletBinding(SupportsShouldProcess = $true)]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.Core.LoggingLevelSwitch])]
 	param(
 		[Parameter(Mandatory = $false)]

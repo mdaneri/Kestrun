@@ -22,6 +22,7 @@ function Test-KrJWT {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding()]
     [OutputType([bool])]
     param(
