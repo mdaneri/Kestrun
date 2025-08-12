@@ -47,7 +47,7 @@ function Stop-KrServer {
             if (-not $Quiet.IsPresent) {
                 Write-Host "Stopping Kestrun server..." -NoNewline
             }
-            while ($Server.IsRunning()) {
+            while ($Server.IsRunning) {
                 Start-Sleep -Seconds 1
                 if (-not $Quiet.IsPresent) {
                     Write-Host "#" -NoNewline
