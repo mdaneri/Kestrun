@@ -102,4 +102,9 @@ public record MapRouteOptions
     /// OpenAPI metadata for this route.
     /// </summary>
     public OpenAPIMetadata OpenAPI { get; init; } = new OpenAPIMetadata(); // OpenAPI metadata for this route
+
+    /// <summary>
+    /// If true, throws an exception on duplicate routes.
+    /// </summary>
+    public bool ThrowOnDuplicate { get; init; } = false;
 }

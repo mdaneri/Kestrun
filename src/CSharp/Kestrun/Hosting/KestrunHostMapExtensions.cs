@@ -33,7 +33,7 @@ public static class KestrunHostMapExtensions
     /// <param name="requireSchemes">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, HttpVerb httpVerb, KestrunHandler handler, string[]? requireSchemes = null)
-    { 
+    {
         return host.AddMapRoute(pattern: pattern, httpVerbs: [httpVerb], handler: handler, requireSchemes: requireSchemes);
     }
 
@@ -47,7 +47,7 @@ public static class KestrunHostMapExtensions
     /// <param name="requireSchemes">Optional array of authorization schemes required for the route.</param>
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireSchemes = null)
-    { 
+    {
 
         return host.AddMapRoute(new MapRouteOptions
         {
@@ -183,6 +183,16 @@ public static class KestrunHostMapExtensions
         }
         try
         {
+            if (MapExists(host, options.Pattern, options.HttpVerbs))
+            {
+                var msg = $"Route '{options.Pattern}' with method(s) {string.Join(", ", options.HttpVerbs)} already exists.";
+                if (options.ThrowOnDuplicate)
+                    throw new InvalidOperationException(msg);
+
+                host._Logger.Warning(msg);
+                return null!;
+            }
+
             var logger = host._Logger.ForContext("Route", routeOptions.Pattern);
             // compile once – return an HttpContext->Task delegate
             var handler = options.Language switch
@@ -203,6 +213,11 @@ public static class KestrunHostMapExtensions
                 host._Logger.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
 
             host.AddMapOptions(map, options);
+
+            foreach (var method in options.HttpVerbs.Select(v => v.ToMethodString()))
+            {
+                host._registeredRoutes[(options.Pattern, method)] = routeOptions;
+            }
 
             host._Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
             return map;
@@ -543,4 +558,62 @@ public static class KestrunHostMapExtensions
             AddMapRoute(host, options);
         });
     }
+
+    /// <summary>
+    /// Checks if a route with the specified pattern and optional HTTP method exists in the KestrunHost.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="pattern">The route pattern to check.</param>
+    /// <param name="verbs">The optional HTTP method to check for the route.</param>
+    /// <returns>True if the route exists; otherwise, false.</returns>
+    public static bool MapExists(this KestrunHost host, string pattern, IEnumerable<HttpVerb> verbs)
+    {
+        var methodSet = verbs.Select(v => v.ToMethodString()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return host._registeredRoutes.Keys
+            .Where(k => string.Equals(k.Pattern, pattern, StringComparison.OrdinalIgnoreCase))
+            .Any(k => methodSet.Contains(k.Method));
+    }
+
+    /// <summary>
+    /// Checks if a route with the specified pattern and optional HTTP method exists in the KestrunHost.
+    /// </summary>
+    /// <param name="host">The KestrunHost instance.</param>
+    /// <param name="pattern">The route pattern to check.</param>
+    /// <param name="verb">The optional HTTP method to check for the route.</param>
+    /// <returns>True if the route exists; otherwise, false.</returns>
+    public static bool MapExists(this KestrunHost host, string pattern, HttpVerb verb) =>
+        host._registeredRoutes.ContainsKey((pattern, verb.ToMethodString()));
+
+
+    /// <summary>
+    /// Retrieves the <see cref="MapRouteOptions"/> associated with a given route pattern and HTTP verb, if registered.
+    /// </summary>
+    /// <param name="host">The <see cref="KestrunHost"/> instance to search for registered routes.</param>
+    /// <param name="pattern">The route pattern to look up (e.g. <c>"/hello"</c>).</param>
+    /// <param name="verb">The HTTP verb to match (e.g. <see cref="HttpVerb.Get"/>).</param>
+    /// <returns>
+    /// The <see cref="MapRouteOptions"/> instance for the specified route if found; otherwise, <c>null</c>.
+    /// </returns>
+    /// <remarks>
+    /// This method checks the internal route registry and returns the route options if the pattern and verb
+    /// combination was previously added via <c>AddMapRoute</c>.
+    /// This lookup is case-insensitive for both the pattern and method.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var options = host.GetMapRouteOptions("/hello", HttpVerb.Get);
+    /// if (options != null)
+    /// {
+    ///     Console.WriteLine($"Route language: {options.Language}");
+    /// }
+    /// </code>
+    /// </example>
+    public static MapRouteOptions? GetMapRouteOptions(this KestrunHost host, string pattern, HttpVerb verb)
+    {
+        return host._registeredRoutes.TryGetValue((pattern, verb.ToMethodString()), out var options)
+            ? options
+            : null;
+    }
+
+
 }

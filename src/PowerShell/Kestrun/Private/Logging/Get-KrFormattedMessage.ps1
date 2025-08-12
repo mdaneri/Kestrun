@@ -8,11 +8,11 @@ function Get-KrFormattedMessage{
 
 		[parameter(Mandatory = $true)]
 		[AllowEmptyString()]
-		[string]$MessageTemplate,
+		[string]$Message,
 
 		[Parameter(Mandatory = $false)]
 		[AllowNull()]
-		[object[]]$PropertyValues,
+		[object[]]$Values,
 
 		[Parameter(Mandatory = $false)]
 		[AllowNull()]
@@ -21,7 +21,7 @@ function Get-KrFormattedMessage{
 
 	$parsedTemplate = $null
 	$boundProperties = $null
-	if ($Logger.BindMessageTemplate($MessageTemplate, $PropertyValues, [ref]$parsedTemplate, [ref]$boundProperties))
+	if ($Logger.BindMessage($Message, $Values, [ref]$parsedTemplate, [ref]$boundProperties))
 	{
 		$logEvent = [Serilog.Events.LogEvent]::new([System.DateTimeOffset]::Now, $LogLevel, $Exception, $parsedTemplate, $boundProperties)
 		$strWriter = [System.IO.StringWriter]::new()

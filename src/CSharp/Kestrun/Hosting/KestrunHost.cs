@@ -143,6 +143,12 @@ public class KestrunHost : IDisposable
     private readonly List<Action<KestrunHost>> _featureQueue = [];
 
     internal List<Action<KestrunHost>> FeatureQueue => _featureQueue;
+
+    internal readonly Dictionary<(string Pattern, string Method), MapRouteOptions> _registeredRoutes =
+    new Dictionary<(string, string), MapRouteOptions>(
+        new RouteKeyComparer());
+
+
     #endregion
 
 

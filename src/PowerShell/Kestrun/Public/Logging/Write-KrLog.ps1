@@ -7,7 +7,7 @@ function Write-KrLog {
 		It supports various log levels and can output the formatted message to the pipeline if requested.
 	.PARAMETER LogLevel
 		The log level to use for the log event.
-	.PARAMETER MessageTemplate
+	.PARAMETER Message
 		The message template describing the event.
 	.PARAMETER Name
 		The name of the logger to use. If not specified, the default logger is used.
@@ -15,22 +15,22 @@ function Write-KrLog {
 		The exception related to the event.
 	.PARAMETER ErrorRecord
 		The error record related to the event.
-	.PARAMETER PropertyValues
+	.PARAMETER Values
 		Objects positionally formatted into the message template.
 	.PARAMETER PassThru
 		If specified, outputs the formatted message into the pipeline.
 	.INPUTS
-		MessageTemplate - Message template describing the event.
+		Message - Message template describing the event.
 	.OUTPUTS
-		None or MessageTemplate populated with PropertyValues into pipeline if PassThru specified.
+		None or Message populated with Values into pipeline if PassThru specified.
 	.EXAMPLE
-		PS> Write-KrLog -LogLevel Information -MessageTemplate 'Info log message
+		PS> Write-KrLog -LogLevel Information -Message 'Info log message
 		This example logs a simple information message.
 	.EXAMPLE
-		PS> Write-KrLog -LogLevel Warning -MessageTemplate 'Processed {@Position} in {Elapsed:000} ms.' -PropertyValues $position, $elapsedMs
+		PS> Write-KrLog -LogLevel Warning -Message 'Processed {@Position} in {Elapsed:000} ms.' -Values $position, $elapsedMs
 		This example logs a warning message with formatted properties.
 	.EXAMPLE
-		PS> Write-KrLog -LogLevel Error -MessageTemplate 'Error occurred' -Exception ([System.Exception]::new('Some exception'))
+		PS> Write-KrLog -LogLevel Error -Message 'Error occurred' -Exception ([System.Exception]::new('Some exception'))
 		This example logs an error message with an exception.
 	.NOTES
 		This function is part of the Kestrun logging framework and is used to log messages at various levels.
@@ -44,7 +44,7 @@ function Write-KrLog {
 		[Parameter(Mandatory = $true)]
 		[AllowEmptyString()]
 		[AllowNull()]
-		[string]$MessageTemplate,
+		[string]$Message,
 
 		[Parameter(Mandatory = $false)]
 		[string]$Name,
@@ -59,7 +59,7 @@ function Write-KrLog {
 
 		[Parameter(Mandatory = $false)]
 		[AllowNull()]
-		[object[]]$PropertyValues,
+		[object[]]$Values,
 
 		[Parameter(Mandatory = $false)]
 		[switch]$PassThru
@@ -91,35 +91,35 @@ function Write-KrLog {
 		# Log the message using the specified log level and parameters
 		switch ($LogLevel) {
 			Verbose {
-				$Logger.Verbose($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Verbose($Exception, $Message, $Values)
 			}
 			Debug { 
-				$Logger.Debug($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Debug($Exception, $Message, $Values)
 			}
 			Information {
-				$Logger.Information($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Information($Exception, $Message, $Values)
 			}
 			Warning { 
-				$Logger.Warning($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Warning($Exception, $Message, $Values)
 			}
 			Error { 
-				$Logger.Error($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Error($Exception, $Message, $Values)
 			}
 			Fatal { 
-				$Logger.Fatal($Exception, $MessageTemplate, $PropertyValues)
+				$Logger.Fatal($Exception, $Message, $Values)
 			}
 		}
 		# If PassThru is specified, output the formatted message into the pipeline
 		# This allows the caller to capture the formatted message if needed
 		if ($PassThru) {
-			Get-KrFormattedMessage -Logger $Logger -LogLevel $LogLevel -MessageTemplate $MessageTemplate -PropertyValues $PropertyValues -Exception $Exception
+			Get-KrFormattedMessage -Logger $Logger -LogLevel $LogLevel -Message $Message -Values $Values -Exception $Exception
 		}
 	}
 	catch {
 		# If an error occurs while logging, write to the default logger
 		$defaultLogger = [Kestrun.Logging.LoggerManager]::DefaultLogger
 		if ($null -ne $defaultLogger) {
-			$defaultLogger.Error($_, "Error while logging message: {MessageTemplate}", $MessageTemplate)
+			$defaultLogger.Error($_, "Error while logging message: {Message}", $Message)
 		}
 		else {
 			Write-Error "Error while logging message: $_"

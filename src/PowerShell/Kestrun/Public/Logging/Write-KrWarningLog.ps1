@@ -4,7 +4,7 @@ function Write-KrWarningLog {
 		Writes Warning log message
 	.DESCRIPTION
 		Write a log event with the Warning level.
-	.PARAMETER MessageTemplate
+	.PARAMETER Message
 		Message template describing the event.
 	.PARAMETER Name
 		Name of the logger to use. If not specified, the default logger is used.
@@ -12,19 +12,19 @@ function Write-KrWarningLog {
 		Exception related to the event.
 	.PARAMETER ErrorRecord
 		ErrorRecord related to the event.
-	.PARAMETER PropertyValues
+	.PARAMETER Values
 		Objects positionally formatted into the message template.
 	.PARAMETER PassThru
-		Outputs MessageTemplate populated with PropertyValues into pipeline.
+		Outputs Message populated with Values into pipeline.
 	.INPUTS
-		MessageTemplate - Message template describing the event.
+		Message - Message template describing the event.
 	.OUTPUTS
-		None or MessageTemplate populated with PropertyValues into pipeline if PassThru specified.
+		None or Message populated with Values into pipeline if PassThru specified.
 	.EXAMPLE
 		PS> Write-KrWarningLog 'Warning log message'
 		This example logs a simple warning message.
 	.EXAMPLE
-		PS> Write-KrWarningLog -MessageTemplate 'Processed {@Position} in {Elapsed:000} ms.' -PropertyValues $position, $elapsedMs
+		PS> Write-KrWarningLog -Message 'Processed {@Position} in {Elapsed:000} ms.' -Values $position, $elapsedMs
 		This example logs a warning message with formatted properties.
 	.EXAMPLE
 		PS> Write-KrWarningLog 'Error occurred' -Exception ([System.Exception]::new('Some exception'))
@@ -39,7 +39,7 @@ function Write-KrWarningLog {
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'ErrRec')]
 		[AllowEmptyString()]
-		[string]$MessageTemplate,
+		[string]$Message,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -58,13 +58,13 @@ function Write-KrWarningLog {
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
 		[AllowNull()]
-		[object[]]$PropertyValues,
+		[object[]]$Values,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
 		[switch]$PassThru
 	)
 	process {
-		Write-KrLog -LogLevel Warning -Name $Name -MessageTemplate $MessageTemplate -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
+		Write-KrLog -LogLevel Warning -Name $Name -Message $Message -Exception $Exception -ErrorRecord $ErrorRecord -Values $Values -PassThru:$PassThru
 	}
 }

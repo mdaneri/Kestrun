@@ -4,7 +4,7 @@ function Write-KrVerboseLog {
 		Writes Verbose log message
 	.DESCRIPTION
 		Write a log event with the Verbose level.
-	.PARAMETER MessageTemplate
+	.PARAMETER Message
 		Message template describing the event.
 	.PARAMETER Name
 		Name of the logger to use. If not specified, the default logger is used.
@@ -12,19 +12,19 @@ function Write-KrVerboseLog {
 		Exception related to the event.
 	.PARAMETER ErrorRecord
 		ErrorRecord related to the event.
-	.PARAMETER PropertyValues
+	.PARAMETER Values
 		Objects positionally formatted into the message template.
 	.PARAMETER PassThru
-		Outputs MessageTemplate populated with PropertyValues into pipeline.
+		Outputs Message populated with Values into pipeline.
 	.INPUTS
-		MessageTemplate - Message template describing the event.
+		Message - Message template describing the event.
 	.OUTPUTS
-		None or MessageTemplate populated with PropertyValues into pipeline if PassThru specified.
+		None or Message populated with Values into pipeline if PassThru specified.
 	.EXAMPLE
-		PS> Write-KrVerboseLog 'Verbose log message' -PropertyValues 'value1', 'value2'
+		PS> Write-KrVerboseLog 'Verbose log message' -Values 'value1', 'value2'
 		This example logs a verbose message with two property values.
 	.EXAMPLE
-		PS> Write-KrVerboseLog -MessageTemplate 'Processed {@Position} in {Elapsed:000} ms.' -PropertyValues $position, $elapsedMs
+		PS> Write-KrVerboseLog -Message 'Processed {@Position} in {Elapsed:000} ms.' -Values $position, $elapsedMs
 		This example logs a verbose message with formatted properties.
 	.EXAMPLE
 		PS> Write-KrVerboseLog 'Error occurred' -Exception ([System.Exception]::new('Some exception'))
@@ -39,7 +39,7 @@ function Write-KrVerboseLog {
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'ErrRec')]
 		[AllowEmptyString()]
-		[string]$MessageTemplate,
+		[string]$Message,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -58,7 +58,7 @@ function Write-KrVerboseLog {
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
 		[AllowNull()]
-		[object[]]$PropertyValues,
+		[object[]]$Values,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -66,6 +66,6 @@ function Write-KrVerboseLog {
 	)
 	process {
 		# Call the generic logging function with Verbose level
-		Write-KrLog -LogLevel Verbose -Name $Name -MessageTemplate $MessageTemplate -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
+		Write-KrLog -LogLevel Verbose -Name $Name -Message $Message -Exception $Exception -ErrorRecord $ErrorRecord -Values $Values -PassThru:$PassThru
 	}
 }

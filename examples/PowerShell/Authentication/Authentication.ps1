@@ -50,7 +50,7 @@ param()
         Invoke-RestMethod -Uri https://localhost:5001/secure/jwt/hello -SkipCertificateCheck -Headers @{ Authorization = "Bearer $token2" } 
         #Form
         Invoke-WebRequest -Uri https://localhost:5001/cookies/login -SkipCertificateCheck -Method Post -Body @{ username = 'admin'; password = 'secret' } -SessionVariable authSession
-        Invoke-WebRequest -Uri https://localhost:5001/secure/cookies -SkipCertificateCheck -WebSession $authSession 
+        Invoke-WebRequest -Uri https://localhost:5001/secure/cookies/hello -SkipCertificateCheck -WebSession $authSession 
         Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method GET -SkipCertificateCheck -WebSession $authSession
         Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method DELETE -SkipCertificateCheck -WebSession $authSession
         Invoke-RestMethod -Uri https://localhost:5001/secure/cookies/policy -Method POST -SkipCertificateCheck -WebSession $authSession
@@ -145,7 +145,7 @@ Build-KrClaimPolicy
 # ── BASIC AUTHENTICATION ────────────────────────────────────────────────
 Add-KrBasicAuthentication -Name $BasicPowershellScheme -Realm "Power-Kestrun" -AllowInsecureHttp -ScriptBlock {
     param($Username, $Password)
-    write-KrInformationLog -MessageTemplate "Basic Authentication: User {0} is trying to authenticate." -PropertyValues $Username
+    write-KrInformationLog -Message "Basic Authentication: User {0} is trying to authenticate." -Values $Username
     if ($Username -eq "admin" -and $Password -eq "password") {
         $true
     }
@@ -276,60 +276,56 @@ Enable-KrConfiguration
 #>
 
 # Add a route with a script block
-Add-KrMapRoute -Verbs Get -Path "/secure/ps/hello" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
+
+Add-KrRouteGroup -Prefix "/secure/ps" -AuthorizationSchema $BasicPowershellScheme {
+    Add-KrMapRoute -Verbs Get -Path "/hello" {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType "text/plain"
+    }
+
+    Add-KrRouteGroup -Prefix "/policy" {
+        Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+                HttpVerbs       = 'Get'
+                Code            = {
+                    $user = $Context.User.Identity.Name
+                    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+                }
+                Language        = 'PowerShell'
+                RequirePolicies = @("CanRead")
+            })
+
+
+        Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+                HttpVerbs       = 'Delete'
+                Code            = {
+                    $user = $Context.User.Identity.Name
+                    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+                }
+                Language        = 'PowerShell'
+                RequirePolicies = @("CanDelete")
+            })
+
+        Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+                HttpVerbs       = 'Put'
+                Code            = {
+                    $user = $Context.User.Identity.Name
+                    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
+                }
+                Language        = 'PowerShell'
+                RequirePolicies = @("CanWrite")
+            })
+
+        Add-KrMapRoute -Options (New-MapRouteOption -Property @{
+                HttpVerbs       = 'Post'
+                Code            = {
+                    $user = $Context.User.Identity.Name
+                    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
+                }
+                Language        = 'PowerShell'
+                RequirePolicies = @("CanCreate")
+            })
+    }
 }
-
-Add-KrMapRoute -Options (New-MapRouteOption -Property @{
-        Pattern         = "/secure/ps/policy"
-        HttpVerbs       = 'Get'
-        Code            = {
-            $user = $Context.User.Identity.Name
-            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
-        }
-        Language        = 'PowerShell'
-        RequirePolicies = @("CanRead")
-        RequireSchemes  = @($BasicPowershellScheme)
-    })
-
-
-Add-KrMapRoute -Options (New-MapRouteOption -Property @{
-        Pattern         = "/secure/ps/policy"
-        HttpVerbs       = 'Delete'
-        Code            = {
-            $user = $Context.User.Identity.Name
-            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
-        }
-        Language        = 'PowerShell'
-        RequirePolicies = @("CanDelete")
-        RequireSchemes  = @($BasicPowershellScheme)
-    })
-
-Add-KrMapRoute -Options (New-MapRouteOption -Property @{
-        Pattern         = "/secure/ps/policy"
-        HttpVerbs       = 'Put'
-        Code            = {
-            $user = $Context.User.Identity.Name
-            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
-        }
-        Language        = 'PowerShell'
-        RequirePolicies = @("CanWrite")
-        RequireSchemes  = @($BasicPowershellScheme)
-    })
-
-Add-KrMapRoute -Options (New-MapRouteOption -Property @{
-        Pattern         = "/secure/ps/policy"
-        HttpVerbs       = 'Post'
-        Code            = {
-            $user = $Context.User.Identity.Name
-            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
-        }
-        Language        = 'PowerShell'
-        RequirePolicies = @("CanCreate")
-        RequireSchemes  = @($BasicPowershellScheme)
-    })
-
 
 Add-KrMapRoute -Verbs Get -Path "/secure/cs/hello" -AuthorizationSchema $BasicCSharpScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
@@ -393,88 +389,88 @@ Add-KrMapRoute -Options (New-MapRouteOption -Property @{
     })
 
 
+# KESTRUN KEY MATCHING AUTHENTICATION ROUTES
+Add-KrRouteGroup -Prefix "/secure/key" {
 
+    Add-KrMapRoute -Verbs Get -Path "/simple/hello" -AuthorizationSchema $ApiKeySimple  -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
+    }
 
+    Add-KrMapRoute -Verbs Get -Path "/ps/hello" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
+    }
 
+    Add-KrMapRoute -Verbs Get -Path "/cs/hello" -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/simple/hello" -AuthorizationSchema $ApiKeySimple -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType "text/plain"
-}
- 
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
+    }
+    Add-KrMapRoute -Verbs Get -Path "/Vb/hello" -AuthorizationSchema $ApiKeyVBNet -ScriptBlock {
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/hello" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType "text/plain"
-}
- 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/cs/hello" -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
- 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType "text/plain"
-}
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching VB.NET Code." -ContentType "text/plain"
+    }
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/Vb/hello" -AuthorizationSchema $ApiKeyVBNet -ScriptBlock {
+    # KESTRUN KEY MATCHING AUTHENTICATION ROUTES
+    Add-KrRouteGroup -Prefix "/ps/policy" -AuthorizationSchema $ApiKeyPowerShell {
+        Add-KrMapRoute -Verbs Get -Path "/" -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanRead"
 
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching VB.NET Code." -ContentType "text/plain"
-}
+        Add-KrMapRoute -Verbs Put -Path "/" -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanWrite"
 
+        Add-KrMapRoute -Verbs Post -Path "/" -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanCreate"
 
-Add-KrMapRoute -Verbs Get -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_read' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanRead"
-
-Add-KrMapRoute -Verbs Put -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_write' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanWrite"
-
-Add-KrMapRoute -Verbs Post -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_create' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanCreate"
-
-Add-KrMapRoute -Verbs Delete -Path "/secure/key/ps/policy" -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanDelete"
-
-
-# KESTRUN JWT AUTHENTICATION ROUTES 
-
-Add-KrMapRoute -Verbs Get -Path "/secure/jwt/hello" -AuthorizationSchema $JwtScheme -ScriptBlock {
-    Expand-KrObject $Context
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
+        Add-KrMapRoute -Verbs Delete -Path "/" -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_delete' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanDelete"
+    }
 }
 
-Add-KrMapRoute -Verbs Get -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_read' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanRead"
+# KESTRUN JWT AUTHENTICATION ROUTES
+Add-KrRouteGroup -Prefix "/secure/jwt" -AuthorizationSchema $JwtScheme {
+    Add-KrMapRoute -Verbs Get -Path "/hello"   -ScriptBlock {
+        Expand-KrObject $Context
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType "text/plain"
+    }
+    Add-KrRouteGroup -Prefix "/policy" {
+        Add-KrMapRoute -Verbs Get -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_read' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanRead"
 
-Add-KrMapRoute -Verbs Put -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_write' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanWrite"
+        Add-KrMapRoute -Verbs Put -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_write' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanWrite"
 
-Add-KrMapRoute -Verbs Post -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_create' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanCreate"
+        Add-KrMapRoute -Verbs Post -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_create' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanCreate"
 
-Add-KrMapRoute -Verbs Delete -Path "/secure/jwt/policy" -AuthorizationSchema $JwtScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_delete' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanDelete"
-
+        Add-KrMapRoute -Verbs Delete -ScriptBlock {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Native JWT checker because you have the 'can_delete' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanDelete"
+    }
+}
 
 Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  -ScriptBlock {
     $user = $Context.User.Identity.Name
 
-    write-KrInformationLog -MessageTemplate "Generating JWT token for user {0}" -PropertyValues $user
+    write-KrInformationLog -Message "Generating JWT token for user {0}" -Values $user
     Write-Output "JwtTokenBuilder Type : $($JwtTokenBuilder.GetType().FullName)"
     $accessToken = $JwtTokenBuilder | Update-KrJWT -FromContext
     Write-KrJsonResponse -InputObject @{
@@ -489,8 +485,8 @@ Add-KrMapRoute -Verbs Get -Path "/token/renew" -AuthorizationSchema $JwtScheme  
 Add-KrMapRoute -Verbs Get -Path "/token/new" -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
 
-    write-KrInformationLog -MessageTemplate "Regenerating JWT token for user {0}" -PropertyValues $user
-    write-KrInformationLog -MessageTemplate "JWT Token Builder: {0}" -PropertyValues $JwtTokenBuilder
+    write-KrInformationLog -Message "Regenerating JWT token for user {0}" -Values $user
+    write-KrInformationLog -Message "JWT Token Builder: {0}" -Values $JwtTokenBuilder
     if (-not $JwtTokenBuilder) {
         Write-KrErrorResponse -Message "JWT Token Builder is not initialized." -StatusCode 500
         return
@@ -582,55 +578,54 @@ Add-KrMapRoute -Verbs Get -Path "/cookies/logout" -ScriptBlock {
 } -AuthorizationSchema $CookieScheme
 
 
+Add-KrRouteGroup -Prefix "/secure/cookies" -AuthorizationSchema $CookieScheme {
+    Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
+        $user = $Context.User.Identity.Name
+        Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies Authentication." -ContentType "text/plain"
+    }
 
-Add-KrMapRoute -Verbs Get -Path "/secure/cookies" -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies Authentication." -ContentType "text/plain"
-} -AuthorizationSchema $CookieScheme
+    Add-KrMapRoute -Verbs Get -Path "/map" -ScriptBlock {
+        $incremental['Count'] = $incremental['Count'] + 1
+        @{
+            'BasicPowershellScheme' = $BasicPowershellScheme
+            'BasicCSharpScheme'     = $BasicCSharpScheme
+            'BasicVBNetScheme'      = $BasicVBNetScheme
+            'CookieScheme'          = $CookieScheme
+            'JwtScheme'             = $JwtScheme
+            'ApiKeySimple'          = $ApiKeySimple
+            'ApiKeyPowerShell'      = $ApiKeyPowerShell
+            'ApiKeyCSharp'          = $ApiKeyCSharp
+            'ApiKeyVBNet'           = $ApiKeyVBNet
+            'Issuer'                = $issuer
+            'Audience'              = $audience
+            'ClaimConfig'           = $claimConfig
+            'Incremental'           = $incremental
+        } | Write-KrJsonResponse -ContentType "application/json"
+    }
 
+    Add-KrRouteGroup -Prefix "/policy" {
+        Add-KrMapRoute -Verbs Get {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_read' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanRead"
 
-Add-KrMapRoute -Verbs Get -Path "/secure/cookies/map" -ScriptBlock {
-    $incremental['Count'] = $incremental['Count'] + 1
-    @{
-        'BasicPowershellScheme' = $BasicPowershellScheme
-        'BasicCSharpScheme'     = $BasicCSharpScheme
-        'BasicVBNetScheme'      = $BasicVBNetScheme
-        'CookieScheme'          = $CookieScheme
-        'JwtScheme'             = $JwtScheme
-        'ApiKeySimple'          = $ApiKeySimple
-        'ApiKeyPowerShell'      = $ApiKeyPowerShell
-        'ApiKeyCSharp'          = $ApiKeyCSharp
-        'ApiKeyVBNet'           = $ApiKeyVBNet
-        'Issuer'                = $issuer
-        'Audience'              = $audience
-        'ClaimConfig'           = $claimConfig
-        'Incremental'           = $incremental
-    } | Write-KrJsonResponse -ContentType "application/json"
- 
-} -AuthorizationSchema $CookieScheme
+        Add-KrMapRoute -Verbs Put {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_write' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanWrite"
 
+        Add-KrMapRoute -Verbs Post {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_create' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanCreate"
 
-Add-KrMapRoute -Verbs Get -Path "secure/cookies/policy" -AuthorizationSchema $CookieScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_read' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanRead"
+        Add-KrMapRoute -Verbs Delete {
+            $user = $Context.User.Identity.Name
+            Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_delete' permission." -ContentType "text/plain"
+        } -AuthorizationPolicy "CanDelete"
 
-Add-KrMapRoute -Verbs Put -Path "secure/cookies/policy" -AuthorizationSchema $CookieScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_write' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanWrite"
-
-Add-KrMapRoute -Verbs Post -Path "secure/cookies/policy" -AuthorizationSchema $CookieScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_create' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanCreate"
-
-Add-KrMapRoute -Verbs Delete -Path "secure/cookies/policy" -AuthorizationSchema $CookieScheme -ScriptBlock {
-    $user = $Context.User.Identity.Name
-    Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies checker because you have the 'can_delete' permission." -ContentType "text/plain"
-} -AuthorizationPolicy "CanDelete"
-
-
+    }
+}
 
 <#
 ********************************************

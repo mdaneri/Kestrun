@@ -46,7 +46,7 @@ function Register-KrSchedule {
         Register a job that runs nightly at 3 AM, executing the script at 'Scripts/Cleanup.ps1'.
     .EXAMPLE
         Register-KrSchedule -Name Heartbeat -Cron '*/10 * * * * *' -ScriptBlock {
-            Write-KrInformationLog -MessageTemplate "💓 Heartbeat at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+            Write-KrInformationLog -Message "💓 Heartbeat at {0:O}" -Values $([DateTimeOffset]::UtcNow)
         }
         Register a job that runs every 10 seconds, logging a heartbeat message.
     .EXAMPLE
@@ -64,7 +64,7 @@ function Register-KrSchedule {
         Register a job that runs daily at 1 AM, executing the C# script at 'Scripts/Backup.cs'.
     .EXAMPLE
         Register-KrSchedule -Server $server -Name 'RunOnce' -Interval '00:01:00' -ScriptBlock {
-            Write-KrInformationLog -MessageTemplate "Running once at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+            Write-KrInformationLog -Message "Running once at {0:O}" -Values $([DateTimeOffset]::UtcNow)
         } -RunImmediately
         Register a job that runs once immediately after registration, then every minute.
     .EXAMPLE
@@ -166,17 +166,17 @@ function Register-KrSchedule {
             if ($PassThru.IsPresent) {
                 # if the PassThru switch is specified, return the job info
                 # Return the newly registered job info
-                Write-KrInformationLog -MessageTemplate "Schedule '{0}' registered successfully." -PropertyValues $Name
+                Write-KrInformationLog -Message "Schedule '{0}' registered successfully." -Values $Name
 
                 # return the freshly-registered JobInfo
                 return $sched.GetSnapshot() | Where-Object Name -eq $Name
             }
             else {
-                Write-KrInformationLog -MessageTemplate "Schedule '{0}' registered successfully. Use -PassThru to return the job info." -PropertyValues $Name
+                Write-KrInformationLog -Message "Schedule '{0}' registered successfully. Use -PassThru to return the job info." -Values $Name
             }
         }
         catch {
-            Write-KrErrorLog -MessageTemplate "Failed to register schedule" -ErrorRecord $_
+            Write-KrErrorLog -Message "Failed to register schedule" -ErrorRecord $_
         }
     }
 }

@@ -43,7 +43,7 @@ Add-KrSinkPowerShell |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" | 
 Register-KrLogger -PassThru -SetAsDefault -Name "DefaultLogger"
 
-Write-KrInformationLog -MessageTemplate 'Some default log'
+Write-KrInformationLog -Message 'Some default log'
 
 Close-KrLogger -Logger $l0
 
@@ -59,13 +59,13 @@ Register-KrLogger -Name "Logger1"
 Register-KrLogger -FilePath ".\logs\test2-.log" -Console -MinimumLevel Verbose -Name "Logger2" 
 
 # Write-KrVerboseLog "test verbose"
-Write-KrDebugLog -MessageTemplate "test debug asd" -Name "Logger1"
+Write-KrDebugLog -Message "test debug asd" -Name "Logger1"
 Set-KrDefaultLogger -Name "Logger2"
-Write-KrInformationLog -MessageTemplate $null
-Write-KrInformationLog -MessageTemplate ''
-Write-KrInformationLog -MessageTemplate 'asd {0} - {1}' -PropertyValues $null, '' -Exception $null
+Write-KrInformationLog -Message $null
+Write-KrInformationLog -Message ''
+Write-KrInformationLog -Message 'asd {0} - {1}' -Values $null, '' -Exception $null
 
-Write-KrDebugLog -MessageTemplate "test debug asdasdsad"
+Write-KrDebugLog -Message "test debug asdasdsad"
 
 Write-KrWarningLog "test warning" -Name "Logger1"
 
@@ -73,13 +73,13 @@ Set-KrDefaultLogger -Name "Logger1"
 
 Write-KrInformationLog "test info"
 
-Write-KrErrorLog -MessageTemplate "test error {asd}, {num}, {@levelSwitch}" -PropertyValues "test1", 123, $levelSwitch -Name "Logger2"
+Write-KrErrorLog -Message "test error {asd}, {num}, {@levelSwitch}" -Values "test1", 123, $levelSwitch -Name "Logger2"
 
 try {
     Get-Content -Path 'asd' -ErrorAction Stop
 }
 catch {
-    Write-KrFatalLog -ErrorRecord $_ -MessageTemplate 'Error while reading file!'
+    Write-KrFatalLog -ErrorRecord $_ -Message 'Error while reading file!'
 }
 
 
@@ -91,6 +91,6 @@ Add-EnrichWithExceptionDetail |
 Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
 Add-KrSinkEventLog  -Source "MyApp" -ManageEventSource  |
 Register-KrLogger -Name "Logger3"
-Write-KrInformationLog -Name "Logger3" -MessageTemplate "test info"
+Write-KrInformationLog -Name "Logger3" -Message "test info"
 
 Close-KrLogger

@@ -4,7 +4,7 @@ function Write-KrDebugLog {
 			Write a debug log message using the Kestrun logging framework.
 	.DESCRIPTION
 			This function writes a debug log message to the specified logger or the default logger.
-	.PARAMETER MessageTemplate
+	.PARAMETER Message
 			The message template to log. This can include placeholders for properties.
 	.PARAMETER Logger
 			The logger to use for logging. If not specified, the default logger is used.
@@ -12,18 +12,18 @@ function Write-KrDebugLog {
 			An optional exception to log along with the message.
 	.PARAMETER ErrorRecord
 			An optional error record to log. If provided, it will be logged as a fatal error.
-	.PARAMETER PropertyValues
+	.PARAMETER Values
 			An array of property values to include in the log message.
 	.PARAMETER PassThru
 			If specified, the function will return the logger object after logging.
 	.EXAMPLE
-			Write-KrDebugLog -MessageTemplate "Debug message with properties: {0}, {1}" -PropertyValues "value1", "value2"
+			Write-KrDebugLog -Message "Debug message with properties: {0}, {1}" -Values "value1", "value2"
 			This example logs a debug message with two properties.
 	.EXAMPLE
-			Write-KrDebugLog -MessageTemplate "An error occurred" -Exception $exception -Logger $myLogger
+			Write-KrDebugLog -Message "An error occurred" -Exception $exception -Logger $myLogger
 			This example logs a debug message with an exception using a specific logger.
 	.EXAMPLE
-			Write-KrDebugLog -MessageTemplate "Fatal error" -ErrorRecord $errorRecord
+			Write-KrDebugLog -Message "Fatal error" -ErrorRecord $errorRecord
 			This example logs a fatal error message using an error record.
 	.NOTES
 			This function is part of the Kestrun logging framework and is used to log debug messages.
@@ -35,7 +35,7 @@ function Write-KrDebugLog {
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'ErrRec')]
 		[AllowEmptyString()]
-		[string]$MessageTemplate,
+		[string]$Message,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -54,7 +54,7 @@ function Write-KrDebugLog {
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
 		[AllowNull()]
-		[object[]]$PropertyValues,
+		[object[]]$Values,
 
 		[Parameter(Mandatory = $false, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, ParameterSetName = 'ErrRec')]
@@ -62,6 +62,6 @@ function Write-KrDebugLog {
 	)
 
 	process {
-		Write-KrLog -LogLevel Debug -Name $Name -MessageTemplate $MessageTemplate -Exception $Exception -ErrorRecord $ErrorRecord -PropertyValues $PropertyValues -PassThru:$PassThru
+		Write-KrLog -LogLevel Debug -Name $Name -Message $Message -Exception $Exception -ErrorRecord $ErrorRecord -Values $Values -PassThru:$PassThru
 	}
 }

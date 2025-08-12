@@ -48,7 +48,7 @@ function Add-KrMapRoute {
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes
     #>
-    [CmdletBinding(defaultParameterSetName = "ScriptBlock")]
+    [CmdletBinding(defaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -62,12 +62,13 @@ function Add-KrMapRoute {
         [Parameter(ParameterSetName = "CodeFilePath")]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
 
-        [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
-        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
-        [Parameter(Mandatory = $true, ParameterSetName = "CodeFilePath")]
-        [string]$Path,
+        [Parameter(ParameterSetName = "ScriptBlock")]
+        [Parameter(ParameterSetName = "Code")]
+        [Parameter(ParameterSetName = "CodeFilePath")]
+        [ValidatePattern('^/')]
+        [string]$Path = '/',
 
-        [Parameter(Mandatory = $true, ParameterSetName = "ScriptBlock")]
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "ScriptBlock")]
         [ScriptBlock]$ScriptBlock,
 
         [Parameter(Mandatory = $true, ParameterSetName = "Code")]
@@ -105,12 +106,38 @@ function Add-KrMapRoute {
         [hashtable]$Arguments,
 
         [Parameter()]
-        [switch]$PassThru
+        [switch]$PassThru,
+
+        [Parameter()]
+        [switch]$AllowDuplicate,
+
+        [Parameter()]
+        [ValidateSet('Throw', 'Skip', 'Allow', 'Warn')]
+        [string]$DuplicateAction = 'Throw'
 
     )
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
+
+        $exists = Test-KrRoute -Path $Path -Verb $Verbs
+
+        if ($exists) {
+            if ($AllowDuplicate -or $DuplicateAction -eq 'Allow') {
+                 Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Path, ($Verbs -join ',')
+            }
+            elseif ($DuplicateAction -eq 'Skip') {
+                Write-KrVerboseLog -Message "Route '{Path}' ({Verbs}) exists; skipping." -Values $Path, ($Verbs -join ',')
+                return
+            }
+            elseif ($DuplicateAction -eq 'Warn') {
+                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists." -Values $Path, ($Verbs -join ',')
+            }
+            else {
+                throw [System.InvalidOperationException]::new(
+                    "Route '$Path' with method(s) $($Verbs -join ',') already exists.")
+            }
+        }
 
         # -- if Options parameter is used, we can skip the rest of the parameters
         if ($PSCmdlet.ParameterSetName -ne 'Options') {
@@ -165,6 +192,40 @@ function Add-KrMapRoute {
                 }
             }
         }
+        # --- BEGIN: inherit from current route group (if any) ---
+        if ($script:KrRouteGroupStack -and $script:KrRouteGroupStack.Count -gt 0) {
+            $grp = $script:KrRouteGroupStack.Peek()
+
+            # Prefix the pattern
+            if ($Options.Pattern) {
+                $Options.Pattern = _KrJoin-Route $grp.Prefix $Options.Pattern
+            }
+            else {
+                $Options.Pattern = $grp.Prefix
+            }
+
+            # Merge arrays / refs
+            $Options.ExtraImports = _KrMerge-Unique $grp.ExtraImports $Options.ExtraImports
+            if ($grp.ExtraRefs) {
+                # Create a new array to avoid mutating external references
+                $Options.ExtraRefs = @($grp.ExtraRefs + $Options.ExtraRefs)
+            }
+
+            # Merge auth
+            if ($grp.AuthorizationSchema) {
+                $Options.RequireSchemes = _KrMerge-Unique $grp.AuthorizationSchema $Options.RequireSchemes
+            }
+            if ($grp.AuthorizationPolicy) {
+                $Options.RequirePolicies = _KrMerge-Unique $grp.AuthorizationPolicy $Options.RequirePolicies
+            }
+
+            # Merge arguments (child overrides)
+            if ($grp.Arguments) {
+                $Options.Arguments = _KrMerge-Args $grp.Arguments $Options.Arguments
+            }
+        }
+        # --- END: inherit from current route group (if any) ---
+
 
         [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | out-Null
 

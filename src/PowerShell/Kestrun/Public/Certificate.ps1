@@ -94,7 +94,7 @@ function Import-KsCertificate {
         [string] $PrivateKeyPath
     )
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
-    Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
+    Write-KrVerboseLog -Message "Resolved file path: $resolvedPath"
     if ($null -eq $Password) {
         return [Kestrun.Certificates.CertificateManager]::Import($resolvedPath, $PrivateKeyPath)
     }
@@ -123,7 +123,7 @@ function Export-KsCertificate {
         [switch] $IncludePrivateKey
     )
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot
-    Write-KrVerboseLog -MessageTemplate  "Resolved file path: $resolvedPath"
+    Write-KrVerboseLog -Message  "Resolved file path: $resolvedPath"
 
     $fmtEnum = [Kestrun.Certificates.CertificateManager+ExportFormat]::$Format
     [Kestrun.Certificates.CertificateManager]::Export($Certificate, $resolvedPath, $fmtEnum, $Password,

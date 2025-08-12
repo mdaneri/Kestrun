@@ -57,7 +57,7 @@ Enable-KrConfiguration -passThru
 
 # (A) pure-C# heartbeat every 10 s (through ScriptBlock)
 Register-KrSchedule -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock {
-    Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+    Write-KrInformationLog  -Message "💓  Heartbeat (PowerShell) at {0:O}" -Values $([DateTimeOffset]::UtcNow)
 }
 
 

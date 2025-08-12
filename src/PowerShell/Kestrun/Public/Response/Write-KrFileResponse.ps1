@@ -49,7 +49,7 @@ function Write-KrFileResponse {
         if ($null -ne $Context.Response) {
             # Resolve the file path relative to the Kestrun root if necessary
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
-            Write-KrVerboseLog -MessageTemplate "Resolved file path: $resolvedPath"
+            Write-KrVerboseLog -Message "Resolved file path: $resolvedPath"
             # Set the content disposition type if specified
             if ($ContentDisposition -ne [Kestrun.ContentDispositionType]::NoContentDisposition) {
                 $Context.Response.ContentDisposition.Type = $ContentDisposition.ToString()
@@ -66,6 +66,6 @@ function Write-KrFileResponse {
     }
     catch {
         # Handle any errors that occur during the file response writing
-        Write-KrErrorLog -MessageTemplate "Error writing file response." -ErrorRecord $_
+        Write-KrErrorLog -Message "Error writing file response." -ErrorRecord $_
     }
 }
