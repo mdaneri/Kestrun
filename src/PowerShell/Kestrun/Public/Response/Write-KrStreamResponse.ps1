@@ -19,7 +19,7 @@ function Write-KrStreamResponse {
     #>
     param(
         [Parameter(Mandatory = $true)]
-        [stream]$InputObject,
+        [System.IO.Stream]$InputObject,
         [Parameter()]
         [int]$StatusCode = 200,
         [Parameter()]

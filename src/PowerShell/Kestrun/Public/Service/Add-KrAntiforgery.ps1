@@ -37,7 +37,7 @@ function Add-KrAntiforgery {
         [Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions]$Options,
 
         [Parameter(ParameterSetName = 'Items')]
-        [Kestrun.CookieBuilder]$Cookie = $null,
+        [Microsoft.AspNetCore.Http.CookieBuilder]$Cookie = $null,
 
         [Parameter(ParameterSetName = 'Items')]
         [string]$FormFieldName,

@@ -41,7 +41,7 @@ function Write-KrFileResponse {
         [Parameter()]
         [string]$FileDownloadName,
         [Parameter()]
-        [Kestrun.ContentDispositionType]$ContentDisposition = [Kestrun.ContentDispositionType]::NoContentDisposition
+        [Kestrun.Models.ContentDispositionType]$ContentDisposition = [Kestrun.Models.ContentDispositionType]::NoContentDisposition
     )
 
     try {
@@ -51,7 +51,7 @@ function Write-KrFileResponse {
             $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
             Write-KrVerboseLog -Message "Resolved file path: $resolvedPath"
             # Set the content disposition type if specified
-            if ($ContentDisposition -ne [Kestrun.ContentDispositionType]::NoContentDisposition) {
+            if ($ContentDisposition -ne [Kestrun.Models.ContentDispositionType]::NoContentDisposition) {
                 $Context.Response.ContentDisposition.Type = $ContentDisposition.ToString()
             }
             # Set the file download name if specified

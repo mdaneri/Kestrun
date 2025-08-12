@@ -38,7 +38,7 @@ function Add-KrRazorPageService {
         [string]$RootDirectory,
 
         [Parameter(ParameterSetName = 'Items')]
-        [Microsoft.AspNetCore.Mvc.ApplicationModels.IPageConventions[]]$Conventions = @(),
+        [Microsoft.AspNetCore.Mvc.ApplicationModels.IPageConvention[]]$Conventions = @(),
 
         [Parameter()]
         [switch]$PassThru
