@@ -20,7 +20,8 @@ function Add-KrEnrichWithProperty {
 		PS> New-KrLogger | Add-KrEnrichWithProperty -Name ScriptName -Value 'Test' | Add-KrSinkConsole | Register-KrLogger
 	#>
 
-	[Cmdletbinding()]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Serilog.LoggerConfiguration]$LoggerConfig,

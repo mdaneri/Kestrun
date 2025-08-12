@@ -1,4 +1,3 @@
- 
 function Set-KrPythonRuntime {
     <#
     .SYNOPSIS
@@ -25,6 +24,7 @@ function Set-KrPythonRuntime {
         # Override whatever is set and pin CPython 3.12
         Set-KrPythonRuntime -Path '/opt/python312/lib/libpython3.12.so' -Force
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [string] $Path,

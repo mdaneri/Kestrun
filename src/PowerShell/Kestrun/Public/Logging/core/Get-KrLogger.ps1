@@ -20,7 +20,8 @@ function Get-KrDefaultLogger {
 		This function is part of the Kestrun logging framework and is used to retrieve the current default logger instance for the session.
 		It can be used in scripts and modules that utilize Kestrun for logging.
 	#>
-	[CmdletBinding()]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding()]
 	[OutputType([Serilog.ILogger])]
 	param(
 		[Parameter(Mandatory = $false)]

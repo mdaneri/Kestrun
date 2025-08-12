@@ -18,6 +18,7 @@ function Build-KrClaimPolicy {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.authentication.claimpolicybuilder.build
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding()]
     [OutputType([Kestrun.Claims.ClaimPolicyConfig])]
     param(

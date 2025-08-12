@@ -36,7 +36,8 @@ function Write-KrLog {
 		This function is part of the Kestrun logging framework and is used to log messages at various levels.
 		It can be used in scripts and modules that utilize Kestrun for logging.
 	#>
-	[Cmdletbinding()]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true)]
 		[Serilog.Events.LogEventLevel]$LogLevel,

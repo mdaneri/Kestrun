@@ -48,6 +48,7 @@ function Add-KrMapRoute {
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

@@ -24,6 +24,8 @@ function Write-KrCsvResponse {
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [object]$InputObject,

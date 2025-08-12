@@ -18,6 +18,7 @@ function Add-KrPowerShellRazorPagesRuntime {
 .NOTES
     This cmdlet is used to register Razor Pages with PowerShell support in the Kestrun server, allowing you to serve dynamic web pages using Razor syntax with PowerShell code blocks.
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

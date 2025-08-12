@@ -34,7 +34,8 @@ function Write-KrInformationLog {
 		It can be used in scripts and modules that utilize Kestrun for logging.
 	#>
 
-	[Cmdletbinding(DefaultParameterSetName = 'MsgTemp')]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(DefaultParameterSetName = 'MsgTemp')]
 	param(
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]
 		[Parameter(Mandatory = $false, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'ErrRec')]

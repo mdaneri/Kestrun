@@ -24,6 +24,7 @@ function New-MapRouteOption {
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.hosting.options.maprouteoptions
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory, ValueFromPipeline)]

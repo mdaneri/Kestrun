@@ -30,6 +30,7 @@ function Add-KrResponseCompression {
     This cmdlet is used to configure response compression for the Kestrun server, allowing you to specify which MIME types should be compressed and which should be excluded.
     Providers is not supported yet.
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

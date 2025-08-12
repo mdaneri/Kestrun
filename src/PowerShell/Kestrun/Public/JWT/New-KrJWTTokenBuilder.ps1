@@ -15,6 +15,7 @@ function New-KrJWTBuilder {
         This function is part of the Kestrun.Security module and is used to build JWT tokens.
         Maps to JwtTokenBuilder.New
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param()

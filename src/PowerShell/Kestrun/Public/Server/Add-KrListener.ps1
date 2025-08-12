@@ -26,6 +26,7 @@ function Add-KrListener {
 .NOTES
     This function is designed to be used after the server has been configured with routes and listeners.
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = "NoCert")]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

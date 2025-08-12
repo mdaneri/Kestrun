@@ -66,6 +66,7 @@ function Add-KrApiKeyAuthentication {
     .NOTES
         This cmdlet is used to configure API key authentication for the Kestrun server, allowing you to secure your APIs with API keys. 
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = 'ItemsScriptBlock')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

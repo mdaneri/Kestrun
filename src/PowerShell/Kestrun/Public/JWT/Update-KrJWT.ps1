@@ -21,6 +21,7 @@ function Update-KrJWT {
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler?view=azure-dotnet
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
     [CmdletBinding(SupportsShouldProcess = $true, defaultParameterSetName = "Token")]
     [OutputType([string])]
     param(

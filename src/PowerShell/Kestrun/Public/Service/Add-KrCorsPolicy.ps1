@@ -39,6 +39,7 @@ function Add-KrCorsPolicy {
  .LINK
     https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.cors.infrastructure.corspolicybuilder?view=aspnetcore-8.0
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

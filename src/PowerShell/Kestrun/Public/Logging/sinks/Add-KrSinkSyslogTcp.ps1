@@ -41,7 +41,8 @@ function Add-KrSinkSyslogTcp {
 		This function is part of the Kestrun logging infrastructure and should be used to enable Syslog TCP logging.
 	#>
 
-	[Cmdletbinding()]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding()]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]

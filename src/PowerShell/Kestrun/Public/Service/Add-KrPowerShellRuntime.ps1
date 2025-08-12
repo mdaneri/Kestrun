@@ -16,6 +16,7 @@ function Add-KrPowerShellRuntime {
 .NOTES
     This cmdlet is used to register a PowerShell runtime with the Kestrun server, allowing you to execute PowerShell scripts and commands in the context of the Kestrun server.
 #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

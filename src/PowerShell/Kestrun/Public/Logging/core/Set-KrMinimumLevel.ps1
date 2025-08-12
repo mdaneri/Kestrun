@@ -36,7 +36,8 @@ function Set-KrMinimumLevel {
 		Sets the minimum log level of the specified logger configuration to Information and outputs the LoggerConfiguration object into the pipeline. 
 	#>
 
-	[CmdletBinding(SupportsShouldProcess = $true)]
+	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [CmdletBinding(SupportsShouldProcess = $true)]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Serilog.LoggerConfiguration]$LoggerConfig,

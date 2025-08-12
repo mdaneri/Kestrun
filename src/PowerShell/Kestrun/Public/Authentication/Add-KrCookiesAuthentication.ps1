@@ -39,6 +39,7 @@ function Add-KrCookiesAuthentication {
     .LINK
         https://docs.kestrun.dev/docs/powershell/kestrun/authentication
     #>
+    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
