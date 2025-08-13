@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TARGET_REPO: "Kestrun/kestrun.github.io"   # org/user site repo
-      DEST_DIR: "doc/pwsh/cmdlets"               # folder on site; use "." to publish at root
+      DEST_DIR: "docs/pwsh/cmdlets"               # folder on site; use "." to publish at root
       COMMIT_AUTHOR_NAME: "github-actions[bot]"
       COMMIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
     steps:
