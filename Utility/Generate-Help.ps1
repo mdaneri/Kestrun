@@ -85,8 +85,6 @@ nav_order: 10
     Set-Content -Path (Join-Path $OutDir "index.md") -Value $index_md -Encoding UTF8
 }
 
- 
-
 # Normalize cmdlet pages for Just the Docs
 $files = Get-ChildItem $OutDir -Recurse -Filter *.md | Sort-Object Name
 $i = 1
@@ -107,8 +105,7 @@ parent: PowerShell Cmdlets
 title: $title
 nav_order: $i
 render_with_liquid: false
----
-$raw
+$($raw.Substring(5))
 "@ | Set-Content $f.FullName -NoNewline
     }
     else {
