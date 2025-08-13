@@ -127,8 +127,8 @@ Add-BuildTask Help {
     Write-Host '- Generate-LargeFile: Generates a large test file.'
     Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
     Write-Host '- ThirdPartyNotices: Generates third-party notices.'
-
-    Write-Host
+    Write-Host '- BuildHelp: Generates PowerShell help documentation.'
+    Write-Host '- CleanHelp: Cleans the PowerShell help documentation.'
 }
 
 Add-BuildTask "Clean" "Clean-CodeAnalysis", {
@@ -232,10 +232,24 @@ Add-BuildTask "Package" "Build", {
     }
 }
 
+Add-BuildTask "BuildHelp" {
+    Write-Host "Generate Powershell Help..."
+    pwsh -NoProfile -File .\Utility\Generate-Help.ps1
+}
+
+Add-BuildTask "CleanHelp" {
+    Write-Host "Cleaning Powershell Help..."
+    pwsh -NoProfile -File .\Utility\Generate-Help.ps1 -Clean
+}
+
+
+
 Add-BuildTask "Manifest" {
     Write-Host "Updating Kestrun.psd1 manifest..."
     pwsh -NoProfile -File .\Utility\Update-Manifest.ps1
 }
+
+
 
 Add-BuildTask  "Generate-LargeFile" "Clean-LargeFile", {
     Write-Host "Generating large file..."

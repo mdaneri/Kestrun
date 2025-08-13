@@ -1,0 +1,74 @@
+name: Build & Publish PowerShell Cmdlet Docs
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/PowerShell/Kestrun/**.ps1'
+      - 'src/PowerShell/Kestrun/**.psd1'
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Install PowerShell
+        uses: ./.github/actions/Install-PowerShell
+        with:
+            Version: 'latest'
+
+      - name: 🧰 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+            dotnet-version: '8.0.x'
+            cache: true
+            cache-dependency-path: |
+             **/*.csproj
+             **/packages.lock.json
+
+      - name: 🧰 Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+            dotnet-version: '9.0.x'
+
+      - name: 🧰 Install Module Invoke-Build
+        shell: pwsh
+        run: |
+            $ErrorActionPreference = 'Stop'
+            Install-Module InvokeBuild -Force -Scope CurrentUser
+      
+      - name: 🧰 Install Module platyPS
+        shell: pwsh
+        run: |
+            $ErrorActionPreference = 'Stop'
+            Install-Module platyPS -Force -Scope CurrentUser
+
+      - name: 🔎 Print runtime context
+        shell: pwsh
+        run: |
+          $PSVersionTable
+          dotnet --info
+          [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+          [System.Environment]::Version
+
+      - name: 📦 Restore solution
+        shell: pwsh
+        run: Invoke-Build Restore
+
+      - name: 🔧 Run C# Build (normal)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-Build Build
+           
+      - name: Build Cmdlet Docs
+        shell: pwsh
+        run: Invoke-Build BuildHelp
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

@@ -1,20 +1,21 @@
 
-<#
-.SYNOPSIS
-    Creates a new Kestrun server instance.
-.DESCRIPTION
-    This function initializes a new Kestrun server instance with the specified name and logger.
-.PARAMETER Name
-    The name of the Kestrun server instance to create.
-.PARAMETER Logger
-    An optional Serilog logger instance to use for logging.
-.EXAMPLE
-    New-KrServer -Name "MyKestrunServer"
-    Creates a new Kestrun server instance with the specified name.
-.NOTES
-    This function is designed to be used in the context of a Kestrun server setup.
-#>
+ 
 function New-KrServer {
+    <#
+    .SYNOPSIS
+        Creates a new Kestrun server instance.
+    .DESCRIPTION
+        This function initializes a new Kestrun server instance with the specified name and logger.
+    .PARAMETER Name
+        The name of the Kestrun server instance to create.
+    .PARAMETER Logger
+        An optional Serilog logger instance to use for logging.
+    .EXAMPLE
+        New-KrServer -Name "MyKestrunServer"
+        Creates a new Kestrun server instance with the specified name.
+    .NOTES
+        This function is designed to be used in the context of a Kestrun server setup.
+    #>
     [KestrunRuntimeApi([KestrunApiContext]::Definition)]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
