@@ -1,133 +1,6 @@
-function Assert-AssemblyLoaded {
-    <#
-    .SYNOPSIS
-        Ensures that a .NET assembly is loaded only once.
-
-    .DESCRIPTION
-        Checks the currently loaded assemblies for the specified path. If the
-        assembly has not been loaded yet, it is added to the current AppDomain.
-    .PARAMETER AssemblyPath
-        Path to the assembly file to load.
-    #> 
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
-    param (
-        [string]$AssemblyPath,
-        [switch]$Verbose
-    )
-    if (-not (Test-Path -Path $AssemblyPath -PathType Leaf)) {
-        throw "Assembly not found at path: $AssemblyPath"
-    }
-    $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($AssemblyPath).Name
-    $loaded = [AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq $assemblyName }
-    if (-not $loaded) {
-        Add-Type -LiteralPath $AssemblyPath
-    }
-    else {
-        if ($Verbose) {
-            Write-Host "Assembly already loaded: $AssemblyPath"
-        }
-    }
+param() {
 }
-function Import-KestrunAccelerator {
-    $ta = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
-
-    $ta::Add('KestrunHelpers', [Kestrun.Scriptable.KestrunHelpers])
-    $ta::Add('KestrunCerts', [Kestrun.Scriptable.CertificateUtils])
-    $ta::Add('KestrunLogger', [Kestrun.Logging.LogUtility]) 
-}
-function Add-AspNetCoreType {
-    <#
-    .SYNOPSIS
-        Loads required ASP.NET Core assemblies for PowerShell usage.
-    .PARAMETER Version
-        The .NET version to target (e.g. net8, net9, net10).
-    #>
-    param (
-        [Parameter()]
-        [ValidateSet("net8.0", "net9.0", "net10.0")]
-        [string]$Version = "net8.0"
-    )
-    $versionNumber = $Version -replace 'net(\d+).*', '$1'
-    $dotnetPath = (Get-Command -Name "dotnet" -ErrorAction Stop).Source
-    $realDotnetPath = (Get-Item $dotnetPath).Target
-    if (-not $realDotnetPath) { $realDotnetPath = $dotnetPath }elseif ($realDotnetPath -notmatch '^/') {
-        # If the target is a relative path, resolve it from the parent of $dotnetPath
-        $realDotnetPath = Join-Path -Path (Split-Path -Parent $dotnetPath) -ChildPath $realDotnetPath
-        $realDotnetPath = [System.IO.Path]::GetFullPath($realDotnetPath)
-    }
-    $dotnetDir = Split-Path -Path $realDotnetPath -Parent
-    if (-not $dotnetDir) {
-        throw "Could not determine the path to the dotnet executable."
-    }
-    $baseDir = Join-Path -Path $dotnetDir -ChildPath "shared\Microsoft.AspNetCore.App"
-    if (-not (Test-Path -Path $baseDir -PathType Container)) {
-        throw "ASP.NET Core shared framework not found at $baseDir."
-    }
-    $versionDirs = Get-ChildItem -Path $baseDir -Directory | Where-Object { $_.Name -like "$($versionNumber).*" } | Sort-Object Name -Descending
-    foreach ($verDir in $versionDirs) {
-        $assemblies = @()
-
-        Get-ChildItem -Path $verDir.FullName -Filter "Microsoft.*.dll" | ForEach-Object {
-            if ($assemblies -notcontains $_.Name) {
-                $assemblies += $_.Name
-            }
-        }
-        $allFound = $true
-        foreach ($asm in $assemblies) {
-            $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
-            if (-not (Test-Path -Path $asmPath)) {
-                Write-Verbose "Assembly $asm not found in $($verDir.FullName)"
-                $allFound = $false
-                break
-            }
-        }
-        if ($allFound) {
-            foreach ($asm in $assemblies) { 
-                $asmPath = Join-Path -Path $verDir.FullName -ChildPath $asm
-                Assert-AssemblyLoaded -AssemblyPath $asmPath
-            }
-            Write-Verbose "Loaded ASP.NET Core assemblies from $($verDir.FullName)"
-            return $verDir.Name
-        }
-    }
-
-    Write-Error "Could not find ASP.NET Core assemblies for version $Version in $baseDir."
-    Write-Warning "Please download the Runtime $Version from https://dotnet.microsoft.com/en-us/download/dotnet/$versionNumber.0"
-
-    throw "Microsoft.AspNetCore.App version $Version not found in $baseDir."
-}
-
-
-function Add-CodeAnalysisType {
-    <#
-    .SYNOPSIS
-        Adds the specified version of the Microsoft.CodeAnalysis assemblies to the session.
-    .DESCRIPTION
-        This function loads the specified version of the Microsoft.CodeAnalysis assemblies into the current session.
-    .PARAMETER Version
-        The version of the Microsoft.CodeAnalysis assemblies to load.
-    .PARAMETER Verbose
-        If specified, verbose output will be shown.
-    #>
-    param (
-        [string]$Version,
-        [switch]$Verbose
-    )
-    $codeAnalysisassemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath "Microsoft.CodeAnalysis", $Version
-
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Workspaces.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.Scripting.dll") -Verbose:$Verbose
-    #Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Razor.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.VisualBasic.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.CSharp.Workspaces.dll") -Verbose:$Verbose
-    Assert-AssemblyLoaded -AssemblyPath (Join-Path -Path "$codeAnalysisassemblyLoadPath" -ChildPath "Microsoft.CodeAnalysis.Scripting.dll") -Verbose:$Verbose
-}
-
 # Main Kestrun module path
-
 # This is the root path for the application
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
 
@@ -162,31 +35,7 @@ switch ($PSVersionTable.PSVersion.Minor) {
     }
 }
 
-$inRouteRunspace = $null -ne $ExecutionContext.SessionState.PSVariable.GetValue("KestrunHost")
-
-if (-not $inRouteRunspace) {
-    # Usage
-    Add-AspNetCoreType -Version $netVersion
-    # Add-AspNetCoreType -Version "net8.0.*"
-
-    Add-CodeAnalysisType -Version $codeAnalysisVersion
-
-    $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
- 
-    # Assert that the assembly is loaded and load it if not
-    Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
-
-    # 1️⃣  Load & register your DLL folders (as before):
-    [Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
-
-    # 2️⃣  When the runspace or script is finished:
-    [Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
-}
-else {
-    # Assert that the assembly is loaded and load it if not
-    Assert-AssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
-}
-# 3️⃣  Load private functions
+# Load private functions
 Get-ChildItem "$($moduleRootPath)/Private/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
 # only import public functions
@@ -194,40 +43,71 @@ $sysfuncs = Get-ChildItem Function:
 
 # only import public alias
 $sysaliases = Get-ChildItem Alias:
-if ( $inRouteRunspace) {
-    $sysfuncs += (
-        'Add-KrFavicon', 'Add-KrAntiforgery',
-        'Add-KrApiKeyAuthentication', 'Add-KrBasicAuthentication', 'Add-KrClaimPolicy',
-        'Add-KrCookiesAuthentication', 'Add-KrCorsPolicy', 'Add-KrDefaultFile',
-        'Add-KrFileServer', 'Add-KrHtmlTemplateRoute', 'Add-KrJWTBearerAuthentication',
-        'Add-KrMapRoute', 'Add-KrPowerShellRazorPagesRuntime', 'Add-KrPowerShellRuntime',
-        'Add-KrRazorPageService', 'Add-KrResponseCompression', 'Add-KrWindowsAuthentication',
-        'Enable-KrConfiguration', 'Get-KrJWTValidationParameter', 'New-KrServer',
-        'Set-KrPythonRuntime', 'Set-KrServerLimit',
-        'Set-KrServerOption', 'Start-KrServer', 'Add-KrListener', 'Stop-KrServer'
-    )
-}
-# load public functions
-Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
 
-# get functions from memory and compare to existing to find new functions added
-$funcs = Get-ChildItem Function: | Where-Object { $sysfuncs -notcontains $_ }
-$aliases = Get-ChildItem Alias: | Where-Object { $sysaliases -notcontains $_ }
-# export the module's public functions
-if ($funcs) {
-    if ($aliases) {
-        Export-ModuleMember -Function ($funcs.Name) -Alias $aliases.Name
-    }
-    else {
-        Export-ModuleMember -Function ($funcs.Name)
-    }
-}
+$inRouteRunspace = $null -ne $ExecutionContext.SessionState.PSVariable.GetValue("KestrunHost")
 
 if (-not $inRouteRunspace) {
-    if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
-        # Set the Kestrun root path for the host manager
-        [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
+    # Usage
+    if ((Add-KrAspNetCoreType -Version $netVersion ) -and
+        (Add-KrCodeAnalysisType -ModuleRootPath $moduleRootPath -Version $codeAnalysisVersion )) {
+        $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
+
+        # Assert that the assembly is loaded and load it if not
+        if ( Assert-KrAssemblyLoaded -AssemblyPath (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll"))  {
+            # Load & register your DLL folders (as before):
+            [Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
+
+            # When the runspace or script is finished:
+            [Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
+        }
     }
-    [Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
-    # Ensure that the Kestrun host manager is destroyed to clean up resources.
+}
+else {
+    # Assert that the assembly is loaded and load it if not
+    Assert-KrAssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
+}
+
+try {
+    # Check if Kestrun assembly is loaded
+    if (-not ([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq 'Kestrun' } )) {
+        throw "Kestrun assembly is not loaded."
+    }
+
+    # load public functions
+    Get-ChildItem "$($moduleRootPath)/Public/*.ps1" -Recurse | ForEach-Object { . ([System.IO.Path]::GetFullPath($_)) }
+
+    # get functions from memory and compare to existing to find new functions added
+    $funcs = Get-ChildItem Function: | Where-Object { $sysfuncs -notcontains $_ }
+
+    if ($inRouteRunspace) {
+        # set the function by context to the current runspace
+        $funcs = Get-KrCommandsByContext -AnyOf Runtime -Function $funcs
+    }
+
+    $aliases = Get-ChildItem Alias: | Where-Object { $sysaliases -notcontains $_ }
+    # export the module's public functions
+    if ($funcs) {
+        if ($aliases) {
+            Export-ModuleMember -Function ($funcs.Name) -Alias $aliases.Name
+        }
+        else {
+            Export-ModuleMember -Function ($funcs.Name)
+        }
+    }
+
+    if (-not $inRouteRunspace) {
+        if ([Kestrun.KestrunHostManager]::KestrunRoot -ne $script:KestrunRoot) {
+            # Set the Kestrun root path for the host manager
+            [Kestrun.KestrunHostManager]::KestrunRoot = $script:KestrunRoot
+        }
+        [Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
+        # Ensure that the Kestrun host manager is destroyed to clean up resources.
+    }
+}
+catch {
+    throw ("Failed to import Kestrun module: $_")
+}
+finally {
+    # Cleanup temporary variables
+    Remove-Variable -Name 'assemblyLoadPath', 'moduleRootPath', 'netVersion', 'codeAnalysisVersion', 'inRouteRunspace' , 'sysfuncs', 'sysaliases', 'funcs', 'aliases' -ErrorAction SilentlyContinue
 }

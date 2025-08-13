@@ -30,7 +30,7 @@ function New-KrServer {
         [switch]$Force
     )
     process {
-        $loadedModules = Get-UserImportedModule
+        $loadedModules = Get-KrUserImportedModule
         $modulePaths = @($loadedModules | ForEach-Object { $_.Path })
         if ( [Kestrun.KestrunHostManager]::Contains($Name) ) {
             if ($Force) {

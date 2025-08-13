@@ -1,13 +1,13 @@
-<#
-.SYNOPSIS
-    Returns modules imported by the user session.
+function Get-KrUserImportedModule {
+    <#
+    .SYNOPSIS
+        Returns modules imported by the user session.
 
-.DESCRIPTION
-    Filters the list of currently loaded modules to exclude built-in PowerShell
-    modules, Visual Studio Code host modules and Microsoft.PowerShell.* modules.
-    The result represents modules explicitly imported by the user or scripts.
-#>
-function Get-UserImportedModule {
+    .DESCRIPTION
+        Filters the list of currently loaded modules to exclude built-in PowerShell
+        modules, Visual Studio Code host modules and Microsoft.PowerShell.* modules.
+        The result represents modules explicitly imported by the user or scripts.
+    #>
     [CmdletBinding()]
     param()
 

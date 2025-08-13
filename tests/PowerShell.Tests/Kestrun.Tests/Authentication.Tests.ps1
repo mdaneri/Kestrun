@@ -86,16 +86,8 @@ BeforeAll {
     Register-KrLogger   -Name "DefaultLogger" -PassThru -SetAsDefault
 
     New-KrServer -Name "Kestrun Authentication"
-    <# 
-    if (Test-Path "$ScriptPath\devcert.pfx" ) {
-        $cert = Import-KsCertificate -FilePath ".\devcert.pfx" -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
-    }
-    else {#>
-    $cert = New-KrSelfSignedCertificate -DnsName 'localhost'
-    #    Export-KrCertificate -Certificate $cert `
-    #       -FilePath "$ScriptPath\devcert" -Format pfx -IncludePrivateKey -Password (convertTo-SecureString -String 'p@ss' -AsPlainText -Force)
     
-
+    $cert = New-KrSelfSignedCertificate -DnsName 'localhost' 
     if (-not (Test-KsCertificate -Certificate $cert )) {
         Write-Error "Certificate validation failed. Ensure the certificate is valid and not self-signed."
         exit 1

@@ -1,4 +1,17 @@
 function Set-KrLogLevelToPreference {
+	<#
+	.SYNOPSIS
+		Sets the PowerShell script log level preferences based on the specified Serilog log level.
+	.DESCRIPTION
+		This function adjusts the PowerShell script log level preferences (Verbose, Debug, Information, Warning)
+		based on the provided Serilog log level.
+	.PARAMETER LogLevel
+		The Serilog log level to set as the preference.
+		Pass the Serilog log level that will be used to set the PowerShell script log level preferences.
+	.EXAMPLE
+		Set-KrLogLevelToPreference -LogLevel 'Error'
+		# This will set the PowerShell script log level preferences to 'SilentlyContinue' for all levels above Error.
+	#>
 	[CmdletBinding(SupportsShouldProcess=$true)]
 	param(
 		[Parameter(Mandatory = $true)]
