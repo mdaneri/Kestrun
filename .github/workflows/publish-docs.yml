@@ -2,13 +2,11 @@ name: Build & Publish PowerShell Cmdlet Docs
 
 on:
   push:
-    branches: [ main ] 
+    branches: [ main ]
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: read    # only needed for this repo
 
 concurrency:
   group: "pages"
@@ -16,8 +14,6 @@ concurrency:
 
 jobs:
   docs:
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: 🛎️ Checkout
@@ -76,22 +72,51 @@ jobs:
         shell: pwsh
         run: Invoke-Build BuildHelp   # outputs into ./docs
 
-      - name: 📤 Upload Pages artifact (docs/)
-        uses: actions/upload-pages-artifact@v3
+      - name: ⬆️ Upload site artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: site
           path: ./docs
 
   deploy:
-     needs: docs
-     environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-     runs-on: ubuntu-latest
-     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: 🚀 Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+    needs: docs
+    runs-on: ubuntu-latest
+    env:
+      TARGET_REPO: "Kestrun/kestrun.github.io"   # org/user site repo
+      DEST_DIR: "doc/pwsh/cmdlets"               # folder on site; use "." to publish at root
+      COMMIT_AUTHOR_NAME: "github-actions[bot]"
+      COMMIT_AUTHOR_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+    steps:
+      - name: ⬇️ Download site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: site
+
+      - name: 🔁 Checkout target site repo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.TARGET_REPO }}
+          token: ${{ secrets.PAGES_DEPLOY_TOKEN }}   # PAT with write access to target repo
+          path: site-repo
+
+      - name: 🧹 Replace destination folder
+        run: |
+          set -e
+          mkdir -p "site-repo/${DEST_DIR}"
+          rm -rf "site-repo/${DEST_DIR:?}/"* "site-repo/${DEST_DIR}/.*" 2>/dev/null || true
+          rsync -a --delete site/ "site-repo/${DEST_DIR}/"
+
+      - name: 📝 Commit & push if changed
+        working-directory: site-repo
+        run: |
+          set -e
+          git config user.name  "${COMMIT_AUTHOR_NAME}"
+          git config user.email "${COMMIT_AUTHOR_EMAIL}"
+          if git status --porcelain | grep .; then
+            git add -A
+            git commit -m "Update cmdlet docs from $GITHUB_REPOSITORY@${GITHUB_SHA::7}"
+            git push
+          else
+            echo "No changes to commit."
+          fi
