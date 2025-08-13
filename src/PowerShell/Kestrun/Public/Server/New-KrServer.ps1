@@ -16,7 +16,7 @@ function New-KrServer {
     .NOTES
         This function is designed to be used in the context of a Kestrun server setup.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

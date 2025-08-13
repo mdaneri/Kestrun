@@ -14,7 +14,7 @@ function Add-KrEnrichFromLogContext {
 		PS> New-KrLogger | Add-KrEnrichFromLogContext | Add-KrSinkConsole | Register-KrLogger
 	#>
 
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]

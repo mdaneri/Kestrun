@@ -50,7 +50,7 @@ function Add-KrJWTBearerAuthentication {
     .PARAMETER PassThru
         A switch parameter that, when specified, returns the Kestrun server instance.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

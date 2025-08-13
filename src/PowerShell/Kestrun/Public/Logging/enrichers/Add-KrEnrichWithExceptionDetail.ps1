@@ -14,7 +14,7 @@ function Add-KrEnrichWithExceptionDetail {
 	.EXAMPLE
 		PS> New-KrLogger | Add-KrEnrichWithExceptionDetail | Register-KrLogger
 	#>
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param(

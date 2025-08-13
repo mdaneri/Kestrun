@@ -19,9 +19,9 @@ function Write-KrHtmlResponse {
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding(defaultParameterSetName = "FilePath")]
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, ParameterSetName = "FilePath")]

@@ -15,7 +15,7 @@
     This function is designed to be used after the server has been configured with routes, listeners,
 #>
 function Enable-KrConfiguration {
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]

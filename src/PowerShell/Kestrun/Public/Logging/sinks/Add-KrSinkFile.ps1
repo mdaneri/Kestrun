@@ -48,7 +48,7 @@ function Add-KrSinkFile {
 	.NOTES
 	 This function is part of the Kestrun logging infrastructure and should be used to enable file	 logging.
 	#>
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'Default')]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param(

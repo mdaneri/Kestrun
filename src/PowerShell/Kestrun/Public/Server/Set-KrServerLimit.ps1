@@ -1,5 +1,5 @@
 function Set-KrServerLimit {
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     <#
 .SYNOPSIS
@@ -62,7 +62,7 @@ function Set-KrServerLimit {
     Default: 30 seconds.
 
 #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

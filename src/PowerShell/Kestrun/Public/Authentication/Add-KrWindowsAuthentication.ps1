@@ -18,7 +18,7 @@ function Add-KrWindowsAuthentication {
     .NOTES
         This cmdlet is used to configure Windows authentication for the Kestrun server, allowing you to secure your APIs with Windows credentials.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'ItemsScriptBlock')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

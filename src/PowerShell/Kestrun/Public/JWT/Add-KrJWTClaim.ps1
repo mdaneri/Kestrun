@@ -26,7 +26,7 @@ function Add-KrJWTClaim {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param(

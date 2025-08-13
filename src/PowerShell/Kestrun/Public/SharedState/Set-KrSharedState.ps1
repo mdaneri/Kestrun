@@ -13,7 +13,7 @@ function Set-KrSharedState {
     .PARAMETER Value
         Value to assign to the variable.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

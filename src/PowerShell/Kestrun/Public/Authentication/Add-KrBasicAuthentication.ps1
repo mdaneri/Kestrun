@@ -43,7 +43,7 @@ function Add-KrBasicAuthentication {
     .PARAMETER PassThru
         If specified, returns the modified server instance after adding the authentication.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'v1')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

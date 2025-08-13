@@ -20,7 +20,7 @@ function Get-KrScheduleReport {
     .OUTPUTS
         Returns a ScheduleReport object or a hashtable if AsHashtable is set.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Scheduling.ScheduleReport])]
     [OutputType([Hashtable])]

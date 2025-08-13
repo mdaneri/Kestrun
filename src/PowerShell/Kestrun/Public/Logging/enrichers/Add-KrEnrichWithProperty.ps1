@@ -20,7 +20,7 @@ function Add-KrEnrichWithProperty {
 		PS> New-KrLogger | Add-KrEnrichWithProperty -Name ScriptName -Value 'Test' | Add-KrSinkConsole | Register-KrLogger
 	#>
 
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]

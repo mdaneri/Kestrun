@@ -14,7 +14,7 @@ function Get-KrCertificatePurpose {
     .NOTES
         This function is part of the Kestrun module.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([System.Collections.Generic.IEnumerable`1[[System.String, System.Private.CoreLib]]])]
     param(

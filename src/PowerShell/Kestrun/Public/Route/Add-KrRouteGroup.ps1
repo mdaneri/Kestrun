@@ -38,7 +38,7 @@ function Add-KrRouteGroup {
         Add-KrRouteGroup -Prefix '/todoitems' -FileName 'C:\Scripts\TodoItems.ps1'
         Add the new route group defined in the specified file.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(DefaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
     param(
         [Parameter(Mandatory, ParameterSetName = "ScriptBlockWithOptions")]

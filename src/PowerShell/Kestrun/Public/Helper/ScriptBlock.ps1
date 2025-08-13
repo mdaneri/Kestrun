@@ -24,7 +24,7 @@ function Add-KrScriptBlock {
     .LINK
         https://github.com/Kestrun/Kestrun
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'Split')]
     param(
         # Style 1/2: separate name (+ optional '=') and scriptblock

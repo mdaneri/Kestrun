@@ -14,7 +14,7 @@ function Add-KrEnrichWithProcessId{
 	.EXAMPLE
 		PS> New-KrLogger | Add-KrEnrichWithProcessId | Register-KrLogger
 	#>
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	param(
 		[Parameter(Mandatory=$true, ValueFromPipeline=$true)]

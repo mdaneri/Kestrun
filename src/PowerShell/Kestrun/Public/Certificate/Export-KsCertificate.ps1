@@ -22,7 +22,7 @@ function Export-KrCertificate {
     .NOTES
         This function requires the Kestrun module to be imported.
     #>
-     [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate,

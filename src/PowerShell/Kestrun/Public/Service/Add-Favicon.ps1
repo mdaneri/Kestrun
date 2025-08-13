@@ -19,7 +19,7 @@ function Add-KrFavicon {
     This cmdlet is used to register a favicon for the Kestrun server, allowing you to set a custom favicon for the server's web interface.
     If no icon path is specified, the default embedded favicon will be used.
  #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

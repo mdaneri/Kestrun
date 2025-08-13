@@ -16,7 +16,7 @@ function New-KrLogger {
 		Creates a new logger configuration instance, adds a console sink, and enriches logs with a property.
 
 	#>
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(SupportsShouldProcess = $true)]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param()

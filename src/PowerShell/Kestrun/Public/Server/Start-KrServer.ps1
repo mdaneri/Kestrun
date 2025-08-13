@@ -17,7 +17,7 @@
     It will block the console until the server is stopped or Ctrl+C is pressed.
 #>
 function Start-KrServer {
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     param(

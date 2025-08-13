@@ -16,7 +16,7 @@ function New-KrClaimPolicy {
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.authentication.claimpolicybuilder
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Claims.ClaimPolicyBuilder])]
     param(

@@ -12,7 +12,7 @@ function Test-KrRoute {
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]
     param(

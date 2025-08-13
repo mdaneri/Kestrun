@@ -14,7 +14,7 @@ function Add-KrClaimPolicy {
            .This function is part of the Kestrun.Claims module and is used to manage claim policies.
            .Maps to ClaimPolicyBuilder.AddPolicy method.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([Kestrun.Claims.ClaimPolicyBuilder])]
     param(

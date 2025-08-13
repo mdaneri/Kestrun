@@ -8,7 +8,7 @@
     serialization depth and formatting options.
 #>
 function Write-KrJsonResponse {
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]

@@ -27,7 +27,7 @@ function Copy-KrJWTTokenBuilder {
         This function is part of the Kestrun.Security module and is used to build JWT tokens.
         Maps to JwtTokenBuilder.New
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param(   [Parameter(Mandatory = $true, ValueFromPipeline)]

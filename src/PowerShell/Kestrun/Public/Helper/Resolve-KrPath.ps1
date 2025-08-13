@@ -24,7 +24,7 @@ function Resolve-KrPath {
         This function is designed to be used in the context of a Kestrun server to resolve file paths correctly.
     #>
     [CmdletBinding()]
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]

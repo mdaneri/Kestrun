@@ -17,7 +17,7 @@ function Close-KrLogger {
 		PS> Close-KrLogger
 		Closes the default logger and flushes all logs.
 	#>
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $false, ValueFromPipeline = $true)]

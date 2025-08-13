@@ -24,7 +24,7 @@ function New-KrSelfSignedCertificate {
     .NOTES
         This function is intended for use in development and testing environments only. Do not use self-signed certificates in production.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]
     param(

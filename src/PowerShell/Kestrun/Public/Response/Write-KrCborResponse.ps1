@@ -15,7 +15,7 @@ function Write-KrCborResponse {
         Writes the $myObject serialized as CBOR to the response with a 200 status code and
         content type "application/cbor".
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

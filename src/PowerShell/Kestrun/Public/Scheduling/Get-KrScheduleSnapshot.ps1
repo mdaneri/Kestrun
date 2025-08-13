@@ -28,7 +28,7 @@ function Get-KrScheduleSnapshot {
 .OUTPUTS
     Returns a ScheduleReport object or a hashtable if AsHashtable is set.
 #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Scheduling.JobInfo[]])]
     [OutputType([Hashtable])]

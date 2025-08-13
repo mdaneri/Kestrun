@@ -14,7 +14,7 @@ function Suspend-KrSchedule {
     .NOTES
         This function is part of the Kestrun scheduling module.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

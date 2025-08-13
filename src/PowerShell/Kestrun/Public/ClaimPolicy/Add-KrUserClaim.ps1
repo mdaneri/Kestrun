@@ -22,7 +22,7 @@ function Add-KrUserClaim {
            .This function is part of the Kestrun.Claims module and is used to manage user claims.
            .Maps to ClaimCollection.Add method.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([System.Security.Claims.Claim[]])]
     [OutputType([System.Array])]

@@ -1,5 +1,5 @@
 function Set-KrServerOption {
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     <#
 .SYNOPSIS

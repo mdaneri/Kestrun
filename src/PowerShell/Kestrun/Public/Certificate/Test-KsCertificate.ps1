@@ -30,7 +30,7 @@ function Test-KsCertificate {
         This function is designed to be used in the context of Kestrun's certificate management.
         It leverages the Kestrun.Certificates.CertificateManager for validation.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]
     param(

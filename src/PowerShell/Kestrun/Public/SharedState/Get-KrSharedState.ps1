@@ -10,7 +10,7 @@ function Get-KrSharedState {
     .PARAMETER Name
         Name of the variable to retrieve.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]

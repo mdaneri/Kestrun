@@ -78,7 +78,7 @@ function Register-KrSchedule {
         Register a job that runs every 15 minutes, executing the JavaScript script at 'Scripts/GenerateReport.js'.
 
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'IntervalScriptBlock', SupportsShouldProcess)]
     [OutputType([Kestrun.Scheduling.JobInfo])]
     param(

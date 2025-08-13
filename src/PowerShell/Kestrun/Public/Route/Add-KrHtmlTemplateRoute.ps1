@@ -37,7 +37,7 @@ function Add-KrHtmlTemplateRoute {
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Microsoft.AspNetCore.Builder.RouteHandlerBuilder])]
     param(

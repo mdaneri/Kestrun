@@ -38,7 +38,7 @@ function New-KsCertificateRequest {
         $priv | Set-Content -Path 'C:\path\to\private.key'
 
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)]

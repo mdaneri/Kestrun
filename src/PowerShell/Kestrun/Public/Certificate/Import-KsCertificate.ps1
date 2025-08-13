@@ -13,7 +13,7 @@ function Import-KsCertificate {
     .NOTES
         This function is part of the Kestrun PowerShell module.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]
     param(

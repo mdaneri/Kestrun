@@ -30,7 +30,7 @@ function Write-KrDebugLog {
 			It can be used in scripts and modules that utilize Kestrun for logging.
 	#>
 
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'MsgTemp')]
 	param(
 		[Parameter(Mandatory = $true, Position = 0, ValueFromPipeline = $true, ParameterSetName = 'MsgTemp')]

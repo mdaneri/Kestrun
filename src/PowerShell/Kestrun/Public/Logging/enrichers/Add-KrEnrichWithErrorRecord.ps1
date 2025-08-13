@@ -16,7 +16,7 @@ function Add-KrEnrichWithErrorRecord {
 		PS> New-KrLogger | Add-KrEnrichWithErrorRecord | Add-KrSinkPowerShell | Register-KrLogger
 	#>
 
-	[KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+	[KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]

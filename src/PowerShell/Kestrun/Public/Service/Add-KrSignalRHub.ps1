@@ -32,7 +32,7 @@ function Add-KrSignalRHub {
         The function is designed to be used in a modular way, allowing for easy addition of SignalR hubs to the Kestrun server.
         The function is intended for use in scenarios where SignalR hubs need to be dynamically mapped to specific URL paths at runtime.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]

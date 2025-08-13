@@ -20,12 +20,12 @@ function Get-KrFunctionContextMask {
   $txt = (($kr.PositionalArguments + $kr.NamedArguments.Expression) | Where-Object { $_ }).Extent.Text
   #|           ForEach-Object { $_.Extent.Text } -join ' '
   $mask = switch ($txt) {
-    "[KestrunApiContext]::Everywhere" { 7 }
-    "[KestrunApiContext]::Runtime" { 6 }
-    "[KestrunApiContext]::ScheduleAndDefinition" { 5 }
-    "[KestrunApiContext]::Definition" { 1 }
-    "[KestrunApiContext]::Route" { 2 }
-    "[KestrunApiContext]::Schedule" { 4 }
+    "'Everywhere'" { 7 }
+    "'Runtime'" { 6 }
+    "'ScheduleAndDefinition'" { 5 }
+    "'Definition'" { 1 }
+    "'Route'" { 2 }
+    "'Schedule'" { 4 }
   }
  
   return $mask

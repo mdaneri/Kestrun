@@ -29,7 +29,7 @@ function Write-KrErrorResponse {
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding(DefaultParameterSetName = 'Message')]
     param (
         [Parameter(ParameterSetName = 'Message', Mandatory = $true)]

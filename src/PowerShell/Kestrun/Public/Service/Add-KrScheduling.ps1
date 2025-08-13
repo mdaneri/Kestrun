@@ -18,7 +18,7 @@ function Add-KrScheduling {
     .NOTES
         This cmdlet is used to register a scheduling service with the Kestrun server, allowing you to manage scheduled tasks and jobs.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Definition)]
+    [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(

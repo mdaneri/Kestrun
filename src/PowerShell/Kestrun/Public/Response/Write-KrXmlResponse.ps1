@@ -20,7 +20,7 @@ function Write-KrXmlResponse {
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
     #>
-    [KestrunRuntimeApi([KestrunApiContext]::Route)]
+    [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]

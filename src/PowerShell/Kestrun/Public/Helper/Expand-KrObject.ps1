@@ -20,7 +20,7 @@ function Expand-KrObject {
         This function is designed to be used in the context of Kestrun for debugging or logging purposes.
     #>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
-    [KestrunRuntimeApi([KestrunApiContext]::Everywhere)]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
