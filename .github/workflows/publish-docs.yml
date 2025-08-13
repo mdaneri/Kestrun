@@ -6,6 +6,12 @@ on:
     paths:
       - 'src/PowerShell/Kestrun/**.ps1'
       - 'src/PowerShell/Kestrun/**.psd1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   docs:
@@ -17,33 +23,33 @@ jobs:
       - name: 🧰 Install PowerShell
         uses: ./.github/actions/Install-PowerShell
         with:
-            Version: 'latest'
+          Version: 'latest'
 
       - name: 🧰 Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-            dotnet-version: '8.0.x'
-            cache: true
-            cache-dependency-path: |
-             **/*.csproj
-             **/packages.lock.json
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
 
       - name: 🧰 Setup .NET 9
         uses: actions/setup-dotnet@v4
         with:
-            dotnet-version: '9.0.x'
+          dotnet-version: '9.0.x'
 
       - name: 🧰 Install Module Invoke-Build
         shell: pwsh
         run: |
-            $ErrorActionPreference = 'Stop'
-            Install-Module InvokeBuild -Force -Scope CurrentUser
-      
+          $ErrorActionPreference = 'Stop'
+          Install-Module InvokeBuild -Force -Scope CurrentUser
+
       - name: 🧰 Install Module platyPS
         shell: pwsh
         run: |
-            $ErrorActionPreference = 'Stop'
-            Install-Module platyPS -Force -Scope CurrentUser
+          $ErrorActionPreference = 'Stop'
+          Install-Module platyPS -Force -Scope CurrentUser
 
       - name: 🔎 Print runtime context
         shell: pwsh
@@ -62,13 +68,23 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Invoke-Build Build
-           
-      - name: Build Cmdlet Docs
-        shell: pwsh
-        run: Invoke-Build BuildHelp
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: 🧾 Build Cmdlet Docs
+        shell: pwsh
+        run: Invoke-Build BuildHelp   # outputs into ./docs
+
+      - name: 📤 Upload Pages artifact (docs/)
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          path: ./docs
+
+  deploy:
+    needs: docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
