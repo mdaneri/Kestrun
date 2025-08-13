@@ -91,16 +91,16 @@ nav_order: 10
 $files = Get-ChildItem $OutDir -Recurse -Filter *.md | Sort-Object Name
 $i = 1
 foreach ($f in $files) {
-  if ($f.Name -ieq 'index.md') { continue }
+    if ($f.Name -ieq 'index.md') { continue }
 
-  $raw = Get-Content $f.FullName -Raw
+    $raw = Get-Content $f.FullName -Raw
 
-  # Title from first H1 or filename
-  $title = ($raw -split "`n" | Where-Object { $_ -match '^\s*#\s+(.+)$' } | Select-Object -First 1)
-  $title = if ($title) { $title -replace '^\s*#\s+', '' } else { [IO.Path]::GetFileNameWithoutExtension($f.Name) }
+    # Title from first H1 or filename
+    $title = ($raw -split "`n" | Where-Object { $_ -match '^\s*#\s+(.+)$' } | Select-Object -First 1)
+    $title = if ($title) { $title -replace '^\s*#\s+', '' } else { [IO.Path]::GetFileNameWithoutExtension($f.Name) }
 
-  if ($raw -notmatch '^\s*---\s*$') {
-@"
+    if ($raw -notmatch '^\s*---\s*$') {
+        @"
 ---
 layout: default
 parent: PowerShell Cmdlets
@@ -110,25 +110,26 @@ render_with_liquid: false
 ---
 $raw
 "@ | Set-Content $f.FullName -NoNewline
-  } else {
-    # If it already has front matter, ensure the key bits are present
-    $lines  = $raw -split "`n"
-    $endIdx = ($lines | Select-String -SimpleMatch '---' -AllMatches).Matches[1].Index
-    $head   = $lines[0..$endIdx]
-    $body   = $lines[($endIdx+1)..($lines.Length-1)]
+    }
+    else {
+        # If it already has front matter, ensure the key bits are present
+        $lines = $raw -split "`n"
+        $endIdx = ($lines | Select-String -SimpleMatch '---' -AllMatches).Matches[1].Index
+        $head = $lines[0..$endIdx]
+        $body = $lines[($endIdx + 1)..($lines.Length - 1)]
 
-    $ensure = @()
-    if ($head -notcontains 'layout: default')              { $ensure += 'layout: default' }
-    if ($head -notmatch   '^parent:\s')                    { $ensure += 'parent: PowerShell Cmdlets' }
-    if ($head -notmatch   '^title:\s')                     { $ensure += "title: $title" }
-    if ($head -notmatch   '^nav_order:\s')                 { $ensure += "nav_order: $i" }
-    if ($head -notcontains 'render_with_liquid: false')    { $ensure += 'render_with_liquid: false' }
+        $ensure = @()
+        if ($head -notcontains 'layout: default') { $ensure += 'layout: default' }
+        if ($head -notmatch '^parent:\s') { $ensure += 'parent: PowerShell Cmdlets' }
+        if ($head -notmatch '^title:\s') { $ensure += "title: $title" }
+        if ($head -notmatch '^nav_order:\s') { $ensure += "nav_order: $i" }
+        if ($head -notcontains 'render_with_liquid: false') { $ensure += 'render_with_liquid: false' }
 
-    $newHead = @($head[0]) + ($head[1..($head.Count-1)] + $ensure | Select-Object -Unique)
-    ($newHead + $body) -join "`n" | Set-Content $f.FullName -NoNewline
-  }
+        $newHead = @($head[0]) + ($head[1..($head.Count - 1)] + $ensure | Select-Object -Unique)
+        ($newHead + $body) -join "`n" | Set-Content $f.FullName -NoNewline
+    }
 
-  $i++
+    $i++
 }
 
 
