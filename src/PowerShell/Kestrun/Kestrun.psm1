@@ -4,6 +4,10 @@ param() {
 # This is the root path for the application
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
 
+if ([string]::IsNullOrEmpty($script:KestrunRoot)) {
+    $script:KestrunRoot =$PWD
+}
+
 # This is the root path for the Kestrun module
 $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 

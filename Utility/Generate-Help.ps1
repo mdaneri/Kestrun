@@ -20,12 +20,15 @@ if ($Clean) {
     return
 }
 # Pin to a modern PlatyPS (v2+ is fine). Remove -RequiredVersion to float latest.
-if (-not (Get-Module -ListAvailable -Name PlatyPS)) {
+if (-not (Get-Module -ListAvailable -Name Microsoft.PowerShell.PlatyPS )) {
     Write-Host "Installing PlatyPS..."
-    Install-Module PlatyPS -Scope CurrentUser -Force -AllowClobber
+    Install-PSResource -Name Microsoft.PowerShell.PlatyPS -TrustRepository -Scope CurrentUser
 }
 else {
     Write-Host "PlatyPS is already installed."
+
+    Import-Module Microsoft.PowerShell.PlatyPS
+
 }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
@@ -33,7 +36,7 @@ if (Test-Path -Path "$OutDir/about_.md") {
     Write-Host "Clearing existing help in $OutDir/about_.md"
     Remove-Item -Path "$OutDir/about_.md" -Force
 }
-New-MarkdownAboutHelp -OutputFolder $OutDir
+#New-MarkdownAboutHelp -OutputFolder $OutDir
 
 Write-Host "Importing module: $ModulePath"
 Import-Module $ModulePath -Force
@@ -45,11 +48,11 @@ Write-Host "Generating Markdown help..."
 # Create or update Markdown help
 if (Test-Path (Join-Path $OutDir "index.md")) {
     Write-Host "Updating existing markdown help in $OutDir"
-    Update-MarkdownHelp -Path $OutDir -Force
+    Update-MarkdownCommandHelp -Path $OutDir -Force
 }
 else {
     Write-Host "Creating markdown help in $OutDir"
-    New-MarkdownHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir
+    	New-MarkdownCommandHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir
     $index_md = @"
 ---
 title: PowerShell Cmdlets
