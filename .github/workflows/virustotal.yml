@@ -10,23 +10,48 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Checkout
+      - name: 🛎️ Checkout
         uses: actions/checkout@v5
-      -
-        name: Set up Go
-        uses: actions/setup-go@v5
-      -
-        name: Build
+
+      - name: 🧰 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 🧰 Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 🧰 Install PowerShell
+        uses: ./.github/actions/Install-PowerShell
+        with:
+          Version: 'latest'
+
+      - name: 🔎 Print runtime context
+        shell: pwsh
         run: |
-          GOOS=windows GOARCH=386 go build -o ./ghaction-virustotal-win32.exe -v -ldflags "-s -w"
-          GOOS=windows GOARCH=amd64 go build -o ./ghaction-virustotal-win64.exe -v -ldflags "-s -w"
-      -
-        name: VirusTotal Monitor Scan
+          $PSVersionTable
+          dotnet --info
+          [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+          [System.Environment]::Version
+
+      - name: 📦 Restore solution
+        shell: pwsh
+        run: Invoke-Build Restore
+
+      - name: 🔧 Run C# Build (normal)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-Build Build
+
+      - name: 🔍 VirusTotal Monitor Scan
         uses: crazy-max/ghaction-virustotal@v4
         with:
           vt_api_key: ${{ secrets.VT_API_KEY }}
           vt_monitor: true
           monitor_path: /ghaction-virustotal
           files: |
-            ./ghaction-virustotal-*.exe
+            ./src/CSharp/Kestrun/bin/**/*.dll
+            ./src/PowerShell/Kestrun/lib/**/*.dll
