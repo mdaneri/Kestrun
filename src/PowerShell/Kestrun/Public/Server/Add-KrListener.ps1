@@ -1,31 +1,33 @@
 function Add-KrListener {
     <#
-.SYNOPSIS
-    Creates a new Kestrun server instance with specified options and listeners.
-.DESCRIPTION
-    This function initializes a new Kestrun server instance, allowing configuration of various options and listeners.
-.PARAMETER Server
-    The Kestrun server instance to configure. This parameter is mandatory and must be a valid server object.
-.PARAMETER Port
-    The port on which the server will listen for incoming requests. This parameter is mandatory.
-.PARAMETER IPAddress
-    The IP address on which the server will listen. Defaults to [System.Net.IPAddress]::Any, which means it will listen on all available network interfaces.
-.PARAMETER CertPath
-    The path to the SSL certificate file. This parameter is mandatory if using HTTPS.
-.PARAMETER CertPassword
-    The password for the SSL certificate, if applicable. This parameter is optional.
-.PARAMETER X509Certificate
-    An X509Certificate2 object representing the SSL certificate. This parameter is mandatory if using HTTPS
-.PARAMETER Protocols
-    The HTTP protocols to use (e.g., Http1, Http2). Defaults to Http1 for HTTP listeners and Http1OrHttp2 for HTTPS listeners.
-.PARAMETER UseConnectionLogging
-    If specified, enables connection logging for the listener. This is useful for debugging and monitoring purposes.
-.EXAMPLE
-    New-KrServer -Name 'MyKestrunServer'
-    Creates a new Kestrun server instance with the specified name.
-.NOTES
-    This function is designed to be used after the server has been configured with routes and listeners.
-#>
+    .SYNOPSIS
+        Creates a new Kestrun server instance with specified options and listeners.
+    .DESCRIPTION
+        This function initializes a new Kestrun server instance, allowing configuration of various options and listeners.
+    .PARAMETER Server
+        The Kestrun server instance to configure. This parameter is mandatory and must be a valid server object.
+    .PARAMETER Port
+        The port on which the server will listen for incoming requests. This parameter is mandatory.
+    .PARAMETER IPAddress
+        The IP address on which the server will listen. Defaults to [System.Net.IPAddress]::Any, which means it will listen on all available network interfaces.
+    .PARAMETER CertPath
+        The path to the SSL certificate file. This parameter is mandatory if using HTTPS.
+    .PARAMETER CertPassword
+        The password for the SSL certificate, if applicable. This parameter is optional.
+    .PARAMETER X509Certificate
+        An X509Certificate2 object representing the SSL certificate. This parameter is mandatory if using HTTPS
+    .PARAMETER Protocols
+        The HTTP protocols to use (e.g., Http1, Http2). Defaults to Http1 for HTTP listeners and Http1OrHttp2 for HTTPS listeners.
+    .PARAMETER UseConnectionLogging
+        If specified, enables connection logging for the listener. This is useful for debugging and monitoring purposes.
+    .PARAMETER PassThru
+        If specified, the cmdlet will return the modified server instance after adding the listener.
+    .EXAMPLE
+        New-KrServer -Name 'MyKestrunServer'
+        Creates a new Kestrun server instance with the specified name.
+    .NOTES
+        This function is designed to be used after the server has been configured with routes and listeners.
+    #>
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = "NoCert")]
     [OutputType([Kestrun.Hosting.KestrunHost])]

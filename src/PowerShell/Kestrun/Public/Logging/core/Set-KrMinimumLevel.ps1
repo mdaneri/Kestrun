@@ -37,7 +37,8 @@ function Set-KrMinimumLevel {
 	#>
 
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[Serilog.LoggerConfiguration]$LoggerConfig,
@@ -54,37 +55,33 @@ function Set-KrMinimumLevel {
 	process {
 		switch ($PsCmdlet.ParameterSetName) {
 			'Level' {
-				if ($PSCmdlet.ShouldProcess("LoggerConfig", "Set minimum log level to $Value")) {
-					switch ($Value) {
-						Verbose {
-							$LoggerConfig.MinimumLevel.Verbose()
-						}
-						Debug {
-							$LoggerConfig.MinimumLevel.Debug()
-						}
-						Information {
-							$LoggerConfig.MinimumLevel.Information()
-						}
-						Warning {
-							$LoggerConfig.MinimumLevel.Warning()
-						}
-						Error { $LoggerConfig.MinimumLevel.Error() }
-						Fatal { $LoggerConfig.MinimumLevel.Fatal() }
-						Default { $LoggerConfig.MinimumLevel.Information() }
+				switch ($Value) {
+					Verbose {
+						$LoggerConfig.MinimumLevel.Verbose()
 					}
+					Debug {
+						$LoggerConfig.MinimumLevel.Debug()
+					}
+					Information {
+						$LoggerConfig.MinimumLevel.Information()
+					}
+					Warning {
+						$LoggerConfig.MinimumLevel.Warning()
+					}
+					Error { $LoggerConfig.MinimumLevel.Error() }
+					Fatal { $LoggerConfig.MinimumLevel.Fatal() }
+					Default { $LoggerConfig.MinimumLevel.Information() }
+				}
 
-					if($ToPreference){
-						Set-KrLogLevelToPreference -LogLevel $Value
-					}
+				if ($ToPreference) {
+					Set-KrLogLevelToPreference -LogLevel $Value
 				}
 			}
 			'Switch' {
-				if ($PSCmdlet.ShouldProcess("LoggerConfig", "Set minimum log level controlled by switch")) {
-					$LoggerConfig.MinimumLevel.ControlledBy($ControlledBy)
-				}
+				$LoggerConfig.MinimumLevel.ControlledBy($ControlledBy)
 			}
 			'Preference' {
-				if ($FromPreference.IsPresent -and $PSCmdlet.ShouldProcess("LoggerConfig", "Set minimum log level from preference")) {
+				if ($FromPreference) {
 					if ($VerbosePreference -eq 'Continue') {
 						$LoggerConfig | Set-KrMinimumLevel -Value Verbose
 					}
@@ -97,10 +94,10 @@ function Set-KrMinimumLevel {
 					elseif ($WarningPreference -eq 'Continue') {
 						$LoggerConfig | Set-KrMinimumLevel -Value Warning
 					}
-					else { 
+					else {
 						$LoggerConfig | Set-KrMinimumLevel -Value Error
 					}
-				}
+    			}
 			}
 		}
 	}

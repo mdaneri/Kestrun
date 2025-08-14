@@ -20,7 +20,8 @@ function New-KrLevelSwitch {
 		Creates a new level switch with the minimum level set to Debug and updates the user's logging preference.
 	#>
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	[OutputType([Serilog.Core.LoggingLevelSwitch])]
 	param(
 		[Parameter(Mandatory = $false)]
@@ -34,9 +35,7 @@ function New-KrLevelSwitch {
 
 	# If ToPreference is specified, set the minimum level to the user's preference
 	if ($ToPreference) {
-		if ($PSCmdlet.ShouldProcess("Set logging preference to $MinimumLevel")) {
-			Set-KrLogLevelToPreference -LogLevel $MinimumLevel
-		}
+		Set-KrLogLevelToPreference -LogLevel $MinimumLevel
 	}
 
 	return $levelSwitch

@@ -1,26 +1,42 @@
 function Add-KrUserClaim {
     <#
-       .SYNOPSIS
-              Adds a user claim to the specified claims collection.
-         .DESCRIPTION
-            This function adds a new claim to the provided claims collection, allowing you to specify the claim type and value.
-         .PARAMETER Claims
-            The collection of claims to which the new claim will be added.
-        .PARAMETER ClaimType
-            The type of the claim to be added, such as "role", "email", etc.
-        .PARAMETER UserClaimType
-            The user-specific type of the claim to be added, such as "Admin", "User", etc.
-        .PARAMETER Value
-            The value of the claim to be added.
-       .OUTPUTS
-           [System.Security.Claims.Claim[]]
-           The updated claims collection.
-       .EXAMPLE
-           $claims = Add-KrUserClaim -Claims $claims -ClaimType "role" | Add-KrUserClaim -UserClaimType "Admin" -Value "true"
-           This example adds a new user claim to the claims collection.
-       .NOTES
-           .This function is part of the Kestrun.Claims module and is used to manage user claims.
-           .Maps to ClaimCollection.Add method.
+    .SYNOPSIS
+        Adds a claim to the current user.
+        This function allows you to add a new claim to the current user's identity.
+        The claim can be of any type, and you must specify the claim type and value.
+        The function will return the updated claims collection.
+    .DESCRIPTION
+        This function is designed to be used in the context of Kestrun for managing user claims.
+        It supports both string-based claim types and user identity claims.
+        Claims can be added to the user's identity using this function.
+        This function is part of the Kestrun.Claims module and is used to manage user claims.
+        It maps to ClaimCollection.Add method.
+    .PARAMETER Claims
+        The claims to add to the current user's identity. This can be a single claim or an array of claims.
+        If this parameter is specified, the ClaimType and Value parameters are ignored.
+        If this parameter is not specified, you must provide the ClaimType and Value parameters.
+    .PARAMETER ClaimType
+        The type of claim to add to the user's identity. This is required if the Claims parameter is not specified.
+        It can be a string representing the claim type or a Kestrun.Claims.UserIdentityClaim enum value.
+    .PARAMETER UserClaimType
+        The user identity claim type to use when adding the claim. This is required if the Claims parameter is not specified.
+        It must be a valid Kestrun.Claims.UserIdentityClaim enum value.
+    .PARAMETER Value
+        The value of the claim to add to the user's identity. This is required if the Claims parameter is not specified.
+        It can be a string or a Kestrun.Claims.UserIdentityClaim enum value.
+        If the Claims parameter is specified, this parameter is ignored.
+
+    .EXAMPLE
+        Adds a claim to the current user's identity.
+        This example demonstrates how to add a claim using the ClaimType and Value parameters.
+        Add-KrUserClaim -ClaimType "customClaimType" -Value "customClaimValue"
+    .EXAMPLE
+        Adds a claim to the current user's identity.
+        This example demonstrates how to add a claim using the UserClaimType and Value parameters.
+        Add-KrUserClaim -UserClaimType "Email" -Value "user@example.com"
+    .NOTES
+        This function is part of the Kestrun.Claims module and is used to manage user claims.
+        It maps to ClaimCollection.Add method.
     #>
     [KestrunRuntimeApi('Route')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]

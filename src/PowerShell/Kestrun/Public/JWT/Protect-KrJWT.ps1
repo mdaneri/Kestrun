@@ -19,6 +19,8 @@ function Protect-KrJWT {
     .PARAMETER Algorithm
         The algorithm to use for signing the JWT token.
         Defaults to 'Auto' which will determine the algorithm based on the provided secret or certificate.
+    .PARAMETER X509Certificate
+        The X509 certificate to use for signing the JWT token.
     .OUTPUTS
         [Kestrun.Security.JwtTokenBuilder]
         The modified JWT token builder with the signing configuration applied.

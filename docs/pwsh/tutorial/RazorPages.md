@@ -1,10 +1,7 @@
 ---
-layout: default
-parent: Tutorials
 title: Razor
-has_children: false
-#nav_order: 1
-# children inherit parent via _config.yml defaults
+parent: Tutorials
+nav_order: 3
 ---
 
 # PowerShell-backed Razor Pages

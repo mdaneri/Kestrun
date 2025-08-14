@@ -76,7 +76,7 @@ $module = @"
     RootModule             = 'Kestrun.psm1'
 
     # Version number of this module.
-    ModuleVersion          = $Version
+    ModuleVersion          = '$Version'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -119,9 +119,9 @@ $module = @"
 
     # Assemblies that must be loaded prior to importing this module
     RequiredAssemblies     = @(
-        'Microsoft.AspNetCore.App',
-        'Microsoft.AspNetCore.Server.Kestrel.Core',
-        'Microsoft.AspNetCore.Server.Kestrel.Https',
+        'Microsoft.AspNetCore.App.dll',
+        'Microsoft.AspNetCore.Server.Kestrel.Core.dll',
+        'Microsoft.AspNetCore.Server.Kestrel.Https.dll',
         'Microsoft.CodeAnalysis.CSharp.dll',
         'Microsoft.CodeAnalysis.CSharp.Workspaces.dll',
         'Microsoft.CodeAnalysis.dll',

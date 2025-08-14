@@ -1,7 +1,7 @@
 
 
 function Expand-KrObject {
-    <#>
+    <#
     .SYNOPSIS
         Expands an object into a formatted string for display.
     .DESCRIPTION
@@ -24,16 +24,11 @@ function Expand-KrObject {
     [CmdletBinding()]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
-        [object]
-        $InputObject,
-
-        [Parameter(Mandatory = $false)]
-        [System.ConsoleColor]
-        $ForegroundColor,
-
-        [Parameter(Mandatory = $false)]
-        [string]
-        $Label
+        [object] $InputObject,
+        [Parameter()]
+        [System.ConsoleColor] $ForegroundColor,
+        [Parameter()]
+        [string] $Label
     )
 
     process {

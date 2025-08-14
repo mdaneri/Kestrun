@@ -5,6 +5,8 @@ function Copy-KrJWTTokenBuilder {
        Creates a new cloned JWT token builder instance.
     .DESCRIPTION
        This function creates a new cloned instance of the JwtTokenBuilder class, which is used to construct JWT tokens.
+    .PARAMETER Builder
+        The original JWT token builder instance to clone.
     .EXAMPLE
        # Creates a new cloned JWT token builder instance
        $builder = $oldBuilder|New-KrJWTToken
@@ -28,14 +30,15 @@ function Copy-KrJWTTokenBuilder {
         Maps to JwtTokenBuilder.New
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
-    param(   [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtTokenBuilder] $Builder)
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline)]
+        [Kestrun.Security.JwtTokenBuilder] $Builder
+    )
     process {
-        # Create a new JWT token builder instance
-        if ($PSCmdlet.ShouldProcess("JwtTokenBuilder", "Create new JWT token builder")) {
-            return $Builder.CloneBuilder()
-        }
+        # Create a new JWT token builder instance 
+        return $Builder.CloneBuilder()
     }
 }

@@ -6,6 +6,10 @@ function Add-KrEnrichWithEnvironment {
         Adds environment information such as UserName and MachineName to the log context, allowing it to be included in log events.
     .PARAMETER LoggerConfig
         Instance of LoggerConfiguration
+    .PARAMETER UserName
+        If specified, enriches logs with the current user's name.
+    .PARAMETER MachineName
+        If specified, enriches logs with the current machine's name.
     .INPUTS
         None
     .OUTPUTS

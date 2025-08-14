@@ -11,6 +11,8 @@ function Update-KrJWT {
         The new duration for which the JWT token will be valid.
     .PARAMETER Token
         The existing JWT token to update.
+    .PARAMETER FromContext
+        Indicates whether to extract the token from the HTTP context.
     .OUTPUTS
         [string]
         The updated JWT token.
@@ -22,14 +24,14 @@ function Update-KrJWT {
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler?view=azure-dotnet
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true, defaultParameterSetName = "Token")]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding(defaultParameterSetName = "Token")]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
         [Kestrun.Security.JwtTokenBuilder] $Builder,
         [Parameter(Mandatory = $true, ParameterSetName = "Token")]
         [string]$Token,
-
         [Parameter(Mandatory = $true, ParameterSetName = "Context")]
         [switch] $FromContext,
         [Parameter()]
@@ -37,14 +39,10 @@ function Update-KrJWT {
     )
     process {
         if ($PSCmdlet.ParameterSetName -eq 'Token') {
-            if ($PSCmdlet.ShouldProcess("JWT token", "Renew token with new lifetime")) {
-                return $Builder.RenewJwt($Token, $Lifetime)
-            }
+            return $Builder.RenewJwt($Token, $Lifetime)
         }
         if ($FromContext.IsPresent -and $null -ne $Context.Request) {
-            if ($PSCmdlet.ShouldProcess("JWT token", "Renew token with new lifetime")) {
-                return $Builder.RenewJwt($Context, $Lifetime)
-            }
+            return $Builder.RenewJwt($Context, $Lifetime)
         }
     }
 }

@@ -25,7 +25,8 @@ function Set-KrPythonRuntime {
         Set-KrPythonRuntime -Path '/opt/python312/lib/libpython3.12.so' -Force
     #>
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
     param(
         [string] $Path,
         [switch] $Force
@@ -76,11 +77,8 @@ function Set-KrPythonRuntime {
     # ------------------------------------------------------------
     $Path = (Resolve-Path $Path).Path
     Write-Verbose "pythonnet will use: $Path"
-
-    if ($PSCmdlet.ShouldProcess($Path, "Set pythonnet runtime DLL")) {
-        # If pythonnet already loaded: update in-process
-        [Python.Runtime.Runtime]::PythonDLL = $Path
-    }
+    # If pythonnet already loaded: update in-process
+    [Python.Runtime.Runtime]::PythonDLL = $Path
 
     return $Path
 }

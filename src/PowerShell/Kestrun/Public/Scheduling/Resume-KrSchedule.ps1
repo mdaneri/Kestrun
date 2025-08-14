@@ -4,6 +4,8 @@ function Resume-KrSchedule {
         Resumes a previously-paused schedule.
     .DESCRIPTION
         This function resumes a scheduled task that was previously paused.
+    .PARAMETER Server
+        The Kestrun host object that manages the schedule.
     .PARAMETER Name
         The name of the schedule to resume.
     .EXAMPLE

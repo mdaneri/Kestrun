@@ -1,10 +1,7 @@
 ---
-layout: default
-parent: Tutorials
 title: Logging
-has_children: false
-#nav_order: 1
-# children inherit parent via _config.yml defaults
+parent: Tutorials
+nav_order: 2
 ---
 
 # Kestrun Logging

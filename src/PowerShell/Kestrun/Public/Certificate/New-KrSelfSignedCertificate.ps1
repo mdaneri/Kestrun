@@ -25,7 +25,8 @@ function New-KrSelfSignedCertificate {
         This function is intended for use in development and testing environments only. Do not use self-signed certificates in production.
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
     [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]
     param(
         [Parameter(Mandatory)]
@@ -54,7 +55,5 @@ function New-KrSelfSignedCertificate {
         $Exportable.IsPresent
     )
 
-    if ($PSCmdlet.ShouldProcess("Create self-signed certificate for $($DnsName -join ', ')")) {
-        return [Kestrun.Certificates.CertificateManager]::NewSelfSigned($opts)
-    }
+    return [Kestrun.Certificates.CertificateManager]::NewSelfSigned($opts)
 }

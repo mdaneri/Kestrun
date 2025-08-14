@@ -6,6 +6,8 @@ function Write-KrErrorLog {
 		This function writes an error log message to the specified logger or the default logger.
 	.PARAMETER Message
 		The message template to log. This can include placeholders for properties.
+	.PARAMETER Name
+		The name of the log entry.
 	.PARAMETER Logger
 		The logger to use for logging. If not specified, the default logger is used.
 	.PARAMETER Exception

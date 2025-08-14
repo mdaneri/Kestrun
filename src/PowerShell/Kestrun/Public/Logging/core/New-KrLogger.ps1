@@ -17,11 +17,9 @@ function New-KrLogger {
 
 	#>
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	[OutputType([Serilog.LoggerConfiguration])]
 	param()
-
-	if ($PSCmdlet.ShouldProcess("Create new Serilog.LoggerConfiguration")) {
-		return [Serilog.LoggerConfiguration]::New()
-	}
+	return [Serilog.LoggerConfiguration]::New()
 }

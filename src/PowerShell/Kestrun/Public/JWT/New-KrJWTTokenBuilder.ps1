@@ -16,11 +16,9 @@ function New-KrJWTBuilder {
         Maps to JwtTokenBuilder.New
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
     param()
     # Create a new JWT token builder instance
-    if ($PSCmdlet.ShouldProcess("JwtTokenBuilder", "Create new JWT token builder")) {
-        return [Kestrun.Security.JwtTokenBuilder]::New()
-    }
+    return [Kestrun.Security.JwtTokenBuilder]::New()
 }

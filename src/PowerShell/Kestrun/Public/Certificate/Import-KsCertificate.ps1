@@ -5,8 +5,12 @@ function Import-KsCertificate {
     .DESCRIPTION
         The Import-KsCertificate function allows you to import a certificate into the Kestrun environment. 
         This may include loading a certificate from a file or other source and adding it to the appropriate certificate store or configuration.
-    .PARAMETER <ParameterName>
-        Specify the parameters used by this function here.
+    .PARAMETER FilePath
+        The path to the certificate file to import.
+    .PARAMETER Password
+        The password for the certificate file, if applicable.
+    .PARAMETER PrivateKeyPath
+        The path to the private key file, if applicable.
     .EXAMPLE
         Import-KsCertificate -Path "C:\certs\mycert.pfx" -Password (ConvertTo-SecureString "password" -AsPlainText -Force)
         This example imports a certificate from the specified path using the provided password.

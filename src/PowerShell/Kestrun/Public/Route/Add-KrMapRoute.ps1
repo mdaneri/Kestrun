@@ -33,6 +33,13 @@ function Add-KrMapRoute {
         An optional array of additional assemblies to reference for the route.
     .PARAMETER PassThru
         If specified, the function will return the created route object.
+    .PARAMETER AllowDuplicate
+        If specified, allows the addition of duplicate routes with the same path and HTTP verb.
+    .PARAMETER Arguments
+        An optional hashtable of arguments to pass to the script block or code.
+    .PARAMETER DuplicateAction
+        Specifies the action to take if a duplicate route is detected. Options are 'Throw', 'Skip', 'Allow', or 'Warn'.
+        Default is 'Throw', which will raise an error if a duplicate route is found.
     .OUTPUTS
         Returns the Kestrun server instance with the new route added.
     .EXAMPLE

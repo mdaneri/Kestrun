@@ -20,7 +20,8 @@ function Remove-KrServer {
         This function is designed to be used in the context of a Kestrun server management.
     #>
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -28,8 +29,7 @@ function Remove-KrServer {
         [Parameter()]
         [switch]$Force
     )
-    process { 
-        if ($PSCmdlet.ShouldProcess("Kestrun server '$Name'", "Remove server instance")) {
+    process {
             if ( [Kestrun.KestrunHostManager]::Contains($Name) ) {
                 if ($Force) {
                     if ([Kestrun.KestrunHostManager]::IsRunning($Name)) {
@@ -49,6 +49,5 @@ function Remove-KrServer {
                     [Kestrun.KestrunHostManager]::Destroy($Name)
                 }
             }
-        }
     }
 }

@@ -14,6 +14,8 @@ function Add-KrBasicAuthentication {
         A script block that contains the logic for validating the username and password.
     .PARAMETER Code
         C# or VBNet code that contains the logic for validating the username and password.
+    .PARAMETER CodeLanguage
+        The scripting language of the code used for validating the username and password.
     .PARAMETER CodeFilePath
         Path to a file containing C# code that contains the logic for validating the username and password.
     .PARAMETER HeaderName

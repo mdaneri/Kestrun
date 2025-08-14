@@ -1,10 +1,8 @@
 ---
-layout: default
 title: Tutorials
-has_children: true
-nav_order: 30
-parent: Powershell
-# children inherit parent via _config.yml defaults
+parent: PowerShell
+
+nav_order: 1 
 ---
 
 # Tutorials

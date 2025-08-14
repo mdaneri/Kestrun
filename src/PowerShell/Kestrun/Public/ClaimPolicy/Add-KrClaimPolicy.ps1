@@ -1,18 +1,24 @@
 function Add-KrClaimPolicy {
     <#
-       .SYNOPSIS
-           Adds a claim policy to the specified claim policy builder.
-       .DESCRIPTION
-           This function adds a new claim policy to the provided claim policy builder instance.
-       .OUTPUTS
-           [Kestrun.Claims.ClaimPolicyBuilder]
-           The updated claim policy builder instance.
-       .EXAMPLE
-           $builder = New-KrClaimPolicy| Add-KrClaimPolicy -Builder $builder -PolicyName "AdminOnly" -ClaimType "role" -AllowedValues "admin"|Build-KrClaimPolicy
-           This example adds a new claim policy to the builder.
-       .NOTES
-           .This function is part of the Kestrun.Claims module and is used to manage claim policies.
-           .Maps to ClaimPolicyBuilder.AddPolicy method.
+    .SYNOPSIS
+        Adds a new claim policy to the KestrunClaims system.
+    .DESCRIPTION
+        This function allows you to define a new claim policy by specifying the policy name, claim type, and allowed values.
+    .PARAMETER Builder
+        The claim policy builder instance used to create the policy.
+    .PARAMETER PolicyName
+        The name of the policy to be created.
+    .PARAMETER ClaimType
+        The type of claim being defined.
+    .PARAMETER UserClaimType
+        The user identity claim type.
+    .PARAMETER AllowedValues
+        The values that are allowed for this claim.
+    .EXAMPLE
+        PS C:\> Add-KrClaimPolicy -Builder $builder -PolicyName "ExamplePolicy" -ClaimType "ExampleClaim" -AllowedValues "Value1", "Value2"
+        This is an example of how to use the Add-KrClaimPolicy function.
+    .NOTES
+        This function is part of the Kestrun.Security module and is used to build Claims
     #>
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
@@ -22,7 +28,6 @@ function Add-KrClaimPolicy {
         [Kestrun.Claims.ClaimPolicyBuilder] $Builder,
         [Parameter(Mandatory = $true)]
         [string] $PolicyName,
-
         [Parameter(Mandatory = $true, ParameterSetName = 'ClaimType')]
         [string] $ClaimType,
         [Parameter(Mandatory = $true, ParameterSetName = 'UserClaimType')]

@@ -20,15 +20,14 @@ function Set-KrDefaultLogger {
 	#>
 
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
 		[string]$Name
 	)
 
 	process {
-		if ($PSCmdlet.ShouldProcess("Set the current logger for the session")) {
-			[Kestrun.Logging.LoggerManager]::DefaultLogger = [Kestrun.Logging.LoggerManager]::Get($Name)
-		}
+		[Kestrun.Logging.LoggerManager]::DefaultLogger = [Kestrun.Logging.LoggerManager]::Get($Name)	 
 	}
 }

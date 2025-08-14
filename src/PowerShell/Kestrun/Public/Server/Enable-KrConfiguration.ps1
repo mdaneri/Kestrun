@@ -1,20 +1,23 @@
 
-<#
-.SYNOPSIS
-    Enables Kestrun server configuration and starts the server.
-.DESCRIPTION
-    This function applies the configuration to the Kestrun server and starts it.
-.PARAMETER Server
-    The Kestrun server instance to configure and start. This parameter is mandatory.
-.PARAMETER Quiet
-    If specified, suppresses output messages during the configuration and startup process.
-.EXAMPLE
-    Enable-KrConfiguration -Server $server
-    Applies the configuration to the specified Kestrun server instance and starts it.
-.NOTES
-    This function is designed to be used after the server has been configured with routes, listeners,
-#>
 function Enable-KrConfiguration {
+    <#
+    .SYNOPSIS
+        Enables Kestrun server configuration and starts the server.
+    .DESCRIPTION
+        This function applies the configuration to the Kestrun server and starts it.
+    .PARAMETER Server
+        The Kestrun server instance to configure and start. This parameter is mandatory.
+    .PARAMETER Quiet
+        If specified, suppresses output messages during the configuration and startup process.
+    .PARAMETER PassThru
+        If specified, the cmdlet will return the modified server instance after applying the configuration.
+    .EXAMPLE
+        Enable-KrConfiguration -Server $server
+        Applies the configuration to the specified Kestrun server instance and starts it.
+    .NOTES
+        This function is designed to be used after the server has been configured with routes, listeners,
+        and other middleware components.
+    #>
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]

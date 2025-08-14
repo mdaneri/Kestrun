@@ -1,5 +1,3 @@
- 
- 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
 param()
 BeforeAll {
@@ -16,7 +14,7 @@ BeforeAll {
             throw "Kestrun module not found in source path: $kestrunPath"
         }
     }
-    catch { 
+    catch {
         Write-Error "Failed to import Kestrun module: $_"
         Write-Error "Ensure the Kestrun module is installed or the path is correct."
         exit 1

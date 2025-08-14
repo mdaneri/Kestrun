@@ -1,3 +1,9 @@
+---
+title: Certificates
+parent: Tutorials
+nav_order: 1 
+---
+
 # Kestrun Certificates
 
 ## Overview

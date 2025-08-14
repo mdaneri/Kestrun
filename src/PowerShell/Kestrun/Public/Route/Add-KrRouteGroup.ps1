@@ -9,6 +9,8 @@ function Add-KrRouteGroup {
           - ExtraImports / ExtraRefs
           - Arguments (merged; child overrides keys)
         Supports nesting; inner groups inherit and can override unless -NoInherit is used.
+    .PARAMETER Options
+        The options to apply to all routes in the group.
     .PARAMETER Prefix
         The path prefix for the group (e.g. '/todoitems').
     .PARAMETER AuthorizationSchema

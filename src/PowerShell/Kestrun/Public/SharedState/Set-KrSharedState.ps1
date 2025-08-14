@@ -14,7 +14,8 @@ function Set-KrSharedState {
         Value to assign to the variable.
     #>
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory)]
@@ -24,12 +25,10 @@ function Set-KrSharedState {
         [object]$Value
     )
     process {
-        if ($PSCmdlet.ShouldProcess("Kestrun shared variable '$Name'", "Set")) {
-            # Define or update the variable; throws if it was already read-only
-            $null = [Kestrun.SharedState.SharedStateStore]::Set(
-                $Name,
-                $Value
-            )
-        }
+        # Define or update the variable; throws if it was already read-only
+        $null = [Kestrun.SharedState.SharedStateStore]::Set(
+            $Name,
+            $Value
+        )
     }
 }

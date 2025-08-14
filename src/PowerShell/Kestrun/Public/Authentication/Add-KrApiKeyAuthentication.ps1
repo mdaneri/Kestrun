@@ -14,6 +14,8 @@ function Add-KrApiKeyAuthentication {
         A script block that contains the logic for validating the API key.
     .PARAMETER Code
         C# or VBNet code that contains the logic for validating the API key.
+    .PARAMETER CodeLanguage
+        The scripting language of the code used for validating the API key.
     .PARAMETER CodeFilePath
         Path to a file containing C# code that contains the logic for validating the API key.
     .PARAMETER ExpectedKey
@@ -109,7 +111,6 @@ function Add-KrApiKeyAuthentication {
         [Parameter(Mandatory = $true, ParameterSetName = 'v4_i3')]
         [string]$ExpectedKey,
 
-      
         [Parameter(ParameterSetName = 'v1')]
         [Parameter(ParameterSetName = 'v1_i1')]
         [Parameter(ParameterSetName = 'v1_i2')]

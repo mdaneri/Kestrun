@@ -29,7 +29,8 @@ function Set-KrLevelSwitch {
 	#>
 
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	[OutputType([Serilog.Core.LoggingLevelSwitch])]
 	param(
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
@@ -43,19 +44,16 @@ function Set-KrLevelSwitch {
 	)
 
 	process {
-		if ($PSCmdlet.ShouldProcess("Set minimum logging level to $MinimumLevel")) {
-			$LevelSwitch.MinimumLevel = $MinimumLevel
+		$LevelSwitch.MinimumLevel = $MinimumLevel
 
-			if($ToPreference){
-				Set-KrLogLevelToPreference -LogLevel $MinimumLevel
-			}
+		if ($ToPreference) {
+			Set-KrLogLevelToPreference -LogLevel $MinimumLevel
 		}
-
-		if($ToPreference){
+		if ($ToPreference) {
 			Set-KrLogLevelToPreference -LogLevel $MinimumLevel
 		}
 
-		if($PassThru){
+		if ($PassThru) {
 			return $LevelSwitch
 		}
 	}

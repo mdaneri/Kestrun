@@ -21,6 +21,8 @@ function Add-KrStaticFilesService {
     The default content type to use for files served by the static file service.
 .PARAMETER RedirectToAppendTrailingSlash
     If specified, redirects requests to append a trailing slash to the URL.
+.PARAMETER PassThru
+    If specified, the cmdlet will return the modified server instance after adding the static file service.
 .EXAMPLE
     $server | Add-KrStaticFilesService -RequestPath '/static' -HttpsCompression -ServeUnknownFileTypes -DefaultContentType 'application/octet-stream' -RedirectToAppendTrailingSlash
     This example adds a static file service to the server for the path '/static', enabling HTTPS compression, allowing serving unknown file types, setting the default content type to 'application/octet-stream', and redirecting requests to append a trailing slash.

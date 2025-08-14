@@ -17,13 +17,8 @@ function New-KrClaimPolicy {
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.authentication.claimpolicybuilder
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [OutputType([Kestrun.Claims.ClaimPolicyBuilder])]
-    param(
-
-    )
-
-    if ($PSCmdlet.ShouldProcess("ClaimPolicyConfig", "Create new claim policy configuration")) {
+    param( )
         return [Kestrun.Claims.ClaimPolicyBuilder]::new()
-    }
 }

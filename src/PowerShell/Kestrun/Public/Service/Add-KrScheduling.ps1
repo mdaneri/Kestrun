@@ -9,6 +9,8 @@ function Add-KrScheduling {
         The Kestrun server instance to which the scheduling service will be added.
     .PARAMETER MaxRunspaces
         The maximum number of runspaces to use for scheduling tasks. If not specified, defaults to 0 (unlimited).
+    .PARAMETER PassThru
+        If specified, the cmdlet will return the modified server instance after adding the scheduling service.
     .EXAMPLE
         $server | Add-KrScheduling -MaxRunspaces 5
         This example adds scheduling support to the server, with a maximum of 5 runspaces.
@@ -34,7 +36,7 @@ function Add-KrScheduling {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
+
         if ($MaxRunspaces -eq 0) {
             # If MaxRunspaces is 0, use the default configuration
             $Server.AddScheduling() | Out-Null
@@ -48,6 +50,5 @@ function Add-KrScheduling {
             # Return the modified server instance
             return $Server
         }
-
     }
 }

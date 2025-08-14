@@ -10,6 +10,8 @@ function Add-KrSignalRHub {
         The type of the SignalR hub class to be mapped.
     .PARAMETER Path
         The URL path where the SignalR hub will be accessible.
+    .PARAMETER PassThru
+        If specified, the cmdlet will return the modified server instance after adding the SignalR hub.
     .EXAMPLE
         $server | Add-KrSignalRHub -HubType ([ChatHub]) -Path "/chat"
         This example maps the ChatHub class to the "/chat" URL path on the specified Kestrun server.
@@ -42,7 +44,10 @@ function Add-KrSignalRHub {
         [Type]$HubType,
 
         [Parameter(Mandatory)]
-        [string]$Path
+        [string]$Path,
+
+        [Parameter()]
+        [switch]$PassThru
     )
 
     process {
@@ -67,5 +72,11 @@ function Add-KrSignalRHub {
 
         # 3.  Invoke it, passing the path; return the resulting server for chaining
         $closed.Invoke($Server, @($Path)) | Out-Null
+
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
+            return $Server
+        }
     }
 }

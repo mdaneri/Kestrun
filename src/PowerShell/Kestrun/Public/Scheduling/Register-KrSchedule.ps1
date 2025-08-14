@@ -2,40 +2,32 @@ function Register-KrSchedule {
     <#
     .SYNOPSIS
         Creates a new scheduled job in the active Kestrun host.
-
     .DESCRIPTION
         Supports either CRON or fixed interval triggers, and either an inline
         ScriptBlock or a script file path.  Use -RunImmediately to execute
         once right after registration.
-
     .PARAMETER Server
         The Kestrun host instance to use for scheduling the job.
         This is typically the instance running the Kestrun server.
-
     .PARAMETER Name
         Unique job name.
     .PARAMETER Language
         Script language to use for the job.
-
     .PARAMETER Cron
         6-field cron expression (seconds precision).  Mutually exclusive with -Interval.
-
     .PARAMETER Interval
         System.TimeSpan string (e.g. '00:05:00').  Mutually exclusive with -Cron.
-
     .PARAMETER ScriptBlock
         Inline PowerShell code to run.
         This is the default parameter for the job's script content.
-
     .PARAMETER Code
         Inline code in the specified language (e.g. C#) to run.
-
     .PARAMETER ScriptPath
         Path to a .ps1 file. The file is read once at registration time.
-
     .PARAMETER RunImmediately
         Execute once right after being registered.
-
+    .PARAMETER PassThru
+         If specified, the cmdlet will return the newly registered job info.
     .EXAMPLE
         Register-KrSchedule -Name Cache -Interval '00:15:00' -ScriptBlock {
             Clear-KrCache
@@ -79,7 +71,7 @@ function Register-KrSchedule {
 
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(DefaultParameterSetName = 'IntervalScriptBlock', SupportsShouldProcess)]
+    [CmdletBinding(DefaultParameterSetName = 'IntervalScriptBlock')]
     [OutputType([Kestrun.Scheduling.JobInfo])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -131,8 +123,6 @@ function Register-KrSchedule {
         if ($null -eq $sched) {
             throw "SchedulerService is not enabled. Call host.EnableScheduling() first."
         }
-
-        if (-not $PSCmdlet.ShouldProcess($Name, "Register schedule")) { return }
 
         try {
             switch ($PSCmdlet.ParameterSetName) {

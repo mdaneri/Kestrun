@@ -4,6 +4,8 @@ function Register-KrLogger {
 		Starts the Kestrun logger.
 	.DESCRIPTION
 		This function initializes the Kestrun logger with specified configurations.
+	.PARAMETER Name
+		The name of the logger instance. This is mandatory.
 	.PARAMETER LoggerConfig
 		A Serilog logger configuration object to set up the logger.
 	.PARAMETER MinimumLevel
@@ -21,19 +23,27 @@ function Register-KrLogger {
 	.PARAMETER PassThru
 		If specified, returns the created logger object.
 	.EXAMPLE
-		Register-KrLogger -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
+		Register-KrLogger -Name "MyLogger" -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
 		Initializes the Kestrun logger with Debug level, adds console and file sinks, sets the logger as default, and returns the logger object.
 	.EXAMPLE
-		Register-KrLogger -LoggerConfig $myLoggerConfig -SetAsDefault
+		Register-KrLogger -Name "MyLogger" -LoggerConfig $myLoggerConfig -SetAsDefault
 		Initializes the Kestrun logger using a pre-configured Serilog logger configuration object and sets it as the default logger.
+	.EXAMPLE
+		Register-KrLogger -Name "MyLogger" -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
+		Initializes the Kestrun logger with Debug level, adds console and file sinks, sets the logger as default, and returns the logger object.
+	.EXAMPLE
+		Register-KrLogger -Name "MyLogger" -MinimumLevel Debug -Console -FilePath "C:\Logs\kestrun.log" -FileRollingInterval Day -SetAsDefault
+		Initializes the Kestrun logger with Debug level, adds console and file sinks, sets the logger as default, and returns the logger object.
 	#>
 
 	[KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+	[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+	[CmdletBinding()]
 	[OutputType([Serilog.ILogger])]
 	param(
 		[Parameter(Mandatory = $true)]
 		[string]$Name,
+
 		[Parameter(Mandatory = $true, ValueFromPipeline = $true, ParameterSetName = 'Full')]
 		[Serilog.LoggerConfiguration]$LoggerConfig,
 
@@ -60,29 +70,27 @@ function Register-KrLogger {
 	)
 
 	process {
-		if ($PSCmdlet.ShouldProcess($Name, "Register logger")) {
-			switch ($PsCmdlet.ParameterSetName) {
-				'Short' {
-					$LoggerConfig = New-KrLogger | Set-KrMinimumLevel -Value $MinimumLevel
+		switch ($PsCmdlet.ParameterSetName) {
+			'Short' {
+				$LoggerConfig = New-KrLogger | Set-KrMinimumLevel -Value $MinimumLevel
 
-					# If file path was not passed we setup default console sink
-					if ($PowerShell -or -not $PSBoundParameters.ContainsKey('FilePath')) {
-						$LoggerConfig = $LoggerConfig | Add-KrSinkPowerShell
-					}
+				# If file path was not passed we setup default console sink
+				if ($PowerShell -or -not $PSBoundParameters.ContainsKey('FilePath')) {
+					$LoggerConfig = $LoggerConfig | Add-KrSinkPowerShell
+				}
 
-					if ($PSBoundParameters.ContainsKey('Console')) {
-						$LoggerConfig = $LoggerConfig | Add-KrSinkConsole
-					}
+				if ($PSBoundParameters.ContainsKey('Console')) {
+					$LoggerConfig = $LoggerConfig | Add-KrSinkConsole
+				}
 
-					if ($PSBoundParameters.ContainsKey('FilePath')) {
-						$LoggerConfig = $LoggerConfig | Add-KrSinkFile -Path $FilePath -RollingInterval $FileRollingInterval
-					}
+				if ($PSBoundParameters.ContainsKey('FilePath')) {
+					$LoggerConfig = $LoggerConfig | Add-KrSinkFile -Path $FilePath -RollingInterval $FileRollingInterval
 				}
 			}
-			$logger = [Kestrun.Logging.LoggerConfigurationExtensions]::Register($LoggerConfig,$Name, $SetAsDefault)
-			if ($PassThru) {
-				return $logger
-			}
+		}
+		$logger = [Kestrun.Logging.LoggerConfigurationExtensions]::Register($LoggerConfig, $Name, $SetAsDefault)
+		if ($PassThru) {
+			return $logger
 		}
 	}
 }

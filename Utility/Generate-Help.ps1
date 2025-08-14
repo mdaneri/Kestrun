@@ -50,19 +50,19 @@ if (Test-Path (Join-Path $OutDir "index.md")) {
 else {
     Write-Host "Creating markdown help in $OutDir"
     New-MarkdownHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir
-   $index_md = @"
+    $index_md = @"
 ---
-layout: default
 title: PowerShell Cmdlets
-has_children: true
-nav_order: 20
+parent: PowerShell
+nav_order: 2
 # children inherit parent via _config.yml defaults
 ---
 
 # PowerShell Cmdlets
 Browse the cmdlet reference in the sidebar.
+This documentation is generated from the Kestrun PowerShell module and provides detailed information on available cmdlets, their parameters, and usage examples.
 "@
-<# 
+    <# 
     $index_md2 = @"
 ---
 layout: default
@@ -104,7 +104,12 @@ foreach ($f in $files) {
     if ($f.Name -ieq 'index.md') { continue }
 
     $raw = Get-Content $f.FullName -Raw
-
+    # Remove the -ProgressAction parameter block
+    $raw = $raw -replace '(?ms)^### -ProgressAction\s*\{\{[^\}]*\}\}\s*```yaml.*?```', ''
+    # Remove all instances of [-ProgressAction <ActionPreference>] (with optional leading/trailing whitespace)
+    $raw = $raw -replace '\s*\[-ProgressAction <ActionPreference>\]\s*', ' '
+    # Replace 3 or more consecutive empty lines with a single empty line
+    $raw = $raw -replace '(\r?\n){3,}', "`r`n`r`n"
     # Title from first H1 or filename
     $title = ($raw -split "`n" | Where-Object { $_ -match '^\s*#\s+(.+)$' } | Select-Object -First 1)
     $title = if ($title) { $title -replace '^\s*#\s+', '' } else { [IO.Path]::GetFileNameWithoutExtension($f.Name) }
@@ -112,11 +117,9 @@ foreach ($f in $files) {
     if ($raw -notmatch '^\s*---\s*$') {
         @"
 ---
-layout: default
 parent: PowerShell Cmdlets
 title: $title
 nav_order: $i
-render_with_liquid: false
 $($raw.Substring(5))
 "@ | Set-Content $f.FullName -NoNewline
     }

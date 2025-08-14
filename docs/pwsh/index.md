@@ -1,10 +1,6 @@
 ---
-layout: default
-title: Pawershell
-has_children: true
-nav_order: 32
-parent: Powershell
-# children inherit parent via _config.yml defaults
+title: PowerShell
+nav_order: 2
 ---
 
 # Powershell Documentation

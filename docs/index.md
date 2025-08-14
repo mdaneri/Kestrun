@@ -1,8 +1,9 @@
 ---
-layout: default
-title: Kestrun
+title: Home
+layout: home
 nav_order: 1
-# No parent — keep this at top-level
+description: "Kestrun Documentation."
+permalink: /
 ---
 
 # Kestrun

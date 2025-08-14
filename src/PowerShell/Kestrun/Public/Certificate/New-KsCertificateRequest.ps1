@@ -39,7 +39,9 @@ function New-KsCertificateRequest {
 
     #>
     [KestrunRuntimeApi('Everywhere')]
-    [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
+    [CmdletBinding()]
+    [OutputType([object])]
     param(
         [Parameter(Mandatory)]
         [string[]] $DnsName,
@@ -64,8 +66,5 @@ function New-KsCertificateRequest {
         $OrgUnit,
         $CommonName
     )
-
-    if ($PSCmdlet.ShouldProcess("Create certificate request for $($DnsName -join ', ')")) {
-        return [Kestrun.Certificates.CertificateManager]::NewCertificateRequest($opts)
-    }
+    return [Kestrun.Certificates.CertificateManager]::NewCertificateRequest($opts)
 }

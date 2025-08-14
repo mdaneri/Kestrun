@@ -4,6 +4,8 @@ function Suspend-KrSchedule {
         Suspends a schedule, preventing it from running until resumed.
     .DESCRIPTION
         This function pauses a scheduled task, allowing it to be resumed later.
+    .PARAMETER Server
+        The Kestrun host object that manages the schedule.
     .PARAMETER Name
         The name of the schedule to suspend.
     .EXAMPLE
