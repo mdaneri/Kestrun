@@ -1,3 +1,12 @@
+---
+layout: default
+parent: Tutorials
+title: Razor
+has_children: false
+#nav_order: 1
+# children inherit parent via _config.yml defaults
+---
+
 # PowerShell-backed Razor Pages
 
 > *Dynamic ASP.NET Core UI powered by PowerShell scripts — all inside **Kestrun***

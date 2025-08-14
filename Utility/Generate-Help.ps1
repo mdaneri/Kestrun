@@ -50,9 +50,20 @@ if (Test-Path (Join-Path $OutDir "index.md")) {
 else {
     Write-Host "Creating markdown help in $OutDir"
     New-MarkdownHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir
+   $index_md = @"
+---
+layout: default
+title: PowerShell Cmdlets
+has_children: true
+nav_order: 20
+# children inherit parent via _config.yml defaults
+---
 
-
-    $index_md = @"
+# PowerShell Cmdlets
+Browse the cmdlet reference in the sidebar.
+"@
+<# 
+    $index_md2 = @"
 ---
 layout: default
 title: PowerShell Cmdlets
@@ -81,6 +92,7 @@ nav_order: 10
 {% endfor %}
 </ul>
 "@
+#>
 
     Set-Content -Path (Join-Path $OutDir "index.md") -Value $index_md -Encoding UTF8
 }
