@@ -1,0 +1,37 @@
+title: Kestrun Docs
+url: https://kestrun.github.io
+baseurl: ""
+
+remote_theme: just-the-docs/just-the-docs
+plugins:
+  - jekyll-remote-theme
+  - jekyll-optional-front-matter
+  - jekyll-titles-from-headings
+
+permalink: pretty
+
+# Only set parents for the folders we want in dropdowns
+defaults:
+  # PowerShell Cmdlets section
+  - scope:
+      path: "pwsh/cmdlets"   # <- only this subtree
+      type: "pages"
+    values:
+      layout: default
+      parent: "PowerShell Cmdlets"
+      nav_exclude: false
+      render_with_liquid: false
+
+  # Tutorials section
+  - scope:
+      path: "pwsh/tutorial"  # <- only this subtree
+      type: "pages"
+    values:
+      layout: default
+      parent: "Tutorials"
+      nav_exclude: false
+      render_with_liquid: false
+
+just_the_docs:
+  search:
+    enabled: true

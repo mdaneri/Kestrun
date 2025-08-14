@@ -21,8 +21,8 @@ nav_order: 1
 
 ## Quick links
 
-- 👉 **PowerShell Cmdlets**: [docs/pwsh/cmdlets/](./docs/pwsh/cmdlets/)
-- 📚 **Tutorials**: [docs/pwsh/tutorial/](./docs/pwsh/tutorial/)
+- 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](./pwsh/cmdlets/)
+- 📚 **Tutorials**: [dpwsh/tutorial/](./pwsh/tutorial/)
 
 ## Get started
 
