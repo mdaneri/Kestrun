@@ -14,7 +14,10 @@ jobs:
     steps:
       - name: 🛎️ Checkout
         uses: actions/checkout@v5
-
+      - name: 🧰 Install ClamAV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav
       - name: 🧰 Install PowerShell
         uses: ./.github/actions/Install-PowerShell
         with:
@@ -58,10 +61,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Invoke-Build Build
 
-      - name: 🧰 Install ClamAV
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clamav
+       
 
       - name: 📦 Update signatures
         run: |
