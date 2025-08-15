@@ -133,7 +133,7 @@ Add-BuildTask Help {
     Write-Host '- Remove-Module: Removes the Kestrun module.'
 }
 
-Add-BuildTask "Clean" "Clean-CodeAnalysis","CleanHelp", {
+Add-BuildTask "Clean" "Clean-CodeAnalysis", "CleanHelp", {
     Write-Host "Cleaning solution..."
     foreach ($framework in $Frameworks) {
         dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
@@ -241,6 +241,14 @@ Add-BuildTask "Build_Powershell_Help" {
 }
 Add-BuildTask "Build_CSharp_Help" {
     Write-Host "Generate C# Help..."
+    # Check if xmldocmd is in PATH
+    if (-not (Get-Command xmldocmd -ErrorAction SilentlyContinue)) {
+        Write-Host "📦 Installing xmldocmd..."
+        dotnet tool install -g xmldocmd
+    }
+    else {
+        Write-Host "✅ xmldocmd already installed"
+    }
     pwsh -NoProfile -File .\Utility\Prepare-DocRefs.ps1
     & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot "docs/cs/api" -TopParent "C# API"
 }
