@@ -12,6 +12,14 @@ function Set-KrSharedState {
         Name of the variable to create or update.
     .PARAMETER Value
         Value to assign to the variable.
+    .EXAMPLE
+        Set-KrSharedState -Name "MyVariable" -Value "Hello, World!"
+        This creates a global variable "MyVariable" with the value "Hello, World!".
+    .EXAMPLE
+        Set-KrSharedState -Name "MyNamespace.MyVariable" -Value @{item=42}
+        This creates a global variable "MyNamespace.MyVariable" with the value @{item=42}.
+    .NOTES
+        This function is part of the Kestrun.SharedState module and is used to define or update global variables.
     #>
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]

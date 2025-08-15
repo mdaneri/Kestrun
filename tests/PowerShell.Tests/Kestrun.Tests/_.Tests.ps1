@@ -28,9 +28,15 @@ BeforeDiscovery {
 }
 Describe 'Exported Functions' {
     It 'Have function [<_>] each parameter documented' -ForEach $funcs { 
-        $params = (Get-Help -Name $_ -Detailed).parameters.parameter
+        $detailed = (Get-Help -Name $_ -Detailed)
+        $params = $detailed.parameters.parameter
+        $detailed.examples | Should -not -BeNullOrEmpty -Because "Examples for function '$($_)' are not documented."
+        $detailed.examples.example | Should -not -BeNullOrEmpty -Because "Examples for function '$($_)' are not documented."
+        $detailed.examples.example.Count | Should -BeGreaterThan 0 -Because "Examples for function '$($_)' are not documented."
+
         foreach ($param in $params) {
             $param.Description | Should -not -BeNullOrEmpty -Because "Parameter '$($param.Name)' of function '$($_)' is not documented."
+
         }
     }
 

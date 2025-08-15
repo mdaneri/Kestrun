@@ -49,6 +49,23 @@ function Add-KrJWTBearerAuthentication {
         This parameter is used to validate the audience of incoming tokens.
     .PARAMETER PassThru
         A switch parameter that, when specified, returns the Kestrun server instance.
+    .EXAMPLE
+        Add-KrJWTBearerAuthentication -Server $server -Name "MyAuth" -ValidationParameter $validationParameter -ClaimPolicy $claimPolicy
+        Configure Kestrun server to use JWT Bearer authentication with the specified validation parameters and claim policy.
+    .EXAMPLE
+        Add-KrJWTBearerAuthentication -Server $server -Name "MyAuth" -ValidIssuer "https://issuer" -ValidAudience "api" -ValidAlgorithms @("HS256") -SkipValidateIssuer -PassThru
+        Configure Kestrun server to use JWT Bearer authentication with the specified issuer, audience, and algorithms, skipping issuer validation, and return the server instance.
+    .EXAMPLE
+        Add-KrJWTBearerAuthentication -Server $server -Name "MyAuth" -ValidIssuer "https://issuer" -ValidAudience "api" -ValidAlgorithms @("HS256") -SkipValidateIssuer -PassThru
+        Configure Kestrun server to use JWT Bearer authentication with the specified issuer, audience, and algorithms, skipping issuer validation, and return the server instance.
+    .EXAMPLE
+        Add-KrJWTBearerAuthentication -Server $server -Name "MyAuth" -ValidIssuer "https://issuer" -ValidAudience "api" -ValidAlgorithms @("HS256") -SkipValidateIssuer -PassThru
+        Configure Kestrun server to use JWT Bearer authentication with the specified issuer, audience, and algorithms, skipping issuer validation, and return the server instance.
+    .LINK
+        https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.jwtbearer.jwtbearerauthenticationextensions.addjwtbearerauthentication?view=aspnetcore-8.0
+    .NOTES
+        This function is part of the Kestrun.Authentication module and is used to configure JWT Bearer authentication for Kestrun servers.
+        Maps to Kestrun.Hosting.KestrunHostAuthExtensions.AddJwtBearerAuthentication
     #>
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]

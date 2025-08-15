@@ -16,6 +16,12 @@ function Update-KrJWT {
     .OUTPUTS
         [string]
         The updated JWT token.
+    .EXAMPLE
+        Update-KrJWT -Builder $jwtBuilder -Token $existingToken -Lifetime (New-TimeSpan -Minutes 30)
+        This updates the existing JWT token with a new lifetime of 30 minutes.
+    .EXAMPLE
+        Update-KrJWT -Builder $jwtBuilder -FromContext -Lifetime (New-TimeSpan -Minutes 30)
+        This updates the existing JWT token extracted from the HTTP context with a new lifetime of 30 minutes.
     .NOTES
         This function is part of the Kestrun.Security module and is used to manage JWT tokens.
         Maps to JwtBuilderResult.Renew
