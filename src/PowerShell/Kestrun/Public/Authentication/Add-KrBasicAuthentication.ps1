@@ -44,6 +44,18 @@ function Add-KrBasicAuthentication {
         Path to a file containing the code that contains the logic for issuing claims after successful authentication
     .PARAMETER PassThru
         If specified, returns the modified server instance after adding the authentication.
+    .EXAMPLE
+        Add-KrBasicAuthentication -Server $server -Name "MyAuth" -Options $options -ScriptBlock $scriptBlock
+        Configure Kestrun server to use basic authentication with the specified script block.
+    .EXAMPLE
+        Add-KrBasicAuthentication -Server $server -Name "MyAuth" -Options $options -Code $code -CodeLanguage $codeLanguage
+        Configure Kestrun server to use basic authentication with the specified code.
+    .EXAMPLE
+        Add-KrBasicAuthentication -Server $server -Name "MyAuth" -Options $options -CodeFilePath $codeFilePath
+        Configure Kestrun server to use basic authentication with the specified code file.
+    .NOTES
+        This function is part of the Kestrun.Authentication module and is used to configure basic authentication for Kestrun servers.
+        Maps to Kestrun.Hosting.KestrunHostAuthExtensions.AddBasicAuthentication
     #>
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'v1')]
