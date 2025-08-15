@@ -44,12 +44,6 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Install-Module InvokeBuild -Force -Scope CurrentUser
 
-      - name: 🧰 Install Module platyPS
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Install-Module platyPS -Force -Scope CurrentUser
-
       - name: 🔎 Print runtime context
         shell: pwsh
         run: |
