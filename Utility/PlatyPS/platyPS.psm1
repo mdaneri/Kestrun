@@ -18,7 +18,7 @@
 
 Import-LocalizedData -BindingVariable LocalizedData -FileName platyPS.Resources.psd1
 
-Add-Type -LiteralPath (Join-Path -Path $PWD -ChildPath "Utility" -AdditionalChildPath "PlatyPs", "Markdown.MAML.dll")
+Add-Type -LiteralPath (Join-Path -Path $PWD -ChildPath "Utility" -AdditionalChildPath "PlatyPS", "Markdown.MAML.dll")
 
     ## Script constants
 

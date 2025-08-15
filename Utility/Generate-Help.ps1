@@ -32,7 +32,7 @@ Write-Host "Importing module: $ModulePath"
 Import-Module $ModulePath -Force
 New-KrServer -Name "Docs"
 Remove-KrServer -Name "Docs" -Force
-Import-Module -Name ./Utility/PlatyPs/platyPS.psm1
+Import-Module -Name ./Utility/PlatyPS/platyPS.psm1
 
 Write-Host "Generating Markdown help..."
 # Create or update Markdown help
