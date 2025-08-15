@@ -249,7 +249,7 @@ Add-BuildTask "Build_CSharp_Help" {
     else {
         Write-Host "✅ xmldocmd already installed"
     }
-    pwsh -NoProfile -File .\Utility\Prepare-DocRefs.ps1
+    & .\Utility\Prepare-DocRefs.ps1
     & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot "docs/cs/api" -TopParent "C# API"
 }
 
