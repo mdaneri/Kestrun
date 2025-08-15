@@ -30,6 +30,8 @@ Describe 'Exported Functions' {
     It 'Have function [<_>] each parameter documented' -ForEach $funcs { 
         $detailed = (Get-Help -Name $_ -Detailed)
         $params = $detailed.parameters.parameter
+        $detailed.description | Should -not -BeNullOrEmpty -Because "Description for function '$($_)' is not documented."
+        $detailed.description.Count | Should -BeGreaterThan 0 -Because "Description for function '$($_)' is not documented."
         $detailed.examples | Should -not -BeNullOrEmpty -Because "Examples for function '$($_)' are not documented."
         $detailed.examples.example | Should -not -BeNullOrEmpty -Because "Examples for function '$($_)' are not documented."
         $detailed.examples.example.Count | Should -BeGreaterThan 0 -Because "Examples for function '$($_)' are not documented."

@@ -2,6 +2,8 @@ function Test-KrRoute {
     <#
     .SYNOPSIS
         Tests if a route exists in the Kestrun host.
+    .DESCRIPTION
+        This function checks if a specific route is defined in the Kestrun host's routing table.
     .PARAMETER Path
         The path of the route to test.
     .PARAMETER Verbs
@@ -9,6 +11,9 @@ function Test-KrRoute {
     .EXAMPLE
         Test-KrRoute -Path "/api/test" -Verbs "GET"
         # Tests if a GET route exists for "/api/test".
+    .EXAMPLE
+        Test-KrRoute -Path "/api/test" -Verbs "POST"
+        # Tests if a POST route exists for "/api/test".
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes.
     #>
