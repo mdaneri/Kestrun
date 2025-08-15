@@ -4,7 +4,6 @@ param(
   [string]$ApiRoot = "docs/cs/api",
   [string]$TopParent = "C# API"
 )
-
 $ErrorActionPreference = "Stop"
 
 if (-not (Test-Path $ApiRoot)) {
@@ -121,7 +120,7 @@ title: "$title"
 parent: "$TopParent"
 ---
 "@
-  } 
+  }
   Set-Content -Path $file -Value ($front + "`n" + $content) -NoNewline
 }
 
