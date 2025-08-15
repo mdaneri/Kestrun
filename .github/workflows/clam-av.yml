@@ -1,14 +1,16 @@
-name: VirusTotal Monitor
-
-permissions:
-  contents: read
-
+name: AV scan (ClamAV)
 on:
+  workflow_dispatch:
   push:
+    branches: [ main ]
+    paths:
+      - 'src/CSharp/kestrun/bin/**'
+      - 'src/CSharp/kestrun/obj/**'
+      - 'src/PowerShell/kestrun/lib/**'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  clamav:
+    runs-on: ubuntu-24.04
     steps:
       - name: 🛎️ Checkout
         uses: actions/checkout@v5
@@ -56,12 +58,26 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Invoke-Build Build
 
-      - name: 🔍 VirusTotal Monitor Scan
-        uses: crazy-max/ghaction-virustotal@v4
+      - name: 🧰 Install ClamAV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav
+
+      - name: 📦 Update signatures
+        run: |
+          sudo freshclam
+
+      - name: 🔎 Scan build artifacts
+        run: |
+          clamscan -r --infected --bell --max-filesize=2G --max-scansize=2G \
+            build \
+            | tee clamscan.log
+      - name: Fail if infected
+        run: |
+          ! grep -q "Infected files: [^0]" clamscan.log
+      - name: Upload scan log
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          vt_api_key: ${{ secrets.VT_API_KEY }}
-          vt_monitor: true
-          monitor_path: /ghaction-virustotal
-          files: |
-            ./src/CSharp/Kestrun/bin/**/*.dll
-            ./src/PowerShell/Kestrun/lib/**/*.dll
+          name: clamscan-log
+          path: clamscan.log
