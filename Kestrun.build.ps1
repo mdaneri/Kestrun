@@ -133,7 +133,7 @@ Add-BuildTask Help {
     Write-Host '- Remove-Module: Removes the Kestrun module.'
 }
 
-Add-BuildTask "Clean" "Clean-CodeAnalysis", {
+Add-BuildTask "Clean" "Clean-CodeAnalysis","CleanHelp", {
     Write-Host "Cleaning solution..."
     foreach ($framework in $Frameworks) {
         dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
@@ -234,14 +234,33 @@ Add-BuildTask "Package" "Build", {
     }
 }
 
-Add-BuildTask "BuildHelp" {
+
+Add-BuildTask "Build_Powershell_Help" {
     Write-Host "Generate Powershell Help..."
     pwsh -NoProfile -File .\Utility\Generate-Help.ps1
 }
+Add-BuildTask "Build_CSharp_Help" {
+    Write-Host "Generate C# Help..."
+    pwsh -NoProfile -File .\Utility\Prepare-DocRefs.ps1
+    & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot "docs/cs/api" -TopParent "C# API"
+}
+
+Add-BuildTask "BuildHelp" {
+    Write-Host "Generate Help..."
+}, "Build_Powershell_Help", "Build_CSharp_Help"
+
 
 Add-BuildTask "CleanHelp" {
+    Write-Host "Cleaning Help..."
+}, "Clean_Powershell_Help", "Clean_CSharp_Help"
+
+Add-BuildTask "Clean_Powershell_Help" {
     Write-Host "Cleaning Powershell Help..."
-    pwsh -NoProfile -File .\Utility\Generate-Help.ps1 -Clean
+    & .\Utility\Generate-Help.ps1 -Clean
+}
+Add-BuildTask "Clean_CSharp_Help" {
+    Write-Host "Cleaning C# Help..."
+    & .\Utility\Prepare-DocRefs.ps1 -Clean
 }
 
 
