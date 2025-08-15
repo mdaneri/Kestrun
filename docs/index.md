@@ -23,6 +23,7 @@ permalink: /
 ## Quick links
 
 - 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](./pwsh/cmdlets/)
+- 👉 **C# API**: [cs/api/](./cs/api/)
 - 📚 **Tutorials**: [pwsh/tutorial/](./pwsh/tutorial/)
 
 ## Get started

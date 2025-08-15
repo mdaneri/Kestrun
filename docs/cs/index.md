@@ -1,3 +1,7 @@
-# Kestrun C# API
-
-Browse namespaces, types, and members. Use the search for quick jumps.
+---
+layout: default
+title: C# API
+nav_order: 30
+permalink: /cs/
+has_children: true
+---

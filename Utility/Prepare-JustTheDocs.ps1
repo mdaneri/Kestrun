@@ -23,14 +23,43 @@ has_children: true
 "@ | Set-Content $topIndex -NoNewline
 }
 
+# Helper: title from first H1, else fallback; also escape any embedded quotes
 function Get-TitleFromContent([string]$content, [string]$fallback) {
-  if ($content -match '(?m)^\s*#\s+(.+?)\s*$') { return $Matches[1].Trim() }
-  return $fallback
+  $t = if ($content -match '(?m)^\s*#\s+(.+?)\s*$') { $Matches[1].Trim() } else { $fallback }
+  return $t -replace '"','\"'
 }
 
+# Helper: make a path relative to ApiRoot
+$apiRootFull = (Resolve-Path $ApiRoot).Path.TrimEnd('\','/')
+function RelFromApi([string]$full) {
+  $p = (Resolve-Path $full).Path
+  return $p.Substring($apiRootFull.Length).TrimStart('\','/')
+}
+
+# 1) Create index.md for each top-level namespace folder (e.g., global/)
+$displayName = @{ "global" = "Global namespace" }
+
+Get-ChildItem $ApiRoot -Directory | ForEach-Object {
+  $nsFolder = $_.FullName
+  $nsName   = $_.Name
+  $index    = Join-Path $nsFolder "index.md"
+
+  if (-not (Test-Path $index)) {
+    $title = if ($displayName.ContainsKey($nsName)) { $displayName[$nsName] } else { $nsName }
+@"
+---
+layout: default
+title: "$title"
+parent: "$TopParent"
+has_children: true
+---
+"@ | Set-Content $index -NoNewline
+  }
+}
+
+# 2) Prepend front matter for every generated page that doesn't have it
 Get-ChildItem $ApiRoot -Recurse -Filter *.md | ForEach-Object {
   $file = $_.FullName
-  $rel  = Resolve-Path $file | Split-Path -NoQualifier
   $content = Get-Content $file -Raw
 
   # Skip if already has front matter
@@ -39,19 +68,19 @@ Get-ChildItem $ApiRoot -Recurse -Filter *.md | ForEach-Object {
   $title = Get-TitleFromContent $content $_.BaseName
 
   # Determine namespace (first directory under api/)
-  $relFromApi = $file.Substring((Resolve-Path $ApiRoot).Path.Length).TrimStart('\','/')
-  $parts = $relFromApi -split '[\\/]'
-  $isInNamespace = $parts.Length -ge 2
+  $relPath = RelFromApi $file
+  $parts = $relPath -split '[\\/]+'
+  $isInNamespace = ($parts.Length -ge 2)
   $namespace = if ($isInNamespace) { $parts[0] } else { $null }
 
   $front =
     if ($isInNamespace) {
-      # If this is the namespace index page (api/<ns>/index.md)
+      # Namespace index (api/<ns>/index.md)
       if ($parts.Length -eq 2 -and $parts[1].ToLower() -eq 'index.md') {
 @"
 ---
 layout: default
-title: "$namespace"
+title: "$($displayName[$namespace] ?? $namespace)"
 parent: "$TopParent"
 has_children: true
 ---
@@ -67,7 +96,7 @@ grand_parent: "$TopParent"
 "@
       }
     } else {
-      # Files directly under api/ (rare with xmldocmd, but handle gracefully)
+      # Files directly under api/ (rare)
 @"
 ---
 layout: default
@@ -79,3 +108,16 @@ parent: "$TopParent"
 
   Set-Content -Path $file -Value ($front + "`n" + $content) -NoNewline
 }
+
+# 3) (Optional) ensure namespace index pages show first in their folder by adding nav_order=1
+#    Uncomment if you want explicit ordering.
+# Get-ChildItem $ApiRoot -Directory | ForEach-Object {
+#   $idx = Join-Path $_.FullName 'index.md'
+#   if (Test-Path $idx) {
+#     $c = Get-Content $idx -Raw
+#     if ($c -notmatch '(?m)^\s*nav_order:\s*\d+') {
+#       $c = $c -replace '^(---\s*\r?\n)', "`$1nav_order: 1`r`n"
+#       Set-Content $idx $c -NoNewline
+#     }
+#   }
+# }

@@ -10,6 +10,7 @@ param(
 if($Clean) {
     Write-Host "Cleaning up..."
     Remove-Item -Path $StageDir -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path $ApiOut -Recurse -Force -ErrorAction SilentlyContinue
     return
 }
 $ErrorActionPreference = 'Stop'
