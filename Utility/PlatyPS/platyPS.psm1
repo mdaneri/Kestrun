@@ -2303,7 +2303,8 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function @()
                     'InformationVariable',
                     'OutVariable',
                     'OutBuffer',
-                    'PipelineVariable'
+                    'PipelineVariable',
+                    'ProgressAction'
                 ) -contains $parameterName) {
                 return $true
             }

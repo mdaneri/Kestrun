@@ -23,12 +23,25 @@ permalink: /
 ## Quick links
 
 - 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](./pwsh/cmdlets/)
-- 📚 **Tutorials**: [dpwsh/tutorial/](./pwsh/tutorial/)
+- 📚 **Tutorials**: [pwsh/tutorial/](./pwsh/tutorial/)
 
 ## Get started
 
 ```powershell
 # spin up Kestrun
 Import-Module Kestrun
-Start-Kestrun -Path ./KestrunApp
+New-KrServer -Name 'MyKestrunServer'
+Add-KrListener -Port 5000
+Add-KrPowerShellRuntime
+Enable-KrConfiguration
+
+Add-KrMapRoute -Verbs Get -Path '/ps/hello' -ScriptBlock {
+    Write-KrTextResponse -inputObject "Hello world" -statusCode 200
+}
+Add-KrMapRoute -Verbs Get -Path '/cs/hello' -Code @'
+    Context.Response.WriteTextResponse("Hello world", 200);
+'@ -Language CSharp
+
+Start-KrServer
+
 ```
