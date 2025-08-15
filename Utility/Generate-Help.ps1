@@ -19,42 +19,34 @@ if ($Clean) {
     Remove-Item -Path $OutDir -Recurse -Force -ErrorAction SilentlyContinue
     return
 }
-# Pin to a modern PlatyPS (v2+ is fine). Remove -RequiredVersion to float latest.
-if (-not (Get-Module -ListAvailable -Name Microsoft.PowerShell.PlatyPS )) {
-    Write-Host "Installing PlatyPS..."
-    Install-PSResource -Name Microsoft.PowerShell.PlatyPS -TrustRepository -Scope CurrentUser
-}
-else {
-    Write-Host "PlatyPS is already installed."
-
-    Import-Module Microsoft.PowerShell.PlatyPS
-
-}
+ 
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 if (Test-Path -Path "$OutDir/about_.md") {
     Write-Host "Clearing existing help in $OutDir/about_.md"
     Remove-Item -Path "$OutDir/about_.md" -Force
 }
-#New-MarkdownAboutHelp -OutputFolder $OutDir
+ 
 
 Write-Host "Importing module: $ModulePath"
 Import-Module $ModulePath -Force
 New-KrServer -Name "Docs"
 Remove-KrServer -Name "Docs" -Force
-
+Add-Type -Path ./Utility/PlatyPs/Markdown.MAML.dll
+Import-Module -Name ./Utility/PlatyPs/platyPS.psm1
 
 Write-Host "Generating Markdown help..."
 # Create or update Markdown help
-if (Test-Path (Join-Path $OutDir "index.md")) {
-    Write-Host "Updating existing markdown help in $OutDir"
-    Update-MarkdownCommandHelp -Path $OutDir -Force
+if (Test-Path   $OutDir ) {
+    Write-Host "Clearing existing help in $OutDir"
+    Remove-Item -Path $OutDir -Recurse -Force -ErrorAction SilentlyContinue   
 }
-else {
-    Write-Host "Creating markdown help in $OutDir"
-    	New-MarkdownCommandHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir
-    $index_md = @"
+
+Write-Host "Creating markdown help in $OutDir"
+New-MarkdownHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir -Force
+$index_md = @"
 ---
+layout: default
 title: PowerShell Cmdlets
 parent: PowerShell
 nav_order: 2
@@ -65,7 +57,7 @@ nav_order: 2
 Browse the cmdlet reference in the sidebar.
 This documentation is generated from the Kestrun PowerShell module and provides detailed information on available cmdlets, their parameters, and usage examples.
 "@
-    <# 
+<# 
     $index_md2 = @"
 ---
 layout: default
@@ -97,8 +89,8 @@ nav_order: 10
 "@
 #>
 
-    Set-Content -Path (Join-Path $OutDir "index.md") -Value $index_md -Encoding UTF8
-}
+Set-Content -Path (Join-Path $OutDir "index.md") -Value $index_md -Encoding UTF8
+ 
 
 # Normalize cmdlet pages for Just the Docs
 $files = Get-ChildItem $OutDir -Recurse -Filter *.md | Sort-Object Name
@@ -107,12 +99,7 @@ foreach ($f in $files) {
     if ($f.Name -ieq 'index.md') { continue }
 
     $raw = Get-Content $f.FullName -Raw
-    # Remove the -ProgressAction parameter block
-    $raw = $raw -replace '(?ms)^### -ProgressAction\s*\{\{[^\}]*\}\}\s*```yaml.*?```', ''
-    # Remove all instances of [-ProgressAction <ActionPreference>] (with optional leading/trailing whitespace)
-    $raw = $raw -replace '\s*\[-ProgressAction <ActionPreference>\]\s*', ' '
-    # Replace 3 or more consecutive empty lines with a single empty line
-    $raw = $raw -replace '(\r?\n){3,}', "`r`n`r`n"
+
     # Title from first H1 or filename
     $title = ($raw -split "`n" | Where-Object { $_ -match '^\s*#\s+(.+)$' } | Select-Object -First 1)
     $title = if ($title) { $title -replace '^\s*#\s+', '' } else { [IO.Path]::GetFileNameWithoutExtension($f.Name) }
@@ -120,9 +107,11 @@ foreach ($f in $files) {
     if ($raw -notmatch '^\s*---\s*$') {
         @"
 ---
+layout: default
 parent: PowerShell Cmdlets
 title: $title
 nav_order: $i
+render_with_liquid: false
 $($raw.Substring(5))
 "@ | Set-Content $f.FullName -NoNewline
     }

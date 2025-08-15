@@ -1,4 +1,5 @@
-
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+[CmdletBinding()]
 param(
     [Parameter()]
     [string]$FileVersion = "./version.json",
@@ -18,11 +19,6 @@ function Get-Version {
     }
     $versionData = Get-Content -Path $FileVersion | ConvertFrom-Json
     $Version = $versionData.Version
-    $Release = $versionData.Release
-    $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))? $Release : "$Release.$($versionData.Iteration)"
-    if ($Release -ne 'Stable') {
-        $Version = "$Version-$ReleaseIteration"
-    }
     return $Version
 }
 
@@ -36,7 +32,7 @@ else {
 }
 $Version=Get-Version -FileVersion $FileVersion
 
-$dest = Join-Path -Path $PSPaths[0] -ChildPath 'Kestrun' -AdditionalChildPath "$Version"
+$dest = Join-Path -Path $PSPaths[0] -ChildPath 'Kestrun' -AdditionalChildPath $Version
 if ($Remove) {
     if (!(Test-Path $dest)) {
         Write-Warning "Directory $dest doesn't exist"
@@ -61,11 +57,10 @@ if (Test-Path $dest) {
 New-Item -Path $dest -ItemType Directory -Force | Out-Null
 $path = './src/PowerShell/Kestrun/*'
 
- 
-Copy-Item -Path (Join-Path -Path $path -ChildPath $_) -Destination $dest -Force -Recurse | Out-Null
- 
- 
+# Copy the files to the destination
+Copy-Item -Path $path -Destination $dest -Force -Recurse | Out-Null
 
+# Confirm the deployment
 Write-Host "Deployed to $dest"
 
 

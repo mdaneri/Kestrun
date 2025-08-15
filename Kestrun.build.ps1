@@ -60,7 +60,7 @@ param(
     [ValidateSet('net8.0', 'net9.0', 'net10.0')]
     [string[]]$Frameworks = @('net8.0', 'net9.0'),
     [Parameter(Mandatory = $true, ParameterSetName = 'Version')]
-    [string]$Version  ,
+    [string]$Version,
     [Parameter(Mandatory = $false, ParameterSetName = 'Version')]
     [string]$Iteration = "",
     [Parameter(Mandatory = $false, ParameterSetName = 'FileVersion')]
@@ -129,6 +129,8 @@ Add-BuildTask Help {
     Write-Host '- ThirdPartyNotices: Generates third-party notices.'
     Write-Host '- BuildHelp: Generates PowerShell help documentation.'
     Write-Host '- CleanHelp: Cleans the PowerShell help documentation.'
+    Write-Host '- Install-Module: Installs the Kestrun module.'
+    Write-Host '- Remove-Module: Removes the Kestrun module.'
 }
 
 Add-BuildTask "Clean" "Clean-CodeAnalysis", {
@@ -146,7 +148,7 @@ Add-BuildTask "Build" {
     Write-Host "Building solution..."
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
-        $Version = Get-Version -FileVersion $FileVersion 
+        $Version = Get-Version -FileVersion $FileVersion
 
     }
     elseif ($PSCmdlet.ParameterSetName -eq 'Version') {
@@ -272,3 +274,13 @@ Add-BuildTask "ThirdPartyNotices" {
 }
 
 Add-BuildTask All "Clean", "Restore", "Build", "Test"
+
+Add-BuildTask Install-Module {
+    Write-Host "Installing Kestrun module..."
+    & .\Utility\Install-Kestrun.ps1 -FileVersion $FileVersion
+}
+
+Add-BuildTask Remove-Module {
+    Write-Host "Removing Kestrun module..."
+    & .\Utility\Install-Kestrun.ps1 -FileVersion $FileVersion -Remove
+}
