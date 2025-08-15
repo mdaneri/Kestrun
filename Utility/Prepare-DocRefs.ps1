@@ -90,12 +90,4 @@ Write-Host "🧠 xmldocmd → $xDll"
 xmldocmd "$xDll" "$ApiOut" --visibility public --clean `
   --source https://github.com/Kestrun/Kestrun/tree/main/src/CSharp/Kestrun
 
-# Remove Global Namespace
-$globalDir = "$ApiOut/global"
-if (Test-Path $globalDir) {
-  Remove-Item $globalDir -Recurse -Force
-}
 Write-Host "✅ Docs generated in $ApiOut"
-
-
-

@@ -13,6 +13,7 @@ if (-not (Test-Path $ApiRoot)) {
 # Ensure top index exists
 $topIndex = "docs/cs/index.md"
 if (-not (Test-Path $topIndex)) {
+  Write-Host "Creating top index at $topIndex"
   @"
 ---
 layout: default
@@ -105,7 +106,7 @@ parent: "$TopParent"
 ---
 layout: default
 title: "$title"
-parent: "$namespace"
+parent: "$($displayName[$namespace] ?? $namespace)"
 grand_parent: "$TopParent"
 ---
 "@
@@ -124,6 +125,7 @@ parent: "$TopParent"
   Set-Content -Path $file -Value ($front + "`n" + $content) -NoNewline
 }
 
+Write-Host "✅ Docs prepared in $ApiOut"
 # 3) (Optional) ensure namespace index pages show first in their folder by adding nav_order=1
 #    Uncomment if you want explicit ordering.
 # Get-ChildItem $ApiRoot -Directory | ForEach-Object {
