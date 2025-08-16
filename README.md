@@ -1,6 +1,6 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/kestrun-wordmark-dark.svg"> 
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/kestrun-wordmark-dark-soft.svg"> 
     <img alt="Kestrun" src="docs/assets/kestrun-wordmark-light.svg" width="420">
   </picture>
 </p>
