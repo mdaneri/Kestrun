@@ -122,7 +122,7 @@ parent: "$TopParent"
 ---
 "@
   }
-  Set-Content -Path $file -Value ($front + "`n" + $content) -NoNewline
+  Set-Content -Path $file -Value ($front + "`n" + ($content -replace '.md' , '')) -NoNewline
 }
 
 Write-Host "✅ Docs prepared in $ApiOut"

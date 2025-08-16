@@ -14,10 +14,7 @@ jobs:
     steps:
       - name: 🛎️ Checkout
         uses: actions/checkout@v5
-      - name: 🧰 Install ClamAV
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clamav
+       
       - name: 🧰 Install PowerShell
         uses: ./.github/actions/Install-PowerShell
         with:
@@ -61,20 +58,29 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Invoke-Build Build
 
-       
-
-      - name: 📦 Update signatures
+      - name: Install ClamAV
+        shell: pwsh
         run: |
-          sudo freshclam
+          sudo apt-get update
+          sudo apt-get install -y clamav
 
-      - name: 🔎 Scan build artifacts
+      # freshclam service sometimes holds the log/lock; stop it if present
+      - name: Prepare signature update
         run: |
-          clamscan -r --infected --bell --max-filesize=2G --max-scansize=2G \
-            build \
-            | tee clamscan.log
+          sudo systemctl stop clamav-freshclam || true
+          # Disable file logging so we don't fight over /var/log/clamav/freshclam.log
+          sudo sed -i 's/^UpdateLogFile .*/# UpdateLogFile disabled for CI/' /etc/clamav/freshclam.conf
+          # (Optional) be verbose to stdout for easier debugging
+          sudo freshclam --verbose --stdout
+
+      - name: Scan build artifacts
+        run: |
+          clamscan -r --infected --max-filesize=2G --max-scansize=2G build | tee clamscan.log
+
       - name: Fail if infected
         run: |
           ! grep -q "Infected files: [^0]" clamscan.log
+
       - name: Upload scan log
         if: always()
         uses: actions/upload-artifact@v4
