@@ -2615,14 +2615,14 @@ Microsoft.PowerShell.Core\Export-ModuleMember -Function @()
 
 
         #Add to relatedLinks
-        if ($help.relatedLinks) {
+<#        if ($help.relatedLinks) {
             foreach ($link in $Help.relatedLinks.navigationLink) {
                 $mamlLink = New-Object -TypeName Markdown.MAML.Model.MAML.MamlLink
                 $mamlLink.LinkName = $link.linkText
                 $mamlLink.LinkUri = $link.uri
                 $MamlCommandObject.Links.Add($mamlLink)
             }
-        }
+        }#>
 
         #Add Examples
         foreach ($Example in $Help.examples.example) {

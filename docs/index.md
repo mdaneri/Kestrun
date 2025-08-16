@@ -6,13 +6,13 @@ description: "Kestrun Documentation."
 permalink: /
 ---
 
-# Kestrun 
-## PowerShell brains. Kestrel speed
-
-{: .fs-9 }
+<h1 class="wordmark wordmark--gradient wordmark--glow">Kestrun</h1>
+<p class="wordmark-tagline">
+PowerShell brains. Kestrel speed
+</p>
 
 Kestrun jumpstarts your web automation with a fast, PowerShell-centric framework built on ASP.NET Core, blending scriptable flexibility with modern .NET performance.
-{: .fs-6 .fw-300 }
+{: .fs-5 .fw-300 }
 
 [Get started now](#getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
 [View it on GitHub][Kestrun repo]{: .btn .fs-5 .mb-4 .mb-md-0 }
@@ -33,9 +33,9 @@ Kestrun jumpstarts your web automation with a fast, PowerShell-centric framework
 
 ## Quick links
 
-- 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](./pwsh/cmdlets/)
-- 👉 **C# API**: [cs/api/](./cs/api/)
-- 📚 **Tutorials**: [pwsh/tutorial/](./pwsh/tutorial/)
+- 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](docs/pwsh/cmdlets/)
+- 👉 **C# API**: [cs/api/](docs/cs/api/)
+- 📚 **Tutorials**: [pwsh/tutorial/](docs/pwsh/tutorial/)
 
 ## Getting started
 
