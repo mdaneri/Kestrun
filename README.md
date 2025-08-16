@@ -1,4 +1,6 @@
-```
+
+<!-- markdownlint-disable-file MD041 -->
+```text
 ██╗  ██╗███████╗███████╗████████╗██████╗ ██╗   ██╗███╗   ██╗
 ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██╔══██╗██║   ██║████╗  ██║
 █████╔╝ █████╗  ███████╗   ██║   ██████╔╝██║   ██║██╔██╗ ██║
@@ -14,7 +16,9 @@ Kestrun — PowerShell brains. Kestrel speed.
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 
-Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and dynamic services using both C# and PowerShell in a single, integrated environment.
+Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the
+flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and
+dynamic services using both C# and PowerShell in a single, integrated environment.
 
 ## Core Capabilities
 
@@ -22,7 +26,8 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
   Powered by **ASP.NET Core (Kestrel)** with full access to advanced HTTP/2, header compression, and TLS options.
 
 - **🐚 Native PowerShell integration**  
-  Routes can be backed by PowerShell scripts with isolated, pooled **runspaces** and dynamic `$Context.Request` / `$Context.Response` variables.
+  Routes can be backed by PowerShell scripts with isolated, pooled **runspaces** and dynamic  
+  `$Context.Request` / `$Context.Response` variables.
 
 - **🧠 Multi-language script routing**  
   Register HTTP routes using:
@@ -53,7 +58,7 @@ Kestrun is a hybrid web framework that combines the speed and scalability of ASP
   - Hot-swap of certificate or listener settings
 
 - **🛡️ Comprehensive Authentication & Authorization**  
-  - **Multiple authentication schemes**: Windows, Basic, API Key, JWT Bearer, Cookie, Certificate, Negotiate, OpenID Connect  
+  - **Multiple authentication schemes**: Windows, Basic, API Key, JWT Bearer, Cookie, Certificate, Negotiate, OpenID Connect
   - **Claims-based authorization**: Rich claim policies with PowerShell and VB.NET claim providers  
   - **Route-level authorization**: Fine-grained access control per endpoint  
   - **Credential validation**: Supports SecureString utilities and custom validation delegates
