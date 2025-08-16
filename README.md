@@ -1,10 +1,13 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/kestrun-wordmark-dark-soft.svg"> 
-    <img alt="Kestrun" src="docs/assets/kestrun-wordmark-light.svg" width="420">
-  </picture>
-</p>
-<p align="center"><em>PowerShell brains. Kestrel speed</em></p>
+```
+██╗  ██╗███████╗███████╗████████╗██████╗ ██╗   ██╗███╗   ██╗
+██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██╔══██╗██║   ██║████╗  ██║
+█████╔╝ █████╗  ███████╗   ██║   ██████╔╝██║   ██║██╔██╗ ██║
+██╔═██╗ ██╔══╝  ╚════██║   ██║   ██╔██╗  ██║   ██║██║╚██╗██║
+██║  ██╗███████╗███████║   ██║   ██║ ██╗ ╚██████╔╝██║ ╚████║
+╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝   ╚═╝ ╚═╝  ╚═════╝ ╚═╝  ╚═══╝
+Kestrun — PowerShell brains. Kestrel speed.
+```
+
 ---
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
