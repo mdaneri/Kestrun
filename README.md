@@ -1,9 +1,10 @@
-
 <p align="center">
-  <img src="docs/assets/kestrun-wordmark.svg" alt="Kestrun wordmark" width="400"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/kestrun-wordmark-dark.svg"> 
+    <img alt="Kestrun" src="docs/assets/kestrun-wordmark-light.svg" width="420">
+  </picture>
 </p>
 <p align="center"><em>PowerShell brains. Kestrel speed</em></p>
-
 ---
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)

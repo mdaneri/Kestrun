@@ -52,6 +52,7 @@
 [CmdletBinding( DefaultParameterSetName = 'FileVersion')]
 param(
     [Parameter(Mandatory = $false)]
+    [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Debug',
     [Parameter(Mandatory = $false, ParameterSetName = 'Version')]
     [ValidateSet('Stable', 'ReleaseCandidate', 'Beta', 'Alpha')]

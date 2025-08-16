@@ -56,34 +56,73 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Invoke-Build Build
+          Invoke-Build Build -Configuration 'Release'
 
-      - name: Install ClamAV
-        shell: pwsh
+      - name: 🐚 Collect files to scan
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clamav
+          set -euo pipefail
+          # Candidate roots that usually contain build outputs
+          roots=(
+            "src/CSharp/kestrun/bin"
+            "src/PowerShell/kestrun/lib"
+            "out"
+            "artifacts"
+          )
 
-      # freshclam service sometimes holds the log/lock; stop it if present
-      - name: Prepare signature update
+          # Build a NUL-separated file list of likely payloads
+          : > files.to.scan
+          for r in "${roots[@]}"; do
+            if [ -d "$r" ]; then
+              find "$r" -type f \( \
+                   -name '*.dll' -o -name '*.exe' -o -name '*.nupkg' -o \
+                   -name '*.zip' -o -name '*.psm1' -o -name '*.ps1' \
+                 \) -print0 >> files.to.scan
+            fi
+          done
+
+          count=$(tr -cd '\0' < files.to.scan | wc -c)
+          if [ "$count" -eq 0 ]; then
+            echo "❌ No candidate files found to scan. Did the build produce outputs?"
+            echo "   Looked under: ${roots[*]}"
+            exit 1
+          fi
+          echo "✅ Will scan $count files:"
+          tr '\0' '\n' < files.to.scan | sed 's/^/  • /' | head -n 50
+          [ "$count" -le 50 ] || echo "  …and $(($count - 50)) more"
+
+      - name: 🧼 Update ClamAV signatures (stdout, no file locks)
+        shell: bash
         run: |
+          set -euo pipefail
           sudo systemctl stop clamav-freshclam || true
-          # Disable file logging so we don't fight over /var/log/clamav/freshclam.log
-          sudo sed -i 's/^UpdateLogFile .*/# UpdateLogFile disabled for CI/' /etc/clamav/freshclam.conf
-          # (Optional) be verbose to stdout for easier debugging
-          sudo freshclam --verbose --stdout
+          sudo sed -i 's/^UpdateLogFile .*/# disabled in CI/' /etc/clamav/freshclam.conf || true
+          sudo freshclam --stdout
 
-      - name: Scan build artifacts
+      - name: 🛡️ Scan collected files
+        shell: bash
         run: |
-          clamscan -r --infected --max-filesize=2G --max-scansize=2G build | tee clamscan.log
+          set -euo pipefail
+          # clamscan exit codes: 0=clean, 1=infected, 2=error
+          # We want a log either way, so capture output and normalize a summary line.
+          xargs -0 -a files.to.scan clamscan --infected --no-summary | tee clamscan.raw.log
+          inf=$(grep -c 'FOUND$' clamscan.raw.log || true)
+          {
+            echo "----------- SCAN SUMMARY -----------"
+            echo "Infected files: $inf"
+          } | tee clamscan.summary.log
+          cat clamscan.summary.log >> clamscan.raw.log
+          mv clamscan.raw.log clamscan.log
 
-      - name: Fail if infected
+      - name: ⛔ Fail if infected
+        shell: bash
         run: |
           ! grep -q "Infected files: [^0]" clamscan.log
 
-      - name: Upload scan log
+      - name: 📎 Upload scan log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: clamscan-log
           path: clamscan.log
+

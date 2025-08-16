@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kestrun Wordmark Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #111;
+      --panel: #1e1e1e;
+      --text: #eee;
+      --muted: #bbb;
+      --gap: 1.6rem;
+    }
+    /* Light theme tokens */
+    .theme-light {
+      --bg: #f7f7f9;
+      --panel: #ffffff;
+      --text: #1a1a1a;
+      --muted: #666;
+    }
+    /* System follows prefers-color-scheme */
+    @media (prefers-color-scheme: light) {
+      .theme-system {
+        --bg: #f7f7f9;
+        --panel: #ffffff;
+        --text: #1a1a1a;
+        --muted: #666;
+      }
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--gap);
+      padding: 1rem 1.25rem;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,0));
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .title {
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin: 0;
+      font-size: clamp(1.2rem, 1.2rem + 0.6vw, 1.6rem);
+    }
+    .controls {
+      display: inline-flex;
+      border: 1px solid rgba(127,127,127,.35);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .controls button {
+      background: transparent;
+      color: var(--text);
+      border: 0;
+      padding: .55rem .9rem;
+      font: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    .controls button[aria-pressed="true"] {
+      background: var(--panel);
+      color: var(--text);
+    }
+    .hint { color: var(--muted); font-size: .9rem; }
+
+    main {
+      padding: 2rem 1.25rem 3rem;
+      display: grid;
+      gap: var(--gap);
+      align-content: start;
+    }
+    .grid {
+      display: grid;
+      gap: var(--gap);
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    section {
+      background: var(--panel);
+      border: 1px solid rgba(127,127,127,.25);
+      border-radius: 10px;
+      padding: 1rem;
+      display: grid;
+      gap: .75rem;
+      align-content: start;
+    }
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .card {
+      background: rgba(127,127,127,.06);
+      border-radius: 8px;
+      padding: .75rem;
+      display: grid;
+      place-items: center;
+      min-height: 140px;
+    }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    /* Make buttons accessible on iOS tap */
+    .controls button:active { transform: translateY(0.5px); }
+  </style>
+</head>
+<body class="theme-dark theme-system">
+  <header>
+    <h1 class="title">Kestrun Wordmark Gallery</h1>
+    <div class="controls" role="tablist" aria-label="Theme">
+      <button id="btn-dark"  role="tab" aria-selected="true">Dark</button>
+      <button id="btn-light" role="tab" aria-selected="false">Light</button>
+      <button id="btn-system" role="tab" aria-selected="false">System</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="hint">Compare how each wordmark behaves on different backgrounds. Switch theme above.</p>
+
+    <div class="grid">
+      <section>
+        <h2>Light Mode (original gradient)</h2>
+        <div class="card">
+          <img src="assets/kestrun-wordmark-light.svg" alt="Kestrun Light" width="520">
+        </div>
+      </section>
+
+      <section>
+        <h2>Dark — Neon</h2>
+        <div class="card">
+          <img src="assets/kestrun-wordmark-dark-neon.svg" alt="Kestrun Dark Neon" width="520">
+        </div>
+      </section>
+
+      <section>
+        <h2>Dark — Vivid</h2>
+        <div class="card">
+          <img src="assets/kestrun-wordmark-dark-vivid.svg" alt="Kestrun Dark Vivid" width="520">
+        </div>
+      </section>
+
+      <section>
+        <h2>Dark — Soft</h2>
+        <div class="card">
+          <img src="assets/kestrun-wordmark-dark-soft.svg" alt="Kestrun Dark Soft" width="520">
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>PowerShell brains. Kestrel speed.</footer>
+
+  <script>
+    (function () {
+      const body = document.body;
+      const btnDark = document.getElementById('btn-dark');
+      const btnLight = document.getElementById('btn-light');
+      const btnSystem = document.getElementById('btn-system');
+
+      function setTheme(mode) {
+        // Reset classes
+        body.classList.remove('theme-dark', 'theme-light', 'theme-system');
+        body.classList.add('theme-' + mode);
+
+        // Update selected states
+        [btnDark, btnLight, btnSystem].forEach(b => b.setAttribute('aria-selected', 'false'));
+        if (mode === 'dark')   btnDark.setAttribute('aria-selected', 'true');
+        if (mode === 'light')  btnLight.setAttribute('aria-selected', 'true');
+        if (mode === 'system') btnSystem.setAttribute('aria-selected', 'true');
+
+        // Persist choice (except System)
+        try {
+          if (mode === 'system') localStorage.removeItem('kestrun-theme');
+          else localStorage.setItem('kestrun-theme', mode);
+        } catch {}
+      }
+
+      // Wire buttons
+      btnDark.addEventListener('click',  () => setTheme('dark'));
+      btnLight.addEventListener('click', () => setTheme('light'));
+      btnSystem.addEventListener('click', () => setTheme('system'));
+
+      // Load saved theme (if any)
+      try {
+        const saved = localStorage.getItem('kestrun-theme');
+        if (saved === 'light' || saved === 'dark') setTheme(saved);
+        else setTheme('system');
+      } catch {
+        setTheme('system');
+      }
+    })();
+  </script>
+</body>
+</html>

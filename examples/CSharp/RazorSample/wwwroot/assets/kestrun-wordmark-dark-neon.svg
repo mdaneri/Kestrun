@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 180" role="img" aria-label="Kestrun">
+  <defs>
+    <linearGradient id="gDarkNeon" x1="0" x2="1">
+      <stop offset="0"   stop-color="#ffb457"/>
+      <stop offset="0.33" stop-color="#ff4b8a"/>
+      <stop offset="0.66" stop-color="#ff3cff"/>
+      <stop offset="1"   stop-color="#3cf2ff"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0 0 0 0 0.75
+                0 0 0 0 0.25
+                0 0 0 0 1.0
+                0 0 0 .95 0" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      text { font: 800 96px Inter, sans-serif; fill:url(#gDarkNeon);
+             stroke:#fff; stroke-width:3px; filter:url(#neonGlow);}
+    </style>
+  </defs>
+  <text x="50%" y="52%" dominant-baseline="middle" text-anchor="middle">Kestrun</text>
+</svg>
