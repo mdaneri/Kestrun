@@ -28,6 +28,7 @@ function Write-KrTextResponse {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [Alias("Text")]
         [object]$InputObject,
         [Parameter()]
         [int]$StatusCode = 200,

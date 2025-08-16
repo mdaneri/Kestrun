@@ -1,0 +1,90 @@
+---
+title: Multi-language Routes (PS/C#/VB)
+parent: Tutorials
+nav_order: 3
+---
+
+# Multi-language Routes (PS/C#/VB)
+
+Map routes in PowerShell and implement others inline in C# or VB.NET.
+
+> Prerequisites: see [Introduction](./Introduction.md#prerequisites).
+
+## Full source
+
+File: `examples/PowerShell/Tutorial/Sample-3.ps1`
+
+```powershell
+<#
+    Sample Kestrun Server Configuration with Multiple Languages
+    This script demonstrates how to set up a simple Kestrun server with multiple routes and multiple languages.
+    Kestrun supports PowerShell, CSharp, and VBNet.
+    FileName: Sample-3.ps1
+#>
+
+# Import the Kestrun module
+Get-Module -Name Kestrun
+
+# Create a new Kestrun server
+New-KrServer -Name "Simple Server"
+
+# Add a listener on port 5000 and IP address 127.0.0.1 (localhost)
+Add-KrListener -Port 5000 -IPAddress ([IPAddress]::Loopback)
+
+# Add the PowerShell runtime
+# !!!!Important!!!! this step is required to process PowerShell routes and middlewares
+Add-KrPowerShellRuntime
+
+# Enable Kestrun configuration
+Enable-KrConfiguration
+
+# Map the route
+Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
+    Write-KrTextResponse -InputObject "Hello, World!" -StatusCode 200
+}
+
+Add-KrMapRoute -Verbs Get -Path "/hello" -Code @"
+    await Context.Response.WriteTextResponseAsync(inputObject: "Hello, World!", statusCode: 200);
+    // Or the synchronous version
+    // Context.Response.WriteTextResponse( "Hello, World!", 200);
+"@ -Language CSharp
+
+Add-KrMapRoute -Verbs Get -Path "/hello" -Code @"
+    Await Context.Response.WriteTextResponseAsync( "Hello, World!", 200)
+    ' Or the synchronous version
+    ' Context.Response.WriteTextResponse( "Hello, World!", 200);
+"@ -Language VBNet
+
+# Start the server asynchronously
+Start-KrServer
+```
+
+## Step-by-step
+
+- A single server and listener are configured as in the earlier samples.
+- PowerShell route: a script block handles GET /hello and uses Write‑KrTextResponse.
+- C# route: the same path is implemented with inline C# using the -Language CSharp and -Code parameters.
+    The code has access to Context, Request, and Response objects. Async helpers are available, e.g., WriteTextResponseAsync.
+- VB.NET route: mirrors the C# approach using -Language VBNet and a VB here-string.
+- All variants send a text/plain response with HTTP 200 OK.
+
+## Try it
+
+- curl
+
+```pwsh
+curl http://127.0.0.1:5000/hello
+```
+
+- PowerShell
+
+```pwsh
+Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
+```
+
+## Cmdlet references
+
+- [Add-KrMapRoute](../cmdlets/Add-KrMapRoute.md)
+- [Add-KrPowerShellRuntime](../cmdlets/Add-KrPowerShellRuntime.md)
+- [Enable-KrConfiguration](../cmdlets/Enable-KrConfiguration.md)
+- [Start-KrServer](../cmdlets/Start-KrServer.md)
