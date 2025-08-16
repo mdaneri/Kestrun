@@ -1,19 +1,14 @@
-```
-██╗  ██╗███████╗███████╗████████╗██████╗ ██╗   ██╗███╗   ██╗
-██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██╔══██╗██║   ██║████╗  ██║
-█████╔╝ █████╗  ███████╗   ██║   ██████╔╝██║   ██║██╔██╗ ██║
-██╔═██╗ ██╔══╝  ╚════██║   ██║   ██╔██╗  ██║   ██║██║╚██╗██║
-██║  ██╗███████╗███████║   ██║   ██║ ██╗ ╚██████╔╝██║ ╚████║
-╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝   ╚═╝ ╚═╝  ╚═════╝ ╚═╝  ╚═══╝
-Kestrun — PowerShell brains. Kestrel speed.
-```
+
+<p align="center">
+  <img src="docs/assets/kestrun-wordmark.svg" alt="Kestrun wordmark" width="400"/>
+</p>
+<p align="center"><em>PowerShell brains. Kestrel speed</em></p>
 
 ---
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-# Kestrun
 
 Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and dynamic services using both C# and PowerShell in a single, integrated environment.
 
