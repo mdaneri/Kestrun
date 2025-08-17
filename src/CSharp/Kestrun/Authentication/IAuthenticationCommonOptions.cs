@@ -8,7 +8,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public interface IAuthenticationCommonOptions : IClaimsCommonOptions
 {
-
   /// <summary>
   /// Settings for the authentication code, if using a script.
   /// </summary>

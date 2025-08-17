@@ -7,7 +7,6 @@ using Xunit;
 
 namespace KestrunTests.Utility;
 public class XmlUtilTests
-
 {
     [Fact]
     public void ToXml_Null_ReturnsNilElement()

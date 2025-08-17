@@ -4,7 +4,6 @@ using Xunit;
 
 namespace KestrunTests.Utility;
 public class SecurityUtilitiesTests
-
 {
     [Fact]
     public void FixedTimeEquals_ByteArrays_Equal_ReturnsTrue()

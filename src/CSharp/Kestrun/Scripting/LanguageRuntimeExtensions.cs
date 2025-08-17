@@ -13,7 +13,6 @@ namespace Kestrun.Scripting;
              AllowMultiple = false)]
 public sealed class ScriptLanguageAttribute(ScriptLanguage lang) : Attribute
 {
-
     /// <summary>
     /// Gets the script language associated with this attribute.
     /// </summary>
@@ -40,7 +39,6 @@ public static class RouteHandlerBuilderLanguageExtensions
 /// </summary>
 public static class LanguageRuntimeExtensions
 {
- 
     /// <summary>
     /// Configures the application pipeline to use a specific language runtime for endpoints tagged with the given <see cref="ScriptLanguage"/>.
     /// </summary>

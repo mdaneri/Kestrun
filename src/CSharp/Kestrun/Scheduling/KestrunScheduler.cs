@@ -565,7 +565,6 @@ public sealed class SchedulerService : IDisposable
                 task.NextRunAt = lastRunAt + task.Interval.Value;
             else if (task.Cron is not null)
                 task.NextRunAt = task.Cron.GetNextOccurrence(lastRunAt, _tz) ?? DateTimeOffset.MaxValue;
-
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { /* ignore */ }
         catch (Exception ex)
@@ -587,5 +586,4 @@ public sealed class SchedulerService : IDisposable
         _pool.Dispose();
         _log.Information("SchedulerService disposed");
     }
-
 }

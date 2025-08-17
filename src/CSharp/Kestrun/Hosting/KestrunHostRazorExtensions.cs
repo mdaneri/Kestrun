@@ -91,7 +91,6 @@ public static class KestrunHostRazorExtensions
 
             services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
             {
-
                 // 1️⃣  everything that’s already loaded and managed
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()
                                     .Where(a => !a.IsDynamic && IsManaged(a.Location)))
@@ -132,7 +131,6 @@ public static class KestrunHostRazorExtensions
                 app.UsePowerShellRazorPages(host.RunspacePool);          // bridge
                 app.UseRouting();                                    // add routing
                 app.UseEndpoints(e => e.MapRazorPages());            // map pages
-
             }
 
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
@@ -190,5 +188,4 @@ public static class KestrunHostRazorExtensions
          // optional: automatically map Razor endpoints after Build()
          .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
     }
-
 }

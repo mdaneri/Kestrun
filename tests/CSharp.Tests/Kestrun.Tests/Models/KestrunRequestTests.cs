@@ -8,7 +8,6 @@ using Xunit;
 
 namespace KestrunTests.Models;
 public class KestrunRequestTests
-
 {
     [Fact]
     public async Task NewRequest_ReadsContext()

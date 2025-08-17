@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Serilog.Core;
 using Serilog.Events;
@@ -40,7 +40,6 @@ public class PowerShellSink : ILogEventSink
 	/// </remarks>
 	public PowerShellSink(Action<LogEvent, string> callback, string outputTemplate = DEFAULT_OUTPUT_TEMPLATE)
 	{
-
 		TextFormatter = new MessageTemplateTextFormatter(outputTemplate);
 		Callback = callback;
 	}

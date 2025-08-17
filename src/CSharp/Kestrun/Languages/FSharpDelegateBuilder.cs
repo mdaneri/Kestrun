@@ -8,7 +8,6 @@ namespace Kestrun.Languages;
 
 internal static class FSharpDelegateBuilder
 {
-
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
         // F# scripting not implemented yet

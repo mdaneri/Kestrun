@@ -11,7 +11,6 @@ namespace Kestrun.Languages;
 /// </summary>
 public record CsGlobals
 {
-
     /// <summary>
     /// Initializes a new instance of the <see cref="CsGlobals"/> class with the specified global variables.
     /// </summary>
@@ -33,7 +32,6 @@ public record CsGlobals
         Globals = globals;
         Context = krcontext;
         Locals = new Dictionary<string, object?>();
-
     }
 
     /// <summary>

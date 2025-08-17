@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Net;
@@ -67,7 +67,6 @@ server.AddHtmlTemplateRoute(
 
 server.AddMapRoute("/visit", HttpVerb.Get, async (ctx) =>
 {
-
     SharedStateStore.TryGet("Visits", out Hashtable? visits);
 
     //int visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;

@@ -41,7 +41,6 @@ public static class LoggerManager
     /// </summary>
     public static Serilog.ILogger Register(string name, Serilog.ILogger logger, bool setAsDefault = false)
     {
-
         if (_loggers.TryGetValue(name, out var oldLogger) && oldLogger is IDisposable d)
             d.Dispose();
 
@@ -103,5 +102,4 @@ public static class LoggerManager
         _loggers.Clear();
         _configs.Clear();
     }
-
 }

@@ -169,7 +169,6 @@ public static class KestrunHostAuthExtensions
                 opts.ClaimPolicyConfig = configure.ClaimPolicyConfig;
             }
         );
-
     }
 
 
@@ -243,7 +242,6 @@ public static class KestrunHostAuthExtensions
             },
             configureAuthz: claimPolicy?.ToAuthzDelegate()
             );
-
     }
 
     /// <summary>
@@ -296,7 +294,6 @@ public static class KestrunHostAuthExtensions
             configure: opts =>
             {
                 opts = configure ?? new CookieAuthenticationOptions();
-
             },
              claimPolicy: claimPolicy
         );
@@ -601,5 +598,4 @@ public static class KestrunHostAuthExtensions
         var policy = policyProvider.GetPolicyAsync(policyName).GetAwaiter().GetResult();
         return policy != null;
     }
-
 }

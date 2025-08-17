@@ -164,5 +164,4 @@ public static class AssemblyAutoLoader
             }
         }
     }
-
 }

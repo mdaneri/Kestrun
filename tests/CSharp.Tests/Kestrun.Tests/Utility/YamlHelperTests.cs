@@ -6,7 +6,6 @@ using Xunit;
 
 namespace KestrunTests.Utility;
 public class YamlHelperTests
-
 {
     [Fact]
     public void ToYaml_SerializesObject()

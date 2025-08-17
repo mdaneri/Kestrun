@@ -14,7 +14,6 @@ namespace Kestrun.Hosting;
 /// <param name="HttpContext">The associated HTTP context.</param>
 public sealed record KestrunContext(KestrunRequest Request, KestrunResponse Response, HttpContext HttpContext)
 {
-
     /// <summary>
     /// Returns the ASP.NET Core session if the Session middleware is active; otherwise null.
     /// </summary>

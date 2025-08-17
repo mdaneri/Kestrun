@@ -87,7 +87,6 @@ public class ContentDispositionOptions
 /// </summary>
 public class KestrunResponse
 {
-
     /// <summary>
     /// Gets or sets the HTTP status code for the response.
     /// </summary>
@@ -132,7 +131,6 @@ public class KestrunResponse
     /// Global text encoding for all responses. Defaults to UTF-8.
     /// </summary>
     //public static System.Text.Encoding TextEncoding { get; set; } = System.Text.Encoding.UTF8;
-
     public Encoding AcceptCharset { get; private set; }
 
     /// <summary>
@@ -255,7 +253,6 @@ public class KestrunResponse
         ContentType = contentType;
         Log.Debug("File response prepared: FileName={FileName}, Length={Length}, ContentType={ContentType}",
             fi.Name, fi.Length, ContentType);
-
     }
 
     /// <summary>
@@ -636,7 +633,6 @@ public class KestrunResponse
             //ContentType = null;
             Headers.Remove("Content-Length");
         }
-
     }
 
     /// <summary>
@@ -1080,7 +1076,6 @@ public class KestrunResponse
                     dispositionValue += $"; filename=\"{escapedFileName}\"";
                 }
                 response.Headers.Append("Content-Disposition", dispositionValue);
-
             }
 
             if (Headers != null)

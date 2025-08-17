@@ -6,7 +6,6 @@ using Xunit;
 namespace KestrunTests.SharedState;
 
 public class SharedStateTests
-
 {
     // ── happy‑path basics ────────────────────────────────────────────
     [Fact]

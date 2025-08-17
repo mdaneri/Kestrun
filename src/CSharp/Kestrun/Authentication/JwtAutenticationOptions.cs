@@ -14,7 +14,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public class JwtAuthenticationOptions : JwtBearerOptions, IClaimsCommonOptions
 {
-
     /// <summary>
     /// Gets or sets the token validation parameters.
     /// </summary>

@@ -69,5 +69,4 @@ public class KestrunOptions
         ServerOptions = new KestrelServerOptions();
         MaxSchedulerRunspaces = 8; // Default max scheduler runspaces
     }
-
 }

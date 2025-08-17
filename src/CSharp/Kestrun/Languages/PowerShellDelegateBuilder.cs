@@ -107,10 +107,8 @@ internal static class PowerShellDelegateBuilder
                 // CompleteAsync is idempotent – safe to call once more
                 try
                 {
-
                     log.Verbose("Completing response for " + context.Request.Path);
                     await context.Response.CompleteAsync().ConfigureAwait(false);
-
                 }
                 catch (ObjectDisposedException odex)
                 {
@@ -118,7 +116,6 @@ internal static class PowerShellDelegateBuilder
                     // or the client has disconnected
                     log.Debug(odex, "Response already completed for {Path}", context.Request.Path);
                 }
-
                 catch (InvalidOperationException ioex)
                 {
                     // This can happen if the response has already been completed

@@ -10,7 +10,6 @@ namespace Kestrun.Utilities;
 /// </summary>
 public static class BuildError
 {
-
     /// <summary>
     /// Convert the current PowerShell error streams to a plain-text <see cref="IResult"/>.
     /// </summary>
@@ -76,5 +75,4 @@ public static class BuildError
         context.Response.ContentType = "text/plain; charset=utf-8";
         return context.Response.WriteAsync(errText);
     }
-
 }

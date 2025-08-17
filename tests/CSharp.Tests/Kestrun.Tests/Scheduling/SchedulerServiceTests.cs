@@ -9,7 +9,6 @@ using Xunit;
 
 namespace KestrunTests.Scheduling;
 public class SchedulerServiceTests
-
 {
     [Fact]
     public async Task Schedule_PowerShellJob_Executes()
