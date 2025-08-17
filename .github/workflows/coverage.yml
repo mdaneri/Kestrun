@@ -56,7 +56,7 @@ jobs:
           } elseif (-not $repo.Trusted) {
             Set-PSResourceRepository -Name PSGallery -Trusted
           }
-          Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'Invoke-Build','Pester'
+          Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'InvokeBuild','Pester'
           Get-Module Pester -ListAvailable | Select Name,Version,Path
 
       - name: 📦 Restore
