@@ -1,7 +1,7 @@
 ---
 title: Introduction
 parent: Tutorials
-nav_order: 0
+nav_order: 1
 ---
 
 # Introduction to Kestrun (PowerShell)

@@ -12,7 +12,7 @@ This sample spins up a small Kestrun server and returns plain text from a single
 
 ## Full source
 
-File: `examples/PowerShell/Tutorial/1-Hello-World.ps1`
+File: [`examples/PowerShell/Tutorial/1-Hello-World.ps1`](https://github.com/Kestrun/Kestrun/blob/main/examples/PowerShell/Tutorial/1-Hello-World.ps1)
 
 ```powershell
 <#

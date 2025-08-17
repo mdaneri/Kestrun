@@ -1,7 +1,7 @@
 ---
 title: Razor
 parent: Tutorials
-nav_order: 91
+nav_order: 11
 ---
 
 # PowerShell-backed Razor Pages

@@ -1,7 +1,7 @@
 ---
 title: Certificates
 parent: Tutorials
-nav_order: 93
+nav_order: 6
 ---
 
 # Kestrun Certificates

@@ -2,7 +2,7 @@
     Sample Kestrun Server Configuration with Multiple Languages
     This script demonstrates how to set up a simple Kestrun server with multiple routes and multiple languages.
     Kestrun supports PowerShell, CSharp, and VBNet.
-    FileName: Sample-3.ps1
+    FileName: 3-Multiple-Content-Types.ps1
 #>
 
 # Import the Kestrun module

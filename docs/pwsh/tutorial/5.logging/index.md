@@ -1,7 +1,7 @@
 ---
 title: Logging
 parent: Tutorials
-nav_order: 90
+nav_order: 5
 ---
 
 # Kestrun Logging

@@ -77,11 +77,12 @@ jobs:
 
       - name: 🛡️ Scan full repo recursively
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
-          # clamscan exit codes: 0=clean, 1=infected, 2=error
-          # Exclude the .git folder to speed things up a touch (optional).
-          clamscan -r . --infected --no-summary --exclude-dir="^\.\/\.git$" | tee clamscan.raw.log
+          # clamscan: 0=clean, 1=infected, 2=error
+          clamscan -r . --infected --no-summary --exclude-dir="^\.\/\.git$" | tee clamscan.raw.log || true
+
           inf=$(grep -c 'FOUND$' clamscan.raw.log || true)
           {
             echo "----------- SCAN SUMMARY -----------"

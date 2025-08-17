@@ -1,7 +1,7 @@
 ---
 title: Scheduler
 parent: Tutorials
-nav_order: 92
+nav_order: 10
 ---
 
 # Kestrun Scheduler
