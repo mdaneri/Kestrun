@@ -238,18 +238,50 @@ public static class KestrunHostMapExtensions
         }
     }
 
-
+    /// <summary>
+    /// Adds additional mapping options to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
     private static void AddMapOptions(this KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
     {
-        if (options.ShortCircuit)
-        {
-            host._Logger.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
-            if (options.ShortCircuitStatusCode is null)
-                throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
-            map.ShortCircuit(options.ShortCircuitStatusCode);
-        }
+        ApplyShortCircuit(host, map, options);
+        ApplyAnonymous(host, map, options);
+        ApplyAntiforgery(host, map, options);
+        ApplyRateLimiting(host, map, options);
+        ApplyAuthSchemes(host, map, options);
+        ApplyPolicies(host, map, options);
+        ApplyCors(host, map, options);
+        ApplyOpenApiMetadata(host, map, options);
+    }
 
-        if (options.AllowAnonymous) // Allow anonymous access to this route
+    /// <summary>
+    /// Applies short-circuiting behavior to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyShortCircuit(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (!options.ShortCircuit)
+            return;
+
+        host._Logger.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
+        if (options.ShortCircuitStatusCode is null)
+            throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
+        map.ShortCircuit(options.ShortCircuitStatusCode);
+    }
+
+    /// <summary>
+    /// Applies anonymous access behavior to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyAnonymous(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (options.AllowAnonymous)
         {
             host._Logger.Verbose("Allowing anonymous access for route: {Pattern}", options.Pattern);
             map.AllowAnonymous();
@@ -258,20 +290,46 @@ public static class KestrunHostMapExtensions
         {
             host._Logger.Debug("No anonymous access allowed for route: {Pattern}", options.Pattern);
         }
+    }
 
-        if (options.DisableAntiforgery) // Disable CSRF protection for this route
-        {
-            map.DisableAntiforgery(); // Disable CSRF protection for this route
-            host._Logger.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
-        }
+    /// <summary>
+    /// Applies anti-forgery behavior to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyAntiforgery(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (!options.DisableAntiforgery)
+            return;
 
-        if (!string.IsNullOrWhiteSpace(options.RateLimitPolicyName)) // Apply rate limiting policy if specified
-        {
-            host._Logger.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
-            // Ensure RateLimiting is configured in the app
-            map.RequireRateLimiting(options.RateLimitPolicyName);
-        }
+        map.DisableAntiforgery();
+        host._Logger.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
+    }
 
+    /// <summary>
+    /// Applies rate limiting behavior to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyRateLimiting(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.RateLimitPolicyName))
+            return;
+
+        host._Logger.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
+        map.RequireRateLimiting(options.RateLimitPolicyName);
+    }
+
+    /// <summary>
+    /// Applies authentication schemes to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyAuthSchemes(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
         if (options.RequireSchemes is { Length: > 0 })
         {
             foreach (var schema in options.RequireSchemes)
@@ -291,7 +349,16 @@ public static class KestrunHostMapExtensions
         {
             host._Logger.Debug("No authorization required for route: {Pattern}", options.Pattern);
         }
+    }
 
+    /// <summary>
+    /// Applies authorization policies to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyPolicies(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
         if (options.RequirePolicies is { Length: > 0 })
         {
             foreach (var policy in options.RequirePolicies)
@@ -307,24 +374,37 @@ public static class KestrunHostMapExtensions
         {
             host._Logger.Debug("No authorization policies required for route: {Pattern}", options.Pattern);
         }
-
-        if (!string.IsNullOrWhiteSpace(options.CorsPolicyName)) // Apply CORS policy if specified
+    }
+    /// <summary>
+    /// Applies CORS behavior to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyCors(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.CorsPolicyName))
         {
             host._Logger.Verbose("Applying CORS policy: {CorsPolicyName} to route: {Pattern}", options.CorsPolicyName, options.Pattern);
-            // Ensure CORS is configured in the app
-            // apply the route-specific policy
             map.RequireCors(options.CorsPolicyName);
         }
         else
         {
             host._Logger.Debug("No CORS policy applied for route: {Pattern}", options.Pattern);
         }
+    }
 
-
+    /// <summary>
+    /// Applies OpenAPI metadata to the route.
+    /// </summary>
+    /// <param name="host">The Kestrun host.</param>
+    /// <param name="map">The endpoint convention builder.</param>
+    /// <param name="options">The mapping options.</param>
+    private static void ApplyOpenApiMetadata(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
+    {
         if (!string.IsNullOrEmpty(options.OpenAPI.OperationId))
         {
             host._Logger.Verbose("Adding OpenAPI metadata for route: {Pattern} with OperationId: {OperationId}", options.Pattern, options.OpenAPI.OperationId);
-            // Add OpenAPI metadata if specified
             map.WithName(options.OpenAPI.OperationId);
         }
 
@@ -339,12 +419,12 @@ public static class KestrunHostMapExtensions
             host._Logger.Verbose("Adding OpenAPI description for route: {Pattern} with Description: {Description}", options.Pattern, options.OpenAPI.Description);
             map.WithDescription(options.OpenAPI.Description);
         }
+
         if (options.OpenAPI.Tags.Length > 0)
         {
             host._Logger.Verbose("Adding OpenAPI tags for route: {Pattern} with Tags: {Tags}", options.Pattern, string.Join(", ", options.OpenAPI.Tags));
             map.WithTags(options.OpenAPI.Tags);
         }
-
 
         if (!string.IsNullOrWhiteSpace(options.OpenAPI.GroupName))
         {

@@ -14,7 +14,9 @@ Kestrun — PowerShell brains. Kestrel speed.
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/ci.yml/badge.svg)
 [![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
 ![ClamAV Scan](https://img.shields.io/github/actions/workflow/status/kestrun/kestrun/clam-av.yml?branch=main&label=ClamAV%20Scan)
+
 [![CodeFactor](https://www.codefactor.io/repository/github/kestrun/kestrun/badge/main)](https://www.codefactor.io/repository/github/kestrun/kestrun/overview/main)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/1ea6075b819449a1aff2678f41f890c2)](https://app.codacy.com/gh/Kestrun/Kestrun/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Coverage Status](https://coveralls.io/repos/github/Kestrun/Kestrun/badge.svg?branch=main)](https://coveralls.io/github/Kestrun/Kestrun?branch=main)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)

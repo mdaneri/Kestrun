@@ -967,6 +967,7 @@ public class KestrunResponse
     /// Applies the current KestrunResponse to the specified HttpResponse, setting status, headers, cookies, and writing the body.
     /// </summary>
     /// <param name="response">The HttpResponse to apply the response to.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task ApplyTo(HttpResponse response)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
@@ -981,146 +982,164 @@ public class KestrunResponse
 
         try
         {
-            response.StatusCode = StatusCode;
-            // Ensure charset is set for text content types
-
-            if (!string.IsNullOrEmpty(ContentType) && IsTextBasedContentType(ContentType) && (!ContentType.Contains("charset=", System.StringComparison.OrdinalIgnoreCase)))
-            {
-                ContentType = ContentType.TrimEnd(';') + $"; charset={AcceptCharset.WebName}";
-            }
-            response.ContentType = ContentType;
-            if (ContentDisposition.Type != ContentDispositionType.NoContentDisposition)
-            {
-                // Set Content-Disposition header based on type
-                // Use the ContentDispositionType enum to determine the disposition value
-                if (Log.IsEnabled(LogEventLevel.Debug))
-                    Log.Debug("Setting Content-Disposition header, Type={Type}, FileName={FileName}",
-                              ContentDisposition.Type, ContentDisposition.FileName);
-                string dispositionValue = ContentDisposition.Type switch
-                {
-                    ContentDispositionType.Attachment => "attachment",
-                    ContentDispositionType.Inline => "inline",
-                    _ => throw new InvalidOperationException("Invalid Content-Disposition type")
-                };
-
-                // If no filename is provided, use the default filename based on the body type
-                if (string.IsNullOrEmpty(ContentDisposition.FileName) && Body is not null && Body is IFileInfo fileInfo)
-                {
-                    ContentDisposition.FileName = fileInfo.Name;// If no filename is provided, use the file's name
-                }
-
-                // If a filename is provided, append it to the disposition value
-                if (!string.IsNullOrEmpty(ContentDisposition.FileName))
-                {
-                    // Escape the filename to handle special characters
-                    var escapedFileName = WebUtility.UrlEncode(ContentDisposition.FileName);
-                    dispositionValue += $"; filename=\"{escapedFileName}\"";
-                }
-                response.Headers.Append("Content-Disposition", dispositionValue);
-            }
-
-            if (Headers != null)
-            {
-                foreach (var kv in Headers)
-                {
-                    response.Headers[kv.Key] = kv.Value;
-                }
-            }
-            if (Cookies != null)
-            {
-                foreach (var cookie in Cookies)
-                {
-                    response.Headers.Append("Set-Cookie", cookie);
-                }
-            }
-            if (Body != null)
-            {
-                switch (Body)
-                {
-                    case IFileInfo fileInfo:
-                        Log.Debug("Sending file {FileName} (Length={Length})", fileInfo.Name, fileInfo.Length);
-                        response.ContentLength = fileInfo.Length;   // conveys intent & avoids string conversion 
-                        response.Headers.LastModified = fileInfo.LastModified.ToString("R");
-                        await response.SendFileAsync(
-                            file: fileInfo,
-                            offset: 0,
-                            count: fileInfo.Length,
-                            cancellationToken: response.HttpContext.RequestAborted
-                        );
-                        break;
-                    case byte[] bytes:
-                        response.ContentLength = bytes.LongLength;
-                        await response.Body.WriteAsync(bytes, response.HttpContext.RequestAborted);
-                        await response.Body.FlushAsync(response.HttpContext.RequestAborted);
-                        break;
-                    case System.IO.Stream stream:
-                        bool seekable = stream.CanSeek;
-                        Log.Debug("Sending stream (seekable={Seekable}, len={Len})",
-                                  seekable, seekable ? stream.Length : -1);
-
-                        // If you *do* know length, set header; otherwise strip it
-                        if (seekable)
-                        {
-                            // ensure caller did not already set Content-Length
-                            response.ContentLength = stream.Length;
-                            stream.Position = 0;
-                        }
-                        else
-                        {
-                            response.ContentLength = null; // no length for non-seekable streams
-                        }
-
-                        // copy async in 32 kB chunks (BodyAsyncThreshold is your buffer size)
-                        //    await stream.CopyToAsync(response.Body, BodyAsyncThreshold,
-                        //                            response.HttpContext.RequestAborted);
-
-                        const int BufferSize = 64 * 1024; // 64 KB
-                        var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-                        try
-                        {
-                            int bytesRead;
-                            while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, BufferSize), response.HttpContext.RequestAborted)) > 0)
-                            {
-                                // using the new Memory-based overload avoids an extra copy
-                                await response.Body.WriteAsync(buffer.AsMemory(0, bytesRead),
-                                                               response.HttpContext.RequestAborted);
-                            }
-                        }
-                        finally
-                        {
-                            ArrayPool<byte>.Shared.Return(buffer);
-                        }
-                        // Ensure the response is flushed after writing the stream
-                        // This is important for non-seekable streams to ensure all data is sent
-                        await response.Body.FlushAsync(response.HttpContext.RequestAborted);
-                        break;
-
-                    case string str:
-                        // Encode once
-                        var data = AcceptCharset.GetBytes(str);
-
-                        // Optionally set length (remove it if you prefer chunked for text)
-                        response.ContentLength = data.Length;
-
-                        await response.Body.WriteAsync(data, response.HttpContext.RequestAborted);
-                        await response.Body.FlushAsync(response.HttpContext.RequestAborted);
-                        break;
-
-                    default:
-                        Body = "Unsupported body type: " + Body.GetType().Name;
-                        Log.Warning("Unsupported body type: {BodyType}", Body.GetType().Name);
-                        response.StatusCode = StatusCodes.Status500InternalServerError;
-                        response.ContentType = "text/plain; charset=utf-8";
-                        response.ContentLength = Body.ToString()?.Length ?? null;
-                        break;
-                }
-            }
+            EnsureStatusAndContentType(response);
+            ApplyContentDispositionHeader(response);
+            ApplyHeadersAndCookies(response);
+            if (Body is not null)
+                await WriteBodyAsync(response).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error applying response: {ex.Message}");
             // Optionally, you can log the exception or handle it as needed
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Ensures the HTTP response has the correct status code and content type.
+    /// </summary>
+    /// <param name="response">The HTTP response to apply the status and content type to.</param>
+    private void EnsureStatusAndContentType(HttpResponse response)
+    {
+        response.StatusCode = StatusCode;
+        if (!string.IsNullOrEmpty(ContentType) &&
+            IsTextBasedContentType(ContentType) &&
+            !ContentType.Contains("charset=", StringComparison.OrdinalIgnoreCase))
+        {
+            ContentType = ContentType.TrimEnd(';') + $"; charset={AcceptCharset.WebName}";
+        }
+        response.ContentType = ContentType;
+    }
+
+    /// <summary>
+    /// Applies the Content-Disposition header to the HTTP response.
+    /// </summary>
+    /// <param name="response">The HTTP response to apply the header to.</param>
+    private void ApplyContentDispositionHeader(HttpResponse response)
+    {
+        if (ContentDisposition.Type == ContentDispositionType.NoContentDisposition)
+            return;
+
+        if (Log.IsEnabled(LogEventLevel.Debug))
+            Log.Debug("Setting Content-Disposition header, Type={Type}, FileName={FileName}",
+                      ContentDisposition.Type, ContentDisposition.FileName);
+
+        var dispositionValue = ContentDisposition.Type switch
+        {
+            ContentDispositionType.Attachment => "attachment",
+            ContentDispositionType.Inline => "inline",
+            _ => throw new InvalidOperationException("Invalid Content-Disposition type")
+        };
+
+        if (string.IsNullOrEmpty(ContentDisposition.FileName) && Body is IFileInfo fi)
+        {
+            // default filename: use the file's name
+            ContentDisposition.FileName = fi.Name;
+        }
+
+        if (!string.IsNullOrEmpty(ContentDisposition.FileName))
+        {
+            var escapedFileName = WebUtility.UrlEncode(ContentDisposition.FileName);
+            dispositionValue += $"; filename=\"{escapedFileName}\"";
+        }
+
+        response.Headers.Append("Content-Disposition", dispositionValue);
+    }
+
+    /// <summary>
+    /// Applies headers and cookies to the HTTP response.
+    /// </summary>
+    /// <param name="response">The HTTP response to apply the headers and cookies to.</param>
+    private void ApplyHeadersAndCookies(HttpResponse response)
+    {
+        if (Headers is not null)
+        {
+            foreach (var kv in Headers)
+                response.Headers[kv.Key] = kv.Value;
+        }
+        if (Cookies is not null)
+        {
+            foreach (var cookie in Cookies)
+                response.Headers.Append("Set-Cookie", cookie);
+        }
+    }
+
+    /// <summary>
+    /// Writes the response body to the HTTP response.
+    /// </summary>
+    /// <param name="response">The HTTP response to write to.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task WriteBodyAsync(HttpResponse response)
+    {
+        var bodyValue = Body; // capture to avoid nullability warnings when mutated in default
+        switch (bodyValue)
+        {
+            case IFileInfo fileInfo:
+                Log.Debug("Sending file {FileName} (Length={Length})", fileInfo.Name, fileInfo.Length);
+                response.ContentLength = fileInfo.Length;
+                response.Headers.LastModified = fileInfo.LastModified.ToString("R");
+                await response.SendFileAsync(
+                    file: fileInfo,
+                    offset: 0,
+                    count: fileInfo.Length,
+                    cancellationToken: response.HttpContext.RequestAborted
+                );
+                break;
+
+            case byte[] bytes:
+                response.ContentLength = bytes.LongLength;
+                await response.Body.WriteAsync(bytes, response.HttpContext.RequestAborted);
+                await response.Body.FlushAsync(response.HttpContext.RequestAborted);
+                break;
+
+            case System.IO.Stream stream:
+                bool seekable = stream.CanSeek;
+                Log.Debug("Sending stream (seekable={Seekable}, len={Len})",
+                          seekable, seekable ? stream.Length : -1);
+
+                if (seekable)
+                {
+                    response.ContentLength = stream.Length;
+                    stream.Position = 0;
+                }
+                else
+                {
+                    response.ContentLength = null;
+                }
+
+                const int BufferSize = 64 * 1024; // 64 KB
+                var buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                try
+                {
+                    int bytesRead;
+                    while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(0, BufferSize), response.HttpContext.RequestAborted)) > 0)
+                    {
+                        await response.Body.WriteAsync(buffer.AsMemory(0, bytesRead), response.HttpContext.RequestAborted);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+                await response.Body.FlushAsync(response.HttpContext.RequestAborted);
+                break;
+
+            case string str:
+                var data = AcceptCharset.GetBytes(str);
+                response.ContentLength = data.Length;
+                await response.Body.WriteAsync(data, response.HttpContext.RequestAborted);
+                await response.Body.FlushAsync(response.HttpContext.RequestAborted);
+                break;
+
+            default:
+                var bodyType = bodyValue?.GetType().Name ?? "null";
+                Body = "Unsupported body type: " + bodyType;
+                Log.Warning("Unsupported body type: {BodyType}", bodyType);
+                response.StatusCode = StatusCodes.Status500InternalServerError;
+                response.ContentType = "text/plain; charset=utf-8";
+                response.ContentLength = Body.ToString()?.Length ?? null;
+                break;
         }
     }
     #endregion
