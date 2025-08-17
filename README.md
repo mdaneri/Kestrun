@@ -12,6 +12,7 @@ Kestrun — PowerShell brains. Kestrel speed.
 ---
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/ci.yml/badge.svg)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e92ea8ea21c14fccb3338ffcc4532a2a)](https://app.codacy.com/gh/Kestrun/Kestrun?utm_source=github.com&utm_medium=referral&utm_content=Kestrun/Kestrun&utm_campaign=Badge_Grade)
 [![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
 ![ClamAV Scan](https://img.shields.io/github/actions/workflow/status/kestrun/kestrun/clam-av.yml?branch=main&label=ClamAV%20Scan)
 [![CodeFactor](https://www.codefactor.io/repository/github/kestrun/kestrun/badge/main)](https://www.codefactor.io/repository/github/kestrun/kestrun/overview/main)
