@@ -41,12 +41,22 @@ jobs:
         with:
           Version: latest
 
-      - name: 🧰 Install Invoke-Build & Pester
+      # Non-interactive PSResource install (trust PSGallery)
+      - name: 🧰 Install Invoke-Build & Pester (trusted, non-interactive)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Set-PSResourceRepository -Name PSGallery -Trusted 
-          Install-PSResource -Name 'InvokeBuild','Pester' -Scope CurrentUser
+          if (-not (Get-Module -ListAvailable -Name Microsoft.PowerShell.PSResourceGet)) {
+            Install-Module -Name Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+          }
+          Import-Module Microsoft.PowerShell.PSResourceGet -Force
+          $repo = Get-PSResourceRepository -Name PSGallery -ErrorAction SilentlyContinue
+          if (-not $repo) {
+            Register-PSResourceRepository -Name PSGallery -Uri 'https://www.powershellgallery.com/api/v3/index.json' -Trusted
+          } elseif (-not $repo.Trusted) {
+            Set-PSResourceRepository -Name PSGallery -Trusted
+          }
+          Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'Invoke-Build','Pester'
           Get-Module Pester -ListAvailable | Select Name,Version,Path
 
       - name: 📦 Restore
@@ -74,23 +84,27 @@ jobs:
             --collect "XPlat Code Coverage" \
             -v $DOTNET_VERBOSITY
 
-      # --- PowerShell coverage (Pester -> JaCoCo) ---
-      - name: 🧪 PowerShell tests with coverage
+      # --- PowerShell coverage (Pester 5 config -> JaCoCo) ---
+      - name: 🧪 PowerShell tests with coverage (Pester 5)
         shell: pwsh
         run: |
-            $cfg = New-PesterConfiguration
-            $cfg.Run.Path = @('tests/PowerShell.Tests')   # where your tests live
-            $cfg.Run.Exit = $true                         # non-zero exit on failures (CI-friendly)
-            $cfg.Output.Verbosity = 'Normal'              # or 'Detailed' if you like
-            $cfg.CodeCoverage.Enabled = $true
-            $cfg.CodeCoverage.Path = @(
-              'src/PowerShell/Kestrun/*.psm1',
-              'src/PowerShell/Kestrun/*.ps1'
-            )
-            $cfg.CodeCoverage.OutputFormat = 'JaCoCo'
-            $cfg.CodeCoverage.OutputPath   = 'TestResults/pester-coverage.xml'
+          $cfg = New-PesterConfiguration
+          $cfg.Run.Path = @('tests/PowerShell.Tests')
+          $cfg.Run.Exit = $true
+          $cfg.Output.Verbosity = $Env:PESTER_VERBOSITY
+          $cfg.CodeCoverage.Enabled = $true
+          $cfg.CodeCoverage.Path = @('src/PowerShell/Kestrun/*.psm1','src/PowerShell/Kestrun/*.ps1')
+          $cfg.CodeCoverage.OutputFormat = 'JaCoCo'
+          $cfg.CodeCoverage.OutputPath = 'TestResults/pester-coverage.xml'
+          Invoke-Pester -Configuration $cfg
 
-            Invoke-Pester -Configuration $cfg
+      # --- Sanity: show what coverage files were produced ---
+      - name: 🔎 List raw coverage files
+        run: |
+          echo "Cobertura files:"
+          find . -name "coverage.cobertura.xml" -print || true
+          echo "Pester JaCoCo file:"
+          ls -la TestResults/pester-coverage.xml || true
 
       # --- Merge to LCOV ---
       - name: 📊 Merge coverage to LCOV
@@ -101,6 +115,16 @@ jobs:
             -targetdir:"coveragereport" \
             -reporttypes:lcov
 
+      # --- Inspect LCOV (debug) ---
+      - name: 🔎 Inspect LCOV
+        run: |
+          echo "lcov size:"
+          wc -l coveragereport/lcov.info || true
+          echo "first 60 lines:"
+          head -n 60 coveragereport/lcov.info || true
+          echo "count of SF/DA:"
+          grep -E '^(SF|DA):' -n coveragereport/lcov.info || true
+
       # --- Upload to Coveralls ---
       - name: ☁️ Upload to Coveralls
         uses: coverallsapp/github-action@v2
@@ -108,6 +132,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: coveragereport/lcov.info
           format: lcov
+          base-path: ${{ github.workspace }}
+          allow-empty: true
+          debug: true
 
       # Keep the report as an artifact for quick inspection
       - name: 📦 Upload LCOV artifact
