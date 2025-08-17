@@ -342,5 +342,4 @@ internal static class VBNetDelegateBuilder
     """);
         return sb.ToString();
     }
-
 }

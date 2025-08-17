@@ -256,7 +256,6 @@ internal static class CSharpDelegateBuilder
         catch (CompilationErrorException ex)
         {
             log.Error(ex, "C# script compilation failed with errors.");
-
         }
         if (diagnostics == null)
         {
@@ -299,5 +298,4 @@ internal static class CSharpDelegateBuilder
 
         return script;
     }
-
 }

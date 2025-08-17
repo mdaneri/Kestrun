@@ -52,5 +52,4 @@ public static class JwtGenerator
 
         return handler.WriteToken(token);
     }
-
 }

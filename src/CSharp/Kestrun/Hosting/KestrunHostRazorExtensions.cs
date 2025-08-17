@@ -132,7 +132,6 @@ public static class KestrunHostRazorExtensions
                 app.UsePowerShellRazorPages(host.RunspacePool);          // bridge
                 app.UseRouting();                                    // add routing
                 app.UseEndpoints(e => e.MapRazorPages());            // map pages
-
             }
 
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
@@ -190,5 +189,4 @@ public static class KestrunHostRazorExtensions
          // optional: automatically map Razor endpoints after Build()
          .Use(app => ((IEndpointRouteBuilder)app).MapRazorPages());
     }
-
 }

@@ -213,8 +213,6 @@ public static class KestrunHostStaticFilesExtensions
         {
             // copy only the properties callers are likely to set 
             CopyStaticFileOptions(options, o);
-
         });
     }
-
 }

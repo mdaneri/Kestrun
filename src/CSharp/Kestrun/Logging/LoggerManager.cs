@@ -103,5 +103,4 @@ public static class LoggerManager
         _loggers.Clear();
         _configs.Clear();
     }
-
 }

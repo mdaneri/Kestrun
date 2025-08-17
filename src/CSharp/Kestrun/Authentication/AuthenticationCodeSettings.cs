@@ -42,5 +42,4 @@ public record AuthenticationCodeSettings
     /// This property is used to specify the Visual Basic language version for the authentication code.
     /// </remarks>
     public Microsoft.CodeAnalysis.VisualBasic.LanguageVersion VisualBasicVersion { get; init; } = Microsoft.CodeAnalysis.VisualBasic.LanguageVersion.VisualBasic12;
-
 }

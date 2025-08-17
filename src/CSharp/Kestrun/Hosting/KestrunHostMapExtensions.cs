@@ -56,7 +56,6 @@ public static class KestrunHostMapExtensions
             Language = ScriptLanguage.Native,
             RequireSchemes = requireSchemes ?? [] // No authorization by default
         }, handler);
-
     }
 
     /// <summary>
@@ -122,7 +121,6 @@ public static class KestrunHostMapExtensions
             RequireSchemes = requireSchemes ?? [], // No authorization by default
             Arguments = arguments ?? [] // No additional arguments by default
         });
-
     }
 
     /// <summary>
@@ -222,7 +220,6 @@ public static class KestrunHostMapExtensions
             host._Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
             return map;
             // Add to the feature queue for later processing
-
         }
         catch (CompilationErrorException ex)
         {
@@ -529,7 +526,6 @@ public static class KestrunHostMapExtensions
                 Language = language,
                 RequireSchemes = requireSchemes ?? [], // No authorization by default
                 Arguments = arguments ?? [], // No additional arguments by default
-
             };
             // queue before static files
             return host.Use(app =>
@@ -614,6 +610,4 @@ public static class KestrunHostMapExtensions
             ? options
             : null;
     }
-
-
 }

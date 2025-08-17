@@ -1,4 +1,4 @@
-﻿using Kestrun.Logging.Exceptions;
+using Kestrun.Logging.Exceptions;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -28,7 +28,6 @@ public class ErrorRecordEnricher : ILogEventEnricher
 	/// </summary>
 	public ErrorRecordEnricher()
 	{
-
 	}
 
 	/// <summary>

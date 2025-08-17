@@ -76,5 +76,4 @@ public static class BuildError
         context.Response.ContentType = "text/plain; charset=utf-8";
         return context.Response.WriteAsync(errText);
     }
-
 }

@@ -255,7 +255,6 @@ public class KestrunResponse
         ContentType = contentType;
         Log.Debug("File response prepared: FileName={FileName}, Length={Length}, ContentType={ContentType}",
             fi.Name, fi.Length, ContentType);
-
     }
 
     /// <summary>
@@ -636,7 +635,6 @@ public class KestrunResponse
             //ContentType = null;
             Headers.Remove("Content-Length");
         }
-
     }
 
     /// <summary>
@@ -1080,7 +1078,6 @@ public class KestrunResponse
                     dispositionValue += $"; filename=\"{escapedFileName}\"";
                 }
                 response.Headers.Append("Content-Disposition", dispositionValue);
-
             }
 
             if (Headers != null)

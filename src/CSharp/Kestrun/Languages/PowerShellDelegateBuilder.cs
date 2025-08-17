@@ -110,7 +110,6 @@ internal static class PowerShellDelegateBuilder
 
                     log.Verbose("Completing response for " + context.Request.Path);
                     await context.Response.CompleteAsync().ConfigureAwait(false);
-
                 }
                 catch (ObjectDisposedException odex)
                 {

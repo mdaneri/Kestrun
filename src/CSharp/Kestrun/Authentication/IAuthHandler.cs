@@ -390,7 +390,6 @@ public interface IAuthHandler
             return result is IEnumerable<Claim> claims
               ? claims
            : [];
-
         };
     }
 }

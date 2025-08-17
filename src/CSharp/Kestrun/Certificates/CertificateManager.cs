@@ -557,7 +557,6 @@ public static class CertificateManager
                                            : cert.GetECDsaPrivateKey()!
                                                 .ExportEncryptedPkcs8PrivateKey(password, pbe);
                                 pemLabel = "ENCRYPTED PRIVATE KEY";
-
                             }
                             // 2) Wrap that DER in PEM *correctly*:
                             string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
@@ -765,7 +764,5 @@ public static class CertificateManager
 
 
     #endregion
-
-    
 
 }

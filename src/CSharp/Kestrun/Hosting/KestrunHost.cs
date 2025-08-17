@@ -301,7 +301,6 @@ public class KestrunHost : IDisposable
             UseConnectionLogging = useConnectionLogging
         });
         return this;
-
     }
 
     /// <summary>
@@ -579,7 +578,6 @@ public class KestrunHost : IDisposable
             app.UseLanguageRuntime(
                 ScriptLanguage.PowerShell,
                 b => b.UsePowerShellRunspace(_runspacePool));
-
         });
     }
 

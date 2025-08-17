@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using Kestrun;
@@ -84,7 +84,6 @@ else
         CertificateManager.ExportFormat.Pfx,
         "p@ss".AsSpan()
     );
-
 }
 
 if (!CertificateManager.Validate(

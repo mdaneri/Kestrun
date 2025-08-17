@@ -247,11 +247,4 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
                 ["password"] = password
             });
     }
-
-
-
-
-
-
-
 }

@@ -33,7 +33,6 @@ public record CsGlobals
         Globals = globals;
         Context = krcontext;
         Locals = new Dictionary<string, object?>();
-
     }
 
     /// <summary>

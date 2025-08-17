@@ -69,6 +69,5 @@ public static class VariablesMap
 
         return true;
     }
-
 }
 

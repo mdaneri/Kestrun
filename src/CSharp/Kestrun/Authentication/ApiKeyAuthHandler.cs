@@ -215,5 +215,4 @@ public class ApiKeyAuthHandler
                 ["providedKeyBytes"] = providedKeyBytes
             });
     }
-
 }

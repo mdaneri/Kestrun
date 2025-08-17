@@ -1,4 +1,4 @@
-﻿using Kestrun;
+using Kestrun;
 using System.Net;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -79,7 +79,6 @@ server.AddResponseCompression(options =>
     };
     opts.Base64Encoded = true;            // default anyway
     opts.RequireHttps = false;           // example
-
 })
 .AddStaticOverride("/assets/report", async ctx =>
 {
