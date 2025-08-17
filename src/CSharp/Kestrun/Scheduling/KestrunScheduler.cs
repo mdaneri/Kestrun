@@ -1,53 +1,13 @@
-namespace Kestrun.Scheduling;
-
-using System;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
 using Cronos;
 using System.Management.Automation;
 using Serilog;
-using System.Management.Automation.Runspaces;
-using Serilog.Events;
-using System.IO;
 using System.Collections;
-using System.Text.RegularExpressions;
 using Kestrun.Utilities;
 using static Kestrun.Scheduling.JobFactory;
 using Kestrun.Scripting;
 
-/// <summary>
-/// Represents a scheduled task with its configuration and state.
-/// </summary>
-/// <param name="Name">The name of the scheduled task.</param>
-/// <param name="LastRunAt">The last time the task was run.</param>
-/// <param name="NextRunAt">The next scheduled run time for the task.</param>
-/// <param name="IsSuspended">Indicates whether the task is currently suspended.</param>
-/// <remarks>
-/// This class encapsulates the details of a scheduled task, including its name, last run time,
-/// next run time, and whether it is currently suspended. It is used internally by the scheduler
-/// to manage and report on scheduled tasks.
-/// </remarks>
-public sealed record JobInfo(string Name,
-                             DateTimeOffset? LastRunAt,
-                             DateTimeOffset NextRunAt,
-                             bool IsSuspended);
-
-
-/// <summary>
-/// Represents a report of scheduled jobs at a specific time.
-/// Contains the generation time and a list of job information.
-/// This is useful for monitoring and auditing scheduled tasks.
-/// </summary>
-/// <param name="GeneratedAt">The time the report was generated.</param>
-/// <param name="Jobs">The list of job information.</param>
-/// <remarks>
-/// This report can be used to track the status and execution history of scheduled jobs.
-/// It is particularly useful for debugging and operational monitoring.
-/// </remarks>  
-public sealed record ScheduleReport(
-    DateTimeOffset GeneratedAt,
-    IReadOnlyList<JobInfo> Jobs);
+namespace Kestrun.Scheduling;
 
 /// <summary>
 /// Represents a service for managing scheduled tasks.
@@ -82,7 +42,7 @@ public sealed class SchedulerService : IDisposable
     /// The logger instance used for logging events within the scheduler service.
     /// This logger is used to log information, warnings, and errors related to scheduled tasks.
     /// </summary>
-    private readonly ILogger _log;
+    private readonly Serilog.ILogger _log;
     /// <summary>
     /// The time zone used for scheduling and reporting.
     /// This is used to convert scheduled times to the appropriate time zone for display and execution.
@@ -97,7 +57,7 @@ public sealed class SchedulerService : IDisposable
     /// <param name="pool">The runspace pool manager for executing PowerShell scripts.</param>
     /// <param name="log">The logger instance for logging events.</param>
     /// <param name="tz">The optional time zone information.</param>
-    public SchedulerService(KestrunRunspacePoolManager pool, ILogger log, TimeZoneInfo? tz = null)
+    public SchedulerService(KestrunRunspacePoolManager pool, Serilog.ILogger log, TimeZoneInfo? tz = null)
     {
         _pool = pool;
         _log = log;

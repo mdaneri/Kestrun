@@ -24,65 +24,6 @@ using System.Reflection;
 namespace Kestrun.Models;
 
 /// <summary>
-/// Specifies the type of Content-Disposition header to use in the HTTP response.
-/// </summary>
-public enum ContentDispositionType
-{
-    /// <summary>
-    /// Indicates that the content should be downloaded as an attachment.
-    /// </summary>
-    Attachment,
-    /// <summary>
-    /// Indicates that the content should be displayed inline in the browser.
-    /// </summary>
-    Inline,
-    /// <summary>
-    /// Indicates that no Content-Disposition header should be set.
-    /// </summary>
-    NoContentDisposition
-}
-/// <summary>
-/// Options for Content-Disposition header.
-/// </summary>
-public class ContentDispositionOptions
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ContentDispositionOptions"/> class.
-    /// </summary>
-    public ContentDispositionOptions()
-    {
-        FileName = null;
-        Type = ContentDispositionType.NoContentDisposition;
-    }
-
-    /// <summary>
-    /// Gets or sets the file name to use in the Content-Disposition header.
-    /// </summary>
-    public string? FileName { get; set; }
-    /// <summary>
-    /// Gets or sets the type of Content-Disposition header to use.
-    /// </summary>
-    public ContentDispositionType Type { get; set; }
-
-    /// <summary>
-    /// Returns the Content-Disposition header value as a string, based on the type and file name.
-    /// </summary>
-    /// <returns>The Content-Disposition header value, or an empty string if no disposition is set.</returns>
-    public override string ToString()
-    {
-        if (Type == ContentDispositionType.NoContentDisposition)
-            return string.Empty;
-
-        var disposition = Type == ContentDispositionType.Attachment ? "attachment" : "inline";
-        if (string.IsNullOrEmpty(FileName))
-            return disposition;
-
-        // Escape the filename to handle special characters
-        var escapedFileName = WebUtility.UrlEncode(FileName);
-        return $"{disposition}; filename=\"{escapedFileName}\"";
-    }
-}
-/// <summary>
 /// Represents an HTTP response in the Kestrun framework, providing methods to write various content types and manage headers, cookies, and status codes.
 /// </summary>
 public class KestrunResponse

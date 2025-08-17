@@ -12,6 +12,7 @@ using Serilog.Events;
 using Kestrun.Models;
 using System.Security.Claims;
 using Kestrun.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace Kestrun.Languages;
 
@@ -64,55 +65,27 @@ internal static class CSharpDelegateBuilder
         {
             try
             {
-                var krRequest = await KestrunRequest.NewRequest(ctx);
-                var krResponse = new KestrunResponse(krRequest);
-                var Context = new KestrunContext(krRequest, krResponse, ctx);
                 if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Kestrun context created for {Path}", ctx.Request.Path);
-
-                // Create a shared state dictionary that will be used to store global variables
-                // This will be shared across all requests and can be used to store state
-                // that needs to persist across multiple requests
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Creating shared state store for Kestrun context");
-                var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.Debug("Shared state store created with {Count} items", glob.Count);
-
-                // Inject the provided arguments into the globals
-                // This allows the script to access these variables as if they were defined in the script itself
-                // e.g. glob["arg1"] = args["arg1"];
-                if (args != null && args.Count > 0)
-                {
-                    if (log.IsEnabled(LogEventLevel.Debug))
-                        log.Debug("Setting C# variables from arguments: {Count}", args.Count);
-                    foreach (var kv in args) glob[kv.Key] = kv.Value; // add args to globals
-                }
-
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
-
-                // Create a new CsGlobals instance with the current context and shared state
-                // This will provide access to the globals and locals in the script
-                var globals = new CsGlobals(glob, Context);
+                    log.Debug("Preparing execution for C# script at {Path}", ctx.Request.Path);
+                var (Globals, Response, Context) = await DelegateBuilder.PrepareExecutionAsync(ctx, log, args).ConfigureAwait(false);
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
                     log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
-                await script.RunAsync(globals).ConfigureAwait(false);
+                await script.RunAsync(Globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
                     log.DebugSanitized("C# script executed successfully for {Path}", ctx.Request.Path);
 
                 // Apply the response to the Kestrun context
                 if (log.IsEnabled(LogEventLevel.Debug))
                     log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
-                if (!string.IsNullOrEmpty(krResponse.RedirectUrl))
+                if (!string.IsNullOrEmpty(Response.RedirectUrl))
                 {
-                    ctx.Response.Redirect(krResponse.RedirectUrl);
+                    ctx.Response.Redirect(Response.RedirectUrl);
                     return;
                 }
 
-                await krResponse.ApplyTo(ctx.Response).ConfigureAwait(false);
+                await Response.ApplyTo(ctx.Response).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
                     log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
             }
@@ -146,7 +119,7 @@ internal static class CSharpDelegateBuilder
     /// </remarks>
     internal static Script<object> Compile(
             string? code, Serilog.ILogger log, string[]? extraImports,
-            Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion= LanguageVersion.CSharp12
+            Assembly[]? extraRefs, IReadOnlyDictionary<string, object?>? locals, LanguageVersion languageVersion = LanguageVersion.CSharp12
             )
     {
         if (log.IsEnabled(LogEventLevel.Debug))
@@ -193,7 +166,7 @@ internal static class CSharpDelegateBuilder
         var opts = ScriptOptions.Default
                    .WithImports((IEnumerable<string>)allImports)
                    .WithReferences(coreRefs.Concat([kestrunRef]));
-                   
+
         extraImports ??= ["Kestrun"];
         if (!extraImports.Contains("Kestrun"))
         {
