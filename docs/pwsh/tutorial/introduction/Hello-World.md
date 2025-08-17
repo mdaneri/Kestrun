@@ -1,6 +1,6 @@
 ---
 title: Hello World
-parent: Tutorials
+parent: Introduction
 nav_order: 1
 ---
 
@@ -68,7 +68,6 @@ Start-KrServer
 
 ## Try it
 
-
 ### Server
 
 ```pwsh
@@ -93,13 +92,13 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 
 ## Cmdlet references
 
-- [New-KrServer](docs/pwsh/cmdlets/New-KrServer)
-- [Add-KrListener](docs/pwsh/cmdlets/Add-KrListener)
-- [Add-KrPowerShellRuntime](docs/pwsh/cmdlets/Add-KrPowerShellRuntime)
-- [Enable-KrConfiguration](docs/pwsh/cmdlets/Enable-KrConfiguration)
-- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute)
-- [Write-KrTextResponse](docs/pwsh/cmdlets/Write-KrTextResponse)
-- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer)
+- [New-KrServer](/docs/pwsh/cmdlets/New-KrServer)
+- [Add-KrListener](/docs/pwsh/cmdlets/Add-KrListener)
+- [Add-KrPowerShellRuntime](/docs/pwsh/cmdlets/Add-KrPowerShellRuntime)
+- [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration)
+- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute)
+- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse)
+- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer)
 
 ## Troubleshooting
 

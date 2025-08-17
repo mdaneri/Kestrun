@@ -1,6 +1,6 @@
 ---
 title: Multiple Content Types
-parent: Tutorials
+parent: Routes
 nav_order: 1
 ---
 
@@ -102,12 +102,12 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello-yaml' | Select-Object -Expan
 
 ## Cmdlet references
 
-- [Write-KrTextResponse](docs/pwsh/cmdlets/Write-KrTextResponse)
-- [Write-KrJsonResponse](docs/pwsh/cmdlets/Write-KrJsonResponse)
-- [Write-KrXmlResponse](docs/pwsh/cmdlets/Write-KrXmlResponse)
-- [Write-KrYamlResponse](docs/pwsh/cmdlets/Write-KrYamlResponse)
-- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute)
-- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer)
+- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse)
+- [Write-KrJsonResponse](/docs/pwsh/cmdlets/Write-KrJsonResponse)
+- [Write-KrXmlResponse](/docs/pwsh/cmdlets/Write-KrXmlResponse)
+- [Write-KrYamlResponse](/docs/pwsh/cmdlets/Write-KrYamlResponse)
+- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute)
+- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer)
 
 ## Troubleshooting
 

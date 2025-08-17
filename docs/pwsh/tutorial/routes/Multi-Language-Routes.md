@@ -1,6 +1,6 @@
 ---
 title: Multi-language Routes (PS/C#/VB)
-parent: Tutorials
+parent: Routes
 nav_order: 2
 ---
 
@@ -92,7 +92,7 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 
 ## Cmdlet references
 
-- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute.md)
-- [Add-KrPowerShellRuntime](docs/pwsh/cmdlets/Add-KrPowerShellRuntime.md)
-- [Enable-KrConfiguration](docs/pwsh/cmdlets/Enable-KrConfiguration.md)
-- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer.md)
+- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute.md)
+- [Add-KrPowerShellRuntime](/docs/pwsh/cmdlets/Add-KrPowerShellRuntime.md)
+- [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration.md)
+- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer.md)

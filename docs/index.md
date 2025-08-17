@@ -33,9 +33,9 @@ Kestrun jumpstarts your web automation with a fast, PowerShell-centric framework
 
 ## Quick links
 
-- 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](docs/pwsh/cmdlets/)
+- 👉 **PowerShell Cmdlets**: [pwsh/cmdlets/](/docs/pwsh/cmdlets/)
 - 👉 **C# API**: [cs/api/](docs/cs/api/)
-- 📚 **Tutorials**: [pwsh/tutorial/](docs/pwsh/tutorial/)
+- 📚 **Tutorials**: [pwsh/tutorial/](/docs/pwsh/tutorial/)
 
 ## Getting started
 
