@@ -14,6 +14,7 @@ Kestrun — PowerShell brains. Kestrel speed.
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
 [![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
+![ClamAV Scan](https://img.shields.io/github/actions/workflow/status/kestrun/kestrun/clam-av.yml?branch=main&label=ClamAV%20Scan)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-green)
