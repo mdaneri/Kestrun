@@ -35,12 +35,6 @@ From the repository root:
 ```pwsh
 # 1) Hello World
 pwsh .\examples\PowerShell\Tutorial\Sample-1.ps1
-
-# 2) Multiple content types
-pwsh .\examples\PowerShell\Tutorial\Sample-2.ps1
-
-# 3) Multi-language routes (PS/C#/VB)
-pwsh .\examples\PowerShell\Tutorial\Sample-3.ps1
 ```
 
 Then browse the routes (default listener: <http://127.0.0.1:5000>):

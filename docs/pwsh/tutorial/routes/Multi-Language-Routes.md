@@ -1,7 +1,7 @@
 ---
 title: Multi-language Routes (PS/C#/VB)
 parent: Tutorials
-nav_order: 3
+nav_order: 2
 ---
 
 # Multi-language Routes (PS/C#/VB)
@@ -12,14 +12,14 @@ Map routes in PowerShell and implement others inline in C# or VB.NET.
 
 ## Full source
 
-File: `examples/PowerShell/Tutorial/Sample-3.ps1`
+File: `examples/PowerShell/Tutorial/3-Multiple-Content-Types.ps1`
 
 ```powershell
 <#
     Sample Kestrun Server Configuration with Multiple Languages
     This script demonstrates how to set up a simple Kestrun server with multiple routes and multiple languages.
     Kestrun supports PowerShell, CSharp, and VBNet.
-    FileName: Sample-3.ps1
+    FileName: 3-Multiple-Content-Types.ps1
 #>
 
 # Import the Kestrun module
@@ -70,13 +70,21 @@ Start-KrServer
 
 ## Try it
 
-- curl
+### Server
+
+```pwsh
+. .\examples\PowerShell\Tutorial\3-Multiple-Content-Types.ps1`
+```
+
+### Client
+
+#### curl
 
 ```pwsh
 curl http://127.0.0.1:5000/hello
 ```
 
-- PowerShell
+#### PowerShell
 
 ```pwsh
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
@@ -84,7 +92,7 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 
 ## Cmdlet references
 
-- [Add-KrMapRoute](../cmdlets/Add-KrMapRoute.md)
-- [Add-KrPowerShellRuntime](../cmdlets/Add-KrPowerShellRuntime.md)
-- [Enable-KrConfiguration](../cmdlets/Enable-KrConfiguration.md)
-- [Start-KrServer](../cmdlets/Start-KrServer.md)
+- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute.md)
+- [Add-KrPowerShellRuntime](docs/pwsh/cmdlets/Add-KrPowerShellRuntime.md)
+- [Enable-KrConfiguration](docs/pwsh/cmdlets/Enable-KrConfiguration.md)
+- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer.md)

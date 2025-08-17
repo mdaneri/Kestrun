@@ -1,7 +1,7 @@
 ---
 title: Multiple Content Types
 parent: Tutorials
-nav_order: 2
+nav_order: 1
 ---
 
 # Multiple Content Types
@@ -12,14 +12,14 @@ Return text, JSON, XML, and YAML from different routes.
 
 ## Full source
 
-File: `examples/PowerShell/Tutorial/Sample-2.ps1`
+File: `examples/PowerShell/Tutorial/2-Multiple-Content-Types.ps1`
 
 ```powershell
 <#
     Sample Kestrun Server Configuration with Multiple Content Types
     This script demonstrates how to set up a simple Kestrun server with multiple routes.
     The server will respond with different content types based on the requested route.
-    FileName: Sample-2.ps1
+    FileName: 2-Multiple-Content-Types.ps1
 #>
 
 # Import the Kestrun module
@@ -74,7 +74,15 @@ Start-KrServer
 
 ## Try it
 
-- curl
+### Server
+
+```pwsh
+. .\examples\PowerShell\Tutorial\2-Multiple-Content-Types.ps1`
+```
+
+### Client
+
+#### curl
 
 ```pwsh
 curl http://127.0.0.1:5000/hello
@@ -83,7 +91,7 @@ curl http://127.0.0.1:5000/hello-xml
 curl http://127.0.0.1:5000/hello-yaml
 ```
 
-- PowerShell
+#### PowerShell
 
 ```pwsh
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
@@ -94,12 +102,12 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello-yaml' | Select-Object -Expan
 
 ## Cmdlet references
 
-- [Write-KrTextResponse](../cmdlets/Write-KrTextResponse.md)
-- [Write-KrJsonResponse](../cmdlets/Write-KrJsonResponse.md)
-- [Write-KrXmlResponse](../cmdlets/Write-KrXmlResponse.md)
-- [Write-KrYamlResponse](../cmdlets/Write-KrYamlResponse.md)
-- [Add-KrMapRoute](../cmdlets/Add-KrMapRoute.md)
-- [Start-KrServer](../cmdlets/Start-KrServer.md)
+- [Write-KrTextResponse](docs/pwsh/cmdlets/Write-KrTextResponse)
+- [Write-KrJsonResponse](docs/pwsh/cmdlets/Write-KrJsonResponse)
+- [Write-KrXmlResponse](docs/pwsh/cmdlets/Write-KrXmlResponse)
+- [Write-KrYamlResponse](docs/pwsh/cmdlets/Write-KrYamlResponse)
+- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute)
+- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer)
 
 ## Troubleshooting
 

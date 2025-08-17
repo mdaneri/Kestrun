@@ -1,5 +1,5 @@
 ---
-title: Hello World — Minimal Server
+title: Hello World
 parent: Tutorials
 nav_order: 1
 ---
@@ -12,14 +12,14 @@ This sample spins up a small Kestrun server and returns plain text from a single
 
 ## Full source
 
-File: `examples/PowerShell/Tutorial/Sample-1.ps1`
+File: `examples/PowerShell/Tutorial/1-Hello-World.ps1`
 
 ```powershell
 <#
     Sample Kestrun Server Configuration
     This script demonstrates how to set up a simple Kestrun server with a single route.
     The server will respond with "Hello, World!" when accessed.
-    FileName: Sample-1.ps1
+    FileName: 1-Hello-World.ps1
 #>
 
 # Import the Kestrun module
@@ -68,13 +68,22 @@ Start-KrServer
 
 ## Try it
 
-- curl
+
+### Server
+
+```pwsh
+. .\examples\PowerShell\Tutorial\1-Hello-World.ps1`
+```
+
+### Client
+
+#### curl
 
 ```pwsh
 curl http://127.0.0.1:5000/hello
 ```
 
-- PowerShell
+#### PowerShell
 
 ```pwsh
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
@@ -84,13 +93,13 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 
 ## Cmdlet references
 
-- [New-KrServer](../cmdlets/New-KrServer.md)
-- [Add-KrListener](../cmdlets/Add-KrListener.md)
-- [Add-KrPowerShellRuntime](../cmdlets/Add-KrPowerShellRuntime.md)
-- [Enable-KrConfiguration](../cmdlets/Enable-KrConfiguration.md)
-- [Add-KrMapRoute](../cmdlets/Add-KrMapRoute.md)
-- [Write-KrTextResponse](../cmdlets/Write-KrTextResponse.md)
-- [Start-KrServer](../cmdlets/Start-KrServer.md)
+- [New-KrServer](docs/pwsh/cmdlets/New-KrServer)
+- [Add-KrListener](docs/pwsh/cmdlets/Add-KrListener)
+- [Add-KrPowerShellRuntime](docs/pwsh/cmdlets/Add-KrPowerShellRuntime)
+- [Enable-KrConfiguration](docs/pwsh/cmdlets/Enable-KrConfiguration)
+- [Add-KrMapRoute](docs/pwsh/cmdlets/Add-KrMapRoute)
+- [Write-KrTextResponse](docs/pwsh/cmdlets/Write-KrTextResponse)
+- [Start-KrServer](docs/pwsh/cmdlets/Start-KrServer)
 
 ## Troubleshooting
 
