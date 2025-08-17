@@ -110,7 +110,7 @@ Key rules:
 
 **Cmdlet page (example):**
 
-```md
+```markdown
 ---
 layout: default
 parent: PowerShell Cmdlets
@@ -132,7 +132,7 @@ Returns the full schedule report.
 
 Get-KrScheduleReport \[\[-Server] <KestrunHost>] \[\[-TimeZoneId] <String>] \[-AsHashtable]
 
-```
+````
 
 ## DESCRIPTION
 
@@ -149,7 +149,7 @@ Get-KrScheduleReport -AsHashtable
 * **Server** — …
 * **TimeZoneId** — …
 
-```
+````
 
 **Tutorial page (example):**
 ```markdown
@@ -177,7 +177,7 @@ Invoke-Build Restore ; Invoke-Build Build
 - Use `has_children: true` on a section index page if it owns subpages.
 
 **Section index example:**
-```md
+```markdown
 ---
 layout: default
 title: PowerShell Cmdlets

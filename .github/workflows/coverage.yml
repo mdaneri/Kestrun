@@ -78,10 +78,19 @@ jobs:
       - name: 🧪 PowerShell tests with coverage
         shell: pwsh
         run: |
-          Invoke-Pester -CI -Script tests/PowerShell.Tests `
-            -CodeCoverage @('src/PowerShell/Kestrun/*.psm1','src/PowerShell/Kestrun/*.ps1') `
-            -CodeCoverageOutputFile TestResults/pester-coverage.xml `
-            -CodeCoverageOutputFormat JaCoCo
+            $cfg = New-PesterConfiguration
+            $cfg.Run.Path = @('tests/PowerShell.Tests')   # where your tests live
+            $cfg.Run.Exit = $true                         # non-zero exit on failures (CI-friendly)
+            $cfg.Output.Verbosity = 'Normal'              # or 'Detailed' if you like
+            $cfg.CodeCoverage.Enabled = $true
+            $cfg.CodeCoverage.Path = @(
+              'src/PowerShell/Kestrun/*.psm1',
+              'src/PowerShell/Kestrun/*.ps1'
+            )
+            $cfg.CodeCoverage.OutputFormat = 'JaCoCo'
+            $cfg.CodeCoverage.OutputPath   = 'TestResults/pester-coverage.xml'
+
+            Invoke-Pester -Configuration $cfg
 
       # --- Merge to LCOV ---
       - name: 📊 Merge coverage to LCOV
