@@ -54,64 +54,8 @@ public static class KestrunHostAuthExtensions
                    {
                        // let caller mutate everything first
                        configure?.Invoke(opts);
-
-                       // ── SPECIAL POWER-SHELL PATH ────────────────────
-                       if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
-                           !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building PowerShell validator for Basic authentication");
-                           // Build the PowerShell script validator
-                           // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-                       else   // ── C# pathway ─────────────────────────────────
-                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building C# validator for Basic authentication");
-                           // Build the C# script validator
-                           // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-                       else
-                         if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building VB.NET validator for Basic authentication");
-                           // Build the VB.NET script validator
-                           // This will be used to validate credentials
-                           opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-
-                       // ── SPECIAL POWER-SHELL PATH ────────────────────
-                       // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
-                       // script validator
-                       if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
-                          !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building PowerShell Issue Claims for API Basic authentication");
-                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
-                       else   // ── C# pathway ─────────────────────────────────
-                      if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
-                          && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building C# Issue Claims for API Basic authentication");
-                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
-                       else
-                        if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
-                          && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building VB.NET Issue Claims for API Basic authentication");
-                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
+                       ConfigureBasicAuthValidators(opts);
+                       ConfigureBasicIssueClaims(opts);
                    });
            }
        );
@@ -364,64 +308,8 @@ public static class KestrunHostAuthExtensions
                    {
                        // let caller mutate everything first
                        configure?.Invoke(opts);
-
-                       // ── SPECIAL POWER-SHELL PATH ────────────────────
-                       if (opts.ValidateCodeSettings.Language == ScriptLanguage.PowerShell &&
-                           !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building PowerShell validator for API Key authentication");
-                           // Build the PowerShell script validator
-                           // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-                       else   // ── C# pathway ─────────────────────────────────
-                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.CSharp
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building C# validator for API Key authentication");
-                           // Build the C# script validator
-                           // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-                       else   // ── VB.NET pathway ─────────────────────────────────
-                       if (opts.ValidateCodeSettings.Language is ScriptLanguage.VBNet
-                           && !string.IsNullOrWhiteSpace(opts.ValidateCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building VB.NET validator for API Key authentication");
-                           // Build the VB.NET script validator
-                           // This will be used to validate credentials
-                           opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(opts.ValidateCodeSettings, opts.Logger);
-                       }
-
-                       // ── SPECIAL POWER-SHELL PATH ────────────────────
-                       // If the IssueClaimsCodeSettings is set to PowerShell, we build the PowerShell
-                       // script validator
-                       if (opts.IssueClaimsCodeSettings.Language == ScriptLanguage.PowerShell &&
-                           !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building PowerShell Issue Claims for API Key authentication");
-                           opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
-                       else   // ── C# pathway ─────────────────────────────────
-                       if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.CSharp
-                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building C# Issue Claims for API Key authentication");
-                           opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
-                       else
-                         if (opts.IssueClaimsCodeSettings.Language is ScriptLanguage.VBNet
-                           && !string.IsNullOrWhiteSpace(opts.IssueClaimsCodeSettings.Code))
-                       {
-                           if (opts.Logger.IsEnabled(LogEventLevel.Debug))
-                               opts.Logger.Debug("Building VB.NET Issue Claims for API Key authentication");
-                           opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(opts.IssueClaimsCodeSettings, opts.Logger);
-                       }
+                       ConfigureApiKeyValidators(opts);
+                       ConfigureApiKeyIssueClaims(opts);
                    });
            }
        );
@@ -435,6 +323,127 @@ public static class KestrunHostAuthExtensions
                           sp.GetRequiredService<
                               IOptionsMonitor<ApiKeyAuthenticationOptions>>()));
         });
+    }
+
+    /// <summary>
+    /// Configures the validators for Basic authentication.
+    /// </summary>
+    /// <param name="opts">The options to configure.</param>
+    private static void ConfigureBasicAuthValidators(BasicAuthenticationOptions opts)
+    {
+        var settings = opts.ValidateCodeSettings;
+        if (string.IsNullOrWhiteSpace(settings.Code))
+            return;
+
+        switch (settings.Language)
+        {
+            case ScriptLanguage.PowerShell:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building PowerShell validator for Basic authentication");
+                opts.ValidateCredentialsAsync = BasicAuthHandler.BuildPsValidator(settings, opts.Logger);
+                break;
+            case ScriptLanguage.CSharp:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building C# validator for Basic authentication");
+                opts.ValidateCredentialsAsync = BasicAuthHandler.BuildCsValidator(settings, opts.Logger);
+                break;
+            case ScriptLanguage.VBNet:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building VB.NET validator for Basic authentication");
+                opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(settings, opts.Logger);
+                break;
+            default:
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Configures the issue claims for Basic authentication.
+    /// </summary>
+    /// <param name="opts">The options to configure.</param>
+    private static void ConfigureBasicIssueClaims(BasicAuthenticationOptions opts)
+    {
+        var settings = opts.IssueClaimsCodeSettings;
+        if (string.IsNullOrWhiteSpace(settings.Code))
+            return;
+
+        switch (settings.Language)
+        {
+            case ScriptLanguage.PowerShell:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building PowerShell Issue Claims for API Basic authentication");
+                opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(settings, opts.Logger);
+                break;
+            case ScriptLanguage.CSharp:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building C# Issue Claims for API Basic authentication");
+                opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(settings, opts.Logger);
+                break;
+            case ScriptLanguage.VBNet:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building VB.NET Issue Claims for API Basic authentication");
+                opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Helpers to reduce complexity in API Key auth wiring
+    private static void ConfigureApiKeyValidators(ApiKeyAuthenticationOptions opts)
+    {
+        var settings = opts.ValidateCodeSettings;
+        if (string.IsNullOrWhiteSpace(settings.Code))
+            return;
+
+        switch (settings.Language)
+        {
+            case ScriptLanguage.PowerShell:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building PowerShell validator for API Key authentication");
+                opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildPsValidator(settings, opts.Logger);
+                break;
+            case ScriptLanguage.CSharp:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building C# validator for API Key authentication");
+                opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildCsValidator(settings, opts.Logger);
+                break;
+            case ScriptLanguage.VBNet:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building VB.NET validator for API Key authentication");
+                opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(settings, opts.Logger);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static void ConfigureApiKeyIssueClaims(ApiKeyAuthenticationOptions opts)
+    {
+        var settings = opts.IssueClaimsCodeSettings;
+        if (string.IsNullOrWhiteSpace(settings.Code))
+            return;
+
+        switch (settings.Language)
+        {
+            case ScriptLanguage.PowerShell:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building PowerShell Issue Claims for API Key authentication");
+                opts.IssueClaims = IAuthHandler.BuildPsIssueClaims(settings, opts.Logger);
+                break;
+            case ScriptLanguage.CSharp:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building C# Issue Claims for API Key authentication");
+                opts.IssueClaims = IAuthHandler.BuildCsIssueClaims(settings, opts.Logger);
+                break;
+            case ScriptLanguage.VBNet:
+                if (opts.Logger.IsEnabled(LogEventLevel.Debug))
+                    opts.Logger.Debug("Building VB.NET Issue Claims for API Key authentication");
+                opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
+                break;
+            default:
+                break;
+        }
     }
 
 

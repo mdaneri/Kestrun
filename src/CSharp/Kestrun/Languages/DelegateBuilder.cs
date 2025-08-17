@@ -49,4 +49,29 @@ internal static class DelegateBuilder
         var globals = new CsGlobals(glob, Context);
         return (globals, krResponse, Context);
     }
+
+
+    /// <summary>
+    /// Decides the VB return type string that matches TResult.
+    /// </summary>
+    /// <param name="ctx">The current HTTP context.</param>
+    /// <param name="response">The Kestrun response to apply.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    internal static async Task ApplyResponseAsync(HttpContext ctx, KestrunResponse response, Serilog.ILogger log)
+    {
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
+
+        if (!string.IsNullOrEmpty(response.RedirectUrl))
+        {
+            ctx.Response.Redirect(response.RedirectUrl);
+            return;
+        }
+
+        await response.ApplyTo(ctx.Response).ConfigureAwait(false);
+
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+    }
 }

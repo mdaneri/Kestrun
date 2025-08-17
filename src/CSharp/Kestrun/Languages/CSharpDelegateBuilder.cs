@@ -77,17 +77,7 @@ internal static class CSharpDelegateBuilder
                     log.DebugSanitized("C# script executed successfully for {Path}", ctx.Request.Path);
 
                 // Apply the response to the Kestrun context
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
-                if (!string.IsNullOrEmpty(Response.RedirectUrl))
-                {
-                    ctx.Response.Redirect(Response.RedirectUrl);
-                    return;
-                }
-
-                await Response.ApplyTo(ctx.Response).ConfigureAwait(false);
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+                await DelegateBuilder.ApplyResponseAsync(ctx, Response, log).ConfigureAwait(false);
             }
             finally
             {

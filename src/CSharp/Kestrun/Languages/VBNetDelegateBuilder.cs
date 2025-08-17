@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis;
 using Kestrun.Utilities;
 using System.Security.Claims;
 using Kestrun.Logging;
+using Microsoft.AspNetCore.Http;
 
 namespace Kestrun.Languages;
 
@@ -83,17 +84,7 @@ internal static class VBNetDelegateBuilder
                     log.DebugSanitized("VB.NET script executed successfully for {Path}", ctx.Request.Path);
 
                 // Apply the response to the Kestrun context
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
-                if (!string.IsNullOrEmpty(Response.RedirectUrl))
-                {
-                    ctx.Response.Redirect(Response.RedirectUrl);
-                    return;
-                }
-
-                await Response.ApplyTo(ctx.Response).ConfigureAwait(false);
-                if (log.IsEnabled(LogEventLevel.Debug))
-                    log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+                await DelegateBuilder.ApplyResponseAsync(ctx, Response, log).ConfigureAwait(false);
             }
             finally
             {
@@ -101,6 +92,8 @@ internal static class VBNetDelegateBuilder
             }
         };
     }
+
+
 
 
     // Decide the VB return type string that matches TResult
