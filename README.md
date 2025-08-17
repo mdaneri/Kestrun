@@ -13,7 +13,19 @@ Kestrun — PowerShell brains. Kestrel speed.
 ---
 
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
+[![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-green)
+![Windows](https://img.shields.io/badge/Windows-✔-blue)
+![Linux](https://img.shields.io/badge/Linux-✔-green)
+![macOS](https://img.shields.io/badge/macOS-✔-lightgrey)
+![.NET](https://img.shields.io/badge/.NET-8%2B-blueviolet)
+![.NET](https://img.shields.io/badge/.NET-9%2B-blueviolet)
+[![NuGet](https://img.shields.io/nuget/v/Kestrun)](https://www.nuget.org/packages/Kestrun/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/Kestrun)](https://www.nuget.org/packages/Kestrun/)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Kestrun)](https://www.powershellgallery.com/packages/Kestrun)
+[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 
 Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the
