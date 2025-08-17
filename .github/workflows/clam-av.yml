@@ -81,15 +81,31 @@ jobs:
         run: |
           set -euo pipefail
           # clamscan: 0=clean, 1=infected, 2=error
-          clamscan -r . --infected --no-summary --exclude-dir="^\.\/\.git$" | tee clamscan.raw.log || true
+          # Run once, keep full output in clamscan.full.log; show only infected on-console.
+          clamscan -r . --no-summary --exclude-dir="^\.\/\.git$" \
+            | tee clamscan.full.log \
+            | grep 'FOUND$' | tee clamscan.infected.only.log >/dev/null || true
 
-          inf=$(grep -c 'FOUND$' clamscan.raw.log || true)
+          # Accurate counts:
+          # - scanned: lines that end in OK / FOUND / ERROR (all per-file outcomes)
+          # - infected: lines ending in FOUND
+          scanned=$(grep -Ec ':( OK| FOUND| ERROR)$' clamscan.full.log || true)
+          infected=$(grep -c 'FOUND$' clamscan.full.log || true)
+
           {
             echo "----------- SCAN SUMMARY -----------"
-            echo "Infected files: $inf"
+            echo "Scanned files: $scanned"
+            echo "Infected files: $infected"
           } | tee clamscan.summary.log
-          cat clamscan.summary.log >> clamscan.raw.log
-          mv clamscan.raw.log clamscan.log
+
+          # Final compact log: only infected findings + summary
+          cat clamscan.infected.only.log clamscan.summary.log > clamscan.log
+
+      - name: 📊 Print scan summary
+        shell: bash
+        run: |
+          echo "----------- SCAN SUMMARY -----------"
+          cat clamscan.log
 
       - name: ⛔ Fail if infected
         shell: bash
