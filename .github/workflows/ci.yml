@@ -1,6 +1,6 @@
 permissions:
   contents: read
-name: .NET and PowerShell Tests
+name: CI
 
 on:
   push:

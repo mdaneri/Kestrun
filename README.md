@@ -11,12 +11,16 @@ Kestrun — PowerShell brains. Kestrel speed.
 
 ---
 
-![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
+![CI](https://github.com/Kestrun/Kestrun/actions/workflows/ci.yml/badge.svg)
 [![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
 ![ClamAV Scan](https://img.shields.io/github/actions/workflow/status/kestrun/kestrun/clam-av.yml?branch=main&label=ClamAV%20Scan)
 [![CodeFactor](https://www.codefactor.io/repository/github/kestrun/kestrun/badge/main)](https://www.codefactor.io/repository/github/kestrun/kestrun/overview/main)
+[![Coverage Status](https://coveralls.io/repos/github/Kestrun/Kestrun/badge.svg?branch=main)](https://coveralls.io/github/Kestrun/Kestrun?branch=main)
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
+[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-green)
 ![Windows](https://img.shields.io/badge/Windows-✔-blue)
 ![Linux](https://img.shields.io/badge/Linux-✔-green)
@@ -26,10 +30,10 @@ Kestrun — PowerShell brains. Kestrel speed.
 ![PowerShell](https://img.shields.io/badge/PowerShell-7.4-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-7.5-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-7.6(preview)-blue)
+
 [![NuGet](https://img.shields.io/nuget/v/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Kestrun)](https://www.powershellgallery.com/packages/Kestrun)
-[![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the
 flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and
