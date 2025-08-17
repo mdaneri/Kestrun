@@ -6,6 +6,11 @@ nav_order: 11
 
 # PowerShell-backed Razor Pages
 
+> 🚧 **Work in Progress**
+>
+> This page is currently under development. Content will be expanded with guides, examples, and best practices soon.  
+> Thank you for your patience while we build it out.
+
 > *Dynamic ASP.NET Core UI powered by PowerShell scripts — all inside **Kestrun***
 > Plus: how to collect form data both from PowerShell and C# Razor Pages
 

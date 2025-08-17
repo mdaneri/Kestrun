@@ -6,7 +6,7 @@
 #>
 
 # Import the Kestrun module
-Get-Module -Name Kestrun
+Install-PSResource -Name Kestrun
 
 # Create a new Kestrun server
 New-KrServer -Name "Simple Server"
