@@ -1,0 +1,107 @@
+permissions:
+  contents: read
+name: Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-24.04
+    env:
+      POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
+      DOTNET_VERBOSITY: minimal
+      PESTER_VERBOSITY: Normal
+
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Setup .NET 8 & 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: 🧰 Install PowerShell
+        uses: ./.github/actions/Install-PowerShell
+        with:
+          Version: latest
+
+      - name: 🧰 Install Invoke-Build & Pester
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
+          Get-Module Pester -ListAvailable | Select Name,Version,Path
+
+      - name: 📦 Restore
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🔧 Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      # --- .NET coverage via built-in XPlat collector (no coverlet.msbuild needed) ---
+      - name: 🧪 .NET tests net8.0 (XPlat -> Cobertura)
+        run: |
+          dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
+            --no-build \
+            -f net8.0 \
+            --collect "XPlat Code Coverage" \
+            -v $DOTNET_VERBOSITY
+
+      - name: 🧪 .NET tests net9.0 (XPlat -> Cobertura)
+        run: |
+          dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
+            --no-build \
+            -f net9.0 \
+            --collect "XPlat Code Coverage" \
+            -v $DOTNET_VERBOSITY
+
+      # --- PowerShell coverage (Pester -> JaCoCo) ---
+      - name: 🧪 PowerShell tests with coverage
+        shell: pwsh
+        run: |
+          Invoke-Pester -CI -Script tests/PowerShell.Tests `
+            -CodeCoverage @('src/PowerShell/Kestrun/*.psm1','src/PowerShell/Kestrun/*.ps1') `
+            -CodeCoverageOutputFile TestResults/pester-coverage.xml `
+            -CodeCoverageOutputFormat JaCoCo
+
+      # --- Merge to LCOV ---
+      - name: 📊 Merge coverage to LCOV
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:"**/coverage.cobertura.xml;TestResults/pester-coverage.xml" \
+            -targetdir:"coveragereport" \
+            -reporttypes:lcov
+
+      # --- Upload to Coveralls ---
+      - name: ☁️ Upload to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coveragereport/lcov.info
+          format: lcov
+
+      # Keep the report as an artifact for quick inspection
+      - name: 📦 Upload LCOV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lcov
+          path: coveragereport/lcov.info
