@@ -9,9 +9,6 @@ using Serilog.Events;
 
 internal static class DelegateBuilder
 {
-
-    
-
     /// <summary>
     /// Prepares the Kestrun context, response, and script globals for execution.
     /// Encapsulates request parsing, shared state snapshot, arg injection, and logging.
