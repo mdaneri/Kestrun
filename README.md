@@ -1,4 +1,3 @@
-
 <!-- markdownlint-disable-file MD041 -->
 ```text
 ██╗  ██╗███████╗███████╗████████╗██████╗ ██╗   ██╗███╗   ██╗
@@ -15,19 +14,22 @@ Kestrun — PowerShell brains. Kestrel speed.
 ![CI](https://github.com/Kestrun/Kestrun/actions/workflows/dotnet.yml/badge.svg)
 [![CodeQL](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml/badge.svg)](https://github.com/kestrun/kestrun/actions/workflows/codeql.yml)
 ![ClamAV Scan](https://img.shields.io/github/actions/workflow/status/kestrun/kestrun/clam-av.yml?branch=main&label=ClamAV%20Scan)
+[![CodeFactor](https://www.codefactor.io/repository/github/kestrun/kestrun/badge/main)](https://www.codefactor.io/repository/github/kestrun/kestrun/overview/main)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 [![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-green)
 ![Windows](https://img.shields.io/badge/Windows-✔-blue)
 ![Linux](https://img.shields.io/badge/Linux-✔-green)
 ![macOS](https://img.shields.io/badge/macOS-✔-lightgrey)
-![.NET](https://img.shields.io/badge/.NET-8%2B-blueviolet)
-![.NET](https://img.shields.io/badge/.NET-9%2B-blueviolet)
+![.NET 8](https://img.shields.io/badge/.NET-8%2B-blueviolet)
+![.NET 9](https://img.shields.io/badge/.NET-9%2B-blueviolet)
+![PowerShell](https://img.shields.io/badge/PowerShell-7.4-blue)
+![PowerShell](https://img.shields.io/badge/PowerShell-7.5-blue)
+![PowerShell](https://img.shields.io/badge/PowerShell-7.6(preview)-blue)
 [![NuGet](https://img.shields.io/nuget/v/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Kestrun)](https://www.powershellgallery.com/packages/Kestrun)
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
-
 
 Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the
 flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and
@@ -46,8 +48,8 @@ dynamic services using both C# and PowerShell in a single, integrated environmen
   Register HTTP routes using:
   - 🐚 PowerShell  
   - 🧩 C# scripts (Roslyn compiled with typed globals and shared state)  
-  - � VB.NET scripts (full .NET scripting with claims and validation support)  
-  - �🐍 Python (via Python.NET)  
+  - 📄 VB.NET scripts (full .NET scripting with claims and validation support)  
+  - 🐍 Python (via Python.NET)  
   - 📜 JavaScript (via ClearScript + V8)  
   - 🧪 F# (stubbed for future support)
 
@@ -132,18 +134,17 @@ dynamic services using both C# and PowerShell in a single, integrated environmen
 **For Building:**
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download) AND [.NET 9 SDK](https://dotnet.microsoft.com/download) (both required)
-- **PowerShell 7.4+** or **PowerShell 7.5+** - Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases)
-- **InvokeBuild** and **Pester** PowerShell modules:
+- **PowerShell 7.4+**
+- **Invoke-Build** and **Pester** PowerShell modules:
 
 ```powershell
-Install-Module InvokeBuild, Pester -Force
+Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
 ```
 
 **For Runtime:**
 
 - [.NET 8 Runtime](https://dotnet.microsoft.com/download) or [.NET 9 Runtime](https://dotnet.microsoft.com/download)
-- **PowerShell 7.4+** (requires .NET 8) or **PowerShell 7.5+** (requires .NET 9)
-  - Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases)
+- **PowerShell 7.4+** (download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases))
 
 ### Build & Run
 
@@ -157,11 +158,7 @@ cd Kestrun
 Build the solution using Invoke-Build:
 
 ```powershell
-# Build only
-Invoke-Build Build
-
-# Or build, test, and clean in one command
-Invoke-Build All
+Invoke-Build Restore ; Invoke-Build Build
 ```
 
 Run an example (e.g., MultiRoutes):
@@ -185,36 +182,29 @@ Import-Module ./src/PowerShell/Kestrun/Kestrun.psm1
 The project includes an Invoke-Build script that automatically handles both C# (xUnit) and PowerShell (Pester) tests:
 
 ```powershell
-# Run all tests (both C# and PowerShell)
 Invoke-Build Test
-
-# Or run the complete build pipeline (clean, build, and test both C# and PowerShell)
-Invoke-Build All
 ```
 
 ### Manual Test Execution
 
-If you need to run tests individually:
-
 #### C# Tests
 
-Tests are written with `xUnit` under `tests/CSharp.Tests/Kestrun.Tests`. To execute them manually:
-
 ```powershell
-dotnet test .\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj
+Invoke-Build Kestrun.Tests
 ```
 
 #### PowerShell Tests
 
-PowerShell module tests live under `tests/PowerShell.Tests` and use Pester. Run them manually with:
-
 ```powershell
-Invoke-Pester -CI -Path tests/PowerShell.Tests
+Invoke-Build Test-Pester
 ```
 
-The suite exercises the module's exported commands such as the global variable helpers, path resolution, and response writers.
+## Documentation
 
-GitHub Actions runs these tests automatically on every push and pull request.
+Kestrun docs are built with [Just-the-Docs](https://github.com/just-the-docs/just-the-docs).  
+All new documentation **must be compatible** (front matter, `parent`, `nav_order`, etc.).  
+
+See [docs/](docs/) for structure.
 
 ## Project Structure
 
@@ -244,21 +234,15 @@ GitHub Actions runs these tests automatically on every push and pull request.
   - `PowerShell/` — PowerShell examples
   - `Files/` — test files and resources
 - `tests/` — Test projects (C#, PowerShell)
-- `cert/` — Development certificates
-- `docs/` — Documentation files
+- `docs/` — Documentation files (Just-the-Docs)
 - `Utility/` — Build and maintenance scripts
 - `.github/` — GitHub Actions workflows
 - `Lint/` — Code analysis rules
 
 ## Contributing
 
-Contributions are welcome! Please open issues or pull requests for bug fixes, features, or documentation improvements.
-
-1. Fork the repo and create your branch
-2. Make your changes and add tests
-3. Run all tests to verify
-4. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the MIT License (SPDX: MIT). See [LICENSE](LICENSE) for details.
+Licensed under the MIT License. See [LICENSE](LICENSE).

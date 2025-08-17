@@ -121,7 +121,8 @@ Add-BuildTask Help {
     Write-Host 'Additional Tasks:' -ForegroundColor Green
     Write-Host '- Nuget-CodeAnalysis: Updates CodeAnalysis packages.'
     Write-Host '- Clean-CodeAnalysis: Cleans the CodeAnalysis packages.'
-    Write-Host '- Test: Runs tests and Pester tests.'
+    Write-Host '- Kestrun.Tests: Runs Kestrun DLL tests.'
+    Write-Host '- Test-Pester: Runs Pester tests.'
     Write-Host '- Kestrun.Tests: Runs Kestrun DLL tests.'
     Write-Host '- Package: Packages the solution.'
     Write-Host '- Manifest: Updates the Kestrun.psd1 manifest.'

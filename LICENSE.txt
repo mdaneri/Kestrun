@@ -1,6 +1,4 @@
-SPDX-License-Identifier: MIT
-
-MIT License
+The MIT License (MIT)
 
 Copyright © 2025 Kestrun Contributors
 
