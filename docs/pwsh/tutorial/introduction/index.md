@@ -32,7 +32,7 @@ All sample scripts live in `examples/PowerShell/Tutorial`.
 
 From the repository root:
 
-```pwsh
+```powershell
 # 1) Hello World
 pwsh .\examples\PowerShell\Tutorial\Sample-1.ps1
 ```

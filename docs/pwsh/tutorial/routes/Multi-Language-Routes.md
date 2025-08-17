@@ -72,7 +72,7 @@ Start-KrServer
 
 ### Server
 
-```pwsh
+```powershell
 . .\examples\PowerShell\Tutorial\3-Multiple-Content-Types.ps1`
 ```
 
@@ -80,13 +80,13 @@ Start-KrServer
 
 #### curl
 
-```pwsh
+```powershell
 curl http://127.0.0.1:5000/hello
 ```
 
 #### PowerShell
 
-```pwsh
+```powershell
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
 ```
 

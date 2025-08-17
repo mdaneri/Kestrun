@@ -66,17 +66,17 @@ Start-KrServer
 
 - The server configuration mirrors Sample 1 (host, listener, runtime, configuration).
 - Four routes demonstrate content helpers that set the Content‑Type header and serialize for you:
-      - Write‑KrTextResponse — writes text/plain
-      - Write‑KrJsonResponse — application/json via JSON serialization
-      - Write‑KrXmlResponse — application/xml via XML serialization
-      - Write‑KrYamlResponse — application/x‑yaml via YAML serialization
+      - [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse) — writes text/plain
+      - [Write-KrJsonResponse](/docs/pwsh/cmdlets/Write-KrJsonResponse) — application/json via JSON serialization
+      - [Write-KrXmlResponse](/docs/pwsh/cmdlets/Write-KrXmlResponse) — application/xml via XML serialization
+      - [Write-KrYamlResponse](/docs/pwsh/cmdlets/Write-KrYamlResponse) — application/x‑yaml via YAML serialization
 - Each helper also accepts a -StatusCode parameter.
 
 ## Try it
 
 ### Server
 
-```pwsh
+```powershell
 . .\examples\PowerShell\Tutorial\2-Multiple-Content-Types.ps1`
 ```
 
@@ -84,7 +84,7 @@ Start-KrServer
 
 #### curl
 
-```pwsh
+```powershell
 curl http://127.0.0.1:5000/hello
 curl http://127.0.0.1:5000/hello-json
 curl http://127.0.0.1:5000/hello-xml
@@ -93,7 +93,7 @@ curl http://127.0.0.1:5000/hello-yaml
 
 #### PowerShell
 
-```pwsh
+```powershell
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
 Invoke-RestMethod -Uri 'http://127.0.0.1:5000/hello-json'             # auto-parses JSON
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello-xml'  | Select-Object -ExpandProperty Content

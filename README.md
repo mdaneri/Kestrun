@@ -135,7 +135,7 @@ dynamic services using both C# and PowerShell in a single, integrated environmen
 - **PowerShell 7.4+** or **PowerShell 7.5+** - Download from [PowerShell GitHub Releases](https://github.com/PowerShell/PowerShell/releases)
 - **InvokeBuild** and **Pester** PowerShell modules:
 
-```pwsh
+```powershell
 Install-Module InvokeBuild, Pester -Force
 ```
 
@@ -149,14 +149,14 @@ Install-Module InvokeBuild, Pester -Force
 
 Clone the repository:
 
-```pwsh
+```powershell
 git clone https://github.com/Kestrun/Kestrun.git
 cd Kestrun
 ```
 
 Build the solution using Invoke-Build:
 
-```pwsh
+```powershell
 # Build only
 Invoke-Build Build
 
@@ -166,7 +166,7 @@ Invoke-Build All
 
 Run an example (e.g., MultiRoutes):
 
-```pwsh
+```powershell
 dotnet run --project .\examples\CSharp\MultiRoutes\MultiRoutes.csproj
 ```
 
@@ -174,7 +174,7 @@ dotnet run --project .\examples\CSharp\MultiRoutes\MultiRoutes.csproj
 
 Import the module (from source):
 
-```pwsh
+```powershell
 Import-Module ./src/PowerShell/Kestrun/Kestrun.psm1
 ```
 
@@ -184,7 +184,7 @@ Import-Module ./src/PowerShell/Kestrun/Kestrun.psm1
 
 The project includes an Invoke-Build script that automatically handles both C# (xUnit) and PowerShell (Pester) tests:
 
-```pwsh
+```powershell
 # Run all tests (both C# and PowerShell)
 Invoke-Build Test
 
@@ -200,7 +200,7 @@ If you need to run tests individually:
 
 Tests are written with `xUnit` under `tests/CSharp.Tests/Kestrun.Tests`. To execute them manually:
 
-```pwsh
+```powershell
 dotnet test .\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj
 ```
 
@@ -208,7 +208,7 @@ dotnet test .\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj
 
 PowerShell module tests live under `tests/PowerShell.Tests` and use Pester. Run them manually with:
 
-```pwsh
+```powershell
 Invoke-Pester -CI -Path tests/PowerShell.Tests
 ```
 

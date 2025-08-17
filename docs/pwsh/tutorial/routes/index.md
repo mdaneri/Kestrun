@@ -10,7 +10,7 @@ nav_order: 0
 
 From the repository root:
 
-```pwsh
+```powershell
 # 1) Multiple content types
 pwsh .\examples\PowerShell\Tutorial\2-Multiple-Content-Types.ps1
 

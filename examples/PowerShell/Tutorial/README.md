@@ -10,7 +10,7 @@ This folder contains the introduction samples referenced in the docs.
 
 From the repository root:
 
-```pwsh
+```powershell
 pwsh .\examples\PowerShell\Tutorial\1-Hello-World.ps1
 pwsh .\examples\PowerShell\Tutorial\2-Multi-Language-Routes.ps1
 pwsh .\examples\PowerShell\Tutorial\3-Multiple-Content-Types.ps1

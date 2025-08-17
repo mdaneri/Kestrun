@@ -51,26 +51,26 @@ Start-KrServer
 
 ## Step-by-step
 
-- New-KrServer — creates an in‑process server host that will hold listeners, middleware, and routes.
-- Add-KrListener — binds the Kestrel web server to 127.0.0.1:5000 over HTTP/1.1 (default).
-- Add-KrPowerShellRuntime — registers the PowerShell runtime so routes and middleware implemented in PS can execute.
-- Enable-KrConfiguration — applies your staged configuration (listeners, runtimes, options) to the running host.
-- Add-KrMapRoute — maps a GET /hello route with a PowerShell script block handler.
-- Write-KrTextResponse — sets the HTTP status code (200) and writes a text/plain response body.
-- Start-KrServer — starts listening; press Ctrl+C in the terminal to stop.
+- [New-KrServer](/docs/pwsh/cmdlets/New-KrServer) — creates an in‑process server host that will hold listeners, middleware, and routes.
+- [Add-KrListener](/docs/pwsh/cmdlets/Add-KrListener) — binds the Kestrel web server to 127.0.0.1:5000 over HTTP/1.1 (default).
+- [Add-KrPowerShellRuntime](/docs/pwsh/cmdlets/Add-KrPowerShellRuntime) — registers the PowerShell runtime so routes and middleware implemented in PS can execute.
+- [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration) — applies your staged configuration (listeners, runtimes, options) to the running host.
+- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute) — maps a GET /hello route with a PowerShell script block handler.
+- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse) — sets the HTTP status code (200) and writes a text/plain response body.
+- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer) — starts listening; press Ctrl+C in the terminal to stop.
 
 ### How it works
 
-- Configuration is staged by cmdlets, then committed with Enable-KrConfiguration.
+- Configuration is staged by cmdlets, then committed with [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration).
 - Each route runs inside a request context (available as $Context) with Request/Response properties.
-- Write‑KrTextResponse is a convenience wrapper that sets Content‑Type to text/plain and writes the body.
+- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse) is a convenience wrapper that sets Content‑Type to text/plain and writes the body.
 - By default, a single listener is configured on 127.0.0.1:5000; you can add more listeners (e.g., HTTPS) later.
 
 ## Try it
 
 ### Server
 
-```pwsh
+```powershell
 . .\examples\PowerShell\Tutorial\1-Hello-World.ps1`
 ```
 
@@ -78,13 +78,13 @@ Start-KrServer
 
 #### curl
 
-```pwsh
+```powershell
 curl http://127.0.0.1:5000/hello
 ```
 
 #### PowerShell
 
-```pwsh
+```powershell
 Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProperty Content
 
 # Stop the server with Ctrl+C in the terminal where you ran the script.
