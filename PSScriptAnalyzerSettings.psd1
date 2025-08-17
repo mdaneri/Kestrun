@@ -1,24 +1,30 @@
 @{
-    Severity            = @('Error', 'Warning', 'Information')
-    IncludeDefaultRules = $true
+    # Load all default rules; we’ll override specifics in `Rules`.
+    ExcludeRules = @()
 
-    CustomRulePath      = @(
-        './Lint/AvoidNewObjectRule.psm1'
+    # Where your custom rules live (file or folder).
+    CustomRulePath = @(
+        './Lint',                         # folder form (recommended)
+        './Lint/AvoidNewObjectRule.psm1'  # file form (optional; keep only one if you prefer)
     )
 
-    Rules               = @{
+    Rules = @{
+        # Built-in rule with your traversal customization
         PSReviewUnusedParameter = @{
-            CommandsToTraverse = @(
-                'Where-Object',
-                'Remove-PodeRoute'
-            )
+            Enable              = $true
+            CommandsToTraverse  = @('Where-Object','Remove-PodeRoute')
+            Severity            = 'Warning'   # optional: make it louder/softer
         }
-        AvoidNewObjectRule      = @{
+
+        # Your custom rule
+        AvoidNewObjectRule = @{
+            Enable   = $true
             Severity = 'Warning'
         }
+
+        # (Optional) a few opinionated “proof it’s working” rules
+        PSUseConsistentIndentation = @{ Enable = $true }
+        PSAvoidUsingWriteHost      = @{ Enable = $true }
+        PSUseApprovedVerbs         = @{ Enable = $true }
     }
-
-    ExcludeRules        = @(
-    )
-
 }
