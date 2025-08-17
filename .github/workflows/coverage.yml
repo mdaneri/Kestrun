@@ -107,13 +107,14 @@ jobs:
           ls -la TestResults/pester-coverage.xml || true
 
       # --- Merge to LCOV ---
-      - name: 📊 Merge coverage to LCOV
+      - name: 🧮 Merge coverage to LCOV
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
           reportgenerator \
             -reports:"**/coverage.cobertura.xml;TestResults/pester-coverage.xml" \
             -targetdir:"coveragereport" \
-            -reporttypes:lcov
+            -reporttypes:lcov \
+            -sourcedirs:"src/PowerShell/Kestrun;src/CSharp/Kestrun;."
 
       # --- Inspect LCOV (debug) ---
       - name: 🔎 Inspect LCOV
