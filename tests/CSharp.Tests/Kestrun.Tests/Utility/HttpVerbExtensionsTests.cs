@@ -4,7 +4,6 @@ using Xunit;
 
 namespace KestrunTests.Utility;
 public class HttpVerbExtensionsTests
-
 {
     [Theory]
     [InlineData(HttpVerb.Get, "GET")]

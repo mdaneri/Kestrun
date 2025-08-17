@@ -20,7 +20,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>, IAuthHandler
 {
-
     // private Serilog.ILogger Logger => Options.Logger;
 
     /// <summary>
@@ -247,11 +246,4 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
                 ["password"] = password
             });
     }
-
-
-
-
-
-
-
 }

@@ -12,7 +12,6 @@ namespace Kestrun.Logging
     /// </summary>
     public static class LoggerExtensions
     {
-    
         /// <summary>
         /// Writes a sanitized debug log event, removing control characters from string property values.
         /// </summary>

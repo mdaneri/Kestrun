@@ -45,7 +45,6 @@ internal static class VBNetDelegateBuilder
         string code, Serilog.ILogger log, Dictionary<string, object?>? args, string[]? extraImports,
         Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.VisualBasic16_9)
     {
-
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                code.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
@@ -272,7 +271,6 @@ internal static class VBNetDelegateBuilder
     string vbReturnType, IReadOnlyDictionary<string, object?>? locals = null
        )
     {
-
         var sb = new StringBuilder();
 
         // common + caller-supplied Imports
@@ -342,5 +340,4 @@ internal static class VBNetDelegateBuilder
     """);
         return sb.ToString();
     }
-
 }

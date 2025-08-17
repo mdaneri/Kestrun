@@ -96,7 +96,7 @@ public record MapRouteOptions
         /// Group name for OpenAPI documentation.
         /// </summary>
         public string? GroupName { get; init; } // Group name for OpenAPI documentation 
-    };
+    }
 
     /// <summary>
     /// OpenAPI metadata for this route.

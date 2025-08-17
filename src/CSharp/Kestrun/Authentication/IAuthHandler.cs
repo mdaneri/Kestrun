@@ -19,8 +19,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public interface IAuthHandler
 {
-
-
     /// <summary>
     /// Generates an <see cref="AuthenticationTicket"/> for the specified user and authentication scheme, issuing additional claims as configured.
     /// </summary>
@@ -390,7 +388,6 @@ public interface IAuthHandler
             return result is IEnumerable<Claim> claims
               ? claims
            : [];
-
         };
     }
 }

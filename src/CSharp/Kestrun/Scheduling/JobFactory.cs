@@ -11,7 +11,6 @@ namespace Kestrun.Scheduling;
 
 internal static class JobFactory
 {
-
     internal record JobConfig(
           ScriptLanguage Language,
           string Code,
@@ -108,7 +107,6 @@ internal static class JobFactory
                 }
                 // Ensure we release the runspace back to the pool                 
                 config.Pool.Release(runspace);
-
             }
         };
     }

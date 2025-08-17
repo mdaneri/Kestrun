@@ -80,7 +80,6 @@ public class ApiKeyAuthHandler
 
             if (Options.ExpectedKeyBytes is not null)
             {
-
                 valid = FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes);
             }
             else if (Options.ValidateKeyAsync is not null)
@@ -197,7 +196,6 @@ public class ApiKeyAuthHandler
     /// <param name="settings">The settings containing the VB.NET authentication code.</param>
     /// <param name="logger">The logger to use for debug output.</param>
     /// <returns>A delegate that validates an API key using VB.NET code.</returns>
-
     public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
@@ -215,5 +213,4 @@ public class ApiKeyAuthHandler
                 ["providedKeyBytes"] = providedKeyBytes
             });
     }
-
 }

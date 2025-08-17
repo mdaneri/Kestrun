@@ -5,7 +5,6 @@ using Xunit;
 
 namespace KestrunTests;
 public class RegexUtilsTests
-
 {
     private static bool InvokeIsGlobMatch(string input, string pattern, bool ignoreCase = true)
     {

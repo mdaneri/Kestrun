@@ -9,7 +9,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public interface IClaimsCommonOptions
 {
-
   /// <summary>
   /// After credentials are valid, this is called to add extra Claims.
   /// Parameters: HttpContext, username → IEnumerable of extra claims.

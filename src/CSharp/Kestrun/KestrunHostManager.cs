@@ -276,6 +276,4 @@ public static class KestrunHostManager
         _defaultName = null;
         Log.CloseAndFlush();
     }
-
-
 }

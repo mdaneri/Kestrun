@@ -5,7 +5,6 @@ using Xunit;
 
 namespace KestrunTests.Utility;
 public class PowerShellModuleLocatorTests
-
 {
     [Fact]
     public void FindFileUpwards_FindsFile()

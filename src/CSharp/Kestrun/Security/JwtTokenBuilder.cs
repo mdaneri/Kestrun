@@ -857,5 +857,4 @@ public sealed class JwtTokenBuilder
             return new JwtTokenPackage(jwt, key, tvp);
         }
     */
-
 }

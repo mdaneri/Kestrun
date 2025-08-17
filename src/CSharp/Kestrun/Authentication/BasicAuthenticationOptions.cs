@@ -12,7 +12,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, IAuthenticationCommonOptions
 {
-
     /// <summary>
     /// Gets or sets the name of the HTTP header used for authentication.
     /// </summary>

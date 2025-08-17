@@ -15,7 +15,6 @@ namespace Kestrun.Hosting;
 /// </summary>
 public static class KestrunHostMapExtensions
 {
-
     /// <summary>
     /// Represents a delegate that handles a Kestrun request with the provided context.
     /// </summary>
@@ -48,7 +47,6 @@ public static class KestrunHostMapExtensions
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, string pattern, IEnumerable<HttpVerb> httpVerbs, KestrunHandler handler, string[]? requireSchemes = null)
     {
-
         return host.AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
@@ -56,7 +54,6 @@ public static class KestrunHostMapExtensions
             Language = ScriptLanguage.Native,
             RequireSchemes = requireSchemes ?? [] // No authorization by default
         }, handler);
-
     }
 
     /// <summary>
@@ -122,7 +119,6 @@ public static class KestrunHostMapExtensions
             RequireSchemes = requireSchemes ?? [], // No authorization by default
             Arguments = arguments ?? [] // No additional arguments by default
         });
-
     }
 
     /// <summary>
@@ -222,7 +218,6 @@ public static class KestrunHostMapExtensions
             host._Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
             return map;
             // Add to the feature queue for later processing
-
         }
         catch (CompilationErrorException ex)
         {
@@ -385,7 +380,6 @@ public static class KestrunHostMapExtensions
     /// <returns>An IEndpointConventionBuilder for further configuration.</returns>
     public static IEndpointConventionBuilder AddHtmlTemplateRoute(this KestrunHost host, MapRouteOptions options, string htmlFilePath)
     {
-
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
             host._Logger.Debug("Adding HTML template route: {Pattern}", options.Pattern);
 
@@ -529,7 +523,6 @@ public static class KestrunHostMapExtensions
                 Language = language,
                 RequireSchemes = requireSchemes ?? [], // No authorization by default
                 Arguments = arguments ?? [], // No additional arguments by default
-
             };
             // queue before static files
             return host.Use(app =>
@@ -614,6 +607,4 @@ public static class KestrunHostMapExtensions
             ? options
             : null;
     }
-
-
 }

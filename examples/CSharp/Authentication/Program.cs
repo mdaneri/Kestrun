@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using Kestrun;
@@ -299,7 +299,6 @@ server.AddResponseCompression(options =>
            return username == "admin" && password == "password";
        """
        };
-
    })
    /// ── BASIC AUTHENTICATION – C# CODE ────────────────────────────────────
    .AddBasicAuthentication(BasicVBNetScheme, opts =>
@@ -462,7 +461,6 @@ server.AddResponseCompression(options =>
            AccessDeniedPath = "/cookies/access-denied",
            SlidingExpiration = true,
            ExpireTimeSpan = TimeSpan.FromMinutes(60),
-
        },
          claimPolicy: claimConfig
    );
@@ -500,7 +498,6 @@ else
         CertificateManager.ExportFormat.Pfx,
         "p@ss".AsSpan()
     );
-
 }
 
 if (!CertificateManager.Validate(
@@ -763,7 +760,6 @@ server.AddMapRoute("/secure/key/simple/hello", HttpVerb.Get, async (ctx) =>
 {
     var user = ctx.User?.Identity?.Name;
     await ctx.Response.WriteTextResponseAsync($"Welcome, {user}! You are authenticated using simple key matching.", 200);
-
 }, [ApiKeySimple]);
 
 
@@ -887,7 +883,6 @@ server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
     }
     // var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
-
 }, [JwtScheme]);
 
 

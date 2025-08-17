@@ -62,7 +62,6 @@ public sealed class JwtBuilderResult(
             NameClaimType = ClaimTypes.Name,
             //    NameClaimType = JwtRegisteredClaimNames.Sub,
             RoleClaimType = ClaimTypes.Role
-
         };
         return tvp;
     }
@@ -84,7 +83,6 @@ public sealed class JwtBuilderResult(
         var handler = new JsonWebTokenHandler();
         return await handler.ValidateTokenAsync(
             jwt, validationParameters).ConfigureAwait(false);
-
     }
 
     /// <summary>
@@ -97,5 +95,4 @@ public sealed class JwtBuilderResult(
     {
         return ValidateAsync(jwt, clockSkew).GetAwaiter().GetResult();
     }
-
 }

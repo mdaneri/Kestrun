@@ -301,7 +301,6 @@ public class KestrunHost : IDisposable
             UseConnectionLogging = useConnectionLogging
         });
         return this;
-
     }
 
     /// <summary>
@@ -361,7 +360,6 @@ public class KestrunHost : IDisposable
         }
         try
         {
-
             // This method is called to apply the configured options to the Kestrel server.
             // The actual application of options is done in the Run method.
             _runspacePool = CreateRunspacePool(Options.MaxRunspaces, userVariables);
@@ -579,7 +577,6 @@ public class KestrunHost : IDisposable
             app.UseLanguageRuntime(
                 ScriptLanguage.PowerShell,
                 b => b.UsePowerShellRunspace(_runspacePool));
-
         });
     }
 

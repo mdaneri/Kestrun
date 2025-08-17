@@ -8,7 +8,6 @@ using Kestrun.Utilities;
 
 namespace KestrunTests.Utility;
 public class BuildErrorTests
-
 {
     [Fact]
     public void Text_ReturnsFormattedErrors()
