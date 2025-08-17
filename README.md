@@ -142,7 +142,7 @@ dynamic services using both C# and PowerShell in a single, integrated environmen
 - **Invoke-Build** and **Pester** PowerShell modules:
 
 ```powershell
-Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
+Install-PSResource -Name 'InvokeBuild','Pester' -Scope CurrentUser
 ```
 
 **For Runtime:**

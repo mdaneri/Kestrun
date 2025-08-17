@@ -45,7 +45,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
+          Set-PSResourceRepository -Name PSGallery -Trusted 
+          Install-PSResource -Name 'InvokeBuild','Pester' -Scope CurrentUser
           Get-Module Pester -ListAvailable | Select Name,Version,Path
 
       - name: 📦 Restore

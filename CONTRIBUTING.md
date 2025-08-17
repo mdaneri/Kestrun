@@ -22,7 +22,7 @@ you’re in the right place. 💫
 
 Install the PowerShell build/test tooling:
 
-```pwsh
+```powershell
 Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
 ```
 
@@ -37,13 +37,13 @@ From the repository root:
 
 **Restore & Build**
 
-```pwsh
+```powershell
 Invoke-Build Restore ; Invoke-Build Build
 ```
 
 **Run Tests**
 
-```pwsh
+```powershell
 Invoke-Build Test
 ```
 
@@ -61,7 +61,7 @@ That’s the canonical pipeline used locally and by CI—keep it consistent.
 2. **Code** (follow style guides below).
 3. **Build & test**
 
-   ```pwsh
+   ```powershell
    Invoke-Build Restore ; Invoke-Build Build
    Invoke-Build Test
    ```
@@ -127,17 +127,20 @@ render_with_liquid: false
 Returns the full schedule report.
 
 ## SYNTAX
-```
+
+```powershell
 
 Get-KrScheduleReport \[\[-Server] <KestrunHost>] \[\[-TimeZoneId] <String>] \[-AsHashtable]
 
-````
+```
 
 ## DESCRIPTION
+
 Concise, user-focused description…
 
 ## EXAMPLES
-```pwsh
+
+```powershell
 Get-KrScheduleReport -AsHashtable
 ````
 
@@ -146,10 +149,10 @@ Get-KrScheduleReport -AsHashtable
 * **Server** — …
 * **TimeZoneId** — …
 
-````
+```
 
 **Tutorial page (example):**
-```md
+```markdown
 ---
 layout: default
 parent: Tutorials
@@ -162,7 +165,7 @@ nav_order: 3
 A crisp overview…
 
 ## Quick start
-```pwsh
+```powershell
 Invoke-Build Restore ; Invoke-Build Build
 ````
 
@@ -194,7 +197,7 @@ Browse the Kestrun command surface…
 
   > **Note:** This behavior requires PowerShell 7.4+
   > **Warning:** Rotating secrets? Update appsettings too.
-* **Code fences**: Use language hints (` ```pwsh`, ` ```csharp`).
+* **Code fences**: Use language hints (` ```powershell`, ` ```csharp`).
 * **Links**: Relative links within the docs; absolute links for external sites.
 
 ---
