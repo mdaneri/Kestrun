@@ -1,5 +1,4 @@
-function Write-KrTextResponse {
-    <#
+<#
     .SYNOPSIS
         Writes plain text to the HTTP response body.
 
@@ -23,12 +22,13 @@ function Write-KrTextResponse {
 
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrTextResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [Alias("Text")]
+        [Alias('Text')]
         [object]$InputObject,
         [Parameter()]
         [int]$StatusCode = 200,

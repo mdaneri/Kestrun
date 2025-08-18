@@ -1,5 +1,4 @@
-function Add-KrFavicon {
-    <#
+<#
     .SYNOPSIS
         Adds a favicon to the Kestrun server.
     .DESCRIPTION
@@ -20,7 +19,8 @@ function Add-KrFavicon {
     .NOTES
         This cmdlet is used to register a favicon for the Kestrun server, allowing you to set a custom favicon for the server's web interface.
         If no icon path is specified, the default embedded favicon will be used.
-    #>
+#>
+function Add-KrFavicon {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -37,13 +37,12 @@ function Add-KrFavicon {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddFavicon($Server, $IconPath)  | Out-Null
+        [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddFavicon($Server, $IconPath) | Out-Null
 
         if ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             # Return the modified server instance
             return $Server
         }
-
     }
 }

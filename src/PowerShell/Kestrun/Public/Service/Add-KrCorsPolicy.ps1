@@ -1,5 +1,4 @@
-function Add-KrCorsPolicy {
-    <#
+<#
     .SYNOPSIS
         Adds a CORS policy to the server.
     .DESCRIPTION
@@ -17,7 +16,7 @@ function Add-KrCorsPolicy {
         If specified, allows any HTTP method to be used in requests.
     .PARAMETER AllowAnyHeader
         If specified, allows any header to be included in requests.
-        If not specified, only headers explicitly allowed will be included. 
+        If not specified, only headers explicitly allowed will be included.
     .PARAMETER AllowCredentials
         If specified, allows credentials (cookies, authorization headers, etc.) to be included in requests.
     .PARAMETER DisallowCredentials
@@ -39,6 +38,7 @@ function Add-KrCorsPolicy {
     .LINK
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.cors.infrastructure.corspolicybuilder?view=aspnetcore-8.0
 #>
+function Add-KrCorsPolicy {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -74,7 +74,7 @@ function Add-KrCorsPolicy {
         if ($PSCmdlet.ParameterSetName -eq 'Items') {
 
             if ($AllowCredentials.IsPresent -and $DisallowCredentials.IsPresent) {
-                throw "Cannot specify both AllowCredentials and DisallowCredentials."
+                throw 'Cannot specify both AllowCredentials and DisallowCredentials.'
             }
 
             $Builder = [Microsoft.AspNetCore.Cors.Infrastructure.CorsPolicyBuilder]::new()

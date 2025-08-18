@@ -1,5 +1,4 @@
-function Get-KrCertificatePurpose {
-    <#
+<#
     .SYNOPSIS
         Lists the Enhanced Key Usage values on a certificate.
         This function is designed to be used in the context of Kestrun's certificate management.
@@ -13,7 +12,8 @@ function Get-KrCertificatePurpose {
         This will return the Enhanced Key Usage values for the specified certificate.
     .NOTES
         This function is part of the Kestrun module.
-    #>
+#>
+function Get-KrCertificatePurpose {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([System.Collections.Generic.IEnumerable`1[[System.String, System.Private.CoreLib]]])]

@@ -1,4 +1,4 @@
-<# 
+<#
 .SYNOPSIS
     Kestrun PowerShell Example: Global Variable Usage
 .DESCRIPTION
@@ -26,34 +26,32 @@ try {
         # Import the Kestrun module from the source path if it exists
         # This allows for development and testing of the module without needing to install it
         Import-Module $kestrunModulePath -Force -ErrorAction Stop
-    }
-    else {
+    } else {
         # If the source module does not exist, import the installed Kestrun module
         # This is useful for running the script in a production environment where the module is installed
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
-}
-catch {
+} catch {
     # If the import fails, output an error message and exit
     # This ensures that the script does not continue running if the module cannot be loaded
     Write-Error "Failed to import Kestrun module: $_"
     exit 1
 }
 
-$logger = New-KrLogger  |
-Set-KrMinimumLevel -Value Debug  |
-Add-KrSinkFile -Path ".\logs\sharedState.log" -RollingInterval Hour |
-Add-KrSinkConsole |
-Register-KrLogger   -Name "DefaultLogger" -PassThru -SetAsDefault
+$logger = New-KrLogger |
+    Set-KrMinimumLevel -Value Debug |
+    Add-KrSinkFile -Path '.\logs\sharedState.log' -RollingInterval Hour |
+    Add-KrSinkConsole |
+    Register-KrLogger -Name 'DefaultLogger' -PassThru -SetAsDefault
 # Seed a global counter (Visits) — injected as $Visits in every runspace
-Set-KrSharedState  -Name 'Visits' -Value @{Count = 0 }
+Set-KrSharedState -Name 'Visits' -Value @{Count = 0 }
 # Create the server
-$server = New-KrServer -Name 'MyKestrunServer'   -Logger $logger -PassThru
+$server = New-KrServer -Name 'MyKestrunServer' -Logger $logger -PassThru
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 -PassThru| Add-KrPowerShellRuntime -PassThru|
+Add-KrListener -Port 5000 -passThru | Add-KrPowerShellRuntime -PassThru |
 
-Enable-KrConfiguration -PassThru
+    Enable-KrConfiguration -PassThru
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +61,7 @@ Enable-KrConfiguration -PassThru
 # ─────────────────────────────────────────────────────────────────────────────
 Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/show' -ScriptBlock {
     # $Visits is available
-    Write-KrTextResponse -inputObject "Visits so far: $($Visits.Count)" -statusCode 200
+    Write-KrTextResponse -InputObject "Visits so far: $($Visits.Count)" -StatusCode 200
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -75,7 +73,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
     # increment the injected variable
     $Visits.Count++
 
-    Write-KrTextResponse -inputObject "Incremented to $($Visits.Count)" -statusCode 200
+    Write-KrTextResponse -InputObject "Incremented to $($Visits.Count)" -StatusCode 200
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +100,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/visit' -Code @'
 
 Add-KrMapRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {
     # $Visits is available
-    Write-KrRedirectResponse -Url '/ps/show' -Message "Redirecting to /ps/show"
+    Write-KrRedirectResponse -Url '/ps/show' -Message 'Redirecting to /ps/show'
 }
 
 

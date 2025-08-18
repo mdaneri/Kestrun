@@ -288,6 +288,9 @@ internal static class CSharpDelegateBuilder
             foreach (var kvp in allGlobals)
             {
                 builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"]; ");
+
+                // Use object cast to avoid invalid type names (e.g., generics like List`1[System.Int32])
+                //          builder.AppendLine($"var {kvp.Key} = (object)Globals[\"{kvp.Key}\"]; ");
             }
         }
         if (locals is { Count: > 0 })
@@ -295,6 +298,9 @@ internal static class CSharpDelegateBuilder
             foreach (var kvp in locals)
             {
                 builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"]; ");
+
+                // Use object cast to avoid invalid type names (e.g., generics like List`1[System.Int32])
+                //  builder.AppendLine($"var {kvp.Key} = (object)Locals[\"{kvp.Key}\"]; ");
             }
         }
 

@@ -1,5 +1,4 @@
-function Write-KrErrorResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an error response to the HTTP client.
     .DESCRIPTION
@@ -28,7 +27,8 @@ function Write-KrErrorResponse {
         code and content type "application/json". The stack trace is included in the response.
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrErrorResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding(DefaultParameterSetName = 'Message')]
     param (
@@ -48,18 +48,17 @@ function Write-KrErrorResponse {
         [string]$Details,
 
         [Parameter()]
-        [switch]$IncludeStack 
+        [switch]$IncludeStack
     )
 
-    if ($PSCmdlet.ParameterSetName -eq "Message") {
+    if ($PSCmdlet.ParameterSetName -eq 'Message') {
         $Context.Response.WriteErrorResponse(
             $Message,
             $StatusCode,
             $ContentType,
             $Details
         )
-    }
-    else {
+    } else {
         $Context.Response.WriteErrorResponse(
             $Exception,
             $StatusCode,

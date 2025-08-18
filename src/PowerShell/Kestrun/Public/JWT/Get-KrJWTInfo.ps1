@@ -1,6 +1,4 @@
-
-function Get-KrJWTInfo {
-    <#
+<#
     .SYNOPSIS
         Retrieves information from a JWT token.
     .DESCRIPTION
@@ -17,8 +15,9 @@ function Get-KrJWTInfo {
         This function is part of the Kestrun.Security module and is used to inspect JWT tokens.
         Maps to JwtInspector.ReadAllParameters
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Get-KrJWTInfo {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtParameters])]
@@ -27,6 +26,6 @@ function Get-KrJWTInfo {
         [string] $Token
     )
     process {
-        return [Kestrun.Security.JwtInspector]::ReadAllParameters($Token) 
+        return [Kestrun.Security.JwtInspector]::ReadAllParameters($Token)
     }
 }

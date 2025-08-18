@@ -1,5 +1,4 @@
-function Add-KrClaimPolicy {
-    <#
+<#
     .SYNOPSIS
         Adds a new claim policy to the KestrunClaims system.
     .DESCRIPTION
@@ -19,7 +18,8 @@ function Add-KrClaimPolicy {
         This is an example of how to use the Add-KrClaimPolicy function.
     .NOTES
         This function is part of the Kestrun.Security module and is used to build Claims
-    #>
+#>
+function Add-KrClaimPolicy {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([Kestrun.Claims.ClaimPolicyBuilder])]

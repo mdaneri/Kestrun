@@ -1,6 +1,4 @@
-
-function Enable-KrConfiguration {
-    <#
+<#
     .SYNOPSIS
         Enables Kestrun server configuration and starts the server.
     .DESCRIPTION
@@ -17,7 +15,8 @@ function Enable-KrConfiguration {
     .NOTES
         This function is designed to be used after the server has been configured with routes, listeners,
         and other middleware components.
-    #>
+#>
+function Enable-KrConfiguration {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -36,8 +35,8 @@ function Enable-KrConfiguration {
 
         $dict = [System.Collections.Generic.Dictionary[string, System.Object]]::new()
         # Get the user-defined variables
-        $userVars = Get-Variable  -Scope Script
-        $userVars += Get-Variable  -Scope Global
+        $userVars = Get-Variable -Scope Script
+        $userVars += Get-Variable -Scope Global
 
         $userVars | Where-Object { [Kestrun.KestrunHostManager]::VariableBaseline -notcontains $_.Name -and
             $_.Name -notmatch '^_' } | ForEach-Object {
@@ -47,7 +46,7 @@ function Enable-KrConfiguration {
         # Set the user-defined variables in the server configuration
         $Server.EnableConfiguration($dict) | Out-Null
         if (-not $Quiet.IsPresent) {
-            Write-Host "Kestrun server configuration enabled successfully."
+            Write-Host 'Kestrun server configuration enabled successfully.'
             Write-Host "Server Name: $($Server.Options.ApplicationName)"
         }
 

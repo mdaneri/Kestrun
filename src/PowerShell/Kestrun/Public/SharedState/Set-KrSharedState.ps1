@@ -1,5 +1,4 @@
-function Set-KrSharedState {
-    <#
+<#
     .SYNOPSIS
         Defines or updates a global variable accessible across Kestrun scripts.
 
@@ -7,7 +6,7 @@ function Set-KrSharedState {
         Stores a value in the Kestrun global variable table. Variables may be marked
         as read-only to prevent accidental modification.
         If the variable already exists, its value is updated. If it does not exist,
-        it is created. 
+        it is created.
     .PARAMETER Name
         Name of the variable to create or update.
     .PARAMETER Value
@@ -20,7 +19,8 @@ function Set-KrSharedState {
         This creates a global variable "MyNamespace.MyVariable" with the value @{item=42}.
     .NOTES
         This function is part of the Kestrun.SharedState module and is used to define or update global variables.
-    #>
+#>
+function Set-KrSharedState {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]

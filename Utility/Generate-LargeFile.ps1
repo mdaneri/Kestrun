@@ -1,10 +1,10 @@
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
 param(
     [parameter(Mandatory = $true)]
     [string]$Path,
     [parameter()]
-    [ValidateSet("Text", "Binary")]
-    [string]$Mode = "Text",
+    [ValidateSet('Text', 'Binary')]
+    [string]$Mode = 'Text',
     [parameter()]
     [long]$SizeMB = 100
 )
@@ -19,7 +19,7 @@ if (Test-Path $Path) {
 }
 
 # ─── Generate Binary File ─────────────────────────────────────────
-if ($Mode -eq "Binary") {
+if ($Mode -eq 'Binary') {
     $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
     $buffer = [byte[]]::new(1MB)
     $written = 0
@@ -34,19 +34,18 @@ if ($Mode -eq "Binary") {
             $written += $bytesToWrite
             if ($written % (10MB) -eq 0) {
                 # Print progress every 10MB
-                Write-Host "#" -NoNewline
+                Write-Host '#' -NoNewline
             }
         }
-    }
-    finally {
+    } finally {
         $fs.Close()
     }
-    Write-Host " [Done]" -ForegroundColor Green
+    Write-Host ' [Done]' -ForegroundColor Green
 }
 
 # ─── Generate Compressible Text File ──────────────────────────────
-if ($Mode -eq "Text") {
-    $baseLine = "COMPRESSIBLE-DATA-LINE-1234567890"
+if ($Mode -eq 'Text') {
+    $baseLine = 'COMPRESSIBLE-DATA-LINE-1234567890'
     $entropyRate = 1000  # Inject entropy every N lines
     $lineTemplate = $baseLine * 5 + "`n"  # ~180–200 bytes
     $lineBytes = [System.Text.Encoding]::UTF8.GetByteCount($lineTemplate)
@@ -61,20 +60,18 @@ if ($Mode -eq "Text") {
                 # Inject a small random string
                 $randomSuffix = $rand.Next(100000, 999999)
                 $line = "$baseLine-$randomSuffix" * 5 + "`n"
-            }
-            else {
+            } else {
                 $line = $lineTemplate
             }
             # Write the line to the file
             $writer.Write($line)
             if ($i % (63700) -eq 0) {
-                Write-Host "#" -NoNewline
+                Write-Host '#' -NoNewline
             }
         }
-    }
-    finally {
+    } finally {
         $writer.Close()
     }
-    Write-Host " [Done]" -ForegroundColor Green
+    Write-Host ' [Done]' -ForegroundColor Green
 }
 

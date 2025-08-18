@@ -1,9 +1,9 @@
-function Add-KrSinkHttp {
-    <#
+<#
     .SYNOPSIS
         Adds an HTTP sink to the Serilog logger configuration.
     .DESCRIPTION
-        The Add-SinkHttp function configures a logging sink that sends log events to a specified HTTP endpoint. It allows customization of the request URI, batch posting limit, queue limit, period, formatter, batch formatter, minimum log level, HTTP client, and configuration.
+        The Add-SinkHttp function configures a logging sink that sends log events to a specified HTTP endpoint.
+        It allows customization of the request URI, batch posting limit, queue limit, period, formatter, batch formatter, minimum log level, HTTP client, and configuration.
     .PARAMETER LoggerConfig
         The Serilog LoggerConfiguration object to which the HTTP sink will be added.
     .PARAMETER RequestUri
@@ -32,7 +32,8 @@ function Add-KrSinkHttp {
         Adds an HTTP sink to the logging system that sends log events to "http://example.com/log" with default settings.
     .NOTES
         This function is part of the Kestrun logging infrastructure and should be used to enable HTTP logging.
-	#>
+#>
+function Add-KrSinkHttp {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Serilog.LoggerConfiguration])]

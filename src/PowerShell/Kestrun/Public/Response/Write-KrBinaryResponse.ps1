@@ -1,5 +1,4 @@
-function Write-KrBinaryResponse {
-    <#
+<#
     .SYNOPSIS
         Writes binary data directly to the HTTP response body.
     .DESCRIPTION
@@ -17,9 +16,8 @@ function Write-KrBinaryResponse {
         content type "application/octet-stream".
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
-    [KestrunRuntimeApi('Route')]
-    [CmdletBinding()]
+#>
+function Write-KrBinaryResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

@@ -199,7 +199,7 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: diagnostics-${{ matrix.os }}
+        name: diagnostics-${{ matrix.os }}-pwsh-${{ matrix.pwsh }}-${{ strategy.job-index }}
         path: |
           **/TestResults/**
           **/bin/**

@@ -1,11 +1,10 @@
-param() {
-}
+param() {}
 # Main Kestrun module path
 # This is the root path for the application
 $script:KestrunRoot = $MyInvocation.PSScriptRoot
 
 if ([string]::IsNullOrEmpty($script:KestrunRoot)) {
-    $script:KestrunRoot =$PWD
+    $script:KestrunRoot = $PWD
 }
 
 # This is the root path for the Kestrun module
@@ -13,29 +12,29 @@ $moduleRootPath = Split-Path -Parent -Path $MyInvocation.MyCommand.Path
 
 # check PowerShell version
 if ($PSVersionTable.PSVersion.Major -ne 7) {
-    Throw "Unsupported PowerShell version. Please use PowerShell 7.4."
+    throw 'Unsupported PowerShell version. Please use PowerShell 7.4.'
 }
 # Check PowerShell minor version
 switch ($PSVersionTable.PSVersion.Minor) {
-    0 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
-    1 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
-    2 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
-    3 { throw "Unsupported PowerShell version. Please use PowerShell 7.4." }
+    0 { throw 'Unsupported PowerShell version. Please use PowerShell 7.4.' }
+    1 { throw 'Unsupported PowerShell version. Please use PowerShell 7.4.' }
+    2 { throw 'Unsupported PowerShell version. Please use PowerShell 7.4.' }
+    3 { throw 'Unsupported PowerShell version. Please use PowerShell 7.4.' }
     4 {
-        $netVersion = "net8.0"
-        $codeAnalysisVersion = "4.9.2"
+        $netVersion = 'net8.0'
+        $codeAnalysisVersion = '4.9.2'
     }
     5 {
-        $netVersion = "net8.0" 
-        $codeAnalysisVersion = "4.11.0"
+        $netVersion = 'net8.0'
+        $codeAnalysisVersion = '4.11.0'
     }
     6 {
-        $netVersion = "net9.0" 
-        $codeAnalysisVersion = "4.13.0"
+        $netVersion = 'net9.0'
+        $codeAnalysisVersion = '4.13.0'
     }
-    Default {
-        $netVersion = "net9.0" 
-        $codeAnalysisVersion = "4.13.0"
+    default {
+        $netVersion = 'net9.0'
+        $codeAnalysisVersion = '4.13.0'
     }
 }
 
@@ -48,16 +47,16 @@ $sysfuncs = Get-ChildItem Function:
 # only import public alias
 $sysaliases = Get-ChildItem Alias:
 
-$inRouteRunspace = $null -ne $ExecutionContext.SessionState.PSVariable.GetValue("KestrunHost")
+$inRouteRunspace = $null -ne $ExecutionContext.SessionState.PSVariable.GetValue('KestrunHost')
 
 if (-not $inRouteRunspace) {
     # Usage
     if ((Add-KrAspNetCoreType -Version $netVersion ) -and
         (Add-KrCodeAnalysisType -ModuleRootPath $moduleRootPath -Version $codeAnalysisVersion )) {
-        $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath "lib" -AdditionalChildPath $netVersion
+        $assemblyLoadPath = Join-Path -Path $moduleRootPath -ChildPath 'lib' -AdditionalChildPath $netVersion
 
         # Assert that the assembly is loaded and load it if not
-        if ( Assert-KrAssemblyLoaded -AssemblyPath (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll"))  {
+        if ( Assert-KrAssemblyLoaded -AssemblyPath (Join-Path -Path $assemblyLoadPath -ChildPath 'Kestrun.dll')) {
             # Load & register your DLL folders (as before):
             [Kestrun.Utilities.AssemblyAutoLoader]::PreloadAll($false, @($assemblyLoadPath))
 
@@ -65,16 +64,15 @@ if (-not $inRouteRunspace) {
             [Kestrun.Utilities.AssemblyAutoLoader]::Clear($true)   # remove hook + folders
         }
     }
-}
-else {
+} else {
     # Assert that the assembly is loaded and load it if not
-    Assert-KrAssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath "Kestrun.dll")
+    Assert-KrAssemblyLoaded (Join-Path -Path $assemblyLoadPath -ChildPath 'Kestrun.dll')
 }
 
 try {
     # Check if Kestrun assembly is loaded
     if (-not ([AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq 'Kestrun' } )) {
-        throw "Kestrun assembly is not loaded."
+        throw 'Kestrun assembly is not loaded.'
     }
 
     # load public functions
@@ -93,8 +91,7 @@ try {
     if ($funcs) {
         if ($aliases) {
             Export-ModuleMember -Function ($funcs.Name) -Alias $aliases.Name
-        }
-        else {
+        } else {
             Export-ModuleMember -Function ($funcs.Name)
         }
     }
@@ -107,11 +104,9 @@ try {
         [Kestrun.KestrunHostManager]::VariableBaseline = Get-Variable | Select-Object -ExpandProperty Name
         # Ensure that the Kestrun host manager is destroyed to clean up resources.
     }
-}
-catch {
+} catch {
     throw ("Failed to import Kestrun module: $_")
-}
-finally {
+} finally {
     # Cleanup temporary variables
     Remove-Variable -Name 'assemblyLoadPath', 'moduleRootPath', 'netVersion', 'codeAnalysisVersion', 'inRouteRunspace' , 'sysfuncs', 'sysaliases', 'funcs', 'aliases' -ErrorAction SilentlyContinue
 }

@@ -1,7 +1,4 @@
-
-
-function Expand-KrObject {
-    <#
+<#
     .SYNOPSIS
         Expands an object into a formatted string for display.
     .DESCRIPTION
@@ -18,7 +15,8 @@ function Expand-KrObject {
         Displays the $myObject with a cyan foreground color and prefixes it with "My Object".
     .NOTES
         This function is designed to be used in the context of Kestrun for debugging or logging purposes.
-    #>
+#>
+function Expand-KrObject {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
@@ -33,33 +31,28 @@ function Expand-KrObject {
 
     process {
 
-        if ($null -eq $InputObject) { 
-            $InputObject = "`tNull Value" 
-        }
-        else {
+        if ($null -eq $InputObject) {
+            $InputObject = "`tNull Value"
+        } else {
             $type = $InputObject.gettype().FullName
-            $InputObject = $InputObject | Out-String 
-            $InputObject = "`tTypeName: $type`n$InputObject" 
+            $InputObject = $InputObject | Out-String
+            $InputObject = "`tTypeName: $type`n$InputObject"
         }
         if ($Label) {
             $InputObject = "`tName: $Label $InputObject"
         }
- 
 
         if ($ForegroundColor) {
             if ($pipelineValue.Count -gt 1) {
-                $InputObject | Write-Host -ForegroundColor $ForegroundColor 
+                $InputObject | Write-Host -ForegroundColor $ForegroundColor
+            } else {
+                Write-Host -Object $InputObject -ForegroundColor $ForegroundColor
             }
-            else {
-                Write-Host -Object $InputObject -ForegroundColor $ForegroundColor 
-            }
-        }
-        else {
+        } else {
             if ($pipelineValue.Count -gt 1) {
-                $InputObject | Write-Host 
-            }
-            else {
-                Write-Host -Object $InputObject 
+                $InputObject | Write-Host
+            } else {
+                Write-Host -Object $InputObject
             }
         }
     }

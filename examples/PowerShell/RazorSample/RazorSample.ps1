@@ -1,4 +1,4 @@
-<# 
+<#
 .SYNOPSIS
     Kestrun PowerShell Example: Global Variable Usage
 .DESCRIPTION
@@ -26,57 +26,55 @@ try {
         # Import the Kestrun module from the source path if it exists
         # This allows for development and testing of the module without needing to install it
         Import-Module $kestrunModulePath -Force -ErrorAction Stop
-    }
-    else {
+    } else {
         # If the source module does not exist, import the installed Kestrun module
         # This is useful for running the script in a production environment where the module is installed
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
-}
-catch {
+} catch {
     # If the import fails, output an error message and exit
     # This ensures that the script does not continue running if the module cannot be loaded
     Write-Error "Failed to import Kestrun module: $_"
     exit 1
 }
 
-New-KrLogger  |
-Set-KrMinimumLevel -Value Debug  |
-Add-KrSinkFile -Path ".\logs\razor.log" -RollingInterval Hour |
-Add-KrSinkConsole |
-Register-KrLogger -SetAsDefault -Name "DefaultLogger"
+New-KrLogger |
+    Set-KrMinimumLevel -Value Debug |
+    Add-KrSinkFile -Path '.\logs\razor.log' -RollingInterval Hour |
+    Add-KrSinkConsole |
+    Register-KrLogger -SetAsDefault -Name 'DefaultLogger'
 
 # Create the server
-$server = New-KrServer -Name 'MyKestrunServer' -PassThru  |
-Set-KrServerOption -DenyServerHeader -PassThru|
-Set-KrServerLimit -MaxConcurrentConnections 100 -MaxRequestBodySize 10485760 -MaxRequestHeaderCount 100 -KeepAliveTimeout 120 -PassThru|
-# Listen on port 5000 (HTTP)
-Add-KrListener  -Port 5000 -PassThru| Add-KrResponseCompression  -EnableForHttps -MimeTypes @(
-    'text/plain',
-    'text/css',
-    'application/javascript',
-    'application/json',
-    'application/xml',
-    'text/html'
-) -PassThru | Add-KrCorsPolicy -Name 'AllowAll' -AllowAnyOrigin -AllowAnyMethod -AllowAnyHeader -PassThru|
-Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing -PassThru | Add-KrPowerShellRuntime -PassThru |
-Add-KrPowerShellRazorPagesRuntime -PassThru | Enable-KrConfiguration -PassThru
+$server = New-KrServer -Name 'MyKestrunServer' -PassThru |
+    Set-KrServerOption -DenyServerHeader -PassThru |
+    Set-KrServerLimit -MaxConcurrentConnections 100 -MaxRequestBodySize 10485760 -MaxRequestHeaderCount 100 -KeepAliveTimeout 120 -PassThru |
+    # Listen on port 5000 (HTTP)
+    Add-KrListener -Port 5000 -passThru | Add-KrResponseCompression -EnableForHttps -MimeTypes @(
+        'text/plain',
+        'text/css',
+        'application/javascript',
+        'application/json',
+        'application/xml',
+        'text/html'
+    ) -PassThru | Add-KrCorsPolicy -Name 'AllowAll' -AllowAnyOrigin -AllowAnyMethod -AllowAnyHeader -PassThru |
+    Add-KrFileServer -RequestPath '/assets' -EnableDirectoryBrowsing -PassThru | Add-KrPowerShellRuntime -PassThru |
+    Add-KrPowerShellRazorPagesRuntime -PassThru | Enable-KrConfiguration -PassThru
 
 
-Add-KrMapRoute -Server $server -Verbs Get -Path "/ps/json" -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/json' -ScriptBlock {
 
-    Write-Output "Hello from PowerShell script! - Json Response"
+    Write-Output 'Hello from PowerShell script! - Json Response'
     # Payload
     $payload = @{
-        Body           = "Hello from PowerShell script! - Json Response"
-        RequestQuery   = $Context.Request.Query
+        Body = 'Hello from PowerShell script! - Json Response'
+        RequestQuery = $Context.Request.Query
         RequestHeaders = $Context.Request.Headers
-        RequestMethod  = $Context.Request.Method
-        RequestPath    = $Context.Request.Path
+        RequestMethod = $Context.Request.Method
+        RequestPath = $Context.Request.Path
         # If you want to return the request body, uncomment the next line
-        RequestBody    = $Context.Request.Body
+        RequestBody = $Context.Request.Body
     }
-    Write-KrJsonResponse -inputObject $payload -statusCode 200
+    Write-KrJsonResponse -InputObject $payload -StatusCode 200
 }
 # Start the server (blocking)
 Start-KrServer -Server $server

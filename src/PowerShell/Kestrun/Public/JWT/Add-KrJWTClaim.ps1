@@ -1,6 +1,5 @@
 
-function Add-KrJWTClaim {
-    <#
+<#
     .SYNOPSIS
         Adds a claim to the JWT token builder.
     .DESCRIPTION
@@ -24,8 +23,9 @@ function Add-KrJWTClaim {
         This function is part of the Kestrun.Security module and is used to build JWT tokens
         Maps to JwtTokenBuilder.AddClaim
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Add-KrJWTClaim {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]

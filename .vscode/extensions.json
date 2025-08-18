@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "ms-vscode.powershell",     // PowerShell language + Pester integration
+    "pspester.pester-test",     // Pester Tests (native Testing UI)
+    "ms-dotnettools.csharp",    // C# language support
+    "ms-dotnettools.csdevkit"   // C# Dev Kit (Solution view, richer C# experience)
+  ]
+}

@@ -1,6 +1,4 @@
- 
-function Write-KrJsonResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an object to the HTTP response body as JSON.
     .DESCRIPTION
@@ -26,7 +24,8 @@ function Write-KrJsonResponse {
     .EXAMPLE
         PS> $myObject | Write-KrJsonResponse -StatusCode 500 -Depth 2
         Serializes the object to JSON and writes it to the response with the specified options.
-    #>
+#>
+function Write-KrJsonResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
@@ -48,7 +47,7 @@ function Write-KrJsonResponse {
     )
     process {
         if ($null -ne $Context.Response) {
-            $ContentType = [string]::IsNullOrEmpty($ContentType) ? "application/json" : $ContentType;
+            $ContentType = [string]::IsNullOrEmpty($ContentType) ? 'application/json' : $ContentType
             $Context.Response.WriteTextResponse((ConvertTo-Json -InputObject $InputObject -Depth $Depth -Compress:$Compress), $StatusCode, $ContentType)
 
             <# To use the C# method directly, uncomment the following lines:

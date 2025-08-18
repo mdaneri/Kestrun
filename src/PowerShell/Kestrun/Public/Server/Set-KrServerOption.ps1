@@ -1,32 +1,31 @@
-function Set-KrServerOption {
-    <#
+<#
     .SYNOPSIS
         Configures advanced options and operational limits for a Kestrun server instance.
     .DESCRIPTION
-        The Set-KrServerOption function allows fine-grained configuration of a Kestrun server instance. 
-        It enables administrators to control server behavior, resource usage, and protocol compliance by 
-        setting limits on request sizes, connection counts, timeouts, and other operational parameters. 
+        The Set-KrServerOption function allows fine-grained configuration of a Kestrun server instance.
+        It enables administrators to control server behavior, resource usage, and protocol compliance by
+        setting limits on request sizes, connection counts, timeouts, and other operational parameters.
         Each parameter is optional and, if not specified, the server will use its built-in default value.
     .PARAMETER Server
         The Kestrun server instance to configure. This parameter is mandatory and must be a valid server object.
     .PARAMETER AllowSynchronousIO
-        If set to $true, allows synchronous IO operations on the server. 
-        Synchronous IO can impact scalability and is generally discouraged. 
+        If set to $true, allows synchronous IO operations on the server.
+        Synchronous IO can impact scalability and is generally discouraged.
         Default: $false.
     .PARAMETER DisableResponseHeaderCompression
-        If set to $true, disables compression of HTTP response headers. 
+        If set to $true, disables compression of HTTP response headers.
         Default: $false.
     .PARAMETER DenyServerHeader
-        If set to $true, removes the 'Server' HTTP header from responses for improved privacy and security. 
+        If set to $true, removes the 'Server' HTTP header from responses for improved privacy and security.
         Default: $false.
     .PARAMETER AllowAlternateSchemes
-        If set to $true, allows alternate URI schemes (other than HTTP/HTTPS) in requests. 
+        If set to $true, allows alternate URI schemes (other than HTTP/HTTPS) in requests.
         Default: $false.
     .PARAMETER AllowHostHeaderOverride
-        If set to $true, permits overriding the Host header in incoming requests. 
+        If set to $true, permits overriding the Host header in incoming requests.
         Default: $false.
     .PARAMETER DisableStringReuse
-        If set to $true, disables internal string reuse optimizations, which may increase memory usage but can help with certain debugging scenarios. 
+        If set to $true, disables internal string reuse optimizations, which may increase memory usage but can help with certain debugging scenarios.
         Default: $false.
     .PARAMETER MaxRunspaces
         Specifies the maximum number of runspaces to use for script execution.
@@ -47,7 +46,8 @@ function Set-KrServerOption {
     .NOTES
         All parameters are optional except for -Server.
         Defaults are based on typical Kestrun server settings as of the latest release.
-    #>
+#>
+function Set-KrServerOption {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -79,7 +79,7 @@ function Set-KrServerOption {
 
         $options = $Server.Options
         if ($null -eq $options) {
-            throw "Server is not initialized. Please ensure the server is configured before setting options."
+            throw 'Server is not initialized. Please ensure the server is configured before setting options.'
         }
 
         if ($AllowSynchronousIO.IsPresent) {
