@@ -108,9 +108,9 @@ public static class KestrunHttpMiddlewareExtensions
     /// <param name="host">The KestrunHost instance to configure.</param>
     /// <param name="cfg">An optional delegate to configure rate limiting options.</param>
     /// <returns>The current KestrunHost instance.</returns>
-        public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
-        {
-            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+    public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
+    {
+        if (host._Logger.IsEnabled(LogEventLevel.Debug))
         {
             host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
         }
@@ -120,18 +120,18 @@ public static class KestrunHttpMiddlewareExtensions
             {
                 services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
             });
-    
-            // Apply the middleware
-            return host.Use(app =>
-            {
-                if (host._Logger.IsEnabled(LogEventLevel.Debug))
-                {
-                    host._Logger.Debug("Registering rate limiter middleware");
-                }
 
-                app.UseRateLimiter();
-            });
-        }
+        // Apply the middleware
+        return host.Use(app =>
+        {
+            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            {
+                host._Logger.Debug("Registering rate limiter middleware");
+            }
+
+            app.UseRateLimiter();
+        });
+    }
 
 
 
@@ -193,7 +193,7 @@ public static class KestrunHttpMiddlewareExtensions
         return host.Use(app => app.UseAntiforgery());
     }
 
- 
+
     /// <summary>
     /// Adds a CORS policy named "AllowAll" that allows any origin, method, and header.
     /// </summary>

@@ -200,7 +200,7 @@ public static class HttpVerbExtensions
     public static bool TryFromMethodString(string method, out HttpVerb verb)
     {
         verb = default;
-        
+
         if (string.IsNullOrWhiteSpace(method))
         {
             return false;

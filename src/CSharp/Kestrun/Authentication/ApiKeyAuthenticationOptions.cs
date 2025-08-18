@@ -91,7 +91,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
     public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
-    
+
     /// <summary>
     /// Settings for the claims issuing code, if using a script.
     /// </summary>

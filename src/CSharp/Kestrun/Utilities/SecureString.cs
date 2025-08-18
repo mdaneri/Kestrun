@@ -75,7 +75,7 @@ public static class SecureStringUtils
     /// <param name="span">The character span to convert.</param>
     /// <returns>A read-only <see cref="SecureString"/> containing the characters from the span.</returns>
     /// <exception cref="ArgumentException">Thrown if the span is empty.</exception>
-    public static  SecureString ToSecureString(this ReadOnlySpan<char> span)
+    public static SecureString ToSecureString(this ReadOnlySpan<char> span)
     {
         if (span.Length == 0)
         {

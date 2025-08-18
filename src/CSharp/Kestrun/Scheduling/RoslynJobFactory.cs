@@ -63,7 +63,7 @@ internal static class RoslynJobFactory
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
         }
 
-        var script = VBNetDelegateBuilder.Compile<object>(code:code, log:log, extraImports:extraImports, extraRefs:extraRefs, locals:locals, languageVersion:languageVersion);
+        var script = VBNetDelegateBuilder.Compile<object>(code: code, log: log, extraImports: extraImports, extraRefs: extraRefs, locals: locals, languageVersion: languageVersion);
 
         return async ct =>
         {

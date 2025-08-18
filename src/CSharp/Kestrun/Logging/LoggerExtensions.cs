@@ -1,7 +1,7 @@
 
 using System.Text;
 using Serilog;
-using Serilog.Events; 
+using Serilog.Events;
 
 
 namespace Kestrun.Logging
@@ -18,18 +18,18 @@ namespace Kestrun.Logging
         /// <param name="log">The Serilog logger instance.</param>
         /// <param name="messageTemplate">The message template.</param>
         /// <param name="propertyValues">The property values for the message template.</param>
-                public static void DebugSanitized(this Serilog.ILogger log, string messageTemplate, params object?[] propertyValues)
-                {
-                    if (!log.IsEnabled(LogEventLevel.Debug))
+        public static void DebugSanitized(this Serilog.ILogger log, string messageTemplate, params object?[] propertyValues)
+        {
+            if (!log.IsEnabled(LogEventLevel.Debug))
             {
                 return;
             }
 
             var sanitized = propertyValues.Select(SanitizeObject).ToArray();
-                    log.Debug(messageTemplate, sanitized);
-                }
+            log.Debug(messageTemplate, sanitized);
+        }
 
-    
+
         /// <summary>
         /// Writes a sanitized debug log event with an exception, removing control characters from string property values.
         /// </summary>
@@ -37,16 +37,16 @@ namespace Kestrun.Logging
         /// <param name="exception">The exception to log.</param>
         /// <param name="messageTemplate">The message template.</param>
         /// <param name="propertyValues">The property values for the message template.</param>
-                public static void DebugSanitized(this Serilog.ILogger log, Exception exception, string messageTemplate, params object?[] propertyValues)
-                {
-                    if (!log.IsEnabled(LogEventLevel.Debug))
+        public static void DebugSanitized(this Serilog.ILogger log, Exception exception, string messageTemplate, params object?[] propertyValues)
+        {
+            if (!log.IsEnabled(LogEventLevel.Debug))
             {
                 return;
             }
 
             var sanitized = propertyValues.Select(SanitizeObject).ToArray();
-                    log.Debug(exception, messageTemplate, sanitized);
-                }
+            log.Debug(exception, messageTemplate, sanitized);
+        }
 
         // Helper: sanitize only string args
         private static object? SanitizeObject(object? o) =>

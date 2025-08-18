@@ -32,7 +32,7 @@ public sealed record KestrunContext(KestrunRequest Request, KestrunResponse Resp
         session = Session;
         return session is not null;
     }
-    
+
     /// <summary>
     /// Gets the cancellation token that is triggered when the HTTP request is aborted.
     /// </summary>

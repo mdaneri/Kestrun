@@ -9,7 +9,7 @@ namespace Kestrun.Languages;
 
 internal static class PowerShellDelegateBuilder
 {
-    public const string PS_INSTANCE_KEY = "PS_INSTANCE"; 
+    public const string PS_INSTANCE_KEY = "PS_INSTANCE";
     public const string KR_CONTEXT_KEY = "KR_CONTEXT";
 
     internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object?>? arguments)

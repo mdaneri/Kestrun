@@ -15,12 +15,12 @@ public record CsGlobals
     /// Initializes a new instance of the <see cref="CsGlobals"/> class with the specified global variables.
     /// </summary>
     /// <param name="globals">A dictionary containing global variables.</param>
-        public CsGlobals(IReadOnlyDictionary<string, object?> globals)
-        {
-            Globals = globals;
-            Locals = new Dictionary<string, object?>();
-            Context = null;
-        }
+    public CsGlobals(IReadOnlyDictionary<string, object?> globals)
+    {
+        Globals = globals;
+        Locals = new Dictionary<string, object?>();
+        Context = null;
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CsGlobals"/> class with the specified global variables and context.

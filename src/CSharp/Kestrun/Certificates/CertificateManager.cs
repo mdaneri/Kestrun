@@ -277,12 +277,12 @@ public static class CertificateManager
     /// <param name="privateKeyPath">The path to the private key file, if separate.</param>
     /// <param name="flags">Key storage flags for the imported certificate.</param>
     /// <returns>The imported X509Certificate2 instance.</returns>
-        public static X509Certificate2 Import(
-           string certPath,
-           ReadOnlySpan<char> password = default,
-           string? privateKeyPath = null,
-           X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
-        {
+    public static X509Certificate2 Import(
+       string certPath,
+       ReadOnlySpan<char> password = default,
+       string? privateKeyPath = null,
+       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
+    {
         if (string.IsNullOrEmpty(certPath))
         {
             throw new ArgumentException("Certificate path cannot be null or empty.", nameof(certPath));
@@ -321,7 +321,7 @@ public static class CertificateManager
                 return X509CertificateLoader.LoadCertificateFromFile(certPath);
 #else
                 return new X509Certificate2(File.ReadAllBytes(certPath));
-                 
+
 #endif
 
             // — PEM (.pem/.crt): cert alone or cert+key, encrypted or not — 
@@ -418,24 +418,24 @@ public static class CertificateManager
     /// <param name="privateKeyPath">The path to the private key file, if separate.</param>
     /// <param name="flags">Key storage flags for the imported certificate.</param>
     /// <returns>The imported X509Certificate2 instance.</returns>
-        public static X509Certificate2 Import(
-           string certPath,
-           SecureString password,
-           string? privateKeyPath = null,
-           X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
+    public static X509Certificate2 Import(
+       string certPath,
+       SecureString password,
+       string? privateKeyPath = null,
+       X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
+    {
+        X509Certificate2? result = null;
+        Log.Debug("Importing certificate from {CertPath} with flags {Flags}", certPath, flags);
+        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+        password.ToSecureSpan(span =>
         {
-            X509Certificate2? result = null;
-            Log.Debug("Importing certificate from {CertPath} with flags {Flags}", certPath, flags);
-            // ToSecureSpan zero-frees its buffer as soon as this callback returns.
-            password.ToSecureSpan(span =>
-            {
-                // capture the return value of the span-based overload
-                result = Import(certPath: certPath, password: span, privateKeyPath: privateKeyPath, flags: flags);
-            });
-    
-            // at this point, unmanaged memory is already zeroed
-            return result!;   // non-null because the callback always runs exactly once
-        }
+            // capture the return value of the span-based overload
+            result = Import(certPath: certPath, password: span, privateKeyPath: privateKeyPath, flags: flags);
+        });
+
+        // at this point, unmanaged memory is already zeroed
+        return result!;   // non-null because the callback always runs exactly once
+    }
 
     /// <summary>
     /// Imports an X509 certificate from the specified file path, with optional private key file and key storage flags.
@@ -463,16 +463,16 @@ public static class CertificateManager
     /// </summary>
     /// <param name="certPath">The path to the certificate file.</param>
     /// <returns>The imported X509Certificate2 instance.</returns>
-        public static X509Certificate2 Import(string certPath)
-        {
-            X509Certificate2? result = null;
-    
-            // ToSecureSpan zero-frees its buffer as soon as this callback returns.
-            ReadOnlySpan<char> passwordSpan = default;
-            // capture the return value of the span-based overload
-            result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
-            return result!;
-        }
+    public static X509Certificate2 Import(string certPath)
+    {
+        X509Certificate2? result = null;
+
+        // ToSecureSpan zero-frees its buffer as soon as this callback returns.
+        ReadOnlySpan<char> passwordSpan = default;
+        // capture the return value of the span-based overload
+        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
+        return result!;
+    }
 
 
 
@@ -487,156 +487,156 @@ public static class CertificateManager
     /// <param name="fmt">The export format (Pfx or Pem).</param>
     /// <param name="password">The password to protect the exported certificate or private key, if applicable.</param>
     /// <param name="includePrivateKey">Whether to include the private key in the export.</param>
-        public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
-               ReadOnlySpan<char> password = default, bool includePrivateKey = false)
+    public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
+           ReadOnlySpan<char> password = default, bool includePrivateKey = false)
+    {
+        // Normalize/validate target path and format
+        filePath = NormalizeExportPath(filePath, fmt);
+
+        // Ensure output directory exists
+        EnsureOutputDirectoryExists(filePath);
+
+        // Prepare password shapes once
+        using var shapes = CreatePasswordShapes(password);
+
+        switch (fmt)
         {
-            // Normalize/validate target path and format
-            filePath = NormalizeExportPath(filePath, fmt);
-
-            // Ensure output directory exists
-            EnsureOutputDirectoryExists(filePath);
-
-            // Prepare password shapes once
-            using var shapes = CreatePasswordShapes(password);
-
-            switch (fmt)
-            {
-                case ExportFormat.Pfx:
-                    ExportPfx(cert, filePath, shapes.Secure);
-                    break;
-                case ExportFormat.Pem:
-                    ExportPem(cert, filePath, password, includePrivateKey);
-                    break;
-                default:
-                    throw new NotSupportedException($"Unsupported export format: {fmt}");
-            }
+            case ExportFormat.Pfx:
+                ExportPfx(cert, filePath, shapes.Secure);
+                break;
+            case ExportFormat.Pem:
+                ExportPem(cert, filePath, password, includePrivateKey);
+                break;
+            default:
+                throw new NotSupportedException($"Unsupported export format: {fmt}");
         }
+    }
 
-        private static string NormalizeExportPath(string filePath, ExportFormat fmt)
+    private static string NormalizeExportPath(string filePath, ExportFormat fmt)
+    {
+        var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+        switch (fileExtension)
         {
-            var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
-            switch (fileExtension)
-            {
-                case ".pfx":
-                    if (fmt != ExportFormat.Pfx)
+            case ".pfx":
+                if (fmt != ExportFormat.Pfx)
                 {
                     throw new NotSupportedException(
                             $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
                 }
 
                 break;
-                case ".pem":
-                    if (fmt != ExportFormat.Pem)
+            case ".pem":
+                if (fmt != ExportFormat.Pem)
                 {
                     throw new NotSupportedException(
                             $"File extension '{fileExtension}' for '{filePath}' is not supported for PEM certificates.");
                 }
 
                 break;
-                case "":
-                    // no extension, use the format as the extension
-                    filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        $"File extension '{fileExtension}' for '{filePath}' is not supported. Use .pfx or .pem.");
-            }
-            return filePath;
+            case "":
+                // no extension, use the format as the extension
+                filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
+                break;
+            default:
+                throw new NotSupportedException(
+                    $"File extension '{fileExtension}' for '{filePath}' is not supported. Use .pfx or .pem.");
         }
+        return filePath;
+    }
 
-        private static void EnsureOutputDirectoryExists(string filePath)
-        {
-            var dir = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+    private static void EnsureOutputDirectoryExists(string filePath)
+    {
+        var dir = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
         {
             throw new DirectoryNotFoundException(
                     $"Directory '{dir}' does not exist. Cannot export certificate to {filePath}.");
         }
     }
 
-        private sealed class PasswordShapes : IDisposable
+    private sealed class PasswordShapes : IDisposable
+    {
+        public SecureString? Secure { get; }
+        public char[]? Chars { get; }
+        public PasswordShapes(SecureString? secure, char[]? chars)
         {
-            public SecureString? Secure { get; }
-            public char[]? Chars { get; }
-            public PasswordShapes(SecureString? secure, char[]? chars)
+            Secure = secure;
+            Chars = chars;
+        }
+        public void Dispose()
+        {
+            try
             {
-                Secure = secure;
-                Chars = chars;
+                Secure?.Dispose();
             }
-            public void Dispose()
+            finally
             {
-                try
-                {
-                    Secure?.Dispose();
-                }
-                finally
-                {
-                    if (Chars is not null)
+                if (Chars is not null)
                 {
                     Array.Clear(Chars, 0, Chars.Length);
                 }
             }
-            }
         }
+    }
 
     private static PasswordShapes CreatePasswordShapes(ReadOnlySpan<char> password)
-        {
-            var secure = password.IsEmpty ? null : SecureStringUtils.ToSecureString(password);
-            var chars = password.IsEmpty ? null : password.ToArray();
-            return new PasswordShapes(secure, chars);
-        }
+    {
+        var secure = password.IsEmpty ? null : SecureStringUtils.ToSecureString(password);
+        var chars = password.IsEmpty ? null : password.ToArray();
+        return new PasswordShapes(secure, chars);
+    }
 
-        private static void ExportPfx(X509Certificate2 cert, string filePath, SecureString? password)
-        {
-            byte[] pfx = cert.Export(X509ContentType.Pfx, password);
-            File.WriteAllBytes(filePath, pfx);
-        }
+    private static void ExportPfx(X509Certificate2 cert, string filePath, SecureString? password)
+    {
+        byte[] pfx = cert.Export(X509ContentType.Pfx, password);
+        File.WriteAllBytes(filePath, pfx);
+    }
 
-        private static void ExportPem(X509Certificate2 cert, string filePath, ReadOnlySpan<char> password, bool includePrivateKey)
-        {
-            using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
-            new PemWriter(sw).WriteObject(
-                Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
+    private static void ExportPem(X509Certificate2 cert, string filePath, ReadOnlySpan<char> password, bool includePrivateKey)
+    {
+        using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
+        new PemWriter(sw).WriteObject(
+            Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
 
-            if (!includePrivateKey)
+        if (!includePrivateKey)
         {
             return;
         }
 
         WritePrivateKey(cert, password, filePath);
-        }
+    }
 
-        private static void WritePrivateKey(X509Certificate2 cert, ReadOnlySpan<char> password, string certFilePath)
+    private static void WritePrivateKey(X509Certificate2 cert, ReadOnlySpan<char> password, string certFilePath)
+    {
+        byte[] keyDer;
+        string pemLabel;
+        if (password.IsEmpty)
         {
-            byte[] keyDer;
-            string pemLabel;
-            if (password.IsEmpty)
-            {
-                // unencrypted PKCS#8
-                keyDer = cert.GetRSAPrivateKey() is RSA rsa
-                           ? rsa.ExportPkcs8PrivateKey()
-                           : cert.GetECDsaPrivateKey()!.ExportPkcs8PrivateKey();
-                pemLabel = "PRIVATE KEY";
-            }
-            else
-            {
-                // encrypted PKCS#8
-                var pbe = new PbeParameters(
-                    PbeEncryptionAlgorithm.Aes256Cbc,
-                    HashAlgorithmName.SHA256,
-                    100_000
-                );
-
-                keyDer = cert.GetRSAPrivateKey() is RSA rsaEnc
-                           ? rsaEnc.ExportEncryptedPkcs8PrivateKey(password, pbe)
-                           : cert.GetECDsaPrivateKey()!.ExportEncryptedPkcs8PrivateKey(password, pbe);
-                pemLabel = "ENCRYPTED PRIVATE KEY";
-            }
-
-            string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
-            string keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
-            File.WriteAllText(keyFilePath, keyPem);
+            // unencrypted PKCS#8
+            keyDer = cert.GetRSAPrivateKey() is RSA rsa
+                       ? rsa.ExportPkcs8PrivateKey()
+                       : cert.GetECDsaPrivateKey()!.ExportPkcs8PrivateKey();
+            pemLabel = "PRIVATE KEY";
         }
+        else
+        {
+            // encrypted PKCS#8
+            var pbe = new PbeParameters(
+                PbeEncryptionAlgorithm.Aes256Cbc,
+                HashAlgorithmName.SHA256,
+                100_000
+            );
+
+            keyDer = cert.GetRSAPrivateKey() is RSA rsaEnc
+                       ? rsaEnc.ExportEncryptedPkcs8PrivateKey(password, pbe)
+                       : cert.GetECDsaPrivateKey()!.ExportEncryptedPkcs8PrivateKey(password, pbe);
+            pemLabel = "ENCRYPTED PRIVATE KEY";
+        }
+
+        string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
+        string keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
+        File.WriteAllText(keyFilePath, keyPem);
+    }
 
     /// <summary>
     /// Exports the specified X509 certificate to a file in the given format, using a SecureString password and optional private key inclusion.
@@ -646,20 +646,20 @@ public static class CertificateManager
     /// <param name="fmt">The export format (Pfx or Pem).</param>
     /// <param name="password">The SecureString password to protect the exported certificate or private key, if applicable.</param>
     /// <param name="includePrivateKey">Whether to include the private key in the export.</param>
-        // 2) The SecureString overload just calls (1) in a callback
-        public static void Export(
-            X509Certificate2 cert,
-            string filePath,
-            ExportFormat fmt,
-            SecureString password,
-            bool includePrivateKey = false)
-        {
-            password.ToSecureSpan(span =>
-                // this will run your span‐based implementation,
-                // then immediately zero & free the unmanaged buffer
-                Export(cert, filePath, fmt, span, includePrivateKey)
-            );
-        }
+    // 2) The SecureString overload just calls (1) in a callback
+    public static void Export(
+        X509Certificate2 cert,
+        string filePath,
+        ExportFormat fmt,
+        SecureString password,
+        bool includePrivateKey = false)
+    {
+        password.ToSecureSpan(span =>
+            // this will run your span‐based implementation,
+            // then immediately zero & free the unmanaged buffer
+            Export(cert, filePath, fmt, span, includePrivateKey)
+        );
+    }
 
     #endregion
 
@@ -674,14 +674,14 @@ public static class CertificateManager
     /// <param name="expectedPurpose">A collection of expected key purposes (EKU) for the certificate.</param>
     /// <param name="strictPurpose">If true, the certificate must match the expected purposes exactly.</param>
     /// <returns>True if the certificate is valid according to the specified options; otherwise, false.</returns>
-        public static bool Validate(
-         X509Certificate2 cert,
-         bool checkRevocation = false,
-         bool allowWeakAlgorithms = false,
-         bool denySelfSigned = false,
-         OidCollection? expectedPurpose = null,
-         bool strictPurpose = false)
-        {
+    public static bool Validate(
+     X509Certificate2 cert,
+     bool checkRevocation = false,
+     bool allowWeakAlgorithms = false,
+     bool denySelfSigned = false,
+     OidCollection? expectedPurpose = null,
+     bool strictPurpose = false)
+    {
         // ── 1. Validity period ────────────────────────────────────────
         if (DateTime.UtcNow < cert.NotBefore || DateTime.UtcNow > cert.NotAfter)
         {

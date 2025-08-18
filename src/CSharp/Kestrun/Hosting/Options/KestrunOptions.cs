@@ -49,7 +49,7 @@ public class KestrunOptions
     /// Defaults to 8.
     /// </summary>
     public int MaxSchedulerRunspaces { get; set; }
- 
+
     /// <summary>
     /// List of configured listeners for the Kestrel server.
     /// Each listener can be configured with its own IP address, port, protocols, and other options.

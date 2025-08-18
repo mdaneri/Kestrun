@@ -2,25 +2,25 @@
 
 internal class Column
 {
-	public int Index { get; }
-	public List<Cell> Cells { get; } = new List<Cell>();
+    public int Index { get; }
+    public List<Cell> Cells { get; } = new List<Cell>();
 
-	public int MaxWidth => Cells.Max(c => c.Width);
+    public int MaxWidth => Cells.Max(c => c.Width);
 
-	public Column(int index)
-	{
-		Index = index;
-	}
+    public Column(int index)
+    {
+        Index = index;
+    }
 
-	public Column(Cell cell)
-	{
-		AddCell(cell);
-		Index = cell.Index;
-	}
+    public Column(Cell cell)
+    {
+        AddCell(cell);
+        Index = cell.Index;
+    }
 
-	public void AddCell(Cell cell)
-	{
-		Cells.Add(cell);
-		cell.Column = this;
-	}
+    public void AddCell(Cell cell)
+    {
+        Cells.Add(cell);
+        cell.Column = this;
+    }
 }

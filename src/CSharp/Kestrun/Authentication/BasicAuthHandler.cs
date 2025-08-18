@@ -147,8 +147,8 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
         return null;
     }
-    
-/// <summary>
+
+    /// <summary>
     /// Tries to decode the credentials from the Authorization header.
     /// </summary>
     /// <param name="parameter">The encoded credentials.</param>
@@ -170,11 +170,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         }
     }
 
-/// <summary>
-/// Tries to parse the credentials from the raw credentials string.
-/// </summary>
-/// <param name="rawCreds">The raw credentials string.</param>
-/// <returns>A tuple indicating the success status, username, password, and any error message.</returns>
+    /// <summary>
+    /// Tries to parse the credentials from the raw credentials string.
+    /// </summary>
+    /// <param name="rawCreds">The raw credentials string.</param>
+    /// <returns>A tuple indicating the success status, username, password, and any error message.</returns>
     private (bool Success, string? Username, string? Password, string? Error) TryParseCredentials(string rawCreds)
     {
         var match = Options.SeparatorRegex.Match(rawCreds);
@@ -261,7 +261,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             {
                 { "username", user },
                 { "password", pass }
-            },logger);
+            }, logger);
         };
     }
     /// <summary>

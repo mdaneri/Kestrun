@@ -16,4 +16,4 @@ public sealed class ScriptLanguageAttribute(ScriptLanguage lang) : Attribute
     /// </summary>
     public ScriptLanguage Language { get; } = lang;
 }
- 
+

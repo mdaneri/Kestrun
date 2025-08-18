@@ -786,7 +786,7 @@ public sealed class JwtTokenBuilder
         var strToken = authHeader != null ? authHeader["Bearer ".Length..].Trim() : throw new UnauthorizedAccessException("No Bearer token provided");
         return RenewJwt(jwt: strToken, lifetime: lifetime);
     }
-    
+
     /// <summary>
     /// Extends the validity period of an existing JWT token by creating a new token with updated lifetime.
     /// </summary>

@@ -8,7 +8,7 @@ namespace Kestrun.Logging;
 /// Manages a collection of named Serilog loggers and their configurations.
 /// </summary>
 public static class LoggerManager
-{ 
+{
     private static readonly ConcurrentDictionary<string, Serilog.ILogger> _loggers = new(StringComparer.OrdinalIgnoreCase);
     private static readonly ConcurrentDictionary<string, LoggerConfiguration> _configs = new(StringComparer.OrdinalIgnoreCase);
 

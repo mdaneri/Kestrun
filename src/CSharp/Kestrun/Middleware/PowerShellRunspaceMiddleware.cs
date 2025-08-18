@@ -37,7 +37,7 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             ps.Runspace = runspace;
             var krRequest = await KestrunRequest.NewRequest(context);
             var krResponse = new KestrunResponse(krRequest);
- 
+
             // Store the PowerShell instance in the context for later use
             context.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
 

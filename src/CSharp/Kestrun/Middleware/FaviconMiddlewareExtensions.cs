@@ -21,7 +21,7 @@ public static class FaviconMiddlewareExtensions
     /// <returns>The application builder.</returns>
     public static IApplicationBuilder UseFavicon(this IApplicationBuilder app, string? iconPath = null)
     {
-        if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
         {
             Log.Debug("Using favicon middleware, iconPath={IconPath}", iconPath);
         }
@@ -36,7 +36,7 @@ public static class FaviconMiddlewareExtensions
         // Check if user provided a custom icon path
         if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
         {
-            if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
             {
                 Log.Debug("Using user-provided favicon at {IconPath}", iconPath);
             }
@@ -50,7 +50,7 @@ public static class FaviconMiddlewareExtensions
         }
         else
         {
-            if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
             {
                 Log.Debug("Using embedded favicon, no custom path provided");
             }
@@ -64,7 +64,7 @@ public static class FaviconMiddlewareExtensions
             iconBytes = ms.ToArray();
             contentType = "image/x-icon";
         }
-        
+
         var headers = new HeaderDictionary
         {
             ["Content-Type"] = contentType,

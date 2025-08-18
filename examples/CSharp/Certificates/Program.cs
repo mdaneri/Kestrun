@@ -10,7 +10,7 @@ using Kestrun.Utilities;
 using Kestrun.Scripting;
 using Kestrun.Certificates;
 using Kestrun.Logging;
-using Kestrun.Hosting;  
+using Kestrun.Hosting;
 
 class Program
 {
@@ -27,7 +27,7 @@ class Program
                 KeyType: CertificateManager.KeyType.Rsa,
                 KeyLength: 2048,
                 ValidDays: 30,
-                Exportable: true 
+                Exportable: true
             ));
 
         Console.WriteLine($"[RSA] Thumbprint : {rsaCert.Thumbprint}");

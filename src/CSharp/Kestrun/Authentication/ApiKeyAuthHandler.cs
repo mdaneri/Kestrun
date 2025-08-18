@@ -176,7 +176,7 @@ public class ApiKeyAuthHandler
                    return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
                    {
                     { "providedKey", providedKey }
-                   },logger);
+                   }, logger);
                };
     }
 

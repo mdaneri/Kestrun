@@ -18,4 +18,4 @@ public enum ContentDispositionType
     /// Indicates that no Content-Disposition header should be set.
     /// </summary>
     NoContentDisposition
-} 
+}

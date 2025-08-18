@@ -48,7 +48,7 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     /// <summary>
     /// Gets or sets a value indicating whether to suppress the WWW-Authenticate header in responses.
     /// </summary>
-    public bool SuppressWwwAuthenticate { get; set; }= false;
+    public bool SuppressWwwAuthenticate { get; set; } = false;
 
 
     /// <summary>
@@ -78,7 +78,7 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     /// This allows you to specify the language, code, and additional imports/refs for claims issuance.
     /// </remarks>
     public AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; } = new();
-     
+
     /// <summary>
     /// Gets or sets the claim policy configuration.
     /// </summary>

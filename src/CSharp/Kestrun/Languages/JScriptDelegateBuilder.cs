@@ -1,7 +1,7 @@
 using Kestrun.Models;
 using Microsoft.ClearScript.V8;
 using Serilog;
-using Serilog.Events; 
+using Serilog.Events;
 
 namespace Kestrun.Languages;
 // ---------------------------------------------------------------------------

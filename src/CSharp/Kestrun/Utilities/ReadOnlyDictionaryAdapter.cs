@@ -95,7 +95,7 @@ namespace Kestrun.Utilities
         {
             foreach (DictionaryEntry entry in _inner)
             {
-                string k = entry.Key?.ToString() 
+                string k = entry.Key?.ToString()
                            ?? throw new InvalidOperationException("Underlying dictionary contains a null key.");
                 yield return new KeyValuePair<string, object?>(k, entry.Value);
             }

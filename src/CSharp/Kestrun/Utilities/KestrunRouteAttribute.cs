@@ -1,6 +1,6 @@
 // KestrunRouteAttribute.cs
 using System;
- 
+
 /// <summary>
 /// Specifies the API context in which a Kestrun route or schedule can be executed.
 /// </summary>
@@ -65,4 +65,3 @@ public sealed class KestrunRuntimeApiAttribute : Attribute
 }
 
 
- 

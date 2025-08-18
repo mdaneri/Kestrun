@@ -28,16 +28,16 @@ public sealed class ClaimPolicyBuilder
         return this;
     }
 
-/// <summary>
-/// Adds a new policy with a required claim rule using a <see cref="UserIdentityClaim"/>.
-/// </summary>
-/// <param name="policyName">The name of the policy.</param>
-/// <param name="claimType">The required <see cref="UserIdentityClaim"/> type.</param>
-/// <param name="allowedValues">Allowed values for the claim.</param>
-/// <returns>The current builder instance.</returns>
-public ClaimPolicyBuilder AddPolicy(string policyName, UserIdentityClaim claimType, params string[] allowedValues)
+    /// <summary>
+    /// Adds a new policy with a required claim rule using a <see cref="UserIdentityClaim"/>.
+    /// </summary>
+    /// <param name="policyName">The name of the policy.</param>
+    /// <param name="claimType">The required <see cref="UserIdentityClaim"/> type.</param>
+    /// <param name="allowedValues">Allowed values for the claim.</param>
+    /// <returns>The current builder instance.</returns>
+    public ClaimPolicyBuilder AddPolicy(string policyName, UserIdentityClaim claimType, params string[] allowedValues)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(policyName); 
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
         if (allowedValues is null || allowedValues.Length == 0)
         {
             throw new ArgumentException("At least one allowed value must be specified.", nameof(allowedValues));
@@ -72,4 +72,3 @@ public ClaimPolicyBuilder AddPolicy(string policyName, UserIdentityClaim claimTy
     };
 }
 
- 

@@ -16,7 +16,7 @@ public class JwtParameters
     /// <summary>
     /// Gets the issuer ("iss") claim from the JWT.
     /// </summary>
-    public string? Issuer     { get; init; }
+    public string? Issuer { get; init; }
     /// <summary>
     /// Gets the audiences ("aud") claim from the JWT.
     /// </summary>
@@ -24,15 +24,15 @@ public class JwtParameters
     /// <summary>
     /// Gets the subject ("sub") claim from the JWT.
     /// </summary>
-    public string? Subject    { get; init; }
+    public string? Subject { get; init; }
     /// <summary>
     /// Gets the "nbf" (Not Before) claim from the JWT, indicating the time before which the token is not valid.
     /// </summary>
-    public DateTime? NotBefore{ get; init; }
+    public DateTime? NotBefore { get; init; }
     /// <summary>
     /// Gets the "exp" (Expiration Time) claim from the JWT, indicating the time after which the token expires.
     /// </summary>
-    public DateTime? Expires  { get; init; }
+    public DateTime? Expires { get; init; }
     /// <summary>
     /// Gets the "iat" (Issued At) claim from the JWT, indicating when the token was issued.
     /// </summary>
@@ -40,15 +40,15 @@ public class JwtParameters
     /// <summary>
     /// Gets the algorithm ("alg") used to sign the JWT.
     /// </summary>
-    public string? Algorithm  { get; init; }
+    public string? Algorithm { get; init; }
     /// <summary>
     /// Gets the key ID ("kid") from the JWT header.
     /// </summary>
-    public string? KeyId      { get; init; }
+    public string? KeyId { get; init; }
     /// <summary>
     /// Gets the type ("typ") of the JWT, indicating the token type.
     /// </summary>
-    public string? Type       { get; init; }
+    public string? Type { get; init; }
 
     // All payload claims
     /// <summary>

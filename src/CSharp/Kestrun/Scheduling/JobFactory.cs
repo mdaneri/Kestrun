@@ -126,7 +126,7 @@ internal static class JobFactory
             }
         };
     }
-    
+
     /// <summary>
     /// Creates a C# or VB.NET job using Roslyn compilation.
     /// </summary>

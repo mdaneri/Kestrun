@@ -81,7 +81,7 @@ public static class JwtAlgorithmExtensions
             {
                 >= 64 => SecurityAlgorithms.HmacSha512,
                 >= 48 => SecurityAlgorithms.HmacSha384,
-                _     => SecurityAlgorithms.HmacSha256
+                _ => SecurityAlgorithms.HmacSha256
             };
         }
 
