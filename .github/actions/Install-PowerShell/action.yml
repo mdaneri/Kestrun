@@ -226,22 +226,30 @@ runs:
             done
           fi
 
-          if [[ -z "$PREVIEW_BIN" ]]; then
-            echo "Warning: couldn't locate preview 'pwsh' binary. Leaving system default."
-          else
-            # Create a shim so 'pwsh' resolves to preview first in PATH
-            SHIM_DIR="$RUNNER_TEMP/pwsh-preview-shim"
-            mkdir -p "$SHIM_DIR"
-            cat > "$SHIM_DIR/pwsh" <<EOF
-        #!/usr/bin/env bash
-        exec "$PREVIEW_BIN" "\$@"
-        EOF
-            chmod +x "$SHIM_DIR/pwsh"
-            # Put shim in front of everything for the rest of the job
-            echo "$SHIM_DIR" >> "$GITHUB_PATH"
-            echo "Default 'pwsh' now resolves to preview: $("$SHIM_DIR/pwsh" -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')"
+          # If preview, make it the default 'pwsh'
+          if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
+            echo "Setting PowerShell Preview as the default 'pwsh' via update-alternatives..."
+            if command -v pwsh-preview >/dev/null 2>&1; then
+              PREVIEW_BIN="$(command -v pwsh-preview)"
+              PREVIEW_REAL="$(readlink -f "$PREVIEW_BIN" || echo "$PREVIEW_BIN")"
+
+              # Register current stable (if present) so the alt group is consistent
+              if command -v pwsh >/dev/null 2>&1; then
+                STABLE_BIN="$(command -v pwsh)"
+                STABLE_REAL="$(readlink -f "$STABLE_BIN" || echo "$STABLE_BIN")"
+                sudo update-alternatives --install /usr/bin/pwsh pwsh "$STABLE_REAL" 10 || true
+              fi
+
+              # Register preview with higher priority and select it
+              sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_REAL" 200
+              sudo update-alternatives --set pwsh "$PREVIEW_REAL"
+
+              echo "Default 'pwsh' now points to: $(command -v pwsh) -> $PREVIEW_REAL"
+              pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+            else
+              echo "Warning: pwsh-preview not found in PATH after install."
+            fi
           fi
-        fi
 
     - name: Install PowerShell (Windows)
       if: runner.os == 'Windows'
