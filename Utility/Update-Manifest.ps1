@@ -49,8 +49,7 @@ $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))  ? $Releas
 if ($Release -ne 'Stable') {
     $Prerelease = "Prerelease = '$ReleaseIteration'"
     $FullVersion = "$Version-$ReleaseIteration"
-}
-else {
+} else {
     $Prerelease = ''
     $FullVersion = $Version
 }
