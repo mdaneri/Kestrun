@@ -1,5 +1,4 @@
-function Set-KrPythonRuntime {
-    <#
+﻿<#
     .SYNOPSIS
         Selects which CPython runtime pythonnet will embed.
 
@@ -23,7 +22,8 @@ function Set-KrPythonRuntime {
     .EXAMPLE
         # Override whatever is set and pin CPython 3.12
         Set-KrPythonRuntime -Path '/opt/python312/lib/libpython3.12.so' -Force
-    #>
+#>
+function Set-KrPythonRuntime {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -51,25 +51,24 @@ function Set-KrPythonRuntime {
         if ($IsWindows) {
             # Windows: take the DLL next to the first python.exe on PATH
             $pyExe = (Get-Command python.exe, python3.exe -ErrorAction Ignore |
-                Select-Object -First 1).Source
+                    Select-Object -First 1).Source
             if ($pyExe) {
                 $Path = Get-ChildItem (Join-Path (Split-Path $pyExe) 'python*.dll') -ErrorAction Ignore |
-                Sort-Object VersionInfo.FileVersion -Descending |
-                Select-Object -First 1 -Expand FullName
+                    Sort-Object VersionInfo.FileVersion -Descending |
+                    Select-Object -First 1 -Expand FullName
             }
-        }
-        else {
+        } else {
             # Linux / macOS: ask whereis for libpython3*.so / .dylib
             $pattern = if ($IsMacOS) { 'libpython3*.dylib' } else { 'libpython3*.so' }
             $Path = & whereis -b $pattern 2>$null |
-            Select-String -Pattern $pattern |
-            ForEach-Object { $_.ToString().Split(' ', 2)[1] } |
-            Sort-Object Length | Select-Object -First 1
+                Select-String -Pattern $pattern |
+                ForEach-Object { $_.ToString().Split(' ', 2)[1] } |
+                Sort-Object Length | Select-Object -First 1
         }
     }
 
     if (-not $Path -or -not (Test-Path $Path)) {
-        throw "Could not locate a CPython runtime. Install Python ≥3.11 or supply -Path (-Force overrides existing setting)."
+        throw 'Could not locate a CPython runtime. Install Python ≥3.11 or supply -Path (-Force overrides existing setting).'
     }
 
     # ------------------------------------------------------------

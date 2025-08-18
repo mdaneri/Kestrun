@@ -1,6 +1,4 @@
- 
-function Start-KrServer {
-    <#
+<#
     .SYNOPSIS
         Starts the Kestrun server and listens for incoming requests.
     .DESCRIPTION
@@ -19,7 +17,8 @@ function Start-KrServer {
     .NOTES
         This function is designed to be used after the server has been configured and routes have been added.
         It will block the console until the server is stopped or Ctrl+C is pressed.
-    #>
+#>
+function Start-KrServer {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -38,31 +37,28 @@ function Start-KrServer {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
         # Start the Kestrel server
-        Write-Host "Starting Kestrun ..."
+        Write-Host 'Starting Kestrun ...'
         $Server.StartAsync() | Out-Null
         if (-not $Quiet.IsPresent) {
-            Write-Host "Kestrun server started successfully."
+            Write-Host 'Kestrun server started successfully.'
             foreach ($listener in $Server.Options.Listeners) {
                 if ($listener.X509Certificate) {
                     Write-Host "Listening on https://$($listener.IPAddress):$($listener.Port) with protocols: $($listener.Protocols)"
-                }
-                else {
+                } else {
                     Write-Host "Listening on http://$($listener.IPAddress):$($listener.Port) with protocols: $($listener.Protocols)"
                 }
                 if ($listener.X509Certificate) {
                     Write-Host "Using certificate: $($listener.X509Certificate.Subject)"
-                }
-                else {
-                    Write-Host "No certificate configured. Running in HTTP mode."
+                } else {
+                    Write-Host 'No certificate configured. Running in HTTP mode.'
                 }
                 if ($listener.UseConnectionLogging) {
-                    Write-Host "Connection logging is enabled."
-                }
-                else {
-                    Write-Host "Connection logging is disabled."
+                    Write-Host 'Connection logging is enabled.'
+                } else {
+                    Write-Host 'Connection logging is disabled.'
                 }
             }
-            Write-Host "Press Ctrl+C to stop the server."
+            Write-Host 'Press Ctrl+C to stop the server.'
         }
         if (-not $NoWait.IsPresent) {
             # Intercept Ctrl+C and gracefully stop the Kestrun server
@@ -72,31 +68,29 @@ function Start-KrServer {
                     if ([Console]::KeyAvailable) {
                         $key = [Console]::ReadKey($true)
                         if (($key.Modifiers -eq 'Control') -and ($key.Key -eq 'C')) {
-                            Write-Host "Ctrl+C detected. Stopping Kestrun server..."
+                            Write-Host 'Ctrl+C detected. Stopping Kestrun server...'
                             $Server.StopAsync().Wait()
                             break
                         }
                     }
                     Start-Sleep -Milliseconds 100
                 }
-            }
-            finally {
+            } finally {
                 # Ensure the server is stopped on exit
                 if (-not $Quiet.IsPresent) {
-                    Write-Host "Stopping Kestrun server..."
+                    Write-Host 'Stopping Kestrun server...'
                 }
                 [Kestrun.KestrunHostManager]::StopAsync($Server.ApplicationName).Wait()
                 #$Server.StopAsync().Wait()
                 [Kestrun.KestrunHostManager]::Destroy($Server.ApplicationName)
                 #$Server.Dispose()
                 if (-not $Quiet.IsPresent) {
-                    Write-Host "Kestrun server stopped."
+                    Write-Host 'Kestrun server stopped.'
                 }
                 # Clear Kestrun variables
                 Clear-KsVariable
             }
-        }
-        elseif ($PassThru.IsPresent) {
+        } elseif ($PassThru.IsPresent) {
             # if the PassThru switch is specified, return the server instance
             return $Server
         }

@@ -1,5 +1,4 @@
-function Write-KrCborResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an object serialized as CBOR to the HTTP response.
     .DESCRIPTION
@@ -14,7 +13,8 @@ function Write-KrCborResponse {
         Write-KrCborResponse -InputObject $myObject -StatusCode 200 -ContentType "application/cbor"
         Writes the $myObject serialized as CBOR to the response with a 200 status code and
         content type "application/cbor".
-    #>
+#>
+function Write-KrCborResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

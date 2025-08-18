@@ -1,5 +1,4 @@
-function New-MapRouteOption {
-    <#
+<#
     .SYNOPSIS
         Creates a new instance of the Kestrun.Hosting.Options.MapRouteOptions class.
     .DESCRIPTION
@@ -22,7 +21,8 @@ function New-MapRouteOption {
         Maps to MapRouteOptions constructor.
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.hosting.options.maprouteoptions
-    #>
+#>
+function New-MapRouteOption {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
@@ -57,7 +57,7 @@ function New-MapRouteOption {
             $targetT = $prop.PropertyType
             $rawValue = $Property[$key]
 
-            # --- special case: HttpVerbs can accept strings or enum ------ 
+            # --- special case: HttpVerbs can accept strings or enum ------
             # ---------- special: HttpVerbs accepts strings or enum ---------
             if ($prop.Name -eq 'HttpVerbs') {
                 $converted = @()
@@ -70,14 +70,13 @@ function New-MapRouteOption {
                     [Kestrun.Utilities.HttpVerb] $tmpVerb = [Kestrun.Utilities.HttpVerb]::Get
                     if ([Kestrun.Utilities.HttpVerbExtensions]::TryFromMethodString($v, [ref]$tmpVerb)) {
                         $converted += $tmpVerb
-                    }
-                    else {
+                    } else {
                         $valid = [string]::Join(', ', [Enum]::GetNames([Kestrun.Utilities.HttpVerb]))
                         throw "Invalid HTTP verb '$v' in '$key'. Allowed values: $valid."
                     }
                 }
 
-                $prop.SetValue($options, [Kestrun.Utilities.HttpVerb[]]$converted, $null)   
+                $prop.SetValue($options, [Kestrun.Utilities.HttpVerb[]]$converted, $null)
                 continue
             }
 
@@ -85,8 +84,7 @@ function New-MapRouteOption {
             try {
                 $converted = [System.Management.Automation.LanguagePrimitives]::ConvertTo(
                     $rawValue, $targetT)
-            }
-            catch {
+            } catch {
                 throw "Cannot convert value '$rawValue' (type $($rawValue.GetType().Name)) " +
                 "to [$($targetT.Name)] for option '$key'."
             }

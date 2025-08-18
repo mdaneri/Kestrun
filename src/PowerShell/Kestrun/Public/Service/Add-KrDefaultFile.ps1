@@ -1,6 +1,4 @@
-
-function Add-KrDefaultFile {
-    <#
+<#
     .SYNOPSIS
         Registers a default file provider for static files (e.g. index.html).
     .DESCRIPTION
@@ -31,6 +29,7 @@ function Add-KrDefaultFile {
     .LINK
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.defaultfilesoptions?view=aspnetcore-8.0
 #>
+function Add-KrDefaultFile {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -76,7 +75,7 @@ function Add-KrDefaultFile {
         }
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
+
         # Add the default file provider to the server
         [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddDefaultFiles($Server, $Options) | Out-Null
 

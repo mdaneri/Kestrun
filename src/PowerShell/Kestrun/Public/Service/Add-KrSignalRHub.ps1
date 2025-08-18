@@ -1,5 +1,4 @@
-function Add-KrSignalRHub {
-    <#
+<#
     .SYNOPSIS
         Maps a SignalR hub class to the given URL path.
     .DESCRIPTION
@@ -33,7 +32,8 @@ function Add-KrSignalRHub {
         The function is part of the Kestrun.Hosting library and is used to manage SignalR hubs on the Kestrun server.
         The function is designed to be used in a modular way, allowing for easy addition of SignalR hubs to the Kestrun server.
         The function is intended for use in scenarios where SignalR hubs need to be dynamically mapped to specific URL paths at runtime.
-    #>
+#>
+function Add-KrSignalRHub {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     param(
@@ -51,20 +51,20 @@ function Add-KrSignalRHub {
     )
 
     process {
-        Write-KrWarningLog "Add-KrSignalRHub is an experimental feature and may not work as expected."
+        Write-KrWarningLog 'Add-KrSignalRHub is an experimental feature and may not work as expected.'
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
         # 1.  Find the generic method definition on KestrunHost
         $method = $Server.GetType().GetMethods() |
-        Where-Object {
-            $_.Name -eq 'AddSignalR' -and
-            $_.IsGenericMethod -and
-            $_.GetParameters().Count -eq 1        # (string path)
-        }
+            Where-Object {
+                $_.Name -eq 'AddSignalR' -and
+                $_.IsGenericMethod -and
+                $_.GetParameters().Count -eq 1        # (string path)
+            }
 
         if (-not $method) {
-            throw "Could not locate the generic AddSignalR<T>(string) method."
+            throw 'Could not locate the generic AddSignalR<T>(string) method.'
         }
 
         # 2.  Close the generic with the hub type from the parameter

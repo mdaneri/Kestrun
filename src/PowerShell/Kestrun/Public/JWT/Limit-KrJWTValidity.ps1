@@ -1,6 +1,5 @@
 
-function Limit-KrJWTValidity {
-    <#
+<#
     .SYNOPSIS
         Sets the validity period for the JWT token.
     .DESCRIPTION
@@ -19,8 +18,9 @@ function Limit-KrJWTValidity {
         This function is part of the Kestrun.Security module and is used to build JWT tokens
         Maps to JwtTokenBuilder.ValidFor
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Limit-KrJWTValidity {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
@@ -30,7 +30,7 @@ function Limit-KrJWTValidity {
         [Parameter(Mandatory)]
         [TimeSpan] $Lifetime
     )
-    process { 
-        return $Builder.ValidFor($Lifetime) 
+    process {
+        return $Builder.ValidFor($Lifetime)
     }
 }

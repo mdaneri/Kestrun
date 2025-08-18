@@ -1,5 +1,4 @@
-function New-KsCertificateRequest {
-    <#
+<#
     .SYNOPSIS
         Creates a PEM-encoded CSR (and returns the private key).
 
@@ -37,7 +36,8 @@ function New-KsCertificateRequest {
         $csr | Set-Content -Path 'C:\path\to\csr.pem'
         $priv | Set-Content -Path 'C:\path\to\private.key'
 
-    #>
+#>
+function New-KsCertificateRequest {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]

@@ -1,5 +1,4 @@
-function Write-KrCsvResponse {
-    <#
+<#
     .SYNOPSIS
         Writes CSV data to the HTTP response body.
     .DESCRIPTION
@@ -19,7 +18,8 @@ function Write-KrCsvResponse {
         Writes the CSV data to the response body with a 200 OK status code.
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrCsvResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

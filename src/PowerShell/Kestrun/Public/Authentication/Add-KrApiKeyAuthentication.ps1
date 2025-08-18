@@ -1,5 +1,4 @@
-function Add-KrApiKeyAuthentication {
-    <#
+<#
     .SYNOPSIS
         Adds API key authentication to the Kestrun server.
     .DESCRIPTION
@@ -66,8 +65,9 @@ function Add-KrApiKeyAuthentication {
     .LINK
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.apikey.apikeyauthenticationoptions?view=aspnetcore-8.0
     .NOTES
-        This cmdlet is used to configure API key authentication for the Kestrun server, allowing you to secure your APIs with API keys. 
-    #>
+        This cmdlet is used to configure API key authentication for the Kestrun server, allowing you to secure your APIs with API keys.
+#>
+function Add-KrApiKeyAuthentication {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'ItemsScriptBlock')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -218,7 +218,7 @@ function Add-KrApiKeyAuthentication {
         [Parameter(ParameterSetName = 'v4_i2')]
         [Parameter(ParameterSetName = 'v4_i3')]
         [Kestrun.Authentication.ApiKeyChallengeFormat]$ChallengeHeaderFormat,
-        
+
         [Parameter(ParameterSetName = 'v1')]
         [Parameter(ParameterSetName = 'v1_i1')]
         [Parameter(ParameterSetName = 'v1_i2')]
@@ -236,16 +236,16 @@ function Add-KrApiKeyAuthentication {
         [Parameter(ParameterSetName = 'v4_i2')]
         [Parameter(ParameterSetName = 'v4_i3')]
         [Serilog.ILogger]$Logger,
- 
+
         [Parameter(ParameterSetName = 'v1_i1')]
         [Parameter(ParameterSetName = 'v1_i2')]
-        [Parameter(ParameterSetName = 'v1_i3')] 
+        [Parameter(ParameterSetName = 'v1_i3')]
         [Parameter(ParameterSetName = 'v2_i1')]
         [Parameter(ParameterSetName = 'v2_i2')]
-        [Parameter(ParameterSetName = 'v2_i3')] 
+        [Parameter(ParameterSetName = 'v2_i3')]
         [Parameter(ParameterSetName = 'v3_i1')]
         [Parameter(ParameterSetName = 'v3_i2')]
-        [Parameter(ParameterSetName = 'v3_i3')] 
+        [Parameter(ParameterSetName = 'v3_i3')]
         [Parameter(ParameterSetName = 'v4_i1')]
         [Parameter(ParameterSetName = 'v4_i2')]
         [Parameter(ParameterSetName = 'v4_i3')]
@@ -284,32 +284,28 @@ function Add-KrApiKeyAuthentication {
             $Options.ValidateCodeSettings = [Kestrun.Authentication.AuthenticationCodeSettings]::new()
             if (-not [string]::IsNullOrWhiteSpace($ExpectedKey)) {
                 $Options.ExpectedKey = $ExpectedKey
-            }
-            elseif ($null -ne $ScriptBlock) {
+            } elseif ($null -ne $ScriptBlock) {
                 $Options.ValidateCodeSettings.Code = $ScriptBlock.ToString()
                 $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
-
-            }
-            elseif (-not [string]::IsNullOrWhiteSpace($Code)) {
+            } elseif (-not [string]::IsNullOrWhiteSpace($Code)) {
                 $Options.ValidateCodeSettings.Code = $Code
                 $Options.ValidateCodeSettings.Language = $CodeLanguage
-            }
-            elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
+            } elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
                 if (-not (Test-Path -Path $CodeFilePath)) {
                     throw "The specified code file path does not exist: $CodeFilePath"
                 }
                 $extension = Split-Path -Path $CodeFilePath -Extension
                 switch ($extension) {
-                    ".ps1" {
+                    '.ps1' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                     }
-                    ".cs" {
+                    '.cs' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                     }
-                    ".vb" {
+                    '.vb' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                     }
-                    Default {
+                    default {
                         throw "Unsupported '$extension' code file extension."
                     }
                 }
@@ -334,8 +330,7 @@ function Add-KrApiKeyAuthentication {
 
             if ($AllowInsecureHttp.IsPresent) {
                 $Options.RequireHttps = $false
-            }
-            else {
+            } else {
                 $Options.RequireHttps = $true
             }
             if ($null -ne $ClaimPolicyConfig) {
@@ -351,28 +346,25 @@ function Add-KrApiKeyAuthentication {
                 if ($null -ne $IssueClaimsScriptBlock) {
                     $Options.IssueClaimsCodeSettings.Code = $IssueClaimsScriptBlock.ToString()
                     $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
-
-                }
-                elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCode)) {
+                } elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCode)) {
                     $Options.IssueClaimsCodeSettings.Code = $IssueClaimsCode
                     $Options.IssueClaimsCodeSettings.Language = $IssueClaimsCodeLanguage
-                }
-                elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCodeFilePath)) {
+                } elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCodeFilePath)) {
                     if (-not (Test-Path -Path $IssueClaimsCodeFilePath)) {
                         throw "The specified code file path does not exist: $IssueClaimsCodeFilePath"
                     }
                     $extension = Split-Path -Path $IssueClaimsCodeFilePath -Extension
                     switch ($extension) {
-                        ".ps1" {
+                        '.ps1' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                         }
-                        ".cs" {
+                        '.cs' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                         }
-                        ".vb" {
+                        '.vb' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                         }
-                        Default {
+                        default {
                             throw "Unsupported '$extension' code file extension."
                         }
                     }

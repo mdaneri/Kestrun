@@ -1,33 +1,32 @@
+<#
+    .SYNOPSIS
+        Enriches log events with ErrorRecord property if available.
+    .DESCRIPTION
+        Enriches log events with ErrorRecord property if available. Use -ErrorRecord parameter on Write-*Log cmdlets to add ErrorRecord.
+    .PARAMETER LoggerConfig
+        Instance of LoggerConfiguration that is already setup.
+    .PARAMETER DestructureObjects
+        If true, and the value is a non-primitive, non-array type, then the value will be converted to a structure; otherwise, unknown types will be converted to scalars, which are generally stored as strings.
+    .INPUTS
+        Instance of LoggerConfiguration
+    .OUTPUTS
+        Instance of LoggerConfiguration
+    .EXAMPLE
+        PS> New-KrLogger | Add-KrEnrichWithErrorRecord | Add-KrSinkPowerShell | Register-KrLogger
+#>
 function Add-KrEnrichWithErrorRecord {
-	<#
-	.SYNOPSIS
-		Enriches log events with ErrorRecord property if available.
-	.DESCRIPTION
-		Enriches log events with ErrorRecord property if available. Use -ErrorRecord parameter on Write-*Log cmdlets to add ErrorRecord.
-	.PARAMETER LoggerConfig
-		Instance of LoggerConfiguration that is already setup.
-	.PARAMETER DestructureObjects
-		If true, and the value is a non-primitive, non-array type, then the value will be converted to a structure; otherwise, unknown types will be converted to scalars, which are generally stored as strings.
-	.INPUTS
-		Instance of LoggerConfiguration
-	.OUTPUTS
-		Instance of LoggerConfiguration
-	.EXAMPLE
-		PS> New-KrLogger | Add-KrEnrichWithErrorRecord | Add-KrSinkPowerShell | Register-KrLogger
-	#>
-
-	[KestrunRuntimeApi('Everywhere')]
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
-	param(
-		[Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-		[Serilog.LoggerConfiguration]$LoggerConfig,
-		[Parameter(Mandatory = $false)]
-		[switch]$DestructureObjects
-	)
+    param(
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [Serilog.LoggerConfiguration]$LoggerConfig,
+        [Parameter(Mandatory = $false)]
+        [switch]$DestructureObjects
+    )
 
-	process {
-		$LoggerConfig = [PoShLog.Core.Enrichers.Extensions.ErrorRecordEnricherExtensions]::WithErrorRecord($LoggerConfig.Enrich, $DestructureObjects)
+    process {
+        $LoggerConfig = [PoShLog.Core.Enrichers.Extensions.ErrorRecordEnricherExtensions]::WithErrorRecord($LoggerConfig.Enrich, $DestructureObjects)
 
-		$LoggerConfig
-	}
+        $LoggerConfig
+    }
 }
