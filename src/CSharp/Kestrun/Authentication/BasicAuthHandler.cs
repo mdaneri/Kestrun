@@ -107,6 +107,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         }
     }
 
+    /// <summary>
+    /// Validates the scheme and parameter of the Authorization header.
+    /// </summary>
+    /// <param name="authHeader">The parsed Authorization header.</param>
+    /// <returns>An AuthenticateResult indicating the validation result.</returns>
     private AuthenticateResult? ValidateSchemeAndParameter(AuthenticationHeaderValue authHeader)
     {
         if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
@@ -120,7 +125,13 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
         return null;
     }
-
+    
+/// <summary>
+    /// Tries to decode the credentials from the Authorization header.
+    /// </summary>
+    /// <param name="parameter">The encoded credentials.</param>
+    /// <param name="base64">Indicates if the credentials are Base64 encoded.</param>
+    /// <returns>A tuple indicating the success status, decoded value, and any error message.</returns>
     private (bool Success, string? Value, string? Error) TryDecodeCredentials(string parameter, bool base64)
     {
         try
@@ -137,6 +148,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         }
     }
 
+/// <summary>
+/// Tries to parse the credentials from the raw credentials string.
+/// </summary>
+/// <param name="rawCreds">The raw credentials string.</param>
+/// <returns>A tuple indicating the success status, username, password, and any error message.</returns>
     private (bool Success, string? Username, string? Password, string? Error) TryParseCredentials(string rawCreds)
     {
         var match = Options.SeparatorRegex.Match(rawCreds);

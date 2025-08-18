@@ -474,6 +474,30 @@ public static class CertificateManager
         public static void Export(X509Certificate2 cert, string filePath, ExportFormat fmt,
                ReadOnlySpan<char> password = default, bool includePrivateKey = false)
         {
+            // Normalize/validate target path and format
+            filePath = NormalizeExportPath(filePath, fmt);
+
+            // Ensure output directory exists
+            EnsureOutputDirectoryExists(filePath);
+
+            // Prepare password shapes once
+            using var shapes = CreatePasswordShapes(password);
+
+            switch (fmt)
+            {
+                case ExportFormat.Pfx:
+                    ExportPfx(cert, filePath, shapes.Secure);
+                    break;
+                case ExportFormat.Pem:
+                    ExportPem(cert, filePath, password, includePrivateKey);
+                    break;
+                default:
+                    throw new NotSupportedException($"Unsupported export format: {fmt}");
+            }
+        }
+
+        private static string NormalizeExportPath(string filePath, ExportFormat fmt)
+        {
             var fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
             switch (fileExtension)
             {
@@ -482,99 +506,109 @@ public static class CertificateManager
                         throw new NotSupportedException(
                             $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
                     break;
-
-
-            case ".pem":
-                if (fmt != ExportFormat.Pem)
+                case ".pem":
+                    if (fmt != ExportFormat.Pem)
+                        throw new NotSupportedException(
+                            $"File extension '{fileExtension}' for '{filePath}' is not supported for PEM certificates.");
+                    break;
+                case "":
+                    // no extension, use the format as the extension
+                    filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
+                    break;
+                default:
                     throw new NotSupportedException(
-                        $"File extension '{fileExtension}' for '{filePath}' is not supported for PEM certificates.");
-                break;
-
-            case "":
-                // no extension, use the format as the extension
-                filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
-                break;
-            default:
-                throw new NotSupportedException(
-                    $"File extension '{fileExtension}' for '{filePath}' is not supported. Use .pfx or .pem.");
+                        $"File extension '{fileExtension}' for '{filePath}' is not supported. Use .pfx or .pem.");
+            }
+            return filePath;
         }
 
-        // ensure directory exists
-        var dir = Path.GetDirectoryName(filePath);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            throw new DirectoryNotFoundException(
-                $"Directory '{dir}' does not exist. Cannot export certificate to {filePath}.");
-
-        // build both shapes once
-        using SecureString? pwdString = password.IsEmpty
-            ? null
-            : SecureStringUtils.ToSecureString(password);
-        char[]? pwdChars = password.IsEmpty
-            ? null
-            : password.ToArray();
-
-        try
+        private static void EnsureOutputDirectoryExists(string filePath)
         {
-            switch (fmt)
+            var dir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                throw new DirectoryNotFoundException(
+                    $"Directory '{dir}' does not exist. Cannot export certificate to {filePath}.");
+        }
+
+        private sealed class PasswordShapes : IDisposable
+        {
+            public SecureString? Secure { get; }
+            public char[]? Chars { get; }
+            public PasswordShapes(SecureString? secure, char[]? chars)
             {
-                case ExportFormat.Pfx:
-                    {
-                        byte[] pfx = cert.Export(X509ContentType.Pfx, pwdString);
-                        File.WriteAllBytes(filePath, pfx);
-                        break;
-                    }
-                case ExportFormat.Pem:
-                    {
-                        // export cert
-                        using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
-                        new PemWriter(sw).WriteObject(
-                            Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
-
-                        if (includePrivateKey)
-                        {
-                            // 3) pick the right private-key export path
-                            byte[] keyDer;
-                            string pemLabel;
-                            if (password.IsEmpty)
-                            {
-                                // unencrypted PKCS#8
-                                keyDer = cert.GetRSAPrivateKey() is RSA rsa
-                                           ? rsa.ExportPkcs8PrivateKey()
-                                           : cert.GetECDsaPrivateKey()!.ExportPkcs8PrivateKey();
-                                pemLabel = "PRIVATE KEY";
-                            }
-                            else
-                            {
-                                // encrypted PKCS#8
-                                var pbe = new PbeParameters(
-                                    PbeEncryptionAlgorithm.Aes256Cbc,
-                                    HashAlgorithmName.SHA256,
-                                    100_000
-                                );
-
-                                keyDer = cert.GetRSAPrivateKey() is RSA rsaEnc
-                                           ? rsaEnc.ExportEncryptedPkcs8PrivateKey(password, pbe)
-                                           : cert.GetECDsaPrivateKey()!
-                                                .ExportEncryptedPkcs8PrivateKey(password, pbe);
-                                pemLabel = "ENCRYPTED PRIVATE KEY";
-                            }
-                            // 2) Wrap that DER in PEM *correctly*:
-                            string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
-                            string keyFilePath = Path.GetFileNameWithoutExtension(filePath) + ".key";
-                            // 3) Write the .key file
-                            File.WriteAllText(keyFilePath, keyPem);
-                        }
-                        break;
-                    }
+                Secure = secure;
+                Chars = chars;
+            }
+            public void Dispose()
+            {
+                try
+                {
+                    Secure?.Dispose();
+                }
+                finally
+                {
+                    if (Chars is not null)
+                        Array.Clear(Chars, 0, Chars.Length);
+                }
             }
         }
-        finally
+
+    private static PasswordShapes CreatePasswordShapes(ReadOnlySpan<char> password)
         {
-            // scrub the char[] copy
-            if (pwdChars is not null)
-                Array.Clear(pwdChars, 0, pwdChars.Length);
+            var secure = password.IsEmpty ? null : SecureStringUtils.ToSecureString(password);
+            var chars = password.IsEmpty ? null : password.ToArray();
+            return new PasswordShapes(secure, chars);
         }
-    }
+
+        private static void ExportPfx(X509Certificate2 cert, string filePath, SecureString? password)
+        {
+            byte[] pfx = cert.Export(X509ContentType.Pfx, password);
+            File.WriteAllBytes(filePath, pfx);
+        }
+
+        private static void ExportPem(X509Certificate2 cert, string filePath, ReadOnlySpan<char> password, bool includePrivateKey)
+        {
+            using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
+            new PemWriter(sw).WriteObject(
+                Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
+
+            if (!includePrivateKey)
+                return;
+
+            WritePrivateKey(cert, password, filePath);
+        }
+
+        private static void WritePrivateKey(X509Certificate2 cert, ReadOnlySpan<char> password, string certFilePath)
+        {
+            byte[] keyDer;
+            string pemLabel;
+            if (password.IsEmpty)
+            {
+                // unencrypted PKCS#8
+                keyDer = cert.GetRSAPrivateKey() is RSA rsa
+                           ? rsa.ExportPkcs8PrivateKey()
+                           : cert.GetECDsaPrivateKey()!.ExportPkcs8PrivateKey();
+                pemLabel = "PRIVATE KEY";
+            }
+            else
+            {
+                // encrypted PKCS#8
+                var pbe = new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes256Cbc,
+                    HashAlgorithmName.SHA256,
+                    100_000
+                );
+
+                keyDer = cert.GetRSAPrivateKey() is RSA rsaEnc
+                           ? rsaEnc.ExportEncryptedPkcs8PrivateKey(password, pbe)
+                           : cert.GetECDsaPrivateKey()!.ExportEncryptedPkcs8PrivateKey(password, pbe);
+                pemLabel = "ENCRYPTED PRIVATE KEY";
+            }
+
+            string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
+            string keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
+            File.WriteAllText(keyFilePath, keyPem);
+        }
 
     /// <summary>
     /// Exports the specified X509 certificate to a file in the given format, using a SecureString password and optional private key inclusion.
