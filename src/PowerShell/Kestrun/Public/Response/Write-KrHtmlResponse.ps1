@@ -1,6 +1,4 @@
-
-function Write-KrHtmlResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an HTML response to the HTTP response body.
     .DESCRIPTION
@@ -18,15 +16,16 @@ function Write-KrHtmlResponse {
         Reads the HTML file at "C:\path\to\template.html", merges in the variables, and writes the resulting HTML to the response with a 200 status code.
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrHtmlResponse {
     [KestrunRuntimeApi('Route')]
-    [CmdletBinding(defaultParameterSetName = "FilePath")]
+    [CmdletBinding(defaultParameterSetName = 'FilePath')]
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, ParameterSetName = "FilePath")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'FilePath')]
         [string]$FilePath,
-        [Parameter(Mandatory = $true, ParameterSetName = "Template")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Template')]
         [string]$Template,
         [Parameter()]
         [int]$StatusCode = 200,
@@ -40,7 +39,7 @@ function Write-KrHtmlResponse {
             $readOnlyDictionary = [Kestrun.Utilities.ReadOnlyDictionaryAdapter]::new($Variables)
 
             switch ($PSCmdlet.ParameterSetName) {
-                "FilePath" {
+                'FilePath' {
                     # Resolve the file path relative to the Kestrun root if necessary
                     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot -Test
                     Write-KrVerboseLog -Message "Resolved file path: $resolvedPath"
@@ -48,16 +47,15 @@ function Write-KrHtmlResponse {
                     $Context.Response.WriteHtmlResponseFromFile($resolvedPath, $readOnlyDictionary, $StatusCode)
                     Write-Information "HTML response written for $FilePath"
                 }
-                "Template" {
+                'Template' {
                     # Call the C# method on the $Context.Response object
                     $Context.Response.WriteHtmlResponse($Template, $readOnlyDictionary, $StatusCode)
-                    Write-Information "HTML response written from template"
+                    Write-Information 'HTML response written from template'
                 }
             }
         }
-    }
-    catch {
+    } catch {
         # Handle any errors that occur during the file response writing
-        Write-KrErrorLog -Message "Error writing file response." -ErrorRecord $_
+        Write-KrErrorLog -Message 'Error writing file response.' -ErrorRecord $_
     }
 }

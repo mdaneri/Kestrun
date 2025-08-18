@@ -1,5 +1,4 @@
-function Write-KrStreamResponse {
-    <#
+<#
     .SYNOPSIS
         Writes a stream directly to the HTTP response body.
     .DESCRIPTION
@@ -16,7 +15,8 @@ function Write-KrStreamResponse {
         Writes the $myStream to the response body with a 200 OK status code and content type "application/octet-stream".
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrStreamResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

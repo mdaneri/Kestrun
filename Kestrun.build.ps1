@@ -1,4 +1,4 @@
-#requires -Module InvokeBuild
+﻿#requires -Module InvokeBuild
 <#
     .SYNOPSIS
     Build script for Kestrun
@@ -63,9 +63,9 @@ param(
     [Parameter(Mandatory = $true, ParameterSetName = 'Version')]
     [string]$Version,
     [Parameter(Mandatory = $false, ParameterSetName = 'Version')]
-    [string]$Iteration = "",
+    [string]$Iteration = '',
     [Parameter(Mandatory = $false, ParameterSetName = 'FileVersion')]
-    [string]$FileVersion = "./version.json",
+    [string]$FileVersion = './version.json',
     [Parameter(Mandatory = $false)]
     [string]
     [ValidateSet('None', 'Normal' , 'Detailed', 'Minimal')]
@@ -83,6 +83,17 @@ if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.My
     Write-Host 'Please use Invoke-Build to execute the tasks defined in this script or Invoke-Build Help for more information.' -ForegroundColor Yellow
     return
 }
+
+<#
+    .SYNOPSIS
+    Retrieves the version information from the version file.
+    .DESCRIPTION
+    This function reads the version information from a JSON file and returns the version string.
+    It also retrieves the release and iteration information if available.
+    .OUTPUTS
+    [string]
+    Returns the version string, including release and iteration information if available.
+#>
 function Get-Version {
     [CmdletBinding()]
     [OutputType([string])]
@@ -135,35 +146,32 @@ Add-BuildTask Help {
     Write-Host '- Remove-Module: Removes the Kestrun module.'
 }
 
-Add-BuildTask "Clean" "Clean-CodeAnalysis", "CleanHelp", {
-    Write-Host "Cleaning solution..."
+Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
+    Write-Host 'Cleaning solution...'
     foreach ($framework in $Frameworks) {
         dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
-Add-BuildTask "Restore" {
-    Write-Host "Restore Packages"
+Add-BuildTask 'Restore' {
+    Write-Host 'Restore Packages'
     dotnet restore .\Kestrun.sln -v:$DotNetVerbosity
-}, "Nuget-CodeAnalysis"
+}, 'Nuget-CodeAnalysis'
 
-Add-BuildTask "Build" {
-    Write-Host "Building solution..."
+Add-BuildTask 'Build' {
+    Write-Host 'Building solution...'
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
         $Version = Get-Version -FileVersion $FileVersion
-
-    }
-    elseif ($PSCmdlet.ParameterSetName -eq 'Version') {
+    } elseif ($PSCmdlet.ParameterSetName -eq 'Version') {
         if (-not (Test-Path -Path $FileVersion)) {
             [ordered]@{
-                Version   = $Version
-                Release   = $Release
+                Version = $Version
+                Release = $Release
                 Iteration = $Iteration
             } | ConvertTo-Json | Set-Content -Path $FileVersion
         }
         $Version = Get-Version -FileVersion $FileVersion
-    }
-    else {
+    } else {
         throw "Invalid parameter set. Use either 'FileVersion' or 'Version'."
     }
 
@@ -172,24 +180,24 @@ Add-BuildTask "Build" {
     }
 }
 
-Add-BuildTask "Nuget-CodeAnalysis" {
-    Write-Host "Update CodeAnalysis..."
+Add-BuildTask 'Nuget-CodeAnalysis' {
+    Write-Host 'Update CodeAnalysis...'
     & .\Utility\Download-CodeAnalysis.ps1
 }
 
-Add-BuildTask "Clean-CodeAnalysis" {
-    Write-Host "Cleaning CodeAnalysis..."
+Add-BuildTask 'Clean-CodeAnalysis' {
+    Write-Host 'Cleaning CodeAnalysis...'
     Remove-Item -Path './src/PowerShell/Kestrun/lib/Microsoft.CodeAnalysis/' -Force -Recurse -ErrorAction SilentlyContinue
 }
 
-Add-BuildTask "Kestrun.Tests" {
-    Write-Host "Running Kestrun DLL tests..."
+Add-BuildTask 'Kestrun.Tests' {
+    Write-Host 'Running Kestrun DLL tests...'
     foreach ($framework in $Frameworks) {
         dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
 
-Add-BuildTask "Test-Pester" {
+Add-BuildTask 'Test-Pester' {
 
     Import-Module Pester -Force
     $cfg = [PesterConfiguration]::Default
@@ -206,8 +214,7 @@ Add-BuildTask "Test-Pester" {
 
     if ($RunPesterInProcess) {
         Invoke-Pester -Configuration $cfg
-    }
-    else {
+    } else {
         $json = $cfg | ConvertTo-Json -Depth 10
         $child = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "run-pester-$([guid]::NewGuid()).ps1"
         @'
@@ -220,96 +227,94 @@ Invoke-Pester -Configuration $cfg
 
         try {
             pwsh -NoProfile -File $child -ConfigJson $json
-        }
-        finally {
+        } finally {
             Remove-Item $child -ErrorAction SilentlyContinue
         }
     }
 }
 
-Add-BuildTask "Test" "Kestrun.Tests", "Test-Pester"
+Add-BuildTask 'Test' 'Kestrun.Tests', 'Test-Pester'
 
-Add-BuildTask "Package" "Build", {
-    Write-Host "Packaging the solution..."
+Add-BuildTask 'Package' 'Build', {
+    Write-Host 'Packaging the solution...'
     foreach ($framework in $Frameworks) {
         dotnet pack .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
     }
 }
 
 
-Add-BuildTask "Build_Powershell_Help" {
-    Write-Host "Generate Powershell Help..."
+Add-BuildTask 'Build_Powershell_Help' {
+    Write-Host 'Generate Powershell Help...'
     pwsh -NoProfile -File .\Utility\Generate-Help.ps1
 }
-Add-BuildTask "Build_CSharp_Help" {
-    Write-Host "Generate C# Help..."
+Add-BuildTask 'Build_CSharp_Help' {
+    Write-Host 'Generate C# Help...'
     # Check if xmldocmd is in PATH
     if (-not (Get-Command xmldocmd -ErrorAction SilentlyContinue)) {
-        Write-Host "📦 Installing xmldocmd..."
+        Write-Host '📦 Installing xmldocmd...'
         dotnet tool install -g xmldocmd
-    }
-    else {
-        Write-Host "✅ xmldocmd already installed"
+    } else {
+        Write-Host '✅ xmldocmd already installed'
     }
     & .\Utility\Prepare-DocRefs.ps1
-    & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot "docs/cs/api" -TopParent "C# API"
+    & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot 'docs/cs/api' -TopParent 'C# API'
 }
 
-Add-BuildTask "BuildHelp" {
-    Write-Host "Generate Help..."
-}, "Build_Powershell_Help", "Build_CSharp_Help"
+Add-BuildTask 'BuildHelp' {
+    Write-Host 'Generate Help...'
+}, 'Build_Powershell_Help', 'Build_CSharp_Help'
 
 
-Add-BuildTask "CleanHelp" {
-    Write-Host "Cleaning Help..."
-}, "Clean_Powershell_Help", "Clean_CSharp_Help"
+Add-BuildTask 'CleanHelp' {
+    Write-Host 'Cleaning Help...'
+}, 'Clean_Powershell_Help', 'Clean_CSharp_Help'
 
-Add-BuildTask "Clean_Powershell_Help" {
-    Write-Host "Cleaning Powershell Help..."
+Add-BuildTask 'Clean_Powershell_Help' {
+    Write-Host 'Cleaning Powershell Help...'
     & .\Utility\Generate-Help.ps1 -Clean
 }
-Add-BuildTask "Clean_CSharp_Help" {
-    Write-Host "Cleaning C# Help..."
+Add-BuildTask 'Clean_CSharp_Help' {
+    Write-Host 'Cleaning C# Help...'
     & .\Utility\Prepare-DocRefs.ps1 -Clean
 }
 
 
 
-Add-BuildTask "Manifest" {
-    Write-Host "Updating Kestrun.psd1 manifest..."
+Add-BuildTask 'Manifest' {
+    Write-Host 'Updating Kestrun.psd1 manifest...'
     pwsh -NoProfile -File .\Utility\Update-Manifest.ps1
 }
 
 
 
-Add-BuildTask  "Generate-LargeFile" "Clean-LargeFile", {
-    Write-Host "Generating large file..."
-    if (-not (Test-Path -Path ".\examples\files\LargeFiles")) {
-        New-Item -ItemType Directory -Path ".\examples\files\LargeFiles" -Force | Out-Null
+Add-BuildTask 'Generate-LargeFile' 'Clean-LargeFile', {
+    Write-Host 'Generating large file...'
+    if (-not (Test-Path -Path '.\examples\files\LargeFiles')) {
+        New-Item -ItemType Directory -Path '.\examples\files\LargeFiles' -Force | Out-Null
     }
     (10, 100, 1000, 3000) | ForEach-Object {
         $sizeMB = $_
-        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.bin" -Mode "Binary" -SizeMB $sizeMB
-        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.txt" -Mode "Text" -SizeMB $sizeMB
+        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.bin" -Mode 'Binary' -SizeMB $sizeMB
+        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.txt" -Mode 'Text' -SizeMB $sizeMB
     }
 }
-Add-BuildTask  "Clean-LargeFile" {
-    Write-Host "Cleaning large files..."
-    Remove-Item -Path ".\examples\files\LargeFiles\*" -Force
+Add-BuildTask 'Clean-LargeFile' {
+    Write-Host 'Cleaning large files...'
+    Remove-Item -Path '.\examples\files\LargeFiles\*' -Force
 }
 
-Add-BuildTask "ThirdPartyNotices" {
-    & .\Utility\Generate-ThirdPartyNotices.ps1 -Project ".\src\CSharp\Kestrun\Kestrun.csproj" -Path ".\THIRD-PARTY-NOTICES.md" -Version (Get-Version -FileVersion $FileVersion)
+Add-BuildTask 'ThirdPartyNotices' {
+    & .\Utility\Generate-ThirdPartyNotices.ps1 -Project '.\src\CSharp\Kestrun\Kestrun.csproj' -Path '.\THIRD-PARTY-NOTICES.md' -Version (Get-Version -FileVersion $FileVersion)
 }
 
-Add-BuildTask All "Clean", "Restore", "Build", "Test"
+Add-BuildTask All 'Clean', 'Restore', 'Build', 'Test'
 
 Add-BuildTask Install-Module {
-    Write-Host "Installing Kestrun module..."
+    Write-Host 'Installing Kestrun module...'
     & .\Utility\Install-Kestrun.ps1 -FileVersion $FileVersion
 }
 
 Add-BuildTask Remove-Module {
-    Write-Host "Removing Kestrun module..."
+    Write-Host 'Removing Kestrun module...'
     & .\Utility\Install-Kestrun.ps1 -FileVersion $FileVersion -Remove
 }

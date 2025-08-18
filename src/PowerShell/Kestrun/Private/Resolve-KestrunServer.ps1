@@ -27,7 +27,7 @@ function Resolve-KestrunServer {
     if ($null -eq $Server) {
         $Server = [Kestrun.KestrunHostManager]::Default
         if ($null -eq $Server) {
-            throw "No Kestrun server instance found. Please create a Kestrun server instance."
+            throw 'No Kestrun server instance found. Please create a Kestrun server instance.'
         }
     }
     return $Server

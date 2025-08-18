@@ -1,6 +1,4 @@
-
-function Add-KrFileServer {
-    <#
+<#
     .SYNOPSIS
         Registers a file server to serve static files from a specified path.
     .DESCRIPTION
@@ -8,9 +6,9 @@ function Add-KrFileServer {
         It can be used to serve files like images, stylesheets, and scripts.
     .PARAMETER Server
         The Kestrun server instance to which the file server will be added.
-    .PARAMETER Options  
+    .PARAMETER Options
         The FileServerOptions to configure the file server.
-    .PARAMETER FileProvider 
+    .PARAMETER FileProvider
         An optional file provider to use for serving the files.
     .PARAMETER RequestPath
         The path at which the file server will be registered.
@@ -30,6 +28,7 @@ function Add-KrFileServer {
     .LINK
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.builder.fileserveroptions?view=aspnetcore-8.0
 #>
+function Add-KrFileServer {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -55,7 +54,6 @@ function Add-KrFileServer {
 
         [Parameter()]
         [switch]$PassThru
- 
     )
     process {
         if ($PSCmdlet.ParameterSetName -eq 'Items') {

@@ -1,5 +1,4 @@
-function Add-KrPowerShellRuntime {
-    <#
+<#
     .SYNOPSIS
         Adds PowerShell runtime support to the Kestrun server.
     .DESCRIPTION
@@ -17,7 +16,8 @@ function Add-KrPowerShellRuntime {
         This example adds PowerShell runtime support to the server without a path prefix.
     .NOTES
         This cmdlet is used to register a PowerShell runtime with the Kestrun server, allowing you to execute PowerShell scripts and commands in the context of the Kestrun server.
-    #>
+#>
+function Add-KrPowerShellRuntime {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]

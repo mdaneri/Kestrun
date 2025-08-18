@@ -1,5 +1,4 @@
-function Limit-KrJWTNotBefore {
-    <#
+<#
     .SYNOPSIS
         Sets the NotBefore time for the JWT token builder.
     .DESCRIPTION
@@ -18,8 +17,9 @@ function Limit-KrJWTNotBefore {
         This function is part of the Kestrun.Security module and is used to build JWT tokens
         Maps to JwtTokenBuilder.NotBefore
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Limit-KrJWTNotBefore {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]

@@ -1,5 +1,4 @@
-function New-KrClaimPolicy {
-    <#
+<#
     .SYNOPSIS
         Creates a new claim policy builder instance.
     .DESCRIPTION
@@ -15,10 +14,11 @@ function New-KrClaimPolicy {
         Maps to ClaimPolicyBuilder constructor.
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.authentication.claimpolicybuilder
-    #>
+#>
+function New-KrClaimPolicy {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [OutputType([Kestrun.Claims.ClaimPolicyBuilder])]
     param( )
-        return [Kestrun.Claims.ClaimPolicyBuilder]::new()
+    return [Kestrun.Claims.ClaimPolicyBuilder]::new()
 }

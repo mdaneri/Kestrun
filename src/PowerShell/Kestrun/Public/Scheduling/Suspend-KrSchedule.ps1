@@ -1,5 +1,4 @@
-function Suspend-KrSchedule {
-    <#
+﻿<#
     .SYNOPSIS
         Suspends a schedule, preventing it from running until resumed.
     .DESCRIPTION
@@ -15,7 +14,8 @@ function Suspend-KrSchedule {
         Returns the Kestrun host object after suspending the schedule.
     .NOTES
         This function is part of the Kestrun scheduling module.
-    #>
+#>
+function Suspend-KrSchedule {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -30,13 +30,12 @@ function Suspend-KrSchedule {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
         if (-not $Server.Scheduler) {
-            throw "SchedulerService is not enabled."
+            throw 'SchedulerService is not enabled.'
         }
 
         if ($Server.Scheduler.Pause($Name)) {
             Write-Information "🛑 schedule '$Name' is now paused."
-        }
-        else {
+        } else {
             Write-Warning "No schedule named '$Name' found."
         }
         return $Server

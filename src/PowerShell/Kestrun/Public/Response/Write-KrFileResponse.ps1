@@ -1,6 +1,4 @@
-
-function Write-KrFileResponse {
-    <#
+<#
     .SYNOPSIS
         Sends a file as the HTTP response.
 
@@ -30,7 +28,8 @@ function Write-KrFileResponse {
         status code is set to 200 (OK).
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrFileResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(
@@ -65,9 +64,8 @@ function Write-KrFileResponse {
             $Context.Response.WriteFileResponse($resolvedPath, $ContentType, $StatusCode)
             Write-Information "File response written for $FilePath with download name $FileDownloadName"
         }
-    }
-    catch {
+    } catch {
         # Handle any errors that occur during the file response writing
-        Write-KrErrorLog -Message "Error writing file response." -ErrorRecord $_
+        Write-KrErrorLog -Message 'Error writing file response.' -ErrorRecord $_
     }
 }

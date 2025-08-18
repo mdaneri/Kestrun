@@ -1,5 +1,4 @@
-function Get-KrSharedState {
-    <#
+<#
     .SYNOPSIS
         Retrieves the value of a previously defined global variable.
     .DESCRIPTION
@@ -14,7 +13,8 @@ function Get-KrSharedState {
         This retrieves the value of the global variable "MyVariable".
     .NOTES
         This function is part of the Kestrun.SharedState module and is used to retrieve the value of global variables.
-    #>
+#>
+function Get-KrSharedState {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     param(

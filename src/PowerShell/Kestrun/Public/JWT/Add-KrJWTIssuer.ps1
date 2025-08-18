@@ -1,5 +1,4 @@
-function Add-KrJWTIssuer {
-    <#
+<#
     .SYNOPSIS
         Adds an issuer to the JWT token builder.
     .DESCRIPTION
@@ -18,8 +17,9 @@ function Add-KrJWTIssuer {
         This function is part of the Kestrun.Security module and is used to build JWT tokens
         Maps to JwtTokenBuilder.WithIssuer
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Add-KrJWTIssuer {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]

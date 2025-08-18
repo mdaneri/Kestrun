@@ -1,5 +1,4 @@
-function Get-KrScheduleReport {
-    <#
+<#
     .SYNOPSIS
         Returns the full schedule report.
     .DESCRIPTION
@@ -19,7 +18,8 @@ function Get-KrScheduleReport {
         Retrieves the schedule report with timestamps converted to the specified time zone.
     .OUTPUTS
         Returns a ScheduleReport object or a hashtable if AsHashtable is set.
-    #>
+#>
+function Get-KrScheduleReport {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Scheduling.ScheduleReport])]
@@ -37,25 +37,22 @@ function Get-KrScheduleReport {
                 # If no server is specified, use the global $KestrunHost variable
                 # This is useful for scripts that run in the context of a Kestrun server
                 $Server = $KestrunHost
-            }
-            else {
+            } else {
                 # Ensure the server instance is resolved
                 $Server = Resolve-KestrunServer -Server $Server
             }
         }
         if (-not $Server.Scheduler) {
-            throw "SchedulerService is not enabled."
+            throw 'SchedulerService is not enabled.'
         }
-        
+
         $tz = if ($TimeZoneId) {
             [TimeZoneInfo]::FindSystemTimeZoneById($TimeZoneId)
-        }
-        else { [TimeZoneInfo]::Utc }
+        } else { [TimeZoneInfo]::Utc }
 
         if ($AsHashtable) {
             return $Server.Scheduler.GetReportHashtable($tz)
-        }
-        else {
+        } else {
             return $Server.Scheduler.GetReport($tz)
         }
     }

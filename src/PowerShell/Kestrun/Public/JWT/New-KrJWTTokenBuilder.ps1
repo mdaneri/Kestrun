@@ -1,6 +1,4 @@
-
-function New-KrJWTBuilder {
-    <#
+<#
     .SYNOPSIS
         Creates a new JWT token builder instance.
     .DESCRIPTION
@@ -14,7 +12,8 @@ function New-KrJWTBuilder {
     .NOTES
         This function is part of the Kestrun.Security module and is used to build JWT tokens.
         Maps to JwtTokenBuilder.New
-    #>
+#>
+function New-KrJWTBuilder {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]

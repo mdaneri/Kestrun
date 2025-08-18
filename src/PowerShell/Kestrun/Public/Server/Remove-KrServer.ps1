@@ -1,7 +1,4 @@
-
- 
-function Remove-KrServer {
-    <#
+<#
     .SYNOPSIS
         Removes a Kestrun server instance.
     .DESCRIPTION
@@ -18,7 +15,8 @@ function Remove-KrServer {
         Removes the specified Kestrun server instance without confirmation.
     .NOTES
         This function is designed to be used in the context of a Kestrun server management.
-    #>
+#>
+function Remove-KrServer {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -30,24 +28,23 @@ function Remove-KrServer {
         [switch]$Force
     )
     process {
-            if ( [Kestrun.KestrunHostManager]::Contains($Name) ) {
-                if ($Force) {
-                    if ([Kestrun.KestrunHostManager]::IsRunning($Name)) {
-                        [Kestrun.KestrunHostManager]::Stop($Name)
-                    }
-                    [Kestrun.KestrunHostManager]::Destroy($Name)
+        if ( [Kestrun.KestrunHostManager]::Contains($Name) ) {
+            if ($Force) {
+                if ([Kestrun.KestrunHostManager]::IsRunning($Name)) {
+                    [Kestrun.KestrunHostManager]::Stop($Name)
                 }
-                else {
-                    $confirm = Read-Host "Server '$Name' is running. Do you want to stop and destroy the previous instance? (Y/N)"
-                    if ($confirm -notin @('Y', 'y')) {
-                        Write-Warning "Operation cancelled by user."
-                        exit 1
-                    }
-                    if ([Kestrun.KestrunHostManager]::IsRunning($Name)) {
-                        [Kestrun.KestrunHostManager]::Stop($Name)
-                    }
-                    [Kestrun.KestrunHostManager]::Destroy($Name)
+                [Kestrun.KestrunHostManager]::Destroy($Name)
+            } else {
+                $confirm = Read-Host "Server '$Name' is running. Do you want to stop and destroy the previous instance? (Y/N)"
+                if ($confirm -notin @('Y', 'y')) {
+                    Write-Warning 'Operation cancelled by user.'
+                    exit 1
                 }
+                if ([Kestrun.KestrunHostManager]::IsRunning($Name)) {
+                    [Kestrun.KestrunHostManager]::Stop($Name)
+                }
+                [Kestrun.KestrunHostManager]::Destroy($Name)
             }
+        }
     }
 }

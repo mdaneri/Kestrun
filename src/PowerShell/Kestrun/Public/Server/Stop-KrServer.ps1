@@ -1,6 +1,4 @@
- 
-function Stop-KrServer {
-    <#
+<#
     .SYNOPSIS
         Starts the Kestrun server and listens for incoming requests.
     .DESCRIPTION
@@ -19,7 +17,8 @@ function Stop-KrServer {
     .NOTES
         This function is designed to be used after the server has been configured and routes have been added.
         It will block the console until the server is stopped or Ctrl+C is pressed.
-    #>
+#>
+function Stop-KrServer {
     [KestrunRuntimeApi('Definition')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -37,28 +36,28 @@ function Stop-KrServer {
     process {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
- 
+
         # Stop the Kestrel server
-        Write-Host "Stopping Kestrun ..."
+        Write-Host 'Stopping Kestrun ...'
         $Server.StopAsync() | Out-Null
         if ($NoWait.IsPresent) {
             return
         }
         # Ensure the server is stopped on exit
         if (-not $Quiet.IsPresent) {
-            Write-Host "Stopping Kestrun server..." -NoNewline
+            Write-Host 'Stopping Kestrun server...' -NoNewline
         }
         while ($Server.IsRunning) {
             Start-Sleep -Seconds 1
             if (-not $Quiet.IsPresent) {
-                Write-Host "#" -NoNewline
+                Write-Host '#' -NoNewline
             }
         }
         #$Server.StopAsync().Wait()
         [Kestrun.KestrunHostManager]::Destroy($Server.ApplicationName)
         #$Server.Dispose()
         if (-not $Quiet.IsPresent) {
-            Write-Host "Kestrun server stopped."
+            Write-Host 'Kestrun server stopped.'
         }
         if (-not $NoClearVariable.IsPresent) {
             # Clear Kestrun variables

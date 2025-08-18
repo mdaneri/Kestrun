@@ -1,5 +1,4 @@
-function Test-KrJWT {
-    <#
+<#
     .SYNOPSIS
         Validates a JWT token against the builder's parameters.
     .DESCRIPTION
@@ -20,8 +19,9 @@ function Test-KrJWT {
         This function is part of the Kestrun.Security module and is used to validate JWT tokens.
         Maps to JwtBuilderResult.Validate
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Test-KrJWT {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]

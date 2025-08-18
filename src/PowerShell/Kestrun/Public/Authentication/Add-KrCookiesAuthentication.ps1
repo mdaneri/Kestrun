@@ -1,5 +1,4 @@
-function Add-KrCookiesAuthentication {
-    <#
+<#
     .SYNOPSIS
         Adds cookie authentication to the Kestrun server.
     .DESCRIPTION
@@ -38,7 +37,8 @@ function Add-KrCookiesAuthentication {
         This cmdlet is part of the Kestrun PowerShell module and is used to configure cookie authentication for Kestrun servers.
     .LINK
         https://docs.kestrun.dev/docs/powershell/kestrun/authentication
-    #>
+#>
+function Add-KrCookiesAuthentication {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]

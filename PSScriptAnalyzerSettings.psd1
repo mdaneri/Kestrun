@@ -1,6 +1,6 @@
-@{
+﻿@{
     # Load all default rules; we’ll override specifics in `Rules`.
-    ExcludeRules = @()
+    ExcludeRules = @('PSAvoidUsingWriteHost')
 
     # Where your custom rules live (file or folder).
     <#
@@ -10,93 +10,104 @@
     )
     #>
 
-    Rules        = @{
+    Rules = @{
         # Built-in rule with your traversal customization
-        PSReviewUnusedParameter    = @{
-            Enable             = $true
+        PSReviewUnusedParameter = @{
+            Enable = $true
             CommandsToTraverse = @('Where-Object') # Example of traversing a specific command
         }
 
         # Your custom rule
-        AvoidNewObjectRule         = @{
-            Enable   = $true
+        AvoidNewObjectRule = @{
+            Enable = $true
             Severity = 'Warning'
         }
 
         # Align assignment statements
         PSAlignAssignmentStatement = @{
-            Enable         = $true
+            Enable = $true
             CheckHashtable = $false
-            CheckPipeline  = $true
+            CheckPipeline = $true
         }
 
         # Avoid long lines
-        PSAvoidLongLines           = @{
-            Enable            = $true
-            MaximumLineLength = 120
+        PSAvoidLongLines = @{
+            Enable = $true
+            MaximumLineLength = 220
         }
 
         # Avoid using cmdlet aliases
-        PSAvoidUsingCmdletAliases  = @{
+        PSAvoidUsingCmdletAliases = @{
             AllowList = @('ScriptBlock')
         }
 
         # Place open brace on new line
-        PSPlaceOpenBrace           = @{
-            Enable             = $true
-            OnSameLine         = $true
-            NewLineAfter       = $true
+        PSPlaceOpenBrace = @{
+            Enable = $true
+            OnSameLine = $true
+            NewLineAfter = $true
             IgnoreOneLineBlock = $true
         }
         # Place close brace on new line
-        PSPlaceCloseBrace          = @{
-            Enable             = $true
-            NoEmptyLineBefore  = $true
+        PSPlaceCloseBrace = @{
+            Enable = $true
+            NoEmptyLineBefore = $true
             IgnoreOneLineBlock = $true
-            NewLineAfter       = $true
+            NewLineAfter = $false
         }
 
         # Provide comment-based help
-        PSProvideCommentHelp       = @{
-            Enable                  = $true
-            ExportedOnly            = $false
-            BlockComment            = $true
+        PSProvideCommentHelp = @{
+            Enable = $true
+            ExportedOnly = $false
+            BlockComment = $true
             VSCodeSnippetCorrection = $false
-            Placement               = 'before'
+            Placement = 'before'
         }
 
         # Indentation
         PSUseConsistentIndentation = @{
-            Enable              = $true
-            IndentationSize     = 4
+            Enable = $true
+            IndentationSize = 4
             PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
-            Kind                = 'space'
+            Kind = 'space'
         }
 
         # Whitespace
-        PSUseConsistentWhitespace  = @{
-            Enable                                  = $true
-            CheckInnerBrace                         = $true
-            CheckOpenBrace                          = $true
-            CheckOpenParen                          = $true
-            CheckOperator                           = $true
-            CheckPipe                               = $true
-            CheckPipeForRedundantWhitespace         = $true
-            CheckSeparator                          = $true
-            CheckParameter                          = $true
+        PSUseConsistentWhitespace = @{
+            Enable = $true
+            CheckInnerBrace = $true
+            CheckOpenBrace = $true
+            CheckOpenParen = $true
+            CheckOperator = $true
+            CheckPipe = $true
+            CheckPipeForRedundantWhitespace = $true
+            CheckSeparator = $true
+            CheckParameter = $true
             IgnoreAssignmentOperatorInsideHashTable = $true
         }
 
         # Casing
-        PSUseCorrectCasing         = @{
-            Enable        = $true
+        PSUseCorrectCasing = @{
+            Enable = $true
             CheckCommands = $true
-            CheckKeyword  = $true
+            CheckKeyword = $true
             CheckOperator = $true
         }
 
-        # (Optional) a few opinionated “proof it’s working” rules 
-        PSAvoidUsingWriteHost      = @{ Enable = $true }
-        PSUseApprovedVerbs         = @{ Enable = $true }
+        # Noun
+        PSUseSingularNouns = @{
+            Enable = $true
+            NounAllowList = 'Data', 'Windows', 'Metadata'#, 'MarkdownMetadata'
+        }
+
+        # Use BOM for Unicode encoded files
+        UseBOMForUnicodeEncodedFile = @{
+            Enable = $true
+        }
+
+        # (Optional) a few opinionated “proof it’s working” rules
+        PSAvoidUsingWriteHost = @{ Enable = $false }
+        PSUseApprovedVerbs = @{ Enable = $true }
     }
 }
