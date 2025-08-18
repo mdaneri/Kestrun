@@ -1,69 +1,23 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
-using Python.Runtime;
-using Microsoft.ClearScript.V8;
-using System;
-using System.IO;
 using System.Collections.Concurrent;
-using System.Collections;
-using System.Collections.Immutable;
-using System.Text.Json;
-using System.Text;
 using System.Net;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Kestrun.Utilities;
 using Microsoft.CodeAnalysis;
 using System.Reflection;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Security.Cryptography.X509Certificates;
-using System.Security;
-using Microsoft.AspNetCore.Hosting;
 using Serilog;
 using Serilog.Events;
-using Microsoft.AspNetCore.StaticFiles.Infrastructure;
-using Microsoft.AspNetCore.ResponseCompression;
-using System.Collections.Specialized;
-using Microsoft.AspNetCore.Mvc;               // MvcOptions, IMvcBuilder
-using Microsoft.AspNetCore.Mvc.RazorPages;    // RazorPagesOptions
-
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.AspNetCore.Antiforgery;     // extension methods
-//using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
 using Kestrun.Scheduling;
 using Kestrun.SharedState;
-using Kestrun.Languages;
-using static Kestrun.Languages.CSharpDelegateBuilder;
 using Kestrun.Middleware;
-using Kestrun.Razor;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.DependencyInjection;
-using System.Net.Quic;
 using Kestrun.Scripting;
-using Kestrun.Hosting;
-using Microsoft.AspNetCore.Http.Features;
 using Kestrun.Hosting.Options;
 using System.Runtime.InteropServices;
 using Microsoft.PowerShell;
-/*#if NET8_0_OR_GREATER
-[assembly: System.Runtime.Versioning.RequiresPreviewFeatures]
-#endif
-*/
+
 namespace Kestrun.Hosting;
 
 /// <summary>

@@ -7,24 +7,18 @@ namespace Kestrun.Claims;
 /// <summary>
 /// Copies <see cref="ClaimPolicyConfig"/> into <see cref="AuthorizationOptions"/> after configuration.
 /// </summary>
-public sealed class ClaimPolicyPostConfigurer
-    : IPostConfigureOptions<AuthorizationOptions>
+/// <remarks>
+/// Initializes a new instance of the <see cref="ClaimPolicyPostConfigurer"/> class.
+/// </remarks>
+/// <param name="scheme">The authentication scheme name.</param>
+/// <param name="basics">The options monitor for <see cref="BasicAuthenticationOptions"/>.</param>
+public sealed class ClaimPolicyPostConfigurer(
+    string scheme,
+    IOptionsMonitor<IClaimsCommonOptions> basics)
+        : IPostConfigureOptions<AuthorizationOptions>
 {
-    private readonly string _scheme;
-    private readonly IOptionsMonitor<IClaimsCommonOptions> _basics;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ClaimPolicyPostConfigurer"/> class.
-    /// </summary>
-    /// <param name="scheme">The authentication scheme name.</param>
-    /// <param name="basics">The options monitor for <see cref="BasicAuthenticationOptions"/>.</param>
-    public ClaimPolicyPostConfigurer(
-        string scheme,
-        IOptionsMonitor<IClaimsCommonOptions> basics)
-    {
-        _scheme = scheme;
-        _basics = basics;
-    }
+    private readonly string _scheme = scheme;
+    private readonly IOptionsMonitor<IClaimsCommonOptions> _basics = basics;
 
     /// <summary>
     /// Applies the <see cref="ClaimPolicyConfig"/> to the specified <see cref="AuthorizationOptions"/> after configuration.

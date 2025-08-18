@@ -92,7 +92,11 @@ class Program
         // 1f) Export PFX *via* SecureString + ToSecureSpan
         // ────────────────────────────────────────────────────────────────
         var securePwd = new SecureString();
-        foreach (char c in "MyP@ssw0rd") securePwd.AppendChar(c);
+        foreach (char c in "MyP@ssw0rd")
+        {
+            securePwd.AppendChar(c);
+        }
+
         securePwd.MakeReadOnly();
 
         CertificateManager.Export(
@@ -118,7 +122,10 @@ class Program
 
         File.WriteAllText("out/example.csr", csrPem);
         using (var sw = new StreamWriter("out/example.key"))
+        {
             new PemWriter(sw).WriteObject(privKey);
+        }
+
         Console.WriteLine("[CSR] out/example.csr + out/example.key written");
 
         // ────────────────────────────────────────────────────────────────
