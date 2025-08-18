@@ -1,6 +1,4 @@
-
-function Add-KrResponseCompression {
-    <#
+<#
     .SYNOPSIS
         Adds response compression to the server.
     .DESCRIPTION
@@ -17,7 +15,7 @@ function Add-KrResponseCompression {
     .PARAMETER ExcludedMimeTypes
         An array of MIME types to exclude from compression.
     .PARAMETER PassThru
-        If specified, the cmdlet will return the modified server instance. 
+        If specified, the cmdlet will return the modified server instance.
     .EXAMPLE
         $server | Add-KrResponseCompression -EnableForHttps -MimeTypes 'text/plain', 'application/json' -ExcludedMimeTypes 'image/*' -Providers $gzipProvider, $brotliProvider
         This example adds response compression to the server, enabling it for HTTPS requests, and specifying the MIME types to compress and exclude, as well as the compression providers to use.
@@ -29,7 +27,8 @@ function Add-KrResponseCompression {
     .NOTES
         This cmdlet is used to configure response compression for the Kestrun server, allowing you to specify which MIME types should be compressed and which should be excluded.
         Providers is not supported yet.
-    #>
+#>
+function Add-KrResponseCompression {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]

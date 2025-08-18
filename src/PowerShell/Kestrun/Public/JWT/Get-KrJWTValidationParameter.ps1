@@ -1,5 +1,4 @@
-function Get-KrJWTValidationParameter {
-    <#
+<#
     .SYNOPSIS
         Retrieves the validation parameters for a JWT token builder result.
     .DESCRIPTION
@@ -28,8 +27,9 @@ function Get-KrJWTValidationParameter {
         This function is part of the Kestrun.Security module and is used to manage JWT tokens.
         Maps to JwtBuilderResult.GetValidationParameters
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Get-KrJWTValidationParameter {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]

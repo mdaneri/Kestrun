@@ -1,9 +1,8 @@
-function New-KrSelfSignedCertificate {
-    <#
+<#
     .SYNOPSIS
         Creates a new self-signed certificate.
     .DESCRIPTION
-        The New-KrSelfSignedCertificate function generates a self-signed certificate for use in development or testing scenarios. 
+        The New-KrSelfSignedCertificate function generates a self-signed certificate for use in development or testing scenarios.
         This certificate can be used for securing communications or authentication purposes.
     .PARAMETER DnsName
         The DNS name(s) for the certificate.
@@ -23,7 +22,8 @@ function New-KrSelfSignedCertificate {
         This example creates a self-signed certificate with the subject "CN=MyCert" and stores it in the local machine's certificate store.
     .NOTES
         This function is intended for use in development and testing environments only. Do not use self-signed certificates in production.
-    #>
+#>
+function New-KrSelfSignedCertificate {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]

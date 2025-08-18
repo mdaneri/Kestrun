@@ -1,5 +1,4 @@
-function Register-KrSchedule {
-    <#
+<#
     .SYNOPSIS
         Creates a new scheduled job in the active Kestrun host.
     .DESCRIPTION
@@ -69,7 +68,8 @@ function Register-KrSchedule {
         Register-KrSchedule -Server $server -Name 'JavaScriptJob' -Cron '0 0/15 * * * *' -Language JavaScript -ScriptPath 'Scripts/GenerateReport.js'
         Register a job that runs every 15 minutes, executing the JavaScript script at 'Scripts/GenerateReport.js'.
 
-    #>
+#>
+function Register-KrSchedule {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'IntervalScriptBlock')]
     [OutputType([Kestrun.Scheduling.JobInfo])]
@@ -80,8 +80,8 @@ function Register-KrSchedule {
         [Parameter(Mandatory)]
         [string]$Name,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "CronFile")]
-        [Parameter(Mandatory = $true, ParameterSetName = "CronBlock")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'CronFile')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'CronBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalFile')]
         [Kestrun.Scripting.ScriptLanguage]$Language,
@@ -98,7 +98,7 @@ function Register-KrSchedule {
 
         [Parameter(Mandatory = $true, ParameterSetName = 'CronScriptBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalScriptBlock')]
-        [ScriptBlock]$ScriptBlock,
+        [scriptblock]$ScriptBlock,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'CronBlock')]
         [Parameter(Mandatory = $true, ParameterSetName = 'IntervalBlock')]
@@ -121,7 +121,7 @@ function Register-KrSchedule {
         # Ensure the scheduler service is enabled
         $sched = $Server.Scheduler
         if ($null -eq $sched) {
-            throw "SchedulerService is not enabled. Call host.EnableScheduling() first."
+            throw 'SchedulerService is not enabled. Call host.EnableScheduling() first.'
         }
 
         try {
@@ -160,14 +160,12 @@ function Register-KrSchedule {
                 Write-KrInformationLog -Message "Schedule '{0}' registered successfully." -Values $Name
 
                 # return the freshly-registered JobInfo
-                return $sched.GetSnapshot() | Where-Object Name -eq $Name
-            }
-            else {
+                return $sched.GetSnapshot() | Where-Object Name -EQ $Name
+            } else {
                 Write-KrInformationLog -Message "Schedule '{0}' registered successfully. Use -PassThru to return the job info." -Values $Name
             }
-        }
-        catch {
-            Write-KrErrorLog -Message "Failed to register schedule" -ErrorRecord $_
+        } catch {
+            Write-KrErrorLog -Message 'Failed to register schedule' -ErrorRecord $_
         }
     }
 }

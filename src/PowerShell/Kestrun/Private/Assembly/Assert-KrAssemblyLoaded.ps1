@@ -8,7 +8,7 @@ function Assert-KrAssemblyLoaded {
         assembly has not been loaded yet, it is added to the current AppDomain.
     .PARAMETER AssemblyPath
         Path to the assembly file to load.
-    #>
+#>
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     [CmdletBinding()]
     [OutputType([bool])]

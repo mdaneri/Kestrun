@@ -1,5 +1,4 @@
-function Add-KrStaticFilesService {
-    <#
+<#
 .SYNOPSIS
     Registers a static file server to serve files from a specified path.
 .DESCRIPTION
@@ -10,7 +9,7 @@ function Add-KrStaticFilesService {
 .PARAMETER Options
     The StaticFileOptions to configure the static file service.
 .PARAMETER FileProvider
-    An optional file provider to use for serving the files. 
+    An optional file provider to use for serving the files.
 .PARAMETER RequestPath
     The path at which the static file service will be registered.
 .PARAMETER HttpsCompression
@@ -25,7 +24,8 @@ function Add-KrStaticFilesService {
     If specified, the cmdlet will return the modified server instance after adding the static file service.
 .EXAMPLE
     $server | Add-KrStaticFilesService -RequestPath '/static' -HttpsCompression -ServeUnknownFileTypes -DefaultContentType 'application/octet-stream' -RedirectToAppendTrailingSlash
-    This example adds a static file service to the server for the path '/static', enabling HTTPS compression, allowing serving unknown file types, setting the default content type to 'application/octet-stream', and redirecting requests to append a trailing slash.
+    This example adds a static file service to the server for the path '/static', enabling HTTPS compression, allowing serving unknown file types,
+    setting the default content type to 'application/octet-stream', and redirecting requests to append a trailing slash.
 .EXAMPLE
     $server | Add-KrStaticFilesService -Options $options
     This example adds a static file service to the server using the specified StaticFileOptions.
@@ -34,6 +34,7 @@ function Add-KrStaticFilesService {
 .NOTES
     ContentTypeProvider and ContentTypeProviderOptions are not supported yet.
 #>
+function Add-KrStaticFilesService {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -89,7 +90,7 @@ function Add-KrStaticFilesService {
         }
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
+
         [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddStaticFiles($Server, $Options) | Out-Null
         # Add the static file service to the server
 

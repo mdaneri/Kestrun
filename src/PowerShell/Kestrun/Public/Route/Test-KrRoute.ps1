@@ -1,5 +1,4 @@
-function Test-KrRoute {
-    <#
+<#
     .SYNOPSIS
         Tests if a route exists in the Kestrun host.
     .DESCRIPTION
@@ -16,7 +15,8 @@ function Test-KrRoute {
         # Tests if a POST route exists for "/api/test".
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes.
-    #>
+#>
+function Test-KrRoute {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]

@@ -1,7 +1,4 @@
-
- 
-function Add-KrHtmlTemplateRoute {
-    <#
+<#
     .SYNOPSIS
         Adds a new HTML template route to the Kestrun server.
 
@@ -9,7 +6,7 @@ function Add-KrHtmlTemplateRoute {
         This function allows you to add a new HTML template route to the Kestrun server by specifying the route path and the HTML template file path.
 
     .PARAMETER Server
-        The Kestrun server instance to which the route will be added. 
+        The Kestrun server instance to which the route will be added.
         If not specified, the function will attempt to resolve the current server context.
 
     .PARAMETER Path
@@ -25,7 +22,7 @@ function Add-KrHtmlTemplateRoute {
         If specified, the function will return the created route object.
 
     .OUTPUTS
-        Returns a Kestrun.Hosting.MapRoute object representing the newly created route if PassThru is specified.
+        [Microsoft.AspNetCore.Builder.IEndpointConventionBuilder] representing the created route.
 
     .EXAMPLE
         Add-KrHtmlTemplateRoute -Server $myServer -Path "/myroute" -HtmlTemplatePath "C:\Templates\mytemplate.html"
@@ -36,10 +33,11 @@ function Add-KrHtmlTemplateRoute {
         Adds a new HTML template route to the current Kestrun server and returns the route object
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes
-    #>
+#>
+function Add-KrHtmlTemplateRoute {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
-    [OutputType([Microsoft.AspNetCore.Builder.RouteHandlerBuilder])]
+    [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.Hosting.KestrunHost]$Server,
@@ -61,13 +59,13 @@ function Add-KrHtmlTemplateRoute {
         $Server = Resolve-KestrunServer -Server $Server
 
         $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
-        $options.HttpVerbs = [Kestrun.Utilities.HttpVerb[]]::new([Kestrun.Utilities.HttpVerb]::Get) 
+        $options.HttpVerbs = [Kestrun.Utilities.HttpVerb[]]::new([Kestrun.Utilities.HttpVerb]::Get)
         $options.Pattern = $Path
         $options.RequireAuthorization = $Authorization
 
-        $map = [Kestrun.Hosting.KestrunHostMapExtensions]::AddHtmlTemplateRoute($Server, $options, $HtmlTemplatePath)
+        [Kestrun.Hosting.KestrunHostMapExtensions]::AddHtmlTemplateRoute($Server, $options, $HtmlTemplatePath) | Out-Null
         if ($PassThru) {
-            return $map
+            return $Server
         }
     }
 }

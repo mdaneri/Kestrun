@@ -1,6 +1,4 @@
-
-function Add-KrRazorPageService {
-    <#
+<#
     .SYNOPSIS
         Adds Razor Pages service to the server.
     .DESCRIPTION
@@ -26,7 +24,8 @@ function Add-KrRazorPageService {
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.razorpages.razorpagesoptions?view=aspnetcore-8.0
     .NOTES
         This cmdlet is used to register Razor Pages with the Kestrun server, allowing you to serve dynamic web pages using Razor syntax.
-    #>
+#>
+function Add-KrRazorPageService {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]

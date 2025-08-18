@@ -1,5 +1,4 @@
-function Add-KrListener {
-    <#
+<#
     .SYNOPSIS
         Creates a new Kestrun server instance with specified options and listeners.
     .DESCRIPTION
@@ -27,9 +26,10 @@ function Add-KrListener {
         Creates a new Kestrun server instance with the specified name.
     .NOTES
         This function is designed to be used after the server has been configured with routes and listeners.
-    #>
+#>
+function Add-KrListener {
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(defaultParameterSetName = "NoCert")]
+    [CmdletBinding(defaultParameterSetName = 'NoCert')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
@@ -39,25 +39,24 @@ function Add-KrListener {
         [int]$Port,
 
         [System.Net.IPAddress]$IPAddress = [System.Net.IPAddress]::Loopback,
-        [Parameter(mandatory = $true, ParameterSetName = "CertFile")]
+        [Parameter(mandatory = $true, ParameterSetName = 'CertFile')]
         [string]$CertPath,
 
-        [Parameter(mandatory = $false, ParameterSetName = "CertFile")]
+        [Parameter(mandatory = $false, ParameterSetName = 'CertFile')]
         [SecureString]$CertPassword = $null,
 
-        [Parameter(mandatory = $true, ParameterSetName = "x509Certificate")]
+        [Parameter(mandatory = $true, ParameterSetName = 'x509Certificate')]
         [System.Security.Cryptography.X509Certificates.X509Certificate2]$X509Certificate = $null,
 
-        [Parameter(ParameterSetName = "x509Certificate")]
-        [Parameter(ParameterSetName = "CertFile")]
+        [Parameter(ParameterSetName = 'x509Certificate')]
+        [Parameter(ParameterSetName = 'CertFile')]
         [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]$Protocols,
 
         [Parameter()]
         [switch]$UseConnectionLogging,
 
         [Parameter()]
-        [switch]$passThru
-        
+        [switch]$PassThru
     )
 
     process {
@@ -66,14 +65,13 @@ function Add-KrListener {
 
         # Validate parameters based on the parameter set
         if ($null -eq $Protocols) {
-            if ($PSCmdlet.ParameterSetName -eq "NoCert") {
+            if ($PSCmdlet.ParameterSetName -eq 'NoCert') {
                 $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1
-            }
-            else {
+            } else {
                 $Protocols = [Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols]::Http1OrHttp2
             }
         }
-        if ($PSCmdlet.ParameterSetName -eq "CertFile") {
+        if ($PSCmdlet.ParameterSetName -eq 'CertFile') {
             if (-not (Test-Path $CertPath)) {
                 throw "Certificate file not found: $CertPath"
             }
@@ -81,8 +79,8 @@ function Add-KrListener {
         }
 
 
-        $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent)| Out-Null
-        if($passThru.IsPresent) {
+        $Server.ConfigureListener($Port, $IPAddress, $X509Certificate, $Protocols, $UseConnectionLogging.IsPresent) | Out-Null
+        if ($PassThru.IsPresent) {
             # Return the modified server instance
             return $Server
         }

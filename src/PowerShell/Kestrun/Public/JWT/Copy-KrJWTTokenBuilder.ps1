@@ -1,6 +1,4 @@
-
-function Copy-KrJWTTokenBuilder {
-    <#
+<#
     .SYNOPSIS
        Creates a new cloned JWT token builder instance.
     .DESCRIPTION
@@ -28,7 +26,8 @@ function Copy-KrJWTTokenBuilder {
     .NOTES
         This function is part of the Kestrun.Security module and is used to build JWT tokens.
         Maps to JwtTokenBuilder.New
-    #>
+#>
+function Copy-KrJWTTokenBuilder {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
@@ -38,7 +37,7 @@ function Copy-KrJWTTokenBuilder {
         [Kestrun.Security.JwtTokenBuilder] $Builder
     )
     process {
-        # Create a new JWT token builder instance 
+        # Create a new JWT token builder instance
         return $Builder.CloneBuilder()
     }
 }

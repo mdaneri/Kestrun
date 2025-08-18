@@ -1,6 +1,4 @@
-
-function Add-KrAntiforgery {
-    <#
+<#
     .SYNOPSIS
         Adds an Antiforgery service to the server.
     .DESCRIPTION
@@ -28,7 +26,8 @@ function Add-KrAntiforgery {
         This example adds an Antiforgery service to the server using the specified Antiforgery options.
     .LINK
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.antiforgery.antiforgeryoptions?view=aspnetcore-8.0
-    #>
+#>
+function Add-KrAntiforgery {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -69,10 +68,10 @@ function Add-KrAntiforgery {
             if ($SuppressXFrameOptionsHeader.IsPresent) {
                 $Options.SuppressXFrameOptionsHeader = $true
             }
-        } 
+        }
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
-        
+
         # Add the Antiforgery service to the server
         [Kestrun.Hosting.KestrunHostStaticFilesExtensions]::AddAntiforgery($Server, $Options) | Out-Null
 

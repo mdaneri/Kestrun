@@ -1,5 +1,4 @@
-function Get-KestrunRoot {
-    <#
+<#
     .SYNOPSIS
         Retrieves the Kestrun root directory.
     .DESCRIPTION
@@ -9,7 +8,8 @@ function Get-KestrunRoot {
         Retrieves the Kestrun root directory and stores it in the variable $kestrunRoot.
     .NOTES
         This function is designed to be used in the context of a Kestrun server to ensure consistent path resolution.
-    #>
+#>
+function Get-KestrunRoot {
     [CmdletBinding()]
     [KestrunRuntimeApi('Everywhere')]
     [OutputType([string])]

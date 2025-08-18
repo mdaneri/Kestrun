@@ -1,5 +1,4 @@
-function Add-KrWindowsAuthentication {
-    <#
+<#
     .SYNOPSIS
         Adds Windows authentication to the Kestrun server.
     .DESCRIPTION
@@ -17,7 +16,8 @@ function Add-KrWindowsAuthentication {
         https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.authentication.windowsauthentication?view=aspnetcore-8.0
     .NOTES
         This cmdlet is used to configure Windows authentication for the Kestrun server, allowing you to secure your APIs with Windows credentials.
-    #>
+#>
+function Add-KrWindowsAuthentication {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'ItemsScriptBlock')]
     [OutputType([Kestrun.Hosting.KestrunHost])]

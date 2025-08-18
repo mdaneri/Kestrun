@@ -1,5 +1,4 @@
- function Write-KrYamlResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an object to the HTTP response body as YAML.
 
@@ -19,7 +18,8 @@
         and content type "application/x-yaml".
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrYamlResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

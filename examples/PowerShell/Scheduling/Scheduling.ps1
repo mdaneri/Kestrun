@@ -20,14 +20,12 @@ try {
         # Import the Kestrun module from the source path if it exists
         # This allows for development and testing of the module without needing to install it
         Import-Module $kestrunModulePath -Force -ErrorAction Stop
-    }
-    else {
+    } else {
         # If the source module does not exist, import the installed Kestrun module
         # This is useful for running the script in a production environment where the module is installed
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
-}
-catch {
+} catch {
     # If the import fails, output an error message and exit
     # This ensures that the script does not continue running if the module cannot be loaded
     Write-Error "Failed to import Kestrun module: $_"
@@ -37,34 +35,34 @@ catch {
 
 
 
-$logger = New-KrLogger  |
-Set-KrMinimumLevel -Value Debug  |
-Add-KrSinkFile -Path ".\logs\scheduling.log" -RollingInterval Hour |
-Register-KrLogger -SetAsDefault -Name "DefaultLogger" -PassThru
+$logger = New-KrLogger |
+    Set-KrMinimumLevel -Value Debug |
+    Add-KrSinkFile -Path '.\logs\scheduling.log' -RollingInterval Hour |
+    Register-KrLogger -SetAsDefault -Name 'DefaultLogger' -PassThru
 
-Set-KrSharedState -Name 'Visits' -Value @{Count = 0 } 
+Set-KrSharedState -Name 'Visits' -Value @{Count = 0 }
 
 # 2.  ─── Host & core services ─────────────────────────────────
-  New-KrServer -Name 'MyKestrunServer' -Logger $logger 
+New-KrServer -Name 'MyKestrunServer' -Logger $logger
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 -PassThru |
-# Add run-space runtime & scheduler (8 RS for jobs) 
-Add-KrPowerShellRuntime -PassThru | Add-KrScheduling   -MaxRunspaces 8 -PassThru |
-# Seed a global counter (Visits) — injected as $Visits in every runspace
-Enable-KrConfiguration -passThru 
+Add-KrListener -Port 5000 -passThru |
+    # Add run-space runtime & scheduler (8 RS for jobs)
+    Add-KrPowerShellRuntime -PassThru | Add-KrScheduling -MaxRunspaces 8 -PassThru |
+    # Seed a global counter (Visits) — injected as $Visits in every runspace
+    Enable-KrConfiguration -PassThru
 # 3.  ─── Scheduled jobs ───────────────────────────────────────
 
 # (A) pure-C# heartbeat every 10 s (through ScriptBlock)
 Register-KrSchedule -Name Heartbeat -Interval '00:00:10' -RunImmediately -ScriptBlock {
-    Write-KrInformationLog  -Message "💓  Heartbeat (PowerShell) at {0:O}" -Values $([DateTimeOffset]::UtcNow)
+    Write-KrInformationLog -Message '💓  Heartbeat (PowerShell) at {0:O}' -Values $([DateTimeOffset]::UtcNow)
 }
 
 
-Register-KrSchedule -Name "HeartbeatCS" -Interval '00:00:15' -Language CSharp -Code @"
+Register-KrSchedule -Name 'HeartbeatCS' -Interval '00:00:15' -Language CSharp -Code @'
     // C# code runs inside the server process
     Serilog.Log.Information("💓  Heartbeat (C#) at {0:O}", DateTimeOffset.UtcNow);
-"@
+'@
 
 # (B) inline PS every minute
 Register-KrSchedule -Name 'ps-inline' -Cron '0 * * * * *' -ScriptBlock {

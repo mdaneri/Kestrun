@@ -1,5 +1,4 @@
-function Export-KrCertificate {
-    <#
+<#
     .SYNOPSIS
         Exports an X509Certificate2 to PFX or PEM(+key).
     .DESCRIPTION
@@ -21,8 +20,9 @@ function Export-KrCertificate {
             -Format Pem -Password 'p@ss' -IncludePrivateKey
     .NOTES
         This function requires the Kestrun module to be imported.
-    #>
-     [KestrunRuntimeApi('Everywhere')]
+#>
+function Export-KrCertificate {
+    [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][System.Security.Cryptography.X509Certificates.X509Certificate2] $Certificate,
@@ -35,7 +35,7 @@ function Export-KrCertificate {
         [switch] $IncludePrivateKey
     )
     $resolvedPath = Resolve-KrPath -Path $FilePath -KestrunRoot
-    Write-KrVerboseLog -Message  "Resolved file path: $resolvedPath"
+    Write-KrVerboseLog -Message "Resolved file path: $resolvedPath"
 
     $fmtEnum = [Kestrun.Certificates.CertificateManager+ExportFormat]::$Format
     [Kestrun.Certificates.CertificateManager]::Export($Certificate, $resolvedPath, $fmtEnum, $Password,

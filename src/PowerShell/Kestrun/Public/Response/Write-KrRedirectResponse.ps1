@@ -1,5 +1,4 @@
-function Write-KrRedirectResponse {
-    <#
+<#
     .SYNOPSIS
         Writes a redirect response to the HTTP client.
     .DESCRIPTION
@@ -14,7 +13,8 @@ function Write-KrRedirectResponse {
         Redirects the client to "https://example.com/new-page" and includes a message in the response body.
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrRedirectResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

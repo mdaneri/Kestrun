@@ -1,14 +1,14 @@
 function Write-KrSinkPowerShell {
 	<#
-	.SYNOPSIS
-		Writes log events to the PowerShell host.
-	.DESCRIPTION
-		This function takes a log event and its rendered message, and writes it to the appropriate PowerShell host output stream.
-	.PARAMETER LogEvent
-		The log event to write.
-	.PARAMETER RenderedMessage
-		The rendered message of the log event.
-	#>
+    .SYNOPSIS
+        Writes log events to the PowerShell host.
+    .DESCRIPTION
+        This function takes a log event and its rendered message, and writes it to the appropriate PowerShell host output stream.
+    .PARAMETER LogEvent
+        The log event to write.
+    .PARAMETER RenderedMessage
+        The rendered message of the log event.
+    #>
 	param(
 		[Parameter(Mandatory = $true)]
 		[Serilog.Events.LogEvent]$LogEvent,
@@ -29,7 +29,7 @@ function Write-KrSinkPowerShell {
 		Warning {
 			Write-Warning -Message $RenderedMessage
 		}
-		Default {
+		default {
 			Write-Information -MessageData $RenderedMessage -InformationAction 'Continue'
 		}
 	}

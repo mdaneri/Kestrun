@@ -1,6 +1,4 @@
-
-function Add-KrMapRoute {
-    <#
+<#
     .SYNOPSIS
         Adds a new map route to the Kestrun server.
     .DESCRIPTION
@@ -54,63 +52,64 @@ function Add-KrMapRoute {
         Adds a new map route to the current Kestrun server and returns the route object.
     .NOTES
         This function is part of the Kestrun PowerShell module and is used to manage routes
-    #>
+#>
+function Add-KrMapRoute {
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(defaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
+    [CmdletBinding(defaultParameterSetName = 'ScriptBlock', PositionalBinding = $true)]
     [OutputType([Kestrun.Hosting.KestrunHost])]
     param(
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.Hosting.KestrunHost]$Server,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "Options")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Kestrun.Hosting.Options.MapRouteOptions]$Options,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get),
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [ValidatePattern('^/')]
         [string]$Path = '/',
 
-        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = "ScriptBlock")]
-        [ScriptBlock]$ScriptBlock,
+        [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'ScriptBlock')]
+        [scriptblock]$ScriptBlock,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Code')]
         [string]$Code,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "Code")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Code')]
         [Kestrun.Scripting.ScriptLanguage]$Language,
 
         [Parameter(Mandatory = $true, ParameterSetName = 'CodeFilePath')]
         [string]$CodeFilePath,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [string[]]$AuthorizationSchema = $null,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [string[]]$AuthorizationPolicy = $null,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [string[]]$ExtraImports = $null,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [System.Reflection.Assembly[]]$ExtraRefs = $null,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "Code")]
-        [Parameter(ParameterSetName = "CodeFilePath")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'Code')]
+        [Parameter(ParameterSetName = 'CodeFilePath')]
         [hashtable]$Arguments,
 
         [Parameter()]
@@ -133,15 +132,12 @@ function Add-KrMapRoute {
         if ($exists) {
             if ($AllowDuplicate -or $DuplicateAction -eq 'Allow') {
                 Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Path, ($Verbs -join ',')
-            }
-            elseif ($DuplicateAction -eq 'Skip') {
+            } elseif ($DuplicateAction -eq 'Skip') {
                 Write-KrVerboseLog -Message "Route '{Path}' ({Verbs}) exists; skipping." -Values $Path, ($Verbs -join ',')
                 return
-            }
-            elseif ($DuplicateAction -eq 'Warn') {
+            } elseif ($DuplicateAction -eq 'Warn') {
                 Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists." -Values $Path, ($Verbs -join ',')
-            }
-            else {
+            } else {
                 throw [System.InvalidOperationException]::new(
                     "Route '$Path' with method(s) $($Verbs -join ',') already exists.")
             }
@@ -183,30 +179,30 @@ function Add-KrMapRoute {
                     }
                     $extension = Split-Path -Path $CodeFilePath -Extension
                     switch ($extension) {
-                        ".ps1" {
+                        '.ps1' {
                             $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                         }
-                        ".cs" {
+                        '.cs' {
                             $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                         }
-                        ".vb" {
+                        '.vb' {
                             $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                         }
-                        Default {
+                        default {
                             throw "Unsupported '$extension' code file extension."
                         }
                     }
                     $Options.ValidateCodeSettings.Code = Get-Content -Path $CodeFilePath -Raw
                 }
             }
-        }else{
-            Write-Verbose "Using provided MapRouteOptions instance."
+        } else {
+            Write-Verbose 'Using provided MapRouteOptions instance.'
         }
         if ($script:KrRouteGroupStack -and $script:KrRouteGroupStack.Count -gt 0) {
             $grp = $script:KrRouteGroupStack.Peek()
             $Options = _KrMerge-MRO -Parent $grp -Child $Options
-        } 
-        [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | out-Null
+        }
+        [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | Out-Null
 
         if ($PassThru) {
             return $Server

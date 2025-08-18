@@ -2,11 +2,11 @@
 [CmdletBinding()]
 param(
     # Path to the module manifest (psd1) or psm1
-    [string]$ModulePath = "./src/PowerShell/Kestrun/Kestrun.psm1",
+    [string]$ModulePath = './src/PowerShell/Kestrun/Kestrun.psm1',
     # Where Markdown will be written
-    [string]$OutDir = "./docs/pwsh/cmdlets",
+    [string]$OutDir = './docs/pwsh/cmdlets',
     # Optional culture for XML help (not required for web site)
-    [string]$XmlCulture = "en-US",
+    [string]$XmlCulture = 'en-US',
     # Create/refresh XML help too?
     [switch]$EmitXmlHelp,
     [switch]$Clean
@@ -15,35 +15,33 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if ($Clean) {
-    Write-Host "Cleaning PlatyPS..."
+    Write-Host 'Cleaning PlatyPS...'
     Remove-Item -Path $OutDir -Recurse -Force -ErrorAction SilentlyContinue
     return
 }
- 
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 if (Test-Path -Path "$OutDir/about_.md") {
     Write-Host "Clearing existing help in $OutDir/about_.md"
     Remove-Item -Path "$OutDir/about_.md" -Force
 }
- 
 
 Write-Host "Importing module: $ModulePath"
 Import-Module $ModulePath -Force
-New-KrServer -Name "Docs"
-Remove-KrServer -Name "Docs" -Force
+New-KrServer -Name 'Docs'
+Remove-KrServer -Name 'Docs' -Force
 Import-Module -Name ./Utility/PlatyPS/platyPS.psm1
 
-Write-Host "Generating Markdown help..."
+Write-Host 'Generating Markdown help...'
 # Create or update Markdown help
-if (Test-Path   $OutDir ) {
+if (Test-Path $OutDir ) {
     Write-Host "Clearing existing help in $OutDir"
-    Remove-Item -Path $OutDir -Recurse -Force -ErrorAction SilentlyContinue   
+    Remove-Item -Path $OutDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Creating markdown help in $OutDir"
 New-MarkdownHelp -Module (Get-Module -Name Kestrun) -OutputFolder $OutDir -Force
-$index_md = @"
+$index_md = @'
 ---
 layout: default
 title: PowerShell Cmdlets
@@ -55,10 +53,9 @@ nav_order: 2
 # PowerShell Cmdlets
 Browse the cmdlet reference in the sidebar.
 This documentation is generated from the Kestrun PowerShell module and provides detailed information on available cmdlets, their parameters, and usage examples.
-"@
+'@
 
-Set-Content -Path (Join-Path $OutDir "index.md") -Value $index_md -Encoding UTF8
- 
+Set-Content -Path (Join-Path $OutDir 'index.md') -Value $index_md -Encoding UTF8
 
 # Normalize cmdlet pages for Just the Docs
 $files = Get-ChildItem $OutDir -Recurse -Filter *.md | Sort-Object Name
@@ -82,8 +79,7 @@ nav_order: $i
 render_with_liquid: false
 $($raw.Substring(5))
 "@ | Set-Content $f.FullName -NoNewline
-    }
-    else {
+    } else {
         # If it already has front matter, ensure the key bits are present
         $lines = $raw -split "`n"
         $endIdx = ($lines | Select-String -SimpleMatch '---' -AllMatches).Matches[1].Index
@@ -110,7 +106,7 @@ $($raw.Substring(5))
 if ($EmitXmlHelp) {
     $xmlOut = Join-Path $OutDir $XmlCulture
     New-Item -ItemType Directory -Force -Path $xmlOut | Out-Null
-    Write-Host "Generating external help XML…"
+    Write-Host 'Generating external help XML…'
     New-ExternalHelp -Path $OutDir -OutputPath $xmlOut -Force
 }
 Write-Host "Done. Markdown at $OutDir"

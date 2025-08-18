@@ -5,7 +5,7 @@ function Add-KrAspNetCoreType {
         Loads required ASP.NET Core assemblies for PowerShell usage.
     .PARAMETER Version
         The .NET version to target (e.g. net8, net9, net10).
-    #>
+#>
     [CmdletBinding()]
     [OutputType([bool])]
     param (

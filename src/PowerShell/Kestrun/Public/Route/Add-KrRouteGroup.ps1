@@ -1,5 +1,4 @@
-function Add-KrRouteGroup {
-    <#
+<#
     .SYNOPSIS
         Creates a grouped route context (prefix + shared options) for nested Add-KrMapRoute calls.
     .DESCRIPTION
@@ -24,7 +23,7 @@ function Add-KrRouteGroup {
     .PARAMETER Arguments
         Extra arguments injected into all routes in the group.
     .PARAMETER ScriptBlock
-        Scriptblock within which you call Add-KrMapRoute for relative paths.
+        ScriptBlock within which you call Add-KrMapRoute for relative paths.
     .PARAMETER FileName
         Path to a script file containing the scriptblock to execute.
     .PARAMETER NoInherit
@@ -39,44 +38,45 @@ function Add-KrRouteGroup {
     .EXAMPLE
         Add-KrRouteGroup -Prefix '/todoitems' -FileName 'C:\Scripts\TodoItems.ps1'
         Add the new route group defined in the specified file.
-    #>
+#>
+function Add-KrRouteGroup {
     [KestrunRuntimeApi('Definition')]
-    [CmdletBinding(DefaultParameterSetName = "ScriptBlock", PositionalBinding = $true)]
+    [CmdletBinding(DefaultParameterSetName = 'ScriptBlock', PositionalBinding = $true)]
     param(
-        [Parameter(Mandatory, ParameterSetName = "ScriptBlockWithOptions")]
-        [Parameter(Mandatory, ParameterSetName = "FileNameWithOptions")]
+        [Parameter(Mandatory, ParameterSetName = 'ScriptBlockWithOptions')]
+        [Parameter(Mandatory, ParameterSetName = 'FileNameWithOptions')]
         [Kestrun.Hosting.Options.MapRouteOptions]$Options,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [string]$Prefix,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [string[]]$AuthorizationSchema,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [string[]]$AuthorizationPolicy,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [string[]]$ExtraImports,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [System.Reflection.Assembly[]]$ExtraRefs,
 
-        [Parameter(ParameterSetName = "ScriptBlock")]
-        [Parameter(ParameterSetName = "FileName")]
+        [Parameter(ParameterSetName = 'ScriptBlock')]
+        [Parameter(ParameterSetName = 'FileName')]
         [hashtable]$Arguments,
 
-        [Parameter(Mandatory, Position = 0, ParameterSetName = "ScriptBlock")]
-        [Parameter(Mandatory, Position = 0, ParameterSetName = "ScriptBlockWithOptions")]
-        [ScriptBlock]$ScriptBlock,
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'ScriptBlock')]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'ScriptBlockWithOptions')]
+        [scriptblock]$ScriptBlock,
 
-        [Parameter(Mandatory, ParameterSetName = "FileName")]
-        [Parameter(Mandatory, ParameterSetName = "FileNameWithOptions")]
+        [Parameter(Mandatory, ParameterSetName = 'FileName')]
+        [Parameter(Mandatory, ParameterSetName = 'FileNameWithOptions')]
         [string]$FileName,
 
         [Parameter()]
@@ -88,7 +88,7 @@ function Add-KrRouteGroup {
             throw "The specified file path does not exist: $FileName"
         }
         $code = Get-Content -Path $FileName -Raw
-        $ScriptBlock = [ScriptBlock]::Create($code)
+        $ScriptBlock = [scriptblock]::Create($code)
     }
 
     # Normalize prefix: allow "todoitems" or "/todoitems"
@@ -103,20 +103,19 @@ function Add-KrRouteGroup {
 
     $curr = if ($PSCmdlet.ParameterSetName -like '*WithOptions') {
         $Options
-    }
-    else {
+    } else {
         $dict = $null
         if ($Arguments) {
             $dict = [System.Collections.Generic.Dictionary[string, object]]::new()
             foreach ($k in $Arguments.Keys) { $dict[$k] = $Arguments[$k] }
         }
         New-MapRouteOption -Property @{
-            RequireSchemes  = $AuthorizationSchema
+            RequireSchemes = $AuthorizationSchema
             RequirePolicies = $AuthorizationPolicy
-            ExtraImports    = $ExtraImports
-            ExtraRefs       = $ExtraRefs
-            Arguments       = $dict
-            Pattern         = $Prefix
+            ExtraImports = $ExtraImports
+            ExtraRefs = $ExtraRefs
+            Arguments = $dict
+            Pattern = $Prefix
         }
     }
     # Merge with parent (parent first, then current overrides)
@@ -127,12 +126,10 @@ function Add-KrRouteGroup {
     $script:KrRouteGroupStack.Push($curr)
     try {
         & $ScriptBlock
-    }
-    catch {
+    } catch {
         $msg = "Error inside route group '$($current.Prefix)': $($_.Exception.Message)"
         throw [System.Exception]::new($msg, $_.Exception)
-    }
-    finally {
+    } finally {
         $null = $script:KrRouteGroupStack.Pop()
         if ($restorePath) { Set-Location $restorePath }
     }

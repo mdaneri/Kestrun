@@ -1,6 +1,5 @@
 
-function Resolve-KrPath {
-    <#
+<#
     .SYNOPSIS
         Resolves a file path relative to the Kestrun root or a specified base path.
     .DESCRIPTION
@@ -22,7 +21,8 @@ function Resolve-KrPath {
         Resolves the path "file.txt" relative to "C:\Base\Path", expanding any environment variables.
     .NOTES
         This function is designed to be used in the context of a Kestrun server to resolve file paths correctly.
-    #>
+#>
+function Resolve-KrPath {
     [CmdletBinding()]
     [KestrunRuntimeApi('Everywhere')]
     [OutputType([string])]
@@ -64,13 +64,11 @@ function Resolve-KrPath {
             # If $Path is rooted, ignore the base; else combine
             if ([IO.Path]::IsPathRooted($p3)) {
                 $full = [IO.Path]::GetFullPath($p3)
-            }
-            else {
+            } else {
                 $combined = [IO.Path]::Combine($baseFull, $p3)
                 $full = [IO.Path]::GetFullPath($combined)
             }
-        }
-        else {
+        } else {
             # No base supplied: just make absolute against current directory
             $full = [IO.Path]::GetFullPath($p3)
         }

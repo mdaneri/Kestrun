@@ -2,11 +2,21 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [string]$FileVersion = "./version.json",
+    [string]$FileVersion = './version.json',
     [Parameter()]
     [switch]$Remove
 )
 
+<#
+    .SYNOPSIS
+        Gets the version from the specified file.
+    .DESCRIPTION
+        Reads the version information from a JSON file.
+    .PARAMETER FileVersion
+        The path to the version file.
+    .OUTPUTS
+        The version string.
+#>
 function Get-Version {
     [CmdletBinding()]
     [OutputType([string])]
@@ -22,15 +32,12 @@ function Get-Version {
     return $Version
 }
 
-
-
 $PSPaths = if ($IsWindows) {
     $env:PSModulePath -split ';'
-}
-else {
+} else {
     $env:PSModulePath -split ':'
 }
-$Version=Get-Version -FileVersion $FileVersion
+$Version = Get-Version -FileVersion $FileVersion
 
 $dest = Join-Path -Path $PSPaths[0] -ChildPath 'Kestrun' -AdditionalChildPath $Version
 if ($Remove) {
@@ -46,8 +53,7 @@ if ($Remove) {
 if (Test-Path $dest) {
     if ($Force) {
         Remove-Item -Path $dest -Recurse -Force | Out-Null
-    }
-    else {
+    } else {
         Write-Warning "Directory $dest already exists. Use -Force to overwrite."
         return
     }

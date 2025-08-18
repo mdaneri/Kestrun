@@ -1,5 +1,4 @@
-function Add-KrUserClaim {
-    <#
+<#
     .SYNOPSIS
         Adds a claim to the current user.
         This function allows you to add a new claim to the current user's identity.
@@ -37,7 +36,8 @@ function Add-KrUserClaim {
     .NOTES
         This function is part of the Kestrun.Claims module and is used to manage user claims.
         It maps to ClaimCollection.Add method.
-    #>
+#>
+function Add-KrUserClaim {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding(DefaultParameterSetName = 'ClaimType')]
     [OutputType([System.Security.Claims.Claim[]])]

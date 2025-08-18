@@ -8,7 +8,7 @@ function Add-KrCodeAnalysisType {
         The root path of the module.
     .PARAMETER Version
         The version of the Microsoft.CodeAnalysis assemblies to load. 
-    #>
+#>
     [CmdletBinding()]
     [OutputType([bool])]
     param (
