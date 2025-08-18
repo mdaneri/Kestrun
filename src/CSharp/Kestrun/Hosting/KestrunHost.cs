@@ -55,7 +55,7 @@ public class KestrunHost : IDisposable
     /// <summary>
     /// Gets the configuration options for the Kestrun host.
     /// </summary>
-    public KestrunOptions Options { get; private set; }
+    public KestrunOptions Options { get; private set; } = new();
     private readonly List<string> _modulePaths = [];
 
     private bool _isConfigured = false;
@@ -128,46 +128,115 @@ public class KestrunHost : IDisposable
     /// <param name="modulePathsObj">An array of module paths to be loaded.</param>
     public KestrunHost(string? appName, Serilog.ILogger logger, string? kestrunRoot = null, string[]? modulePathsObj = null)
     {
-        // Initialize Serilog logger if not provided
+        // ① Logger
         _Logger = logger ?? Log.Logger;
+        LogConstructorArgs(appName, logger == null, kestrunRoot, modulePathsObj?.Length ?? 0);
 
+        // ② Working directory/root
+        SetWorkingDirectoryIfNeeded(kestrunRoot);
+
+        // ③ Ensure Kestrun module path is available
+        AddKestrunModulePathIfMissing(modulePathsObj);
+
+        // ④ Builder + logging
+        builder = WebApplication.CreateBuilder();
+        builder.Host.UseSerilog();
+
+        // ⑤ Options
+        InitializeOptions(appName);
+
+        // ⑥ Add user-provided module paths
+        AddUserModulePaths(modulePathsObj);
+
+        _Logger.Information("Current working directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
+    }
+    #endregion
+
+    #region Helpers
+
+
+    /// <summary>
+    /// Creates a default Serilog logger with basic configuration.
+    /// </summary>
+    /// <returns>The configured Serilog logger.</returns>
+    private static Serilog.ILogger CreateDefaultLogger()
+    {
+        Log.Logger = new LoggerConfiguration()
+         .MinimumLevel.Debug()
+         .Enrich.FromLogContext()
+         .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
+         .CreateLogger();
+        return Log.Logger;
+    }
+
+    /// <summary>
+    /// Logs constructor arguments at Debug level for diagnostics.
+    /// </summary>
+    private void LogConstructorArgs(string? appName, bool defaultLogger, string? kestrunRoot, int modulePathsLength)
+    {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
         {
-            _Logger.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
+            _Logger.Debug(
+                "KestrunHost ctor: AppName={AppName}, DefaultLogger={DefaultLogger}, KestrunRoot={KestrunRoot}, ModulePathsLength={Len}",
+                appName, defaultLogger, kestrunRoot, modulePathsLength);
         }
+    }
 
-        if (!string.IsNullOrWhiteSpace(kestrunRoot))
+    /// <summary>
+    /// Sets the current working directory to the provided Kestrun root if needed and stores it.
+    /// </summary>
+    /// <param name="kestrunRoot">The Kestrun root directory path.</param>
+    private void SetWorkingDirectoryIfNeeded(string? kestrunRoot)
+    {
+        if (string.IsNullOrWhiteSpace(kestrunRoot))
         {
-            if (Directory.GetCurrentDirectory() != kestrunRoot)
-            {
-                Directory.SetCurrentDirectory(kestrunRoot);
-                _Logger.Information("Changed current directory to Kestrun root: {KestrunRoot}", kestrunRoot);
-            }
-            else
-            {
-                _Logger.Verbose("Current directory is already set to Kestrun root: {KestrunRoot}", kestrunRoot);
-            }
-            KestrunRoot = kestrunRoot;
+            return;
         }
-        var kestrunModulePath = string.Empty;
-        if (modulePathsObj is null || (modulePathsObj?.Any(p => p.Contains("Kestrun.psm1", StringComparison.Ordinal)) == false))
+
+        if (!string.Equals(Directory.GetCurrentDirectory(), kestrunRoot, StringComparison.Ordinal))
         {
-            kestrunModulePath = PowerShellModuleLocator.LocateKestrunModule();
-            if (string.IsNullOrWhiteSpace(kestrunModulePath))
-            {
-                _Logger.Fatal("Kestrun module not found. Ensure the Kestrun module is installed.");
-                throw new FileNotFoundException("Kestrun module not found.");
-            }
-
-            _Logger.Information("Found Kestrun module at: {KestrunModulePath}", kestrunModulePath);
-            _Logger.Verbose("Adding Kestrun module path: {KestrunModulePath}", kestrunModulePath);
-            _modulePaths.Add(kestrunModulePath);
+            Directory.SetCurrentDirectory(kestrunRoot);
+            _Logger.Information("Changed current directory to Kestrun root: {KestrunRoot}", kestrunRoot);
+        }
+        else
+        {
+            _Logger.Verbose("Current directory is already set to Kestrun root: {KestrunRoot}", kestrunRoot);
         }
 
+        KestrunRoot = kestrunRoot;
+    }
 
-        builder = WebApplication.CreateBuilder();
-        // Add Serilog to ASP.NET Core logging
-        builder.Host.UseSerilog();
+    /// <summary>
+    /// Ensures the core Kestrun module path is present; if missing, locates and adds it.
+    /// </summary>
+    /// <param name="modulePathsObj">The array of module paths to check.</param>
+    private void AddKestrunModulePathIfMissing(string[]? modulePathsObj)
+    {
+        var needsLocate = modulePathsObj is null ||
+                          (modulePathsObj?.Any(p => p.Contains("Kestrun.psm1", StringComparison.Ordinal)) == false);
+        if (!needsLocate)
+        {
+            return;
+        }
+
+        var kestrunModulePath = PowerShellModuleLocator.LocateKestrunModule();
+        if (string.IsNullOrWhiteSpace(kestrunModulePath))
+        {
+            _Logger.Fatal("Kestrun module not found. Ensure the Kestrun module is installed.");
+            throw new FileNotFoundException("Kestrun module not found.");
+        }
+
+        _Logger.Information("Found Kestrun module at: {KestrunModulePath}", kestrunModulePath);
+        _Logger.Verbose("Adding Kestrun module path: {KestrunModulePath}", kestrunModulePath);
+        _modulePaths.Add(kestrunModulePath);
+    }
+
+    /// <summary>
+    /// Initializes Kestrun options and sets the application name when provided.
+    /// </summary>
+    /// <param name="appName">The name of the application.</param>
+    private void InitializeOptions(string? appName)
+    {
         if (string.IsNullOrEmpty(appName))
         {
             _Logger.Information("No application name provided, using default.");
@@ -178,8 +247,14 @@ public class KestrunHost : IDisposable
             _Logger.Information("Setting application name: {AppName}", appName);
             Options = new KestrunOptions { ApplicationName = appName };
         }
+    }
 
-        // Store module paths if provided
+    /// <summary>
+    /// Adds user-provided module paths if they exist, logging warnings for invalid entries.
+    /// </summary>
+    /// <param name="modulePathsObj">The array of module paths to check.</param>
+    private void AddUserModulePaths(string[]? modulePathsObj)
+    {
         if (modulePathsObj is IEnumerable<object> modulePathsEnum)
         {
             foreach (var modPathObj in modulePathsEnum)
@@ -202,26 +277,6 @@ public class KestrunHost : IDisposable
                 }
             }
         }
-
-        _Logger.Information("Current working directory: {CurrentDirectory}", Directory.GetCurrentDirectory());
-    }
-    #endregion
-
-    #region Helpers
-
-
-    /// <summary>
-    /// Creates a default Serilog logger with basic configuration.
-    /// </summary>
-    /// <returns>The configured Serilog logger.</returns>
-    private static Serilog.ILogger CreateDefaultLogger()
-    {
-        Log.Logger = new LoggerConfiguration()
-         .MinimumLevel.Debug()
-         .Enrich.FromLogContext()
-         .WriteTo.File("logs/kestrun.log", rollingInterval: RollingInterval.Day)
-         .CreateLogger();
-        return Log.Logger;
     }
     #endregion
 

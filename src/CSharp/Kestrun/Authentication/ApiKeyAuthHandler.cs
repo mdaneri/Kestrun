@@ -57,69 +57,25 @@ public class ApiKeyAuthHandler
                 return Fail("HTTPS required");
             }
 
-            // ① Try the primary header
-            if (!Request.Headers.TryGetValue(Options.HeaderName, out var values))
-            {
-                // ② Then try any additional headers
-                foreach (var header in Options.AdditionalHeaderNames)
-                {
-                    if (Request.Headers.TryGetValue(header, out values))
-                    {
-                        break;
-                    }
-                }
-            }
-
-            // ③ Finally, if still missing & fallback is allowed, check the query string
-            if ((values.Count == 0 || StringValues.IsNullOrEmpty(values))
-                && Options.AllowQueryStringFallback
-                && Request.Query.TryGetValue(Options.HeaderName, out var qsValues))
-            {
-                values = qsValues;
-            }
-
-            // ④ If we still have nothing, fail
-            if (StringValues.IsNullOrEmpty(values))
+            if (!TryGetApiKey(out var providedKey))
             {
                 return Fail("Missing API Key");
             }
 
-            var providedKey = values.ToString();
             var providedKeyBytes = Encoding.UTF8.GetBytes(providedKey);
-            // ⑤ Now validate
-            bool valid = false;
-
-            if (Options.ExpectedKeyBytes is not null)
-            {
-                valid = FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes);
-            }
-            else if (Options.ValidateKeyAsync is not null)
-            {
-                valid = await Options.ValidateKeyAsync(Context, providedKey, providedKeyBytes);
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    "No API key validation configured. " +
-                    "Either set ValidateKey or ExpectedKey in ApiKeyAuthenticationOptions.");
-            }
-
+            var valid = await ValidateApiKeyAsync(providedKey, providedKeyBytes);
             if (!valid)
             {
                 return Fail($"Invalid API Key: {providedKey}");
             }
 
-
-            // If we reach here, the API key is valid
-            var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, providedKey, Options, Scheme, "ApiKeyClient");
-            // Log the successful authentication
+            var ticket = await CreateTicketAsync(providedKey);
             if (ticket.Principal is null)
             {
                 return Fail("Authentication ticket has no principal");
             }
             Options.Logger.Information("API Key authentication succeeded for identity: {Identity}", ticket.Principal.Identity?.Name ?? "Unknown");
 
-            // ⑥ Return success
             return AuthenticateResult.Success(ticket);
         }
         catch (Exception ex)
@@ -128,6 +84,80 @@ public class ApiKeyAuthHandler
             return Fail("Error processing API Key");
         }
     }
+
+    /// <summary>
+    /// Tries to retrieve the API key from the request headers or query string.
+    /// </summary>
+    /// <param name="providedKey">The retrieved API key.</param>
+    /// <returns>True if the API key was found; otherwise, false.</returns>
+    private bool TryGetApiKey(out string providedKey)
+    {
+        providedKey = string.Empty;
+
+        // Primary header
+        if (!Request.Headers.TryGetValue(Options.HeaderName, out var values))
+        {
+            // Additional headers
+            foreach (var header in Options.AdditionalHeaderNames)
+            {
+                if (Request.Headers.TryGetValue(header, out values))
+                {
+                    break;
+                }
+            }
+        }
+
+        // Query string fallback
+        if ((values.Count == 0 || StringValues.IsNullOrEmpty(values))
+            && Options.AllowQueryStringFallback
+            && Request.Query.TryGetValue(Options.HeaderName, out var qsValues))
+        {
+            values = qsValues;
+        }
+
+        if (StringValues.IsNullOrEmpty(values))
+        {
+            return false;
+        }
+
+        providedKey = values.ToString();
+        return true;
+    }
+
+    /// <summary>
+    /// Validates the provided API key against the expected key or a custom validation method.
+    /// </summary>
+    /// <param name="providedKey">The API key provided by the client.</param>
+    /// <param name="providedKeyBytes">The byte representation of the provided API key.</param>
+    /// <returns>True if the API key is valid; otherwise, false.</returns>
+    private async Task<bool> ValidateApiKeyAsync(string providedKey, byte[] providedKeyBytes)
+    {
+        if (Options.ExpectedKeyBytes is not null)
+        {
+            return FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes);
+        }
+        if (Options.ValidateKeyAsync is not null)
+        {
+            return await Options.ValidateKeyAsync(Context, providedKey, providedKeyBytes);
+        }
+
+        throw new InvalidOperationException(
+            "No API key validation configured. Either set ValidateKey or ExpectedKey in ApiKeyAuthenticationOptions.");
+    }
+
+    /// <summary>
+    /// Creates an authentication ticket for the provided API key.
+    /// </summary>
+    /// <param name="providedKey"></param>
+    /// <returns></returns>
+    private Task<AuthenticationTicket> CreateTicketAsync(string providedKey)
+        => IAuthHandler.GetAuthenticationTicketAsync(Context, providedKey, Options, Scheme, "ApiKeyClient");
+
+    /// <summary>
+    /// Fails the authentication process with the specified reason.
+    /// </summary>
+    /// <param name="reason">The reason for the failure.</param>
+    /// <returns>An <see cref="AuthenticateResult"/> indicating the failure.</returns>
     AuthenticateResult Fail(string reason)
     {
         Options.Logger.Warning("API Key authentication failed: {Reason}", reason);

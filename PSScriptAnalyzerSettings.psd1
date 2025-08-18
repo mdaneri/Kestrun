@@ -1,14 +1,16 @@
 @{
     # Load all default rules; we’ll override specifics in `Rules`.
-    ExcludeRules   = @()
+    ExcludeRules = @()
 
     # Where your custom rules live (file or folder).
+    <#
     CustomRulePath = @(
         './Lint',                         # folder form (recommended)
         './Lint/AvoidNewObjectRule.psm1'  # file form (optional; keep only one if you prefer)
     )
+    #>
 
-    Rules          = @{
+    Rules        = @{
         # Built-in rule with your traversal customization
         PSReviewUnusedParameter    = @{
             Enable             = $true
@@ -24,7 +26,8 @@
         # Align assignment statements
         PSAlignAssignmentStatement = @{
             Enable         = $true
-            CheckHashtable = $true
+            CheckHashtable = $false
+            CheckPipeline  = $true
         }
 
         # Avoid long lines
@@ -36,7 +39,7 @@
         # Avoid using cmdlet aliases
         PSAvoidUsingCmdletAliases  = @{
             AllowList = @('ScriptBlock')
-        }    
+        }
 
         # Place open brace on new line
         PSPlaceOpenBrace           = @{
@@ -81,7 +84,7 @@
             CheckPipeForRedundantWhitespace         = $true
             CheckSeparator                          = $true
             CheckParameter                          = $true
-            IgnoreAssignmentOperatorInsideHashTable = $false
+            IgnoreAssignmentOperatorInsideHashTable = $true
         }
 
         # Casing
