@@ -234,16 +234,15 @@
 
     
   </ItemGroup>
-
+<!--
   <Target Name="CopyToPowerShellLib" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <ItemGroup>
-      <!-- include all files in output except Microsoft.CodeAnalysis* -->
       <KestrunOutputFiles Include="$(OutputPath)*.*" Exclude="$(OutputPath)Microsoft.CodeAnalysis*.*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\" SkipUnchangedFiles="true" />
   </Target>
-
+-->
   <Target Name="CopyPowerShellModuleOnPublish" AfterTargets="Publish">
     <!-- Copy PowerShell module files (excluding lib) to $(ProjectRoot)publish -->
     <ItemGroup>

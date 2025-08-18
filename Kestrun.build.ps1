@@ -157,7 +157,7 @@ Add-BuildTask 'Restore' {
     dotnet restore .\Kestrun.sln -v:$DotNetVerbosity
 }, 'Nuget-CodeAnalysis'
 
-Add-BuildTask 'Build' {
+Add-BuildTask 'BuildNoPwsh' {
     Write-Host 'Building solution...'
 
     if ($PSCmdlet.ParameterSetName -eq 'FileVersion') {
@@ -178,6 +178,14 @@ Add-BuildTask 'Build' {
     foreach ($framework in $Frameworks) {
         dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
     }
+}
+
+Add-BuildTask 'Build' 'BuildNoPwsh', 'SyncPowerShellDll', {}
+
+Add-BuildTask 'SyncPowerShellDll' {
+    $dest = ".\src\PowerShell\Kestrun\lib"
+    Write-Host "Copy dll to $dest"
+    Copy-Item -Path ".\src\CSharp\Kestrun\bin\$Configuration\*" -Destination "$dest" -Recurse -Force
 }
 
 Add-BuildTask 'Nuget-CodeAnalysis' {
@@ -247,6 +255,7 @@ Add-BuildTask 'Build_Powershell_Help' {
     Write-Host 'Generate Powershell Help...'
     pwsh -NoProfile -File .\Utility\Generate-Help.ps1
 }
+
 Add-BuildTask 'Build_CSharp_Help' {
     Write-Host 'Generate C# Help...'
     # Check if xmldocmd is in PATH

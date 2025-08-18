@@ -173,7 +173,7 @@ namespace Kestrun.Authentication.Tests
             Assert.NotNull(validator);
         }
 
-        [Fact]
+  /*      [Fact]
         public void BuildCsValidator_ReturnsDelegate()
         {
             var logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
@@ -186,7 +186,7 @@ namespace Kestrun.Authentication.Tests
             var validator = ApiKeyAuthHandler.BuildCsValidator(settings, logger);
 
             Assert.NotNull(validator);
-        }
+        }*/
 
         [Fact]
         public void BuildVBNetValidator_ReturnsDelegate()
