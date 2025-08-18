@@ -204,7 +204,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         var pass = match.Groups[2].Value;
         if (string.IsNullOrEmpty(user))
         {
-            return (false, null, null, "Username cannot be empty");
+            return (false, null, null, "Malformed credentials");
         }
 
         return (true, user, pass, null);

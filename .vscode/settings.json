@@ -21,5 +21,10 @@
   "powershell.codeFormatting.alignPropertyValuePairs": false,
 
   // Save PS files as UTF-8 with BOM to satisfy PSUseBOMForUnicodeEncodedFile
-  "[powershell]": { "files.encoding": "utf8bom" }
+  "[powershell]": {
+    "files.encoding": "utf8bom"
+  },
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  }
 }
