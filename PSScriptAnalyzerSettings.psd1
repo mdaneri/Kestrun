@@ -1,6 +1,6 @@
 ﻿@{
     # Load all default rules; we’ll override specifics in `Rules`.
-    ExcludeRules = @()
+    ExcludeRules = @('PSAvoidUsingWriteHost')
 
     # Where your custom rules live (file or folder).
     <#
