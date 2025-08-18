@@ -82,6 +82,7 @@ runs:
 
         if $has_apt; then
           echo "Detected Debian/Ubuntu…"
+
           if [[ "$DEB_ARCH" == "amd64" ]]; then
             # Use .deb only for amd64
             if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
@@ -94,6 +95,31 @@ runs:
             curl -fsSL "$URL" -o "$PKG"
             echo "Installing $PKG…"
             sudo dpkg -i "$PKG" || sudo apt-get -y -f install
+
+            # If preview, make it the default 'pwsh'
+            if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
+              echo "Setting PowerShell Preview as the default 'pwsh' via update-alternatives..."
+              if command -v pwsh-preview >/dev/null 2>&1; then
+                PREVIEW_BIN="$(command -v pwsh-preview)"
+                PREVIEW_REAL="$(readlink -f "$PREVIEW_BIN" || echo "$PREVIEW_BIN")"
+
+                # Register stable (if present) so the alt group is consistent
+                if command -v pwsh >/dev/null 2>&1; then
+                  STABLE_BIN="$(command -v pwsh)"
+                  STABLE_REAL="$(readlink -f "$STABLE_BIN" || echo "$STABLE_BIN")"
+                  sudo update-alternatives --install /usr/bin/pwsh pwsh "$STABLE_REAL" 10 || true
+                fi
+
+                # Register preview with higher priority and select it
+                sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_REAL" 200
+                sudo update-alternatives --set pwsh "$PREVIEW_REAL"
+
+                echo "Default 'pwsh' now → $(command -v pwsh) -> $PREVIEW_REAL"
+              else
+                echo "Warning: pwsh-preview not found in PATH after install."
+              fi
+            fi
+
           else
             # ARM/ARMHF → tarball install
             TARBALL="powershell-${REQUESTED_VERSION}-linux-${TARBALL_ARCH}.tar.gz"
@@ -110,26 +136,57 @@ runs:
             # Update symlink so 'pwsh' points to the requested version
             sudo ln -sf "$DEST/pwsh" /usr/bin/pwsh
 
-            # Optional: prefer preview via update-alternatives if you want system-wide switching
+            # Prefer preview via update-alternatives if requested
             if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
               sudo update-alternatives --install /usr/bin/pwsh pwsh "$DEST/pwsh" 200
               sudo update-alternatives --set pwsh "$DEST/pwsh"
             fi
           fi
+
         elif $has_rpm; then
           echo "Detected RHEL/Fedora/CentOS…"
           if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
-            # NOTE: preview RPM uses dash and 'cm' builds include aarch64
             PKG="powershell-preview-${REQUESTED_VERSION}-1.cm.${RPM_ARCH}.rpm"
+            URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG}"
+            echo "Downloading: $URL"
+            if ! curl -fsSL "$URL" -o "$PKG"; then
+              # Fallback to rh vendor name
+              PKG="powershell-preview-${REQUESTED_VERSION}-1.rh.${RPM_ARCH}.rpm"
+              URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG}"
+              echo "Retry: $URL"
+              curl -fsSL "$URL" -o "$PKG"
+            fi
           else
             PKG="powershell-${REQUESTED_VERSION}-1.cm.${RPM_ARCH}.rpm"
+            URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG}"
+            echo "Downloading: $URL"
+            if ! curl -fsSL "$URL" -o "$PKG"; then
+              PKG="powershell-${REQUESTED_VERSION}-1.rh.${RPM_ARCH}.rpm"
+              URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG}"
+              echo "Retry: $URL"
+              curl -fsSL "$URL" -o "$PKG"
+            fi
           fi
-          # Fallback to rh.x86_64 exists; aarch64 often only 'cm'
-          URL="https://github.com/PowerShell/PowerShell/releases/download/v${REQUESTED_VERSION}/${PKG}"
-          echo "Downloading: $URL"
-          curl -fsSL "$URL" -o "$PKG" || { echo "Could not fetch $PKG"; exit 1; }
+
           echo "Installing $PKG…"
           sudo rpm -i "$PKG" || sudo yum install -y "$PKG" || sudo dnf install -y "$PKG"
+
+          # If preview, try to make preview the default 'pwsh' too
+          if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
+            echo "Setting preview as default 'pwsh' via update-alternatives (RPM)…"
+            if command -v pwsh-preview >/dev/null 2>&1; then
+              PREVIEW_BIN="$(command -v pwsh-preview)"
+              PREVIEW_REAL="$(readlink -f "$PREVIEW_BIN" || echo "$PREVIEW_BIN")"
+              if command -v pwsh >/dev/null 2>&1; then
+                STABLE_BIN="$(command -v pwsh)"
+                STABLE_REAL="$(readlink -f "$STABLE_BIN" || echo "$STABLE_BIN")"
+                sudo update-alternatives --install /usr/bin/pwsh pwsh "$STABLE_REAL" 10 || true
+              fi
+              sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_REAL" 200
+              sudo update-alternatives --set pwsh "$PREVIEW_REAL"
+            fi
+          fi
+
         else
           echo "Unsupported distro (no apt/dpkg or rpm)."; exit 1
         fi
@@ -226,30 +283,22 @@ runs:
             done
           fi
 
-          # If preview, make it the default 'pwsh'
-          if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
-            echo "Setting PowerShell Preview as the default 'pwsh' via update-alternatives..."
-            if command -v pwsh-preview >/dev/null 2>&1; then
-              PREVIEW_BIN="$(command -v pwsh-preview)"
-              PREVIEW_REAL="$(readlink -f "$PREVIEW_BIN" || echo "$PREVIEW_BIN")"
-
-              # Register current stable (if present) so the alt group is consistent
-              if command -v pwsh >/dev/null 2>&1; then
-                STABLE_BIN="$(command -v pwsh)"
-                STABLE_REAL="$(readlink -f "$STABLE_BIN" || echo "$STABLE_BIN")"
-                sudo update-alternatives --install /usr/bin/pwsh pwsh "$STABLE_REAL" 10 || true
-              fi
-
-              # Register preview with higher priority and select it
-              sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_REAL" 200
-              sudo update-alternatives --set pwsh "$PREVIEW_REAL"
-
-              echo "Default 'pwsh' now points to: $(command -v pwsh) -> $PREVIEW_REAL"
-              pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
-            else
-              echo "Warning: pwsh-preview not found in PATH after install."
-            fi
+          if [[ -z "$PREVIEW_BIN" ]]; then
+            echo "Warning: couldn't locate preview 'pwsh' binary. Leaving system default."
+          else
+            # Create a shim so 'pwsh' resolves to preview first in PATH
+            SHIM_DIR="$RUNNER_TEMP/pwsh-preview-shim"
+            mkdir -p "$SHIM_DIR"
+            cat > "$SHIM_DIR/pwsh" <<EOF
+        #!/usr/bin/env bash
+        exec "$PREVIEW_BIN" "\$@"
+        EOF
+            chmod +x "$SHIM_DIR/pwsh"
+            # Put shim in front of everything for the rest of the job
+            echo "$SHIM_DIR" >> "$GITHUB_PATH"
+            echo "Default 'pwsh' now resolves to preview: $("$SHIM_DIR/pwsh" -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')"
           fi
+        fi
 
     - name: Install PowerShell (Windows)
       if: runner.os == 'Windows'
