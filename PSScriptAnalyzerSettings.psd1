@@ -101,6 +101,11 @@
             NounAllowList = 'Data', 'Windows', 'Metadata'#, 'MarkdownMetadata'
         }
 
+        # Use BOM for Unicode encoded files
+        UseBOMForUnicodeEncodedFile = @{
+            Enable = $true
+        }
+
         # (Optional) a few opinionated “proof it’s working” rules
         PSAvoidUsingWriteHost = @{ Enable = $false }
         PSUseApprovedVerbs = @{ Enable = $true }
