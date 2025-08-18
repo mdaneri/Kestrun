@@ -1,9 +1,8 @@
-function Import-KsCertificate {
-    <#
+<#
     .SYNOPSIS
         Imports a PFX/PEM certificate file and returns X509Certificate2.
     .DESCRIPTION
-        The Import-KsCertificate function allows you to import a certificate into the Kestrun environment. 
+        The Import-KsCertificate function allows you to import a certificate into the Kestrun environment.
         This may include loading a certificate from a file or other source and adding it to the appropriate certificate store or configuration.
     .PARAMETER FilePath
         The path to the certificate file to import.
@@ -16,7 +15,8 @@ function Import-KsCertificate {
         This example imports a certificate from the specified path using the provided password.
     .NOTES
         This function is part of the Kestrun PowerShell module.
-    #>
+#>
+function Import-KsCertificate {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([System.Security.Cryptography.X509Certificates.X509Certificate2])]

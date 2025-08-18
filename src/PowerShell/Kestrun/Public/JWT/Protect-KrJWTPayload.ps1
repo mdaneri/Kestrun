@@ -1,6 +1,4 @@
-
-function Protect-KrJWTPayload {
-    <#
+<#
     .SYNOPSIS
         Encrypts the JWT payload using a secret, PEM file, or X509 certificate.
 
@@ -56,8 +54,9 @@ function Protect-KrJWTPayload {
         EncryptWithPemPublic, and EncryptWithCertificate methods.
 
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Protect-KrJWTPayload {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'Base64Url')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
@@ -71,9 +70,9 @@ function Protect-KrJWTPayload {
         [Parameter(Mandatory = $true, ParameterSetName = 'Bytes')]
         [byte[]] $KeyBytes,
         [Parameter(Mandatory = $false)]
-        [string] $KeyAlg = "",
+        [string] $KeyAlg = '',
         [Parameter(Mandatory = $false)]
-        [string] $EncAlg = "",
+        [string] $EncAlg = '',
         [Parameter(Mandatory = $true, ParameterSetName = 'PemPath')]
         [string] $PemPath,
         [Parameter(Mandatory = $true, ParameterSetName = 'Certificate')]

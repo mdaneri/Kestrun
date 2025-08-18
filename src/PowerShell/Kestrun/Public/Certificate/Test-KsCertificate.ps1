@@ -1,5 +1,4 @@
-function Test-KsCertificate {
-    <#
+﻿<#
     .SYNOPSIS
         Validates a certificate’s chain, EKU, and cryptographic strength.
     .DESCRIPTION
@@ -29,7 +28,8 @@ function Test-KsCertificate {
     .NOTES
         This function is designed to be used in the context of Kestrun's certificate management.
         It leverages the Kestrun.Certificates.CertificateManager for validation.
-    #>
+#>
+function Test-KsCertificate {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([bool])]
@@ -49,8 +49,7 @@ function Test-KsCertificate {
         $oc = [System.Security.Cryptography.OidCollection]::new()
         foreach ($p in $ExpectedPurpose) { $oc.Add([System.Security.Cryptography.Oid]::new($p)) }
         $oc
-    }
-    else { $null }
+    } else { $null }
 
     return [Kestrun.Certificates.CertificateManager]::Validate($Certificate,
         $CheckRevocation.IsPresent,

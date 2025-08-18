@@ -1,5 +1,4 @@
-function Update-KrJWT {
-    <#
+<#
     .SYNOPSIS
         Updates an existing JWT token.
     .DESCRIPTION
@@ -26,19 +25,19 @@ function Update-KrJWT {
         This function is part of the Kestrun.Security module and is used to manage JWT tokens.
         Maps to JwtBuilderResult.Renew
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytokenhandler?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Update-KrJWT {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
-    [CmdletBinding(defaultParameterSetName = "Token")]
+    [CmdletBinding(defaultParameterSetName = 'Token')]
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
         [Kestrun.Security.JwtTokenBuilder] $Builder,
-        [Parameter(Mandatory = $true, ParameterSetName = "Token")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Token')]
         [string]$Token,
-        [Parameter(Mandatory = $true, ParameterSetName = "Context")]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Context')]
         [switch] $FromContext,
         [Parameter()]
         [TimeSpan] $Lifetime

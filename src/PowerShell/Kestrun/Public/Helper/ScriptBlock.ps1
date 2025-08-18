@@ -1,5 +1,4 @@
-function Add-KrScriptBlock {
-    <#
+﻿<#
     .SYNOPSIS
         Adds a named scriptblock to the specified scope, allowing retrieval via a getter function.
     .DESCRIPTION
@@ -23,7 +22,8 @@ function Add-KrScriptBlock {
         This function is part of the Kestrun PowerShell module and is designed to facilitate the management of scriptblocks.
     .LINK
         https://github.com/Kestrun/Kestrun
-    #>
+#>
+function Add-KrScriptBlock {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'Split')]
     param(
@@ -72,10 +72,9 @@ function Add-KrScriptBlock {
         $CleanName = $matches[2]
     }
     if (-not $Scope) { $Scope = 'Script' }
- 
 
     Set-Item -Path function:$($Scope):Get-KrScriptBlock_$CleanName -Value "return {$($ScriptBlock.ToString())}"
- 
+
     # Alias: ScriptBlock:<name> → getter
     Set-Alias -Name "ScriptBlock:$CleanName" -Value "Get-KrScriptBlock_$CleanName" -Scope $Scope
 }
@@ -90,5 +89,4 @@ function Add-KrScriptBlock {
     ScriptBlock MyScript = { Write-Host "Hello, World!" }
     This is equivalent to calling Add-KrScriptBlock -Name 'MyScript' -ScriptBlock { Write-Host "Hello, World!" } with the same parameters.
 #>
-
 Set-Alias -Name ScriptBlock -Value Add-KrScriptBlock -Scope Global

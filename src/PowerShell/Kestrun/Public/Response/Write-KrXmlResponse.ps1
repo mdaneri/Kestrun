@@ -1,5 +1,4 @@
-function Write-KrXmlResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an object serialized as XML to the HTTP response.
 
@@ -19,7 +18,8 @@ function Write-KrXmlResponse {
         and content type "application/kestrun-xml".
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrXmlResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

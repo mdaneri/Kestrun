@@ -1,5 +1,4 @@
-function Protect-KrJWT {
-    <#
+<#
     .SYNOPSIS
         Protects a JWT token using a specified secret or certificate.
     .DESCRIPTION
@@ -36,8 +35,9 @@ function Protect-KrJWT {
         Maps to JwtTokenBuilder.SignWithSecret, JwtTokenBuilder.SignWithSecretHex, JwtTokenBuilder.SignWithSecretPassphrase,
         JwtTokenBuilder.SignWithRsaPem, and JwtTokenBuilder.SignWithCertificate methods.
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Protect-KrJWT {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'SecretBase64Url')]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
@@ -56,7 +56,7 @@ function Protect-KrJWT {
         [System.Security.Cryptography.X509Certificates.X509Certificate2] $X509Certificate,
         [Parameter(Mandatory = $false)]
         [ValidateSet('Auto', 'HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512')]
-        [string] $Algorithm = 'Auto' # Default to 'Auto' which will determine the algorithm based on the provided secret or certificate. 
+        [string] $Algorithm = 'Auto' # Default to 'Auto' which will determine the algorithm based on the provided secret or certificate.
     )
 
     process {

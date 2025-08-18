@@ -1,5 +1,4 @@
-function Add-KrEnrichWithEnvironment {
-    <#
+<#
     .SYNOPSIS
         Adds environment information to the log context.
     .DESCRIPTION
@@ -16,10 +15,11 @@ function Add-KrEnrichWithEnvironment {
         LoggerConfiguration object allowing method chaining
     .EXAMPLE
         PS> New-KrLogger | Add-KrEnrichWithEnvironment | Register-KrLogger
-    #>
+#>
+function Add-KrEnrichWithEnvironment {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
-	[OutputType([Serilog.LoggerConfiguration])]
+    [OutputType([Serilog.LoggerConfiguration])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         [Serilog.LoggerConfiguration]$loggerConfig,
@@ -44,7 +44,7 @@ function Add-KrEnrichWithEnvironment {
         }
 
         if (-not $hasEnricher) {
-            Write-Verbose "No environment enrichers added."
+            Write-Verbose 'No environment enrichers added.'
         }
 
         return $loggerConfig

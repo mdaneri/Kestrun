@@ -1,5 +1,4 @@
-function Add-KrJWTBearerAuthentication {
-    <#
+<#
     .SYNOPSIS
         Adds JWT Bearer authentication to the Kestrun server.
     .DESCRIPTION
@@ -66,7 +65,8 @@ function Add-KrJWTBearerAuthentication {
     .NOTES
         This function is part of the Kestrun.Authentication module and is used to configure JWT Bearer authentication for Kestrun servers.
         Maps to Kestrun.Hosting.KestrunHostAuthExtensions.AddJwtBearerAuthentication
-    #>
+#>
+function Add-KrJWTBearerAuthentication {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'Items')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -110,7 +110,7 @@ function Add-KrJWTBearerAuthentication {
         [Parameter(ParameterSetName = 'Items')]
         [Microsoft.IdentityModel.Tokens.SecurityKey[]]$IssuerSigningKeys,
         [Parameter(ParameterSetName = 'Items')]
-        [TimeSpan]$ClockSkew, 
+        [TimeSpan]$ClockSkew,
         [Parameter()]
         [switch]$PassThru
     )
@@ -134,7 +134,6 @@ function Add-KrJWTBearerAuthentication {
             if ($PSBoundParameters.ContainsKey('IssuerSigningKeys')) { $ValidationParameter.IssuerSigningKeys = $IssuerSigningKeys }
 
             if ($PSBoundParameters.ContainsKey('ClockSkew')) { $ValidationParameter.ClockSkew = $ClockSkew }
-
         }
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server

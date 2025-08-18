@@ -1,11 +1,10 @@
-function Write-KrBsonResponse {
-    <#
+<#
     .SYNOPSIS
         Writes an object serialized as BSON to the HTTP response.
     .DESCRIPTION
         Converts the provided object to BSON format and writes it to the response body. The status code and content type can be customized.
     .PARAMETER InputObject
-        The object to serialize and write to the response.              
+        The object to serialize and write to the response.
     .PARAMETER StatusCode
         The HTTP status code to set for the response. Defaults to 200.
     .PARAMETER ContentType
@@ -15,7 +14,8 @@ function Write-KrBsonResponse {
         Writes the $myObject serialized as BSON to the response with a 200 status code and content type "application/bson".
     .NOTES
         This function is designed to be used in the context of a Kestrun server response.
-    #>
+#>
+function Write-KrBsonResponse {
     [KestrunRuntimeApi('Route')]
     [CmdletBinding()]
     param(

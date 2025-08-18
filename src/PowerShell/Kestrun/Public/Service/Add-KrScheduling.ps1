@@ -1,5 +1,4 @@
-function Add-KrScheduling {
-    <#
+<#
     .SYNOPSIS
         Adds scheduling support to the Kestrun server.
     .DESCRIPTION
@@ -19,7 +18,8 @@ function Add-KrScheduling {
         This example adds scheduling support to the server without specifying a maximum number of runspaces.
     .NOTES
         This cmdlet is used to register a scheduling service with the Kestrun server, allowing you to manage scheduled tasks and jobs.
-    #>
+#>
+function Add-KrScheduling {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -40,8 +40,7 @@ function Add-KrScheduling {
         if ($MaxRunspaces -eq 0) {
             # If MaxRunspaces is 0, use the default configuration
             $Server.AddScheduling() | Out-Null
-        }
-        else {
+        } else {
             $Server.AddScheduling($MaxRunspaces) | Out-Null
         }
 

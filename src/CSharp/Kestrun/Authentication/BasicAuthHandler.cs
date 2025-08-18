@@ -89,20 +89,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
 
             Log.Information("Processing Basic Authentication for header: {Context}", Context);
 
-            var decode = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
-            if (!decode.Success)
+            if (!TryGetUserPass(authHeader, out var user, out var pass, out var err))
             {
-                return Fail(decode.Error!);
+                return Fail(err ?? "Malformed credentials");
             }
 
-            var parse = TryParseCredentials(decode.Value!);
-            if (!parse.Success)
-            {
-                return Fail(parse.Error!);
-            }
-
-            var user = parse.Username!;
-            var pass = parse.Password!;
             var valid = await Options.ValidateCredentialsAsync(Context, user, pass);
             if (!valid)
             {
@@ -121,6 +112,32 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             Options.Logger.Error(ex, "Error processing Authentication");
             return Fail("Exception during authentication");
         }
+    }
+
+    // Extracts and validates user/password from the Authorization header
+    private bool TryGetUserPass(AuthenticationHeaderValue authHeader, out string user, out string pass, out string? error)
+    {
+        user = string.Empty;
+        pass = string.Empty;
+        error = null;
+
+        var decoded = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
+        if (!decoded.Success)
+        {
+            error = decoded.Error;
+            return false;
+        }
+
+        var parsed = TryParseCredentials(decoded.Value!);
+        if (!parsed.Success)
+        {
+            error = parsed.Error;
+            return false;
+        }
+
+        user = parsed.Username!;
+        pass = parsed.Password!;
+        return true;
     }
 
     /// <summary>

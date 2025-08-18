@@ -1,9 +1,8 @@
-function Add-KrJWTAudience {
-    <#
+<#
     .SYNOPSIS
         Adds an audience to the JWT token builder.
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
     .DESCRIPTION
         This function adds an audience to the JWT token builder, allowing for the specification of the token's audience.
     .PARAMETER Builder
@@ -20,8 +19,9 @@ function Add-KrJWTAudience {
         This function is part of the Kestrun.Security module and is used to build JWT tokens
         Maps to JwtTokenBuilder.WithAudience
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Add-KrJWTAudience {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Security.JwtTokenBuilder])]
@@ -31,7 +31,7 @@ function Add-KrJWTAudience {
         [Parameter(Mandatory)]
         [string] $Audience
     )
-    process { 
-        return $Builder.WithAudience($Audience) 
+    process {
+        return $Builder.WithAudience($Audience)
     }
 }

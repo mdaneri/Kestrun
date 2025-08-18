@@ -1,5 +1,4 @@
-function Build-KrClaimPolicy {
-    <#
+<#
     .SYNOPSIS
         Builds the claim policy configuration from the builder.
     .DESCRIPTION
@@ -17,7 +16,8 @@ function Build-KrClaimPolicy {
         Maps to ClaimPolicyBuilder.Build
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/kestrun.authentication.claimpolicybuilder.build
-    #>
+#>
+function Build-KrClaimPolicy {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([Kestrun.Claims.ClaimPolicyConfig])]

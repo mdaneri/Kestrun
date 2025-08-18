@@ -1,5 +1,4 @@
-function Add-KrPowerShellRazorPagesRuntime {
-    <#
+<#
     .SYNOPSIS
     Adds PowerShell support for Razor Pages.
     .DESCRIPTION
@@ -19,7 +18,8 @@ function Add-KrPowerShellRazorPagesRuntime {
         This example adds PowerShell support for Razor Pages to the server without a path prefix.
     .NOTES
         This cmdlet is used to register Razor Pages with PowerShell support in the Kestrun server, allowing you to serve dynamic web pages using Razor syntax with PowerShell code blocks.
-    #>
+#>
+function Add-KrPowerShellRazorPagesRuntime {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding()]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -38,10 +38,9 @@ function Add-KrPowerShellRazorPagesRuntime {
         $Server = Resolve-KestrunServer -Server $Server
 
         if ([string]::IsNullOrWhiteSpace($PathPrefix)) {
-           [Kestrun.Hosting.KestrunHostRazorExtensions]::AddPowerShellRazorPages($Server) | Out-Null 
-        }
-        else {
-          [Kestrun.Hosting.KestrunHostRazorExtensions]::AddPowerShellRazorPages($Server, [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
+            [Kestrun.Hosting.KestrunHostRazorExtensions]::AddPowerShellRazorPages($Server) | Out-Null
+        } else {
+            [Kestrun.Hosting.KestrunHostRazorExtensions]::AddPowerShellRazorPages($Server, [Microsoft.AspNetCore.Http.PathString]::new($PathPrefix)) | Out-Null
         }
 
         if ($PassThru.IsPresent) {
@@ -49,6 +48,5 @@ function Add-KrPowerShellRazorPagesRuntime {
             # Return the modified server instance
             return $Server
         }
-
     }
 }

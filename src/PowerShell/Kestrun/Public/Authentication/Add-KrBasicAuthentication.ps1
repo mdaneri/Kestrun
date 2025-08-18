@@ -1,5 +1,4 @@
-function Add-KrBasicAuthentication {
-    <#
+<#
     .SYNOPSIS
         Adds basic authentication to the Kestrun server.
     .DESCRIPTION
@@ -56,7 +55,8 @@ function Add-KrBasicAuthentication {
     .NOTES
         This function is part of the Kestrun.Authentication module and is used to configure basic authentication for Kestrun servers.
         Maps to Kestrun.Hosting.KestrunHostAuthExtensions.AddBasicAuthentication
-    #>
+#>
+function Add-KrBasicAuthentication {
     [KestrunRuntimeApi('Definition')]
     [CmdletBinding(defaultParameterSetName = 'v1')]
     [OutputType([Kestrun.Hosting.KestrunHost])]
@@ -69,7 +69,7 @@ function Add-KrBasicAuthentication {
 
         [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
         [Kestrun.Authentication.BasicAuthenticationOptions]$Options,
- 
+
         [Parameter(Mandatory = $true, ParameterSetName = 'v1')]
         [Parameter(Mandatory = $true, ParameterSetName = 'v1_i1')]
         [Parameter(Mandatory = $true, ParameterSetName = 'v1_i2')]
@@ -233,28 +233,25 @@ function Add-KrBasicAuthentication {
             if ($null -ne $ScriptBlock) {
                 $Options.ValidateCodeSettings.Code = $ScriptBlock.ToString()
                 $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
-
-            }
-            elseif (-not [string]::IsNullOrWhiteSpace($Code)) {
+            } elseif (-not [string]::IsNullOrWhiteSpace($Code)) {
                 $Options.ValidateCodeSettings.Code = $Code
                 $Options.ValidateCodeSettings.Language = $CodeLanguage
-            }
-            elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
+            } elseif (-not [string]::IsNullOrWhiteSpace($CodeFilePath)) {
                 if (-not (Test-Path -Path $CodeFilePath)) {
                     throw "The specified code file path does not exist: $CodeFilePath"
                 }
                 $extension = Split-Path -Path $CodeFilePath -Extension
                 switch ($extension) {
-                    ".ps1" {
+                    '.ps1' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                     }
-                    ".cs" {
+                    '.cs' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                     }
-                    ".vb" {
+                    '.vb' {
                         $Options.ValidateCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                     }
-                    Default {
+                    default {
                         throw "Unsupported '$extension' code file extension."
                     }
                 }
@@ -278,8 +275,7 @@ function Add-KrBasicAuthentication {
             }
             if ($AllowInsecureHttp.IsPresent) {
                 $Options.RequireHttps = $false
-            }
-            else {
+            } else {
                 $Options.RequireHttps = $true
             }
             if ($null -ne $ClaimPolicyConfig) {
@@ -295,28 +291,25 @@ function Add-KrBasicAuthentication {
                 if ($null -ne $IssueClaimsScriptBlock) {
                     $Options.IssueClaimsCodeSettings.Code = $IssueClaimsScriptBlock.ToString()
                     $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
-
-                }
-                elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCode)) {
+                } elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCode)) {
                     $Options.IssueClaimsCodeSettings.Code = $IssueClaimsCode
                     $Options.IssueClaimsCodeSettings.Language = $IssueClaimsCodeLanguage
-                }
-                elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCodeFilePath)) {
+                } elseif (-not [string]::IsNullOrWhiteSpace($IssueClaimsCodeFilePath)) {
                     if (-not (Test-Path -Path $IssueClaimsCodeFilePath)) {
                         throw "The specified code file path does not exist: $IssueClaimsCodeFilePath"
                     }
                     $extension = Split-Path -Path $IssueClaimsCodeFilePath -Extension
                     switch ($extension) {
-                        ".ps1" {
+                        '.ps1' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::PowerShell
                         }
-                        ".cs" {
+                        '.cs' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::CSharp
                         }
-                        ".vb" {
+                        '.vb' {
                             $Options.IssueClaimsCodeSettings.Language = [Kestrun.Scripting.ScriptLanguage]::VisualBasic
                         }
-                        Default {
+                        default {
                             throw "Unsupported '$extension' code file extension."
                         }
                     }

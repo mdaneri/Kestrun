@@ -1,5 +1,4 @@
-function Get-KrJWTToken {
-    <#
+<#
     .SYNOPSIS
         Retrieves the JWT token from the builder result.
     .DESCRIPTION
@@ -17,8 +16,9 @@ function Get-KrJWTToken {
         This function is part of the Kestrun.Security module and is used to retrieve JWT tokens.
         Maps to JwtBuilderResult.Token
     .LINK
-        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken?view=azure-dotnet
-    #>
+        https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
+#>
+function Get-KrJWTToken {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding()]
     [OutputType([string])]

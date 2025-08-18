@@ -1,5 +1,4 @@
-function Clear-KsVariable {
-    <#
+<#
     .SYNOPSIS
         Clears Kestrun variables that are not in the baseline or excluded list.
     .DESCRIPTION
@@ -16,18 +15,20 @@ function Clear-KsVariable {
         This example clears all Kestrun variables.
     .NOTES
         This function is useful for cleaning up the global scope in Kestrun scripts, ensuring that only relevant variables remain.
-    #>
+#>
+function Clear-KsVariable {
+    [CmdletBinding()]
     param(
         [string[]]$ExcludeVariables
     )
     $baseline = $KestrunHostManager.VariableBaseline
     Get-Variable |
-    Where-Object {
-        $baseline -notcontains $_.Name -and
-        $_.Name -notmatch '^(__ps|_)' -and
-        $ExcludeVariables -notcontains $_.Name
-    } |
-    ForEach-Object {
-        Remove-Variable -Name $_.Name -Scope Global -Force -ErrorAction SilentlyContinue
-    }
+        Where-Object {
+            $baseline -notcontains $_.Name -and
+            $_.Name -notmatch '^(__ps|_)' -and
+            $ExcludeVariables -notcontains $_.Name
+        } |
+        ForEach-Object {
+            Remove-Variable -Name $_.Name -Scope Global -Force -ErrorAction SilentlyContinue
+        }
 }

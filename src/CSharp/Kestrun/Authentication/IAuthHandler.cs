@@ -293,6 +293,7 @@ public interface IAuthHandler
         {
             return await IAuthHandler.IssueClaimsPowerShellAsync(settings.Code, ctx, identity, logger);
         };
+
     /// <summary>
     /// Issues claims for a user by executing a PowerShell script.
     /// </summary>
@@ -303,69 +304,49 @@ public interface IAuthHandler
     /// <returns>A task representing the asynchronous operation, with a collection of issued claims.</returns>
     public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity, Serilog.ILogger logger)
     {
+        if (!ctx.Items.TryGetValue("PS_INSTANCE", out var psObj) || psObj is not PowerShell ps || ps.Runspace == null)
+        {
+            throw new InvalidOperationException("PowerShell runspace not found or not set in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+        }
+        if (string.IsNullOrWhiteSpace(identity))
+        {
+            logger.Warning("Identity is null or empty.");
+            return [];
+        }
+        if (string.IsNullOrEmpty(code))
+        {
+            throw new InvalidOperationException("PowerShell authentication code is null or empty.");
+        }
         try
         {
-            if (!ctx.Items.ContainsKey("PS_INSTANCE"))
-            {
-                throw new InvalidOperationException("PowerShell runspace not found in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-            if (string.IsNullOrWhiteSpace(identity))
-            {
-                logger.Warning("Identity is null or empty.");
-                return [];
-            }
-            if (string.IsNullOrEmpty(code))
-            {
-                throw new InvalidOperationException("PowerShell authentication code is null or empty.");
-            }
-
-            PowerShell ps = ctx.Items["PS_INSTANCE"] as PowerShell
-                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-            if (ps.Runspace == null)
-            {
-                throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-            }
-
-
-            ps.AddScript(code, useLocalScope: true)
-            .AddParameter("identity", identity);
+            ps.AddScript(code, useLocalScope: true).AddParameter("identity", identity);
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-
             var claims = new List<Claim>();
             foreach (var r in psResults)
             {
                 var obj = r.BaseObject;
-                switch (obj)
+                if (obj is Claim c)
                 {
-                    // ① Script returned a Claim object
-                    case Claim c:
-                        claims.Add(c);
-                        break;
-
-                    // ② Script returned a PSCustomObject or hashtable with Type/Value
-                    case IDictionary dict when dict.Contains("Type") && dict.Contains("Value"):
-                        var typeObj = dict["Type"];
-                        var valueObj = dict["Value"];
-                        if (typeObj is not null && valueObj is not null)
-                        {
-                            var typeStr = typeObj.ToString();
-                            var valueStr = valueObj.ToString();
-                            if (!string.IsNullOrEmpty(typeStr) && !string.IsNullOrEmpty(valueStr))
-                            {
-                                claims.Add(new Claim(typeStr, valueStr));
-                            }
-                        }
-                        break;
-
-                    // ③ Script returned "type:value"
-                    case string s when s.Contains(':'):
-                        var idx = s.IndexOf(':');
-                        claims.Add(new Claim(s[..idx], s[(idx + 1)..]));
-                        break;
-                    default:
-                        logger.Warning("PowerShell script returned an unsupported type: {Type}", obj?.GetType());
-                        throw new InvalidOperationException("PowerShell script returned an unsupported type.");
+                    claims.Add(c);
+                }
+                else if (obj is IDictionary dict && dict.Contains("Type") && dict.Contains("Value"))
+                {
+                    var typeStr = dict["Type"]?.ToString();
+                    var valueStr = dict["Value"]?.ToString();
+                    if (!string.IsNullOrEmpty(typeStr) && !string.IsNullOrEmpty(valueStr))
+                    {
+                        claims.Add(new Claim(typeStr, valueStr));
+                    }
+                }
+                else if (obj is string s && s.Contains(':'))
+                {
+                    var idx = s.IndexOf(':');
+                    claims.Add(new Claim(s[..idx], s[(idx + 1)..]));
+                }
+                else
+                {
+                    logger.Warning("PowerShell script returned an unsupported type: {Type}", obj?.GetType());
+                    throw new InvalidOperationException("PowerShell script returned an unsupported type.");
                 }
             }
             return claims;
@@ -376,7 +357,6 @@ public interface IAuthHandler
             return [];
         }
     }
-
 
     /// <summary>
     /// Builds a C#-based function for issuing claims for a user.
