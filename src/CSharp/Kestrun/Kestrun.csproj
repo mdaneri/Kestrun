@@ -47,9 +47,9 @@
     <!-- <NoWarn>1591</NoWarn> -->
 
     <!-- Assembly versioning -->
-      
-     
-   
+
+
+
 
     <EpochDate>2020-01-01</EpochDate>
     <!-- Get current UTC ticks and epoch ticks -->
@@ -73,15 +73,15 @@
     <PackageVersion Condition="'$(Version)' == ''">0.0.1</PackageVersion>
 
     <AssemblyFileVersion>1.0.0.$(BuildNumber)</AssemblyFileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion> 
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>  
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- Enable packing for NuGet -->
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-     
+
     <!-- Package identity -->
     <PackageId>Kestrun</PackageId>
     <Authors>Max Daneri</Authors>
@@ -97,7 +97,7 @@
     <!-- Include README in NuGet package -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <PropertyGroup> 
+  <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
@@ -133,10 +133,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="8.0.18" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.18" />
-    
+
     <!-- Serilog -->
     <PackageReference Include="Serilog.Sinks.Http" Version="9.1.0" />
-    
+
     <!-- Hosting & DI -->
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
@@ -144,7 +144,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
 
- 
+
 
   </ItemGroup>
 
@@ -176,20 +176,26 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.8" />
 
- 
+
 
   </ItemGroup>
 
   <ItemGroup>
 
-     <!-- Roslyn Scripting -->
+    <!-- Roslyn Scripting -->
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.9.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.9.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.9.2" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />  
-    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.9.2" /> 
-    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />  
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+
+    <PackageReference Include="Microsoft.CodeAnalysis.Scripting.Common" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.9.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces" Version="4.9.2" />
+
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>  
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="4.3.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
@@ -197,7 +203,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-  
+
     <PackageReference Include="Serilog.Sinks.SyslogMessages" Version="4.0.0" />
 
     <!-- Microsoft.AspNetCore -->
@@ -208,7 +214,7 @@
     <!-- Scripting Engines -->
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.4.11" />
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />
-     
+
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" />
     <PackageReference Include="pythonnet" Version="3.0.5" />
     <!-- Not Implemented Yet 
@@ -225,18 +231,17 @@
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
     <!-- Source Link for debugging  
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />-->
+
+    
   </ItemGroup>
 
   <Target Name="CopyToPowerShellLib" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <ItemGroup>
       <!-- include all files in output except Microsoft.CodeAnalysis* -->
-      <KestrunOutputFiles Include="$(OutputPath)*.*" 
-                          Exclude="$(OutputPath)Microsoft.CodeAnalysis*.*" />
+      <KestrunOutputFiles Include="$(OutputPath)*.*" Exclude="$(OutputPath)Microsoft.CodeAnalysis*.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(KestrunOutputFiles)"
-          DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(KestrunOutputFiles)" DestinationFolder="$(ProjectRoot)\src\PowerShell\Kestrun\lib\$(TargetFramework)\" SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="CopyPowerShellModuleOnPublish" AfterTargets="Publish">
@@ -297,6 +302,6 @@
     <Message Text="📦 Is Packable: $(IsPackable)" Importance="Normal" />
     <Message Text="📦 Generate Package On Build: $(GeneratePackageOnBuild)" Importance="Normal" />
     <Message Text="📦 Package Version: $(PackageVersion)" Importance="Normal" />
-    <Message Text="📦 Package Id: $(PackageId)" Importance="Normal" />  
+    <Message Text="📦 Package Id: $(PackageId)" Importance="Normal" />
   </Target>
 </Project>

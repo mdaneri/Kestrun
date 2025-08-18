@@ -1,0 +1,14 @@
+# Top of file
+root = true
+
+# C# files
+[*.cs]
+
+# Require braces on all control blocks (if/else/for/foreach/while/do/using/lock)
+dotnet_style_require_braces = always:warning
+
+# Make the specific diagnostic explicit (IDE0011 = Add braces)
+dotnet_diagnostic.IDE0011.severity = warning
+
+# (Optional) Turn the warning into an error locally/CI to keep things tight
+# dotnet_diagnostic.IDE0011.severity = error
