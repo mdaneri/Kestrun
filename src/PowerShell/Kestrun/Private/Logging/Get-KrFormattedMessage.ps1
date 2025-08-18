@@ -1,5 +1,4 @@
-function Get-KrFormattedMessage {
-	<#
+<#
     .SYNOPSIS
         Formats a log message for the specified logger and log level.
     .DESCRIPTION
@@ -24,36 +23,37 @@ function Get-KrFormattedMessage {
         $formattedMessage | Write-Host
         # Output the formatted message
         Write-Host $formattedMessage
-    #>
-	param(
-		[Parameter(Mandatory = $true)]
-		[Serilog.ILogger]$Logger,
+#>
+function Get-KrFormattedMessage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [Serilog.ILogger]$Logger,
 
-		[Parameter(Mandatory = $true)]
-		[Serilog.Events.LogEventLevel]$LogLevel,
+        [Parameter(Mandatory = $true)]
+        [Serilog.Events.LogEventLevel]$LogLevel,
 
-		[parameter(Mandatory = $true)]
-		[AllowEmptyString()]
-		[string]$Message,
+        [parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Message,
 
-		[Parameter(Mandatory = $false)]
-		[AllowNull()]
-		[object[]]$Values,
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [object[]]$Values,
 
-		[Parameter(Mandatory = $false)]
-		[AllowNull()]
-		[System.Exception]$Exception
-	)
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [System.Exception]$Exception
+    )
 
-	$parsedTemplate = $null
-	$boundProperties = $null
-	if ($Logger.BindMessage($Message, $Values, [ref]$parsedTemplate, [ref]$boundProperties)) {
-		$logEvent = [Serilog.Events.LogEvent]::new([System.DateTimeOffset]::Now, $LogLevel, $Exception, $parsedTemplate, $boundProperties)
-		$strWriter = [System.IO.StringWriter]::new()
-		# Use the global TextFormatter if available, otherwise use the default formatter from Kestrun.Logging
-		[Kestrun.Logging]::TextFormatter.Format($logEvent, $strWriter)
-		$message = $strWriter.ToString()
-		$strWriter.Dispose()
-		$message
-	}
+    $parsedTemplate = $null
+    $boundProperties = $null
+    if ($Logger.BindMessage($Message, $Values, [ref]$parsedTemplate, [ref]$boundProperties)) {
+        $logEvent = [Serilog.Events.LogEvent]::new([System.DateTimeOffset]::Now, $LogLevel, $Exception, $parsedTemplate, $boundProperties)
+        $strWriter = [System.IO.StringWriter]::new()
+        # Use the global TextFormatter if available, otherwise use the default formatter from Kestrun.Logging
+        [Kestrun.Logging]::TextFormatter.Format($logEvent, $strWriter)
+        $message = $strWriter.ToString()
+        $strWriter.Dispose()
+        $message
+    }
 }

@@ -1,5 +1,4 @@
-function Assert-KrAssemblyLoaded {
-    <#
+<#
     .SYNOPSIS
         Ensures that a .NET assembly is loaded only once.
 
@@ -9,6 +8,7 @@ function Assert-KrAssemblyLoaded {
     .PARAMETER AssemblyPath
         Path to the assembly file to load.
 #>
+function Assert-KrAssemblyLoaded {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
     [CmdletBinding()]
     [OutputType([bool])]
@@ -27,13 +27,11 @@ function Assert-KrAssemblyLoaded {
         }
         try {
             Add-Type -LiteralPath $AssemblyPath
-        }
-        catch {
+        } catch {
             Write-Error "Failed to load assembly: $AssemblyPath"
             return $false
         }
-    }
-    else {
+    } else {
         if ($Verbose) {
             Write-Verbose "Assembly already loaded: $AssemblyPath"
         }

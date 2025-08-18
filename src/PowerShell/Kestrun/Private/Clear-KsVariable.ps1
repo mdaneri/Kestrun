@@ -1,5 +1,4 @@
-function Clear-KsVariable {
-    <#
+<#
     .SYNOPSIS
         Clears Kestrun variables that are not in the baseline or excluded list.
     .DESCRIPTION
@@ -17,6 +16,8 @@ function Clear-KsVariable {
     .NOTES
         This function is useful for cleaning up the global scope in Kestrun scripts, ensuring that only relevant variables remain.
 #>
+function Clear-KsVariable {
+    [CmdletBinding()]
     param(
         [string[]]$ExcludeVariables
     )
