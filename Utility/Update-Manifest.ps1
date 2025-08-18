@@ -200,6 +200,6 @@ $module = @"
 }
 "@
 
-
+$path = Join-Path -Path $ModuleRootPath -ChildPath 'Kestrun.psd1'
 Write-Host "Creating module manifest at $($ModuleRootPath)/Kestrun.psd1"
-$module | Out-File -FilePath "$($ModuleRootPath)/Kestrun.psd1" -Encoding UTF8 -Force
+[System.IO.File]::WriteAllText($path, $text, [System.Text.UTF8Encoding]::new($true))

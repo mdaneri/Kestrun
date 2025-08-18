@@ -1,4 +1,4 @@
-@{
+﻿@{
     # Load all default rules; we’ll override specifics in `Rules`.
     ExcludeRules = @()
 
