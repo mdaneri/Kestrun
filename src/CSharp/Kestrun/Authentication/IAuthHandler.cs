@@ -34,41 +34,70 @@ public interface IAuthHandler
     {
         var claims = new List<Claim>();
 
-        // If the consumer wired up IssueClaims, invoke it now:
-        if (Options.IssueClaims is not null)
-        {
-            // Call the IssueClaims function to get additional claims
-            var extra = await Options.IssueClaims(Context, user);
-            if (extra is not null)
-            {
-                foreach (var claim in extra)
-                {
-                    if (claim is not null && !string.IsNullOrEmpty(claim.Value) && claim is Claim)
-                        claims.Add(claim);
-                }
-            }
-        }
+        // 1) Issue extra claims if configured
+        claims.AddRange(await GetIssuedClaimsAsync(Context, user, Options).ConfigureAwait(false));
 
-        // if claimstypes.Name is not present add it
-        if (!claims.Any(c => c.Type == ClaimTypes.Name))
-        {
-            if (Options.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-                Options.Logger.Debug("No Name claim found, adding default Name claim");
-            if (string.IsNullOrEmpty(alias))
-                claims.Add(new Claim(ClaimTypes.Name, user));
-            else
-                claims.Add(new Claim(ClaimTypes.Name, alias));
-        }
-        // Create the ClaimsIdentity and ClaimsPrincipal
-        var claimsIdentity = new ClaimsIdentity(claims, Scheme.Name);
-        // Create the AuthenticationTicket with the principal and scheme name
-        var principal = new ClaimsPrincipal(claimsIdentity);
-        // Create the authentication ticket
-        var ticket = new AuthenticationTicket(principal, Scheme.Name);
-        return ticket;
+        // 2) Ensure a Name claim exists
+        EnsureNameClaim(claims, user, alias, Options.Logger);
+
+        // 3) Create and return the ticket
+        return CreateAuthenticationTicket(claims, Scheme);
     }
 
+    /// <summary>
+    /// Issues claims for the specified user based on the provided context and options.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <param name="user">The user name for whom claims are being issued.</param>
+    /// <param name="options">Authentication options including claim issuance delegates.</param>
+    /// <returns>A collection of issued claims.</returns>
+    private static async Task<IEnumerable<Claim>> GetIssuedClaimsAsync(HttpContext context, string user, IAuthenticationCommonOptions options)
+    {
+        if (options.IssueClaims is null)
+            return [];
 
+        var extra = await options.IssueClaims(context, user).ConfigureAwait(false);
+        if (extra is null)
+            return [];
+
+        // Filter out nulls and empty values
+        return [.. extra
+            .Where(c => c is not null)
+            .OfType<Claim>()
+            .Where(c => !string.IsNullOrEmpty(c.Value))];
+    }
+
+    /// <summary>
+    /// Ensures that a Name claim is present in the list of claims.
+    /// </summary>
+    /// <param name="claims">The list of claims to check.</param>
+    /// <param name="user">The user name to use if a Name claim is added.</param>
+    /// <param name="alias">An optional alias for the user.</param>
+    /// <param name="logger">The logger instance.</param>
+    private static void EnsureNameClaim(List<Claim> claims, string user, string? alias, Serilog.ILogger logger)
+    {
+        if (claims.Any(c => c.Type == ClaimTypes.Name))
+            return;
+
+        if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            logger.Debug("No Name claim found, adding default Name claim");
+
+        var name = string.IsNullOrEmpty(alias) ? user : alias;
+        claims.Add(new Claim(ClaimTypes.Name, name!));
+    }
+
+    /// <summary>
+    /// Creates an authentication ticket from the specified claims and authentication scheme.
+    /// </summary>
+    /// <param name="claims">The claims to include in the ticket.</param>
+    /// <param name="scheme">The authentication scheme to use.</param>
+    /// <returns>An authentication ticket containing the specified claims.</returns>
+    private static AuthenticationTicket CreateAuthenticationTicket(IEnumerable<Claim> claims, AuthenticationScheme scheme)
+    {
+        var claimsIdentity = new ClaimsIdentity(claims, scheme.Name);
+        var principal = new ClaimsPrincipal(claimsIdentity);
+        return new AuthenticationTicket(principal, scheme.Name);
+    }
 
     /// <summary>
     /// Authenticates the user using PowerShell script.
@@ -129,6 +158,13 @@ public interface IAuthHandler
         }
     }
 
+    /// <summary>
+    /// Builds a C# validator function for the specified authentication settings.
+    /// </summary>
+    /// <param name="settings">The authentication code settings.</param>
+    /// <param name="log">The logger instance.</param>
+    /// <param name="globals">Global variables to include in the validation context.</param>
+    /// <returns>A function that validates the authentication context.</returns>
     internal static Func<HttpContext, IDictionary<string, object?>, Task<bool>> BuildCsValidator(
         AuthenticationCodeSettings settings,
         Serilog.ILogger log,

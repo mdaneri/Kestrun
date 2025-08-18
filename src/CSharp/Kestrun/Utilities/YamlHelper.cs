@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management.Automation;
+using System.Reflection;
 using System.Text.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -69,38 +70,64 @@ public static class YamlHelper
     /// </remarks>
     private static object? NormalizePSObject(object? obj)
     {
+        // Unwrap PSObject
         if (obj is PSObject psObj)
             return NormalizePSObject(psObj.BaseObject);
 
+        // Dictionaries → Dictionary<object, object?>
         if (obj is IDictionary dict)
-        {
-            var d = new Dictionary<object, object?>();
-            foreach (var key in dict.Keys)
-            {
-                var value = dict[key];
-                d[key] = value is not null ? NormalizePSObject(value) : null;
-            }
-            return d;
-        }
+            return NormalizeDictionary(dict);
 
+        // Enumerables (not string) → List<object?>
         if (obj is IEnumerable enumerable && obj is not string)
-            return enumerable.Cast<object>().Select(NormalizePSObject).ToList();
+            return NormalizeEnumerable(enumerable);
 
+        // Null, primitives, and string → return as-is
         if (obj is null || obj.GetType().IsPrimitive || obj is string)
             return obj;
 
-        var props = obj.GetType().GetProperties();
+        // Objects with properties → Dictionary<string, object?>
+        return NormalizeByProperties(obj);
+    }
+
+    private static Dictionary<object, object?> NormalizeDictionary(IDictionary dict)
+    {
+        var d = new Dictionary<object, object?>();
+        foreach (var key in dict.Keys)
+        {
+            var value = dict[key];
+            d[key] = NormalizePSObject(value);
+        }
+        return d;
+    }
+
+    private static List<object?> NormalizeEnumerable(IEnumerable enumerable)
+    {
+        var list = new List<object?>();
+        foreach (var item in enumerable)
+            list.Add(NormalizePSObject(item));
+        return list;
+    }
+
+    private static Dictionary<string, object?> NormalizeByProperties(object obj)
+    {
         var result = new Dictionary<string, object?>();
+        var props = obj.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
         foreach (var prop in props)
         {
+            // Skip indexers
+            if (prop.GetIndexParameters().Length > 0)
+                continue;
             try
             {
                 var propValue = prop.GetValue(obj);
-                result[prop.Name] = propValue is not null ? NormalizePSObject(propValue) : null;
+                result[prop.Name] = NormalizePSObject(propValue);
             }
-            catch { result[prop.Name] = null; }
+            catch
+            {
+                result[prop.Name] = null;
+            }
         }
-
         return result;
     }
 

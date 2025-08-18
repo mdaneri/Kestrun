@@ -65,59 +65,38 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             if (Options.ValidateCredentialsAsync is null)
                 return Fail("No credentials validation function provided");
 
-            // Check if the request is secure (HTTPS) if required
             if (Options.RequireHttps && !Request.IsHttps)
                 return Fail("HTTPS required");
 
-            // Check if the Authorization header is present
             if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
                 return Fail("Missing Authorization Header");
 
             var authHeader = AuthenticationHeaderValue.Parse(authHeaderVal.ToString());
-            if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
-                return Fail("Invalid Authorization Scheme");
-            // Check if the header is empty
-            if (string.IsNullOrEmpty(authHeader.Parameter))
-                return Fail("Missing credentials in Authorization Header");
-            Log.Information("Processing Basic Authentication for header: {Context}", Context);
-            // Check if the header is too large
-            if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024) return Fail("Header too large");
-            // Decode the credentials
-            string rawCreds;
-            try
-            {
-                // Decode the Base64 encoded credentials if required
-                rawCreds = Options.Base64Encoded
-                  ? Encoding.UTF8.GetString(Convert.FromBase64String(authHeader.Parameter ?? ""))
-                  : authHeader.Parameter ?? string.Empty;
-            }
-            catch (FormatException)
-            {
-                // Log the error and return a failure result
-                Options.Logger.Warning("Invalid Base64 in Authorization header");
-                return Fail("Malformed credentials");
-            }
-            // Use the regex match to extract exactly two groups:
-            var match = Options.SeparatorRegex.Match(rawCreds);
-            if (!match.Success || match.Groups.Count < 3)
-                return Fail("Malformed credentials");
 
-            // Group[1] is username, Group[2] is password:
-            var user = match.Groups[1].Value;
-            var pass = match.Groups[2].Value;
-            // Check if username or password is empty
-            if (string.IsNullOrEmpty(user))
-                return Fail("Username cannot be empty");
+            var schemeValidation = ValidateSchemeAndParameter(authHeader);
+            if (schemeValidation is not null)
+                return schemeValidation;
+
+            Log.Information("Processing Basic Authentication for header: {Context}", Context);
+
+            var decode = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
+            if (!decode.Success)
+                return Fail(decode.Error!);
+
+            var parse = TryParseCredentials(decode.Value!);
+            if (!parse.Success)
+                return Fail(parse.Error!);
+
+            var user = parse.Username!;
+            var pass = parse.Password!;
             var valid = await Options.ValidateCredentialsAsync(Context, user, pass);
             if (!valid)
                 return Fail("Invalid credentials");
 
-            // If credentials are valid, create claims
             Options.Logger.Information("Basic auth succeeded for user: {User}", user);
 
             var ticket = await IAuthHandler.GetAuthenticationTicketAsync(Context, user, Options, Scheme);
             Options.Logger.Information("Basic auth ticket created for user: {User}", user);
-            // Return a successful authentication result
             return AuthenticateResult.Success(ticket);
         }
         catch (Exception ex)
@@ -126,14 +105,56 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             Options.Logger.Error(ex, "Error processing Authentication");
             return Fail("Exception during authentication");
         }
+    }
 
-        AuthenticateResult Fail(string reason)
+    private AuthenticateResult? ValidateSchemeAndParameter(AuthenticationHeaderValue authHeader)
+    {
+        if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
+            return Fail("Invalid Authorization Scheme");
+
+        if (string.IsNullOrEmpty(authHeader.Parameter))
+            return Fail("Missing credentials in Authorization Header");
+
+        if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024)
+            return Fail("Header too large");
+
+        return null;
+    }
+
+    private (bool Success, string? Value, string? Error) TryDecodeCredentials(string parameter, bool base64)
+    {
+        try
         {
-            // Log the failure reason
-            Options.Logger.Warning("Basic auth failed: {Reason}", reason);
-            // Return a failure result with the reason
-            return AuthenticateResult.Fail(reason);
+            var raw = base64
+                ? Encoding.UTF8.GetString(Convert.FromBase64String(parameter ?? string.Empty))
+                : parameter ?? string.Empty;
+            return (true, raw, null);
         }
+        catch (FormatException)
+        {
+            Options.Logger.Warning("Invalid Base64 in Authorization header");
+            return (false, null, "Malformed credentials");
+        }
+    }
+
+    private (bool Success, string? Username, string? Password, string? Error) TryParseCredentials(string rawCreds)
+    {
+        var match = Options.SeparatorRegex.Match(rawCreds);
+        if (!match.Success || match.Groups.Count < 3)
+            return (false, null, null, "Malformed credentials");
+
+        var user = match.Groups[1].Value;
+        var pass = match.Groups[2].Value;
+        if (string.IsNullOrEmpty(user))
+            return (false, null, null, "Username cannot be empty");
+
+        return (true, user, pass, null);
+    }
+
+    private AuthenticateResult Fail(string reason)
+    {
+        Options.Logger.Warning("Basic auth failed: {Reason}", reason);
+        return AuthenticateResult.Fail(reason);
     }
 
     /// <summary>
