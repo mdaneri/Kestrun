@@ -66,14 +66,20 @@ public static class KestrunHostMapExtensions
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, MapRouteOptions options, KestrunHandler handler)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("AddMapRoute called with options={Options}", options);
+        }
         // Ensure the WebApplication is initialized
         if (host.App is null)
+        {
             throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
+        }
 
         // Validate options
         if (string.IsNullOrWhiteSpace(options.Pattern))
+        {
             throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+        }
 
         string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
         var map = host.App.MapMethods(options.Pattern, methods, async context =>
@@ -158,19 +164,28 @@ public static class KestrunHostMapExtensions
     public static IEndpointConventionBuilder AddMapRoute(this KestrunHost host, MapRouteOptions options)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("AddMapRoute called with pattern={Pattern}, language={Language}, method={Methods}", options.Pattern, options.Language, options.HttpVerbs);
+        }
 
         // Ensure the WebApplication is initialized
         if (host.App is null)
+        {
             throw new InvalidOperationException("WebApplication is not initialized. Call EnableConfiguration first.");
+        }
 
         // Validate options
         if (string.IsNullOrWhiteSpace(options.Pattern))
+        {
             throw new ArgumentException("Pattern cannot be null or empty.", nameof(options.Pattern));
+        }
 
         // Validate code
         if (string.IsNullOrWhiteSpace(options.Code))
+        {
             throw new ArgumentException("ScriptBlock cannot be null or empty.", nameof(options.Code));
+        }
+
         var routeOptions = options;
         if (!options.HttpVerbs.Any())
         {
@@ -183,7 +198,9 @@ public static class KestrunHostMapExtensions
             {
                 var msg = $"Route '{options.Pattern}' with method(s) {string.Join(", ", options.HttpVerbs)} already exists.";
                 if (options.ThrowOnDuplicate)
+                {
                     throw new InvalidOperationException(msg);
+                }
 
                 host._Logger.Warning(msg);
                 return null!;
@@ -206,7 +223,9 @@ public static class KestrunHostMapExtensions
             string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
             var map = host.App.MapMethods(options.Pattern, methods, handler).WithLanguage(options.Language);
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            {
                 host._Logger.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+            }
 
             host.AddMapOptions(map, options);
 
@@ -265,11 +284,16 @@ public static class KestrunHostMapExtensions
     private static void ApplyShortCircuit(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
     {
         if (!options.ShortCircuit)
+        {
             return;
+        }
 
         host._Logger.Verbose("Short-circuiting route: {Pattern} with status code: {StatusCode}", options.Pattern, options.ShortCircuitStatusCode);
         if (options.ShortCircuitStatusCode is null)
+        {
             throw new ArgumentException("ShortCircuitStatusCode must be set if ShortCircuit is true.", nameof(options.ShortCircuitStatusCode));
+        }
+
         map.ShortCircuit(options.ShortCircuitStatusCode);
     }
 
@@ -301,7 +325,9 @@ public static class KestrunHostMapExtensions
     private static void ApplyAntiforgery(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
     {
         if (!options.DisableAntiforgery)
+        {
             return;
+        }
 
         map.DisableAntiforgery();
         host._Logger.Verbose("CSRF protection disabled for route: {Pattern}", options.Pattern);
@@ -316,7 +342,9 @@ public static class KestrunHostMapExtensions
     private static void ApplyRateLimiting(KestrunHost host, IEndpointConventionBuilder map, MapRouteOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.RateLimitPolicyName))
+        {
             return;
+        }
 
         host._Logger.Verbose("Applying rate limit policy: {RateLimitPolicyName} to route: {Pattern}", options.RateLimitPolicyName, options.Pattern);
         map.RequireRateLimiting(options.RateLimitPolicyName);
@@ -461,7 +489,9 @@ public static class KestrunHostMapExtensions
     public static IEndpointConventionBuilder AddHtmlTemplateRoute(this KestrunHost host, MapRouteOptions options, string htmlFilePath)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding HTML template route: {Pattern}", options.Pattern);
+        }
 
         if (options.HttpVerbs.Count() != 0 &&
             (options.HttpVerbs.Count() > 1 || options.HttpVerbs.First() != HttpVerb.Get))

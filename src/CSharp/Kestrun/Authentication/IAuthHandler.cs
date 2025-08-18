@@ -54,11 +54,15 @@ public interface IAuthHandler
     private static async Task<IEnumerable<Claim>> GetIssuedClaimsAsync(HttpContext context, string user, IAuthenticationCommonOptions options)
     {
         if (options.IssueClaims is null)
+        {
             return [];
+        }
 
         var extra = await options.IssueClaims(context, user).ConfigureAwait(false);
         if (extra is null)
+        {
             return [];
+        }
 
         // Filter out nulls and empty values
         return [.. extra
@@ -77,10 +81,14 @@ public interface IAuthHandler
     private static void EnsureNameClaim(List<Claim> claims, string user, string? alias, Serilog.ILogger logger)
     {
         if (claims.Any(c => c.Type == ClaimTypes.Name))
+        {
             return;
+        }
 
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("No Name claim found, adding default Name claim");
+        }
 
         var name = string.IsNullOrEmpty(alias) ? user : alias;
         claims.Add(new Claim(ClaimTypes.Name, name!));
@@ -171,13 +179,18 @@ public interface IAuthHandler
           params (string Name, object? Prototype)[] globals)
     {
         if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             log.Debug("Building C# authentication script with globals: {Globals}", globals);
+        }
 
         // Place-holders so Roslyn knows the globals that will exist
         var stencil = globals.ToDictionary(n => n.Name, n => n.Prototype,
                                              StringComparer.OrdinalIgnoreCase);
         if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             log.Debug("Compiling C# authentication script with variables: {Variables}", stencil);
+        }
+
         var script = CSharpDelegateBuilder.Compile(
             settings.Code,
             log,                             // already scoped by caller
@@ -190,7 +203,9 @@ public interface IAuthHandler
         return async (ctx, vars) =>
         {
             if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
                 log.Debug("Running C# authentication script with variables: {Variables}", vars);
+            }
             // --- Kestrun plumbing -------------------------------------------------
             var krReq = await KestrunRequest.NewRequest(ctx);
             var krRes = new KestrunResponse(krReq);
@@ -215,13 +230,17 @@ public interface IAuthHandler
       params (string Name, object? Prototype)[] globals)
     {
         if (settings is null)
+        {
             throw new ArgumentNullException(nameof(settings), "AuthenticationCodeSettings cannot be null");
+        }
         // Place-holders so Roslyn knows the globals that will exist
         var stencil = globals.ToDictionary(n => n.Name, n => n.Prototype,
                                                  StringComparer.OrdinalIgnoreCase);
 
         if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             log.Debug("Compiling VB.NET authentication script with variables: {Variables}", stencil);
+        }
 
         // Compile the VB.NET script with the provided settings
         var script = VBNetDelegateBuilder.Compile<bool>(
@@ -236,7 +255,9 @@ public interface IAuthHandler
         return async (ctx, vars) =>
         {
             if (log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
                 log.Debug("Running VB.NET authentication script with variables: {Variables}", vars);
+            }
 
             // --- Kestrun plumbing -------------------------------------------------
             var krReq = await KestrunRequest.NewRequest(ctx);
@@ -363,7 +384,9 @@ public interface IAuthHandler
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("Compiling C# script for issuing claims.");
+        }
 
         // Compile the C# script with the provided settings
         var script = CSharpDelegateBuilder.Compile(settings.Code, logger,
@@ -399,7 +422,9 @@ public interface IAuthHandler
     public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("Compiling VB.NET script for issuing claims.");
+        }
 
         // Compile the VB.NET script with the provided settings
         var script = VBNetDelegateBuilder.Compile<IEnumerable<Claim>>(settings.Code, logger,

@@ -55,7 +55,11 @@ namespace Kestrun.Utilities
         /// <returns>true if the dictionary contains an element with the specified key; otherwise, false.</returns>
         public bool ContainsKey(string key)
         {
-            if (key is null) return false;
+            if (key is null)
+            {
+                return false;
+            }
+
             return _inner.Contains(key);
         }
 

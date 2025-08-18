@@ -34,7 +34,9 @@ public class ApiKeyAuthHandler
         : base(options, logger, encoder)
     {
         if (options.CurrentValue.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             options.CurrentValue.Logger.Debug("ApiKeyAuthHandler initialized");
+        }
     }
 
     /// <summary>
@@ -46,9 +48,14 @@ public class ApiKeyAuthHandler
         try
         {
             if (Options.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
                 Options.Logger.Debug("Handling API Key authentication for request: {Request}", Request);
+            }
+
             if (Options.RequireHttps && !Request.IsHttps)
+            {
                 return Fail("HTTPS required");
+            }
 
             // ① Try the primary header
             if (!Request.Headers.TryGetValue(Options.HeaderName, out var values))
@@ -57,7 +64,9 @@ public class ApiKeyAuthHandler
                 foreach (var header in Options.AdditionalHeaderNames)
                 {
                     if (Request.Headers.TryGetValue(header, out values))
+                    {
                         break;
+                    }
                 }
             }
 
@@ -71,7 +80,9 @@ public class ApiKeyAuthHandler
 
             // ④ If we still have nothing, fail
             if (StringValues.IsNullOrEmpty(values))
+            {
                 return Fail("Missing API Key");
+            }
 
             var providedKey = values.ToString();
             var providedKeyBytes = Encoding.UTF8.GetBytes(providedKey);
@@ -156,7 +167,10 @@ public class ApiKeyAuthHandler
     public static Func<HttpContext, string, byte[], Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildPsValidator  settings: {Settings}", settings);
+        }
+
         return async (ctx, providedKey, providedKeyBytes) =>
                {
                    return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
@@ -175,7 +189,9 @@ public class ApiKeyAuthHandler
     public static Func<HttpContext, string, byte[], Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildCsValidator  settings: {Settings}", settings);
+        }
         // pass the settings to the core C# validator
         var core = IAuthHandler.BuildCsValidator(
             settings,
@@ -199,7 +215,9 @@ public class ApiKeyAuthHandler
     public static Func<HttpContext, string, byte[], Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildVBNetValidator  settings: {Settings}", settings);
+        }
         // pass the settings to the core VB.NET validator
         var core = IAuthHandler.BuildVBNetValidator(
             settings,

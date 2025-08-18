@@ -167,7 +167,9 @@ public static class HttpVerbExtensions
     public static HttpVerb FromMethodString(string method)
     {
         if (string.IsNullOrWhiteSpace(method))
+        {
             throw new ArgumentException("Method cannot be null or whitespace.", nameof(method));
+        }
 
         // Handle special cases where enum names don't match HTTP method strings
         var normalizedMethod = method.Trim().ToUpperInvariant() switch
@@ -182,7 +184,9 @@ public static class HttpVerbExtensions
         };
 
         if (Enum.TryParse<HttpVerb>(normalizedMethod, true, out var result))
+        {
             return result;
+        }
 
         throw new ArgumentException($"Unknown HTTP method: {method}", nameof(method));
     }
@@ -198,7 +202,9 @@ public static class HttpVerbExtensions
         verb = default;
         
         if (string.IsNullOrWhiteSpace(method))
+        {
             return false;
+        }
 
         try
         {

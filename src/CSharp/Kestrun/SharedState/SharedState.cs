@@ -61,20 +61,28 @@ public static partial class SharedStateStore
     private static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || !_validName.IsMatch(name))
+        {
             throw new ArgumentException(
                 $"'{name}' is not a valid identifier for C# / PowerShell.",
                 nameof(name));
+        }
     }
 
     private static void ValidateValue(string name, object? value)
     {
-        if (value is null) return;                       // null is allowed
+        if (value is null)
+        {
+            return;                       // null is allowed
+        }
+
         var t = value.GetType();
         if (t.IsValueType)
+        {
             throw new ArgumentException(
                 $"Cannot define global variable '{name}' of value type '{t.FullName}'. " +
                 "Only reference types are allowed.",
                 nameof(value));
+        }
     }
 
     [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.CultureInvariant)]

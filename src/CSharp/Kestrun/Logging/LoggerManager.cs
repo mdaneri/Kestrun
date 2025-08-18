@@ -17,7 +17,11 @@ public static class LoggerManager
     /// </summary>
     public static Serilog.ILogger Add(string name, Action<LoggerConfiguration>? config = null, bool setAsDefault = false)
     {
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentNullException(nameof(name));
+        }
+
         var cfg = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Debug();
@@ -28,11 +32,16 @@ public static class LoggerManager
         _configs[name] = cfg;
 
         if (_loggers.TryGetValue(name, out var oldLogger) && oldLogger is IDisposable d)
+        {
             d.Dispose();
+        }
 
         _loggers[name] = logger;
         if (setAsDefault)
+        {
             Log.Logger = logger;
+        }
+
         return logger;
     }
 
@@ -42,11 +51,15 @@ public static class LoggerManager
     public static Serilog.ILogger Register(string name, Serilog.ILogger logger, bool setAsDefault = false)
     {
         if (_loggers.TryGetValue(name, out var oldLogger) && oldLogger is IDisposable d)
+        {
             d.Dispose();
+        }
 
         _loggers[name] = logger;
         if (setAsDefault)
+        {
             Log.Logger = logger;
+        }
 
         return logger;
     }
@@ -66,7 +79,11 @@ public static class LoggerManager
     {
         if (_loggers.TryRemove(name, out var logger))
         {
-            if (logger is IDisposable d) d.Dispose();
+            if (logger is IDisposable d)
+            {
+                d.Dispose();
+            }
+
             _configs.TryRemove(name, out _);
             return true;
         }
@@ -98,7 +115,13 @@ public static class LoggerManager
     public static void Clear()
     {
         foreach (var (name, logger) in _loggers)
-            if (logger is IDisposable d) d.Dispose();
+        {
+            if (logger is IDisposable d)
+            {
+                d.Dispose();
+            }
+        }
+
         _loggers.Clear();
         _configs.Clear();
     }

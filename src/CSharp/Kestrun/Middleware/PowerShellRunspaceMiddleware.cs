@@ -27,7 +27,9 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
         try
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("PowerShellRunspaceMiddleware started for {Path}", context.Request.Path);
+            }
             // EnsureRunspacePoolOpen(_pool);
             // Acquire a runspace from the pool and keep it for the whole request
             var runspace = _pool.Acquire();
@@ -44,7 +46,10 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             context.Items[PowerShellDelegateBuilder.KR_CONTEXT_KEY] = kestrunContext;
 
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("PowerShellRunspaceMiddleware - Setting KestrunContext in HttpContext.Items for {Path}", context.Request.Path);
+            }
+
             Log.Verbose("Setting PowerShell variables for Request and Response in the runspace.");
             // Set the PowerShell variables for the request and response
             var ss = ps.Runspace.SessionStateProxy;
@@ -53,20 +58,30 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             try
             {
                 if (Log.IsEnabled(LogEventLevel.Debug))
+                {
                     Log.Debug("PowerShellRunspaceMiddleware - Continuing Pipeline  for {Path}", context.Request.Path);
+                }
+
                 await _next(context);                // continue the pipeline
                 if (Log.IsEnabled(LogEventLevel.Debug))
+                {
                     Log.Debug("PowerShellRunspaceMiddleware completed for {Path}", context.Request.Path);
+                }
             }
             finally
             {
                 if (ps != null)
                 {
                     if (Log.IsEnabled(LogEventLevel.Debug))
+                    {
                         Log.Debug("Returning runspace to pool: {RunspaceId}", ps.Runspace.InstanceId);
+                    }
+
                     _pool.Release(ps.Runspace); // return the runspace to the pool
                     if (Log.IsEnabled(LogEventLevel.Debug))
+                    {
                         Log.Debug("Disposing PowerShell instance: {InstanceId}", ps.InstanceId);
+                    }
                     // Dispose the PowerShell instance
                     ps.Dispose();
                     context.Items.Remove(PowerShellDelegateBuilder.PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool

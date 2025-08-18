@@ -22,7 +22,10 @@ public static class FaviconMiddlewareExtensions
     public static IApplicationBuilder UseFavicon(this IApplicationBuilder app, string? iconPath = null)
     {
         if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             Log.Debug("Using favicon middleware, iconPath={IconPath}", iconPath);
+        }
+
         ArgumentNullException.ThrowIfNull(app);
 
         // MIME-type detection
@@ -34,17 +37,23 @@ public static class FaviconMiddlewareExtensions
         if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath))
         {
             if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
                 Log.Debug("Using user-provided favicon at {IconPath}", iconPath);
+            }
             // Serve user-provided file
             iconBytes = File.ReadAllBytes(iconPath);
 
             if (!contentTypeProvider.TryGetContentType(iconPath, out contentType) || contentType is null)
+            {
                 contentType = "application/octet-stream"; // fallback
+            }
         }
         else
         {
             if(Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
                 Log.Debug("Using embedded favicon, no custom path provided");
+            }
             // Fallback to embedded .ico
             var asm = typeof(FaviconMiddlewareExtensions).Assembly;
             const string embedded = "Kestrun.Assets.favicon.ico";
@@ -62,16 +71,24 @@ public static class FaviconMiddlewareExtensions
             ["Cache-Control"] = "public,max-age=31536000"
         };
         if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             Log.Debug("Favicon content type: {ContentType}, size={Size} bytes", contentType, iconBytes.Length);
+        }
+
         return app.Map("/favicon.ico", branch =>
         {
             branch.Run(async ctx =>
             {
                 if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                {
                     Log.Debug("Serving favicon.ico, size={Size} bytes", iconBytes.Length);
+                }
+
                 ctx.Response.StatusCode = 200;
                 foreach (var kv in headers)
+                {
                     ctx.Response.Headers[kv.Key] = kv.Value;
+                }
 
                 await ctx.Response.Body.WriteAsync(iconBytes);
             });

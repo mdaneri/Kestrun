@@ -39,7 +39,11 @@ public static class BuildError
 
         void append(string emoji, IEnumerable<string> lines)
         {
-            if (!lines.Any()) return;
+            if (!lines.Any())
+            {
+                return;
+            }
+
             sb.AppendLine($"{emoji}[{emoji switch
             {
                 "❌" => "Error",
@@ -48,7 +52,10 @@ public static class BuildError
                 "🐞" => "Debug",
                 _ => "Info"
             }}]");
-            foreach (var l in lines) sb.AppendLine($"\t{l}");
+            foreach (var l in lines)
+            {
+                sb.AppendLine($"\t{l}");
+            }
         }
 
         append("❌", errors);

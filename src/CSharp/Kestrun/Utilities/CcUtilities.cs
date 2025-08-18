@@ -21,13 +21,18 @@ public static class CcUtilities
     public static int GetLineNumber(string source, int index)
     {
         if (index < 0 || index > source.Length)
+        {
             throw new ArgumentOutOfRangeException(nameof(index));
+        }
 
         // Count how many `\n` occur before the index
         int line = 1;
         for (int i = 0; i < index; i++)
         {
-            if (source[i] == '\n') line++;
+            if (source[i] == '\n')
+            {
+                line++;
+            }
         }
         return line;
     }

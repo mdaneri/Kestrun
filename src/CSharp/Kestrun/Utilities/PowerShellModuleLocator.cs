@@ -119,7 +119,9 @@ public static class PowerShellModuleLocator
         {
             string candidate = Path.Combine(current, relativeTarget);
             if (File.Exists(candidate))
+            {
                 return candidate;
+            }
 
             current = Path.GetDirectoryName(current);
         }

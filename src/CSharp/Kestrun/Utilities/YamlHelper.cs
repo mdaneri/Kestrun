@@ -72,19 +72,27 @@ public static class YamlHelper
     {
         // Unwrap PSObject
         if (obj is PSObject psObj)
+        {
             return NormalizePSObject(psObj.BaseObject);
+        }
 
         // Dictionaries → Dictionary<object, object?>
         if (obj is IDictionary dict)
+        {
             return NormalizeDictionary(dict);
+        }
 
         // Enumerables (not string) → List<object?>
         if (obj is IEnumerable enumerable && obj is not string)
+        {
             return NormalizeEnumerable(enumerable);
+        }
 
         // Null, primitives, and string → return as-is
         if (obj is null || obj.GetType().IsPrimitive || obj is string)
+        {
             return obj;
+        }
 
         // Objects with properties → Dictionary<string, object?>
         return NormalizeByProperties(obj);
@@ -105,7 +113,10 @@ public static class YamlHelper
     {
         var list = new List<object?>();
         foreach (var item in enumerable)
+        {
             list.Add(NormalizePSObject(item));
+        }
+
         return list;
     }
 
@@ -117,7 +128,10 @@ public static class YamlHelper
         {
             // Skip indexers
             if (prop.GetIndexParameters().Length > 0)
+            {
                 continue;
+            }
+
             try
             {
                 var propValue = prop.GetValue(obj);
@@ -149,13 +163,19 @@ public static class YamlHelper
             case IDictionary dict:
                 var ht = new Hashtable();
                 foreach (DictionaryEntry entry in dict)
+                {
                     ht[entry.Key] = entry.Value is not null ? ConvertToPSCompatible(entry.Value) : null;
+                }
+
                 return ht;
 
             case IList list:
                 var array = new ArrayList();
                 foreach (var item in list)
+                {
                     array.Add(ConvertToPSCompatible(item));
+                }
+
                 return array;
 
             default:
@@ -185,7 +205,10 @@ public static class YamlHelper
                 var value = entry.Value;
 
                 if (value is Hashtable || value is ArrayList)
+                {
                     value = ConvertToPSCustomObject(value);
+                }
+
                 if (key != null)
                 {
                     AddMember(result, key, value ?? string.Empty);
@@ -197,7 +220,10 @@ public static class YamlHelper
         {
             var resultList = new List<object>();
             foreach (var item in list)
+            {
                 resultList.Add(ConvertToPSCustomObject(item));
+            }
+
             return new PSObject(resultList.ToArray());
         }
 

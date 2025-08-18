@@ -48,12 +48,16 @@ internal static class VBNetDelegateBuilder
         Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.VisualBasic16_9)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                code.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
 
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
+        {
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
+        }
         // 1. Compile the VB.NET code into a script 
         //    - Use VisualBasicScript.Create() to create a script with the provided code
         //    - Use ScriptOptions to specify imports, references, and language version
@@ -65,24 +69,35 @@ internal static class VBNetDelegateBuilder
         //    - It will create a KestrunContext and CsGlobals, then execute the script with these globals
         //    - The script can access the request context and shared state store
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("C# delegate built successfully, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
+
         return async ctx =>
         {
             try
             {
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.Debug("Preparing execution for C# script at {Path}", ctx.Request.Path);
+                }
+
                 var (Globals, Response, Context) = await DelegateBuilder.PrepareExecutionAsync(ctx, log, args).ConfigureAwait(false);
 
 
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.DebugSanitized("Executing VB.NET script for {Path}", ctx.Request.Path);
+                }
+
                 await script(Globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.DebugSanitized("VB.NET script executed successfully for {Path}", ctx.Request.Path);
+                }
 
                 // Apply the response to the Kestrun context
                 await DelegateBuilder.ApplyResponseAsync(ctx, Response, log).ConfigureAwait(false);
@@ -100,10 +115,15 @@ internal static class VBNetDelegateBuilder
     // Decide the VB return type string that matches TResult
     private static string GetVbReturnType(Type t)
     {
-        if (t == typeof(bool)) return "Boolean";
+        if (t == typeof(bool))
+        {
+            return "Boolean";
+        }
 
         if (t == typeof(IEnumerable<Claim>))
+        {
             return "System.Collections.Generic.IEnumerable(Of System.Security.Claims.Claim)";
+        }
 
         // Fallback so it still compiles even for object / string / etc.
         return "Object";
@@ -129,12 +149,17 @@ internal static class VBNetDelegateBuilder
         )
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Building VB.NET delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
 
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
+        {
             throw new ArgumentNullException(nameof(code), "VB.NET code cannot be null or whitespace.");
+        }
+
         extraImports ??= [];
         extraImports = extraImports.Concat(["System.Collections.Generic", "System.Linq", "System.Security.Claims"]).ToArray();
 
@@ -164,7 +189,9 @@ internal static class VBNetDelegateBuilder
         var emitResult = compilation.Emit(ms) ?? throw new InvalidOperationException("Failed to compile VB.NET script.");
         // 🔧 4.  Log the compilation result
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("VB.NET script compilation completed, assembly size={Size} bytes", ms.Length);
+        }
 
         // 🔧 5. Handle diagnostics
         ThrowIfErrors(emitResult.Diagnostics, startLine, log);
@@ -173,11 +200,16 @@ internal static class VBNetDelegateBuilder
 
         // If there are no errors, log a debug message
         if (emitResult.Success && log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("VB.NET script compiled successfully with no errors.");
+        }
 
         // If there are no errors, proceed to load the assembly and create the delegate
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("VB.NET script compiled successfully, loading assembly...");
+        }
+
         ms.Position = 0;
         return LoadDelegateFromAssembly<TResult>(ms.ToArray());
     }
@@ -193,10 +225,16 @@ internal static class VBNetDelegateBuilder
     {
         var startIndex = source.IndexOf(StartMarker);
         if (startIndex < 0)
+        {
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.");
+        }
+
         int startLine = CcUtilities.GetLineNumber(source, startIndex);
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("VB.NET script starts at line {LineNumber}", startLine);
+        }
+
         return startLine;
     }
 
@@ -237,7 +275,10 @@ internal static class VBNetDelegateBuilder
         if (warnings.Length == 0)
         {
             if (log.IsEnabled(LogEventLevel.Debug))
+            {
                 log.Debug("VB.NET script compiled successfully with no warnings.");
+            }
+
             return;
         }
 
@@ -250,7 +291,9 @@ internal static class VBNetDelegateBuilder
             log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
         }
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("VB.NET script compiled with warnings: {Count}", warnings.Length);
+        }
     }
 
     /// <summary>
@@ -262,7 +305,10 @@ internal static class VBNetDelegateBuilder
     private static void ThrowIfErrors(ImmutableArray<Diagnostic> diagnostics, int startLine, Serilog.ILogger log)
     {
         var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-        if (errors.Length == 0) return;
+        if (errors.Length == 0)
+        {
+            return;
+        }
 
         log.Error($"VBNet script compilation completed with {errors.Length} error(s):");
         foreach (var error in errors)
@@ -319,7 +365,9 @@ internal static class VBNetDelegateBuilder
 
         foreach (var ns in builtIns.Concat(extraImports ?? Enumerable.Empty<string>())
                                    .Distinct(StringComparer.Ordinal))
+        {
             sb.AppendLine($"Imports {ns}");
+        }
 
         sb.AppendLine($"""
                 Public Module RouteScript
@@ -332,30 +380,41 @@ internal static class VBNetDelegateBuilder
 
         // only emit these _when_ you called Compile with locals:
         if (locals?.ContainsKey("username") ?? false)
+        {
             sb.AppendLine("""
         ' only bind creds if someone passed them in 
                         Dim username As String = CStr(g.Locals("username"))                
         """);
+        }
 
         if (locals?.ContainsKey("password") ?? false)
+        {
             sb.AppendLine("""
                         Dim password As String = CStr(g.Locals("password"))
         """);
+        }
 
         if (locals?.ContainsKey("providedKey") == true)
+        {
             sb.AppendLine("""
         ' only bind keys if someone passed them in
                         Dim providedKey As String = CStr(g.Locals("providedKey"))
         """);
+        }
+
         if (locals?.ContainsKey("providedKeyBytes") == true)
+        {
             sb.AppendLine("""
                         Dim providedKeyBytes As Byte() = CType(g.Locals("providedKeyBytes"), Byte())
         """);
+        }
 
         if (locals?.ContainsKey("identity") == true)
+        {
             sb.AppendLine("""
                         Dim identity As String = CStr(g.Locals("identity"))
         """);
+        }
 
         // add the Marker for user code
         sb.AppendLine(StartMarker);

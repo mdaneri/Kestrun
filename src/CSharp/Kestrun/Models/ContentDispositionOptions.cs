@@ -31,11 +31,15 @@ public class ContentDispositionOptions
     public override string ToString()
     {
         if (Type == ContentDispositionType.NoContentDisposition)
+        {
             return string.Empty;
+        }
 
         var disposition = Type == ContentDispositionType.Attachment ? "attachment" : "inline";
         if (string.IsNullOrEmpty(FileName))
+        {
             return disposition;
+        }
 
         // Escape the filename to handle special characters
         var escapedFileName = WebUtility.UrlEncode(FileName);

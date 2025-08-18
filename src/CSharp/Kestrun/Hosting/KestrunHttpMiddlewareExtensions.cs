@@ -22,9 +22,14 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddResponseCompression(this KestrunHost host, ResponseCompressionOptions? options)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding response compression with options: {@Options}", options);
+        }
+
         if (options == null)
+        {
             return host.AddResponseCompression(); // no options, use defaults
+        }
 
         // delegate shim – re‑use the existing pipeline
         return host.AddResponseCompression(o =>
@@ -33,7 +38,10 @@ public static class KestrunHttpMiddlewareExtensions
             o.MimeTypes = options.MimeTypes;
             o.ExcludedMimeTypes = options.ExcludedMimeTypes;
             // copy provider lists, levels, etc. if you expose them
-            foreach (var p in options.Providers) o.Providers.Add(p);
+            foreach (var p in options.Providers)
+            {
+                o.Providers.Add(p);
+            }
         });
     }
 
@@ -47,14 +55,20 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddResponseCompression(this KestrunHost host, Action<ResponseCompressionOptions>? cfg = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding response compression with configuration: {Config}", cfg);
+        }
         // Service side
         host.AddService(services =>
         {
             if (cfg == null)
+            {
                 services.AddResponseCompression();
+            }
             else
+            {
                 services.AddResponseCompression(cfg);
+            }
         });
 
         // Middleware side
@@ -70,9 +84,14 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddRateLimiter(this KestrunHost host, RateLimiterOptions cfg)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding rate limiter with configuration: {@Config}", cfg);
+        }
+
         if (cfg == null)
+        {
             return host.AddRateLimiter();   // fall back to your “blank” overload
+        }
 
         host.AddService(services =>
         {
@@ -92,10 +111,12 @@ public static class KestrunHttpMiddlewareExtensions
         public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
         {
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
-                host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
-    
-            // Register the rate limiter service
-            host.AddService(services =>
+        {
+            host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
+        }
+
+        // Register the rate limiter service
+        host.AddService(services =>
             {
                 services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
             });
@@ -104,7 +125,10 @@ public static class KestrunHttpMiddlewareExtensions
             return host.Use(app =>
             {
                 if (host._Logger.IsEnabled(LogEventLevel.Debug))
+                {
                     host._Logger.Debug("Registering rate limiter middleware");
+                }
+
                 app.UseRateLimiter();
             });
         }
@@ -121,10 +145,14 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddAntiforgery(this KestrunHost host, AntiforgeryOptions? options)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding Antiforgery with configuration: {@Config}", options);
+        }
 
         if (options == null)
+        {
             return host.AddAntiforgery(); // no config, use defaults
+        }
 
         // Delegate to the Action-based overload
         return host.AddAntiforgery(cfg =>
@@ -145,14 +173,20 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddAntiforgery(this KestrunHost host, Action<AntiforgeryOptions>? setupAction = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding Antiforgery with configuration: {@Config}", setupAction);
+        }
         // Service side
         host.AddService(services =>
         {
             if (setupAction == null)
+            {
                 services.AddAntiforgery();
+            }
             else
+            {
                 services.AddAntiforgery(setupAction);
+            }
         });
 
         // Middleware side
@@ -211,9 +245,15 @@ public static class KestrunHttpMiddlewareExtensions
     public static KestrunHost AddCors(this KestrunHost host, string policyName, Action<CorsPolicyBuilder> buildPolicy)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding CORS policy: {PolicyName}", policyName);
+        }
+
         if (string.IsNullOrWhiteSpace(policyName))
+        {
             throw new ArgumentException("Policy name required.", nameof(policyName));
+        }
+
         ArgumentNullException.ThrowIfNull(buildPolicy);
 
         host.AddService(s =>

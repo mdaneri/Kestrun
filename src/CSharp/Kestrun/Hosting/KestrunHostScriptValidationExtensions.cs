@@ -37,8 +37,11 @@ public static class KestrunHostScriptValidationExtensions
         LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("ValidateCSharpScript() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
+
         try
         {
             // Use the same script options as BuildCsDelegate
@@ -48,11 +51,15 @@ public static class KestrunHostScriptValidationExtensions
                        .WithLanguageVersion(languageVersion);
 
             if (extraImports is { Length: > 0 })
+            {
                 opts = opts.WithImports(opts.Imports.Concat(extraImports));
+            }
 
             if (extraRefs is { Length: > 0 })
+            {
                 opts = opts.WithReferences(opts.MetadataReferences
                                               .Concat(extraRefs.Select(r => MetadataReference.CreateFromFile(r.Location))));
+            }
 
             var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
             return script.Compile();
@@ -111,14 +118,18 @@ public static class KestrunHostScriptValidationExtensions
         LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("GetCSharpScriptErrors() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
 
         var diagnostics = host.ValidateCSharpScript(code, extraImports, extraRefs, languageVersion);
         var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
 
         if (errors.Length == 0)
+        {
             return null;
+        }
 
         try
         {

@@ -178,7 +178,10 @@ public class KestrunHost : IDisposable
         _Logger = logger ?? Log.Logger;
 
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("KestrunHost constructor called with appName: {AppName}, default logger: {DefaultLogger}, kestrunRoot: {KestrunRoot}, modulePathsObj length: {ModulePathsLength}", appName, logger == null, KestrunRoot, modulePathsObj?.Length ?? 0);
+        }
+
         if (!string.IsNullOrWhiteSpace(kestrunRoot))
         {
             if (Directory.GetCurrentDirectory() != kestrunRoot)
@@ -283,7 +286,9 @@ public class KestrunHost : IDisposable
     public KestrunHost ConfigureListener(int port, IPAddress? ipAddress = null, X509Certificate2? x509Certificate = null, HttpProtocols protocols = HttpProtocols.Http1, bool useConnectionLogging = false)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("ConfigureListener port={Port}, ipAddress={IPAddress}, protocols={Protocols}, useConnectionLogging={UseConnectionLogging}, certificate supplied={HasCert}", port, ipAddress, protocols, useConnectionLogging, x509Certificate != null);
+        }
 
         if (protocols == HttpProtocols.Http1AndHttp2AndHttp3 && !CcUtilities.PreviewFeaturesEnabled())
         {
@@ -350,12 +355,17 @@ public class KestrunHost : IDisposable
     public void EnableConfiguration(Dictionary<string, object>? userVariables = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("EnableConfiguration(options) called");
+        }
 
         if (_isConfigured)
         {
             if (_Logger.IsEnabled(LogEventLevel.Debug))
+            {
                 _Logger.Debug("Configuration already applied, skipping");
+            }
+
             return; // Already configured
         }
         try
@@ -384,9 +394,14 @@ public class KestrunHost : IDisposable
                         {
                             listenOptions.Protocols = opt.Protocols;
                             if (opt.UseHttps && opt.X509Certificate != null)
+                            {
                                 listenOptions.UseHttps(opt.X509Certificate);
+                            }
+
                             if (opt.UseConnectionLogging)
+                            {
                                 listenOptions.UseConnectionLogging();
+                            }
                         });
                     });
                 }
@@ -433,7 +448,10 @@ public class KestrunHost : IDisposable
     /// <exception cref="InvalidOperationException"></exception>
     public WebApplication Build()
     {
-        if (builder == null) throw new InvalidOperationException("Call CreateBuilder() first.");
+        if (builder == null)
+        {
+            throw new InvalidOperationException("Call CreateBuilder() first.");
+        }
 
         // 1️⃣  Apply all queued services
         foreach (var configure in _serviceQueue)
@@ -517,11 +535,16 @@ public class KestrunHost : IDisposable
     public KestrunHost AddScheduling(int? MaxRunspaces = null)
     {
         if (MaxRunspaces is not null && MaxRunspaces <= 0)
+        {
             throw new ArgumentOutOfRangeException(nameof(MaxRunspaces), "MaxRunspaces must be greater than zero.");
+        }
+
         return AddFeature(host =>
         {
             if (_Logger.IsEnabled(LogEventLevel.Debug))
+            {
                 _Logger.Debug("AddScheduling (deferred)");
+            }
 
             if (host.Scheduler is null)
             {
@@ -553,7 +576,10 @@ public class KestrunHost : IDisposable
         return AddService(services =>
         {
             var builder = services.AddControllers();
-            if (cfg != null) builder.ConfigureApplicationPartManager(pm => { }); // customise if you wish
+            if (cfg != null)
+            {
+                builder.ConfigureApplicationPartManager(pm => { }); // customise if you wish
+            }
         });
     }
 
@@ -569,7 +595,10 @@ public class KestrunHost : IDisposable
     public KestrunHost AddPowerShellRuntime(PathString? routePrefix = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("Adding PowerShell runtime with route prefix: {RoutePrefix}", routePrefix);
+        }
+
         return Use(app =>
         {
             ArgumentNullException.ThrowIfNull(_runspacePool);
@@ -639,7 +668,10 @@ public class KestrunHost : IDisposable
     public void Run()
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("Run() called");
+        }
+
         EnableConfiguration();
 
         _app?.Run();
@@ -653,7 +685,10 @@ public class KestrunHost : IDisposable
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("StartAsync() called");
+        }
+
         EnableConfiguration();
         if (_app != null)
         {
@@ -669,7 +704,10 @@ public class KestrunHost : IDisposable
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("StopAsync() called");
+        }
+
         if (_app != null)
         {
             try
@@ -694,7 +732,9 @@ public class KestrunHost : IDisposable
     public void Stop()
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("Stop() called");
+        }
         // This initiates a graceful shutdown.
         _app?.Lifetime.StopApplication();
     }
@@ -732,7 +772,9 @@ public class KestrunHost : IDisposable
     public KestrunRunspacePoolManager CreateRunspacePool(int? maxRunspaces = 0, Dictionary<string, object>? userVariables = null)
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("CreateRunspacePool() called: {@MaxRunspaces}", maxRunspaces);
+        }
 
         // Create a default InitialSessionState with an unrestricted policy:
         var iss = InitialSessionState.CreateDefault();
@@ -809,7 +851,10 @@ public class KestrunHost : IDisposable
     public void Dispose()
     {
         if (_Logger.IsEnabled(LogEventLevel.Debug))
+        {
             _Logger.Debug("Dispose() called");
+        }
+
         _runspacePool?.Dispose();
         _runspacePool = null; // Clear the runspace pool reference
         _isConfigured = false; // Reset configuration state 

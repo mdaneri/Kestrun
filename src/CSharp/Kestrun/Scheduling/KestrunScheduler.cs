@@ -217,7 +217,10 @@ public sealed class SchedulerService : IDisposable
     public bool Cancel(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new ArgumentException("Task name cannot be null or empty.", nameof(name));
+        }
+
         _log.Information("Cancelling scheduler job {Name}", name);
         if (_tasks.TryRemove(name, out var task))
         {
@@ -234,7 +237,9 @@ public sealed class SchedulerService : IDisposable
     public void CancelAll()
     {
         foreach (var kvp in _tasks.Keys)
+        {
             Cancel(kvp);
+        }
     }
 
 
@@ -319,9 +324,19 @@ public sealed class SchedulerService : IDisposable
 
         bool Matches(string name)
         {
-            if (nameFilter == null || nameFilter.Length == 0) return true;
+            if (nameFilter == null || nameFilter.Length == 0)
+            {
+                return true;
+            }
+
             foreach (var pat in nameFilter)
-                if (RegexUtils.IsGlobMatch(name, pat)) return true;
+            {
+                if (RegexUtils.IsGlobMatch(name, pat))
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 
@@ -342,7 +357,10 @@ public sealed class SchedulerService : IDisposable
                          .OrderBy(j => j.NextRunAt)
                          .ToArray();
 
-        if (!asHashtable) return jobs.Cast<object>().ToArray();
+        if (!asHashtable)
+        {
+            return jobs.Cast<object>().ToArray();
+        }
 
         // PowerShell-friendly shape
         return [.. jobs.Select(j => (object)new Hashtable
@@ -386,7 +404,9 @@ public sealed class SchedulerService : IDisposable
     private bool Suspend(string name, bool suspend = true)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new ArgumentException("Task name cannot be null or empty.", nameof(name));
+        }
 
         if (_tasks.TryGetValue(name, out var task))
         {
@@ -424,7 +444,9 @@ public sealed class SchedulerService : IDisposable
         bool runImmediately)
     {
         if (cron is null && interval == null)
+        {
             throw new ArgumentException("Either cron or interval must be supplied.");
+        }
 
         var cts = new CancellationTokenSource();
         var task = new ScheduledTask(name, job, cron, interval, runImmediately, cts)
@@ -435,7 +457,9 @@ public sealed class SchedulerService : IDisposable
         };
 
         if (!_tasks.TryAdd(name, task))
+        {
             throw new InvalidOperationException($"A task named '{name}' already exists.");
+        }
 
         _ = Task.Run(() => LoopAsync(task), cts.Token);
         _log.Debug("Scheduled job '{Name}' (cron: {Cron}, interval: {Interval})", name, cron?.ToString(), interval);
@@ -458,7 +482,9 @@ public sealed class SchedulerService : IDisposable
         var ct = task.TokenSource.Token;
 
         if (task.RunImmediately && !task.IsSuspended)
+        {
             await SafeRun(task.Work, task, ct);
+        }
 
         while (!ct.IsCancellationRequested)
         {
@@ -470,13 +496,18 @@ public sealed class SchedulerService : IDisposable
             }
 
             TimeSpan delay = task.Interval ?? NextCronDelay(task.Cron!, _tz);
-            if (delay < TimeSpan.Zero) delay = TimeSpan.Zero;
+            if (delay < TimeSpan.Zero)
+            {
+                delay = TimeSpan.Zero;
+            }
 
             try { await Task.Delay(delay, ct); }
             catch (TaskCanceledException) { break; }
 
             if (!ct.IsCancellationRequested)
+            {
                 await SafeRun(task.Work, task, ct);
+            }
         }
     }
 
@@ -497,7 +528,10 @@ public sealed class SchedulerService : IDisposable
     {
         var next = expr.GetNextOccurrence(DateTimeOffset.UtcNow, tz);
         if (next is null)
+        {
             _log.Warning("Cron expression {Expr} has no future occurrence", expr);
+        }
+
         return next.HasValue ? next.Value - DateTimeOffset.UtcNow : TimeSpan.MaxValue;
     }
 
@@ -522,9 +556,13 @@ public sealed class SchedulerService : IDisposable
             task.LastRunAt = lastRunAt;
             // compute next run (only if still scheduled)
             if (task.Interval != null)
+            {
                 task.NextRunAt = lastRunAt + task.Interval.Value;
+            }
             else if (task.Cron is not null)
+            {
                 task.NextRunAt = task.Cron.GetNextOccurrence(lastRunAt, _tz) ?? DateTimeOffset.MaxValue;
+            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { /* ignore */ }
         catch (Exception ex)

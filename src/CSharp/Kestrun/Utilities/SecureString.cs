@@ -30,7 +30,9 @@ public static class SecureStringUtils
         ArgumentNullException.ThrowIfNull(secureString);
         ArgumentNullException.ThrowIfNull(handler);
         if (secureString.Length == 0)
+        {
             throw new ArgumentException("SecureString is empty", nameof(secureString));
+        }
         // Convert SecureString to a ReadOnlySpan<char> using a pointer
         // This is safe because SecureString guarantees that the memory is zeroed after use.
         IntPtr ptr = IntPtr.Zero;
@@ -59,7 +61,10 @@ public static class SecureStringUtils
             {
                 // zero & free
                 for (int i = 0; i < secureString.Length; i++)
+                {
                     Marshal.WriteInt16(ptr, i * 2, 0);
+                }
+
                 Marshal.ZeroFreeCoTaskMemUnicode(ptr);
             }
         }
@@ -73,11 +78,15 @@ public static class SecureStringUtils
     public static  SecureString ToSecureString(this ReadOnlySpan<char> span)
     {
         if (span.Length == 0)
+        {
             throw new ArgumentException("Span is empty", nameof(span));
+        }
 
         var secure = new SecureString();
         foreach (char c in span)
+        {
             secure.AppendChar(c);
+        }
 
         secure.MakeReadOnly();
         return secure;

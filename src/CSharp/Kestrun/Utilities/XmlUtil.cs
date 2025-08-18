@@ -24,19 +24,27 @@ public static class XmlUtil
     {
         // 1️⃣ null  → <name xsi:nil="true"/>
         if (value is null)
+        {
             return new XElement(name, new XAttribute(xsi + "nil", true));
+        }
 
         // 2️⃣ Primitive or string → <name>42</name>
         if (IsSimple(value))
+        {
             return new XElement(name, value);
+        }
 
         // 3️⃣ IDictionary (generic or non-generic)
         if (value is IDictionary dict)
+        {
             return DictionaryToXml(name, dict);
+        }
 
         // 4️⃣ IEnumerable (lists, arrays, StringValues, etc.)
         if (value is IEnumerable enumerable)
+        {
             return EnumerableToXml(name, enumerable);
+        }
 
         // 5️⃣ Fallback: reflect public instance properties (skip indexers)
         return ObjectToXml(name, value);
@@ -98,7 +106,9 @@ public static class XmlUtil
         foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (prop.GetIndexParameters().Length > 0)   // <<—— SKIP INDEXERS
+            {
                 continue;
+            }
 
             object? propVal;
             try

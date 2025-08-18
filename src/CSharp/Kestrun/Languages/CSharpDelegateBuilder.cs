@@ -41,12 +41,16 @@ internal static class CSharpDelegateBuilder
             Assembly[]? extraRefs, LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Building C# delegate, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
 
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
+        {
             throw new ArgumentNullException(nameof(code), "C# code cannot be null or whitespace.");
+        }
         // 1. Compile the C# code into a script
         //    - Use CSharpScript.Create() to create a script with the provided code
         //    - Use ScriptOptions to specify imports, references, and language version
@@ -59,22 +63,33 @@ internal static class CSharpDelegateBuilder
         //    - It executes the script with the provided globals and locals
         //    - It applies the response to the HttpContext
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("C# delegate built successfully, script length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
+
         return async ctx =>
         {
             try
             {
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.Debug("Preparing execution for C# script at {Path}", ctx.Request.Path);
+                }
+
                 var (Globals, Response, Context) = await DelegateBuilder.PrepareExecutionAsync(ctx, log, args).ConfigureAwait(false);
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
+                }
+
                 await script.RunAsync(Globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
+                {
                     log.DebugSanitized("C# script executed successfully for {Path}", ctx.Request.Path);
+                }
 
                 // Apply the response to the Kestrun context
                 await DelegateBuilder.ApplyResponseAsync(ctx, Response, log).ConfigureAwait(false);
@@ -113,12 +128,16 @@ internal static class CSharpDelegateBuilder
             )
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Compiling C# script, length={Length}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
+        }
 
         // Validate inputs
         if (string.IsNullOrWhiteSpace(code))
+        {
             throw new ArgumentNullException(nameof(code), "C# code cannot be null or whitespace.");
+        }
 
         // References and imports
         var coreRefs = BuildCoreReferences();
@@ -230,14 +249,20 @@ internal static class CSharpDelegateBuilder
     private static ScriptOptions AddExtraReferences(ScriptOptions opts, Assembly[]? extraRefs, Serilog.ILogger log)
     {
         if (extraRefs is not { Length: > 0 })
+        {
             return opts;
+        }
 
         foreach (var r in extraRefs)
         {
             if (string.IsNullOrEmpty(r.Location))
+            {
                 log.Warning("Skipping dynamic assembly with no location: {Assembly}", r.FullName);
+            }
             else if (!File.Exists(r.Location))
+            {
                 log.Warning("Skipping missing assembly file: {Location}", r.Location);
+            }
         }
 
         var safeRefs = extraRefs
@@ -298,7 +323,9 @@ internal static class CSharpDelegateBuilder
     private static void ThrowIfDiagnosticsNull(ImmutableArray<Diagnostic>? diagnostics)
     {
         if (diagnostics == null)
+        {
             throw new CompilationErrorException("C# script compilation failed with no diagnostics.", ImmutableArray<Diagnostic>.Empty);
+        }
     }
 
     /// <summary>
@@ -310,11 +337,15 @@ internal static class CSharpDelegateBuilder
     private static void ThrowOnErrors(ImmutableArray<Diagnostic>? diagnostics, Serilog.ILogger log)
     {
         if (diagnostics?.Any(d => d.Severity == DiagnosticSeverity.Error) != true)
+        {
             return;
+        }
 
         var errors = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
         if (errors is not { Length: > 0 })
+        {
             return;
+        }
 
         log.Error($"C# script compilation completed with {errors.Length} error(s):");
         foreach (var error in errors)
@@ -357,6 +388,8 @@ internal static class CSharpDelegateBuilder
     {
         var warnings = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("C# script compiled successfully with no warnings.");
+        }
     }
 }

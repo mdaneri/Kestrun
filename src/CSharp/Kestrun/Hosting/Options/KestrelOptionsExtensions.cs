@@ -15,7 +15,10 @@ public static class KestrelOptionsExtensions
     public static void CopyFromTemplate(this KestrelServerOptions dest,
                                         KestrelServerOptions src)
     {
-        if (dest is null || src is null) throw new ArgumentNullException();
+        if (dest is null || src is null)
+        {
+            throw new ArgumentNullException();
+        }
 
         var skip = new HashSet<string>
         {
@@ -27,9 +30,20 @@ public static class KestrelOptionsExtensions
         foreach (PropertyInfo p in typeof(KestrelServerOptions)
                                    .GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (!p.CanRead || !p.CanWrite) continue;              // read-only
-            if (p.GetIndexParameters().Length > 0) continue;              // indexer
-            if (skip.Contains(p.Name)) continue;              // infrastructure
+            if (!p.CanRead || !p.CanWrite)
+            {
+                continue;              // read-only
+            }
+
+            if (p.GetIndexParameters().Length > 0)
+            {
+                continue;              // indexer
+            }
+
+            if (skip.Contains(p.Name))
+            {
+                continue;              // infrastructure
+            }
 
             p.SetValue(dest, p.GetValue(src));
         }
@@ -43,8 +57,15 @@ public static class KestrelOptionsExtensions
         foreach (PropertyInfo p in typeof(KestrelServerLimits)
                                    .GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (!p.CanRead || !p.CanWrite) continue;
-            if (p.GetIndexParameters().Length > 0) continue;
+            if (!p.CanRead || !p.CanWrite)
+            {
+                continue;
+            }
+
+            if (p.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
 
             p.SetValue(dest, p.GetValue(src));
         }

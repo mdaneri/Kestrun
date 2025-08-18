@@ -32,11 +32,17 @@ internal static class PyDelegateBuilder
 
     private static void EnsurePythonEngine()
     {
-        if (_pyInit) return;
+        if (_pyInit)
+        {
+            return;
+        }
 
         lock (_pyGate)
         {
-            if (_pyInit) return;          // double-check
+            if (_pyInit)
+            {
+                return;          // double-check
+            }
 
             // If you need a specific DLL, set Runtime.PythonDLL
             // or expose it via the PYTHONNET_PYDLL environment variable.
@@ -50,12 +56,20 @@ internal static class PyDelegateBuilder
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Building Python delegate, script l   ength={Length}", code?.Length);
+        }
+
         if (string.IsNullOrWhiteSpace(code))
+        {
             throw new ArgumentException("Python script code cannot be empty.", nameof(code));
+        }
 
         if (!Implemented)
+        {
             throw new NotImplementedException("JavaScript scripting is not yet supported in Kestrun.");
+        }
+
         EnsurePythonEngine();                 // one-time init
 
         // ---------- compile the script once ----------
@@ -78,7 +92,9 @@ internal static class PyDelegateBuilder
         return async context =>
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("Python delegate invoked for {Path}", context.Request.Path);
+            }
 
             try
             {

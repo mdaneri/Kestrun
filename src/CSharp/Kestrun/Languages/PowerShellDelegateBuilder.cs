@@ -15,12 +15,16 @@ internal static class PowerShellDelegateBuilder
     internal static RequestDelegate Build(string code, Serilog.ILogger log, Dictionary<string, object?>? arguments)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Building PowerShell delegate, script length={Length}", code?.Length);
+        }
 
         return async context =>
         {
             if (log.IsEnabled(LogEventLevel.Debug))
+            {
                 log.Debug("PS delegate invoked for {Path}", context.Request.Path);
+            }
 
             if (!context.Items.ContainsKey(PS_INSTANCE_KEY))
             {
@@ -60,9 +64,14 @@ internal static class PowerShellDelegateBuilder
                 {
                     log.Debug("PowerShell script output:");
                     foreach (var r in psResults.Take(10))      // first 10 only
+                    {
                         log.Debug("   • {Result}", r);
+                    }
+
                     if (psResults.Count > 10)
+                    {
                         log.Debug("   … {Count} more", psResults.Count - 10);
+                    }
                 }
                 if (ps.HadErrors || ps.Streams.Error.Count != 0)
                 {

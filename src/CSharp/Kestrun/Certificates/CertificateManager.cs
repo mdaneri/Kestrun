@@ -284,11 +284,20 @@ public static class CertificateManager
            X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
         {
         if (string.IsNullOrEmpty(certPath))
+        {
             throw new ArgumentException("Certificate path cannot be null or empty.", nameof(certPath));
+        }
+
         if (!File.Exists(certPath))
+        {
             throw new FileNotFoundException("Certificate file not found.", certPath);
+        }
+
         if (!string.IsNullOrEmpty(privateKeyPath) && !File.Exists(privateKeyPath))
+        {
             throw new FileNotFoundException("Private key file not found.", privateKeyPath);
+        }
+
         var ext = Path.GetExtension(certPath).ToLowerInvariant();
 
         switch (ext)
@@ -369,11 +378,18 @@ public static class CertificateManager
 
         // 3) Find their positions
         int start = pem.IndexOf(begin, StringComparison.Ordinal);
-        if (start < 0) throw new InvalidDataException("BEGIN CERTIFICATE marker not found");
+        if (start < 0)
+        {
+            throw new InvalidDataException("BEGIN CERTIFICATE marker not found");
+        }
+
         start += begin.Length;
 
         int stop = pem.IndexOf(end, start, StringComparison.Ordinal);
-        if (stop < 0) throw new InvalidDataException("END CERTIFICATE marker not found");
+        if (stop < 0)
+        {
+            throw new InvalidDataException("END CERTIFICATE marker not found");
+        }
 
         // 4) Extract, clean, and decode the Base64 payload
         string b64 = pem[start..stop]
@@ -503,14 +519,20 @@ public static class CertificateManager
             {
                 case ".pfx":
                     if (fmt != ExportFormat.Pfx)
-                        throw new NotSupportedException(
+                {
+                    throw new NotSupportedException(
                             $"File extension '{fileExtension}' for '{filePath}' is not supported for PFX certificates.");
-                    break;
+                }
+
+                break;
                 case ".pem":
                     if (fmt != ExportFormat.Pem)
-                        throw new NotSupportedException(
+                {
+                    throw new NotSupportedException(
                             $"File extension '{fileExtension}' for '{filePath}' is not supported for PEM certificates.");
-                    break;
+                }
+
+                break;
                 case "":
                     // no extension, use the format as the extension
                     filePath += fmt == ExportFormat.Pfx ? ".pfx" : ".pem";
@@ -526,9 +548,11 @@ public static class CertificateManager
         {
             var dir = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-                throw new DirectoryNotFoundException(
+        {
+            throw new DirectoryNotFoundException(
                     $"Directory '{dir}' does not exist. Cannot export certificate to {filePath}.");
         }
+    }
 
         private sealed class PasswordShapes : IDisposable
         {
@@ -548,8 +572,10 @@ public static class CertificateManager
                 finally
                 {
                     if (Chars is not null)
-                        Array.Clear(Chars, 0, Chars.Length);
+                {
+                    Array.Clear(Chars, 0, Chars.Length);
                 }
+            }
             }
         }
 
@@ -573,9 +599,11 @@ public static class CertificateManager
                 Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
 
             if (!includePrivateKey)
-                return;
+        {
+            return;
+        }
 
-            WritePrivateKey(cert, password, filePath);
+        WritePrivateKey(cert, password, filePath);
         }
 
         private static void WritePrivateKey(X509Certificate2 cert, ReadOnlySpan<char> password, string certFilePath)
@@ -656,12 +684,16 @@ public static class CertificateManager
         {
         // ── 1. Validity period ────────────────────────────────────────
         if (DateTime.UtcNow < cert.NotBefore || DateTime.UtcNow > cert.NotAfter)
+        {
             return false;
+        }
 
         // ── 2. Self-signed check ──────────────────────────────────────
         bool isSelfSigned = cert.Subject == cert.Issuer;
         if (denySelfSigned && isSelfSigned)
+        {
             return false;
+        }
 
         // ── 3. Chain building  + optional revocation ──────────────────
         using (var chain = new X509Chain())
@@ -679,7 +711,9 @@ public static class CertificateManager
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
             }
             if (!chain.Build(cert))
+            {
                 return false;
+            }
         }
 
         // ── 4. Enhanced Key Usage (EKU) validation ────────────────────
@@ -698,7 +732,10 @@ public static class CertificateManager
             bool ok = strictPurpose ? eku.SetEquals(wanted)
                                     : wanted.All(eku.Contains);
 
-            if (!ok) return false;
+            if (!ok)
+            {
+                return false;
+            }
         }
 
         // ── 5. Weak-algorithm rules (SHA-1, small keys) ───────────────
@@ -712,7 +749,9 @@ public static class CertificateManager
             bool weakEcdsa = cert.GetECDsaPublicKey() is { KeySize: < 256 };  // P-256 minimum
 
             if (isSha1 || weakRsa || weakDsa || weakEcdsa)
+            {
                 return false;
+            }
         }
 
         return true;   // ✅ everything passed

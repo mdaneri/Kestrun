@@ -42,15 +42,25 @@ public static class AssemblyAutoLoader
     public static void PreloadAll(bool verbose = false, params string[] directories)
     {
         if (directories is null || directories.Length == 0)
+        {
             throw new ArgumentException("At least one folder is required.", nameof(directories));
+        }
+
         _verbose = verbose;
         // Remember new folders
         foreach (var dir in directories.Where(Directory.Exists))
         {
             if (_verbose)
+            {
                 // Use Console.WriteLine for simplicity, or use your logging framework
                 Console.WriteLine($"Adding search directory: {dir}");
-            if (_searchDirs.Contains(dir)) continue; // skip duplicates
+            }
+
+            if (_searchDirs.Contains(dir))
+            {
+                continue; // skip duplicates
+            }
+
             _searchDirs.Add(Path.GetFullPath(dir));
         }
 
@@ -58,8 +68,10 @@ public static class AssemblyAutoLoader
         if (!_hookInstalled)
         {
             if (_verbose)
+            {
                 // Use Console.WriteLine for simplicity, or use your logging framework
                 Console.WriteLine("Installing AssemblyResolve hook for Kestrun.Utilities");
+            }
             // This will be called whenever the runtime fails to find an assembly
             AppDomain.CurrentDomain.AssemblyResolve += ResolveFromSearchDirs;
             _hookInstalled = true;
@@ -71,7 +83,10 @@ public static class AssemblyAutoLoader
             foreach (var dll in Directory.GetFiles(dir, "*.dll"))
             {
                 if (_verbose)
+                {
                     Console.WriteLine($"Pre-loading assembly: {dll}");
+                }
+
                 SafeLoad(dll);
             }
         }
@@ -84,19 +99,28 @@ public static class AssemblyAutoLoader
         if (args is null || string.IsNullOrEmpty(args.Name))
         {
             if (_verbose)
+            {
                 Console.WriteLine("ResolveFromSearchDirs called with null or empty name.");
+            }
+
             return null; // let the runtime continue searching
         }
         var shortName = new AssemblyName(args.Name).Name + ".dll";
         if (_verbose)
+        {
             Console.WriteLine($"Resolving assembly: {shortName}");
+        }
+
         foreach (var dir in _searchDirs)
         {
             var candidate = Path.Combine(dir, shortName);
             if (File.Exists(candidate))
             {
                 if (_verbose)
+                {
                     Console.WriteLine($"Resolving assembly: {candidate}");
+                }
+
                 return SafeLoad(candidate);
             }
         }
@@ -113,7 +137,9 @@ public static class AssemblyAutoLoader
                                       StringComparison.OrdinalIgnoreCase)))
         {
             if (_verbose)
+            {
                 Console.WriteLine($"Assembly '{name}' is already loaded, skipping: {path}");
+            }
             // Return null to indicate no new assembly was loaded
             return null;
         }
@@ -121,14 +147,18 @@ public static class AssemblyAutoLoader
         try
         {
             if (_verbose)
+            {
                 Console.WriteLine($"Loading assembly: {path}");
+            }
             // Load the assembly from the specified path
             return Assembly.LoadFrom(path);
         }
         catch
         {
             if (_verbose)
+            {
                 Console.WriteLine($"Failed to load assembly: {path}");
+            }
             // Swallow – we don’t block startup because of one bad DLL
             return null;
         }
@@ -153,14 +183,18 @@ public static class AssemblyAutoLoader
                 _hookInstalled = false;
 
                 if (_verbose)
+                {
                     Console.WriteLine("AssemblyResolve hook removed.");
+                }
             }
 
             if (clearSearchDirs && _searchDirs.Count > 0)
             {
                 _searchDirs.Clear();
                 if (_verbose)
+                {
                     Console.WriteLine("Search-directory list cleared.");
+                }
             }
         }
     }

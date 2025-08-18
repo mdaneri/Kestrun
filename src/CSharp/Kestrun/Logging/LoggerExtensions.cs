@@ -21,9 +21,11 @@ namespace Kestrun.Logging
                 public static void DebugSanitized(this Serilog.ILogger log, string messageTemplate, params object?[] propertyValues)
                 {
                     if (!log.IsEnabled(LogEventLevel.Debug))
-                        return;
-        
-                    var sanitized = propertyValues.Select(SanitizeObject).ToArray();
+            {
+                return;
+            }
+
+            var sanitized = propertyValues.Select(SanitizeObject).ToArray();
                     log.Debug(messageTemplate, sanitized);
                 }
 
@@ -38,9 +40,11 @@ namespace Kestrun.Logging
                 public static void DebugSanitized(this Serilog.ILogger log, Exception exception, string messageTemplate, params object?[] propertyValues)
                 {
                     if (!log.IsEnabled(LogEventLevel.Debug))
-                        return;
-        
-                    var sanitized = propertyValues.Select(SanitizeObject).ToArray();
+            {
+                return;
+            }
+
+            var sanitized = propertyValues.Select(SanitizeObject).ToArray();
                     log.Debug(exception, messageTemplate, sanitized);
                 }
 
@@ -57,7 +61,9 @@ namespace Kestrun.Logging
             foreach (char c in input)
             {
                 if (char.IsControl(c))
+                {
                     continue;
+                }
 
                 sb.Append(c);
             }

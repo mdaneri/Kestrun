@@ -19,10 +19,14 @@ public static class KestrunHostStaticFilesExtensions
     public static KestrunHost AddDefaultFiles(this KestrunHost host, DefaultFilesOptions? cfg)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding Default Files with configuration: {@Config}", cfg);
+        }
 
         if (cfg == null)
+        {
             return host.AddDefaultFiles(); // no config, use defaults
+        }
 
         // Convert DefaultFilesOptions to an Action<DefaultFilesOptions>
         return host.AddDefaultFiles(options =>
@@ -75,7 +79,10 @@ public static class KestrunHostStaticFilesExtensions
     private static void CopyStaticFileOptions(StaticFileOptions? src, StaticFileOptions dest)
     {
         // If no source, return a new empty options object
-        if (src == null || dest == null) return;
+        if (src == null || dest == null)
+        {
+            return;
+        }
         // Copy properties from source to destination
         dest.ContentTypeProvider = src.ContentTypeProvider;
         dest.OnPrepareResponse = src.OnPrepareResponse;
@@ -99,11 +106,17 @@ public static class KestrunHostStaticFilesExtensions
     private static void CopyDefaultFilesOptions(DefaultFilesOptions? src, DefaultFilesOptions dest)
     {
         // If no source, return a new empty options object
-        if (src == null || dest == null) return;
+        if (src == null || dest == null)
+        {
+            return;
+        }
         // Copy properties from source to destination 
         dest.DefaultFileNames.Clear();
         foreach (var name in src.DefaultFileNames)
+        {
             dest.DefaultFileNames.Add(name);
+        }
+
         dest.FileProvider = src.FileProvider;
         dest.RequestPath = src.RequestPath;
         dest.RedirectToAppendTrailingSlash = src.RedirectToAppendTrailingSlash;
@@ -122,9 +135,14 @@ public static class KestrunHostStaticFilesExtensions
     public static KestrunHost AddFileServer(this KestrunHost host, FileServerOptions? cfg)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
+        }
+
         if (cfg == null)
+        {
             return host.AddFileServer(); // no config, use defaults
+        }
 
         // Convert FileServerOptions to an Action<FileServerOptions>
         return host.AddFileServer(options =>
@@ -156,7 +174,10 @@ public static class KestrunHostStaticFilesExtensions
     public static KestrunHost AddFileServer(this KestrunHost host, Action<FileServerOptions>? cfg = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
+        }
+
         return host.Use(app =>
         {
             var options = new FileServerOptions();
@@ -177,12 +198,16 @@ public static class KestrunHostStaticFilesExtensions
     public static KestrunHost AddStaticFiles(this KestrunHost host, Action<StaticFileOptions>? cfg = null)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding static files with configuration: {Config}", cfg);
+        }
 
         return host.Use(app =>
         {
             if (cfg == null)
+            {
                 app.UseStaticFiles();
+            }
             else
             {
                 var options = new StaticFileOptions();
@@ -203,10 +228,14 @@ public static class KestrunHostStaticFilesExtensions
     public static KestrunHost AddStaticFiles(this KestrunHost host, StaticFileOptions options)
     {
         if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        {
             host._Logger.Debug("Adding static files with options: {@Options}", options);
+        }
 
         if (options == null)
+        {
             return host.AddStaticFiles(); // no options, use defaults
+        }
 
         // reuse the delegate overload so the pipeline logic stays in one place
         return host.AddStaticFiles(o =>

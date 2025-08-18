@@ -127,7 +127,9 @@ public sealed class JwtTokenBuilder
        JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
         if (string.IsNullOrWhiteSpace(b64Url))
+        {
             throw new ArgumentNullException(nameof(b64Url));
+        }
 
         // 1) Decode the incoming Base64Url to bytes
         byte[] raw = Base64UrlEncoder.DecodeBytes(b64Url);
@@ -240,8 +242,10 @@ public sealed class JwtTokenBuilder
         JwtAlgorithm alg = JwtAlgorithm.Auto)
     {
         if (!cert.HasPrivateKey)
+        {
             throw new ArgumentException(
                 "Certificate must contain a private key.", nameof(cert));
+        }
 
         // Auto ⇒ ES256 for ECDSA keys, RS256 for RSA keys
         string resolvedAlg = alg == JwtAlgorithm.Auto
@@ -372,7 +376,10 @@ public sealed class JwtTokenBuilder
             encryptingCredentials: encCreds);
 
 
-        foreach (var kv in _header) token.Header[kv.Key] = kv.Value;
+        foreach (var kv in _header)
+        {
+            token.Header[kv.Key] = kv.Value;
+        }
 
         return handler.WriteToken(token);
     }
@@ -622,7 +629,9 @@ public sealed class JwtTokenBuilder
         public SigningCredentials ToSigningCreds()
         {
             if (!Cert.HasPrivateKey)
+            {
                 throw new ArgumentException("Certificate must contain a private key.");
+            }
 
             var key = new X509SecurityKey(Cert);
 
@@ -635,14 +644,21 @@ public sealed class JwtTokenBuilder
             else
             {
                 if (Cert.GetECDsaPublicKey() is not null)
+                {
                     resolvedAlg = Map.Jws["ES256"];   // ECDSA → ES256 by default
+                }
                 else if (Cert.GetRSAPublicKey() is not null)
+                {
                     resolvedAlg = Map.Jws["RS256"];   // RSA   → RS256 by default
+                }
                 else
                 {
                     string keyType = "unknown";
                     if (Cert.PublicKey != null && Cert.PublicKey.EncodedKeyValue != null && Cert.PublicKey.EncodedKeyValue.Oid != null)
+                    {
                         keyType = Cert.PublicKey.EncodedKeyValue.Oid.FriendlyName ?? "unknown";
+                    }
+
                     throw new NotSupportedException(
                         $"Unsupported key type: {keyType}");
                 }
@@ -694,7 +710,9 @@ public sealed class JwtTokenBuilder
             }
             // ────────── shared-secret → SymmetricSecurityKey ──────────
             if (!Map.KeyAlg.ContainsKey(KeyAlg))
+            {
                 throw new ArgumentException($"Unknown key algorithm: {KeyAlg}");
+            }
 
             var key = new SymmetricSecurityKey(Base64UrlEncoder.DecodeBytes(B64));
             int bits = key.KeySize;                        // 128 / 192 / 256 / 384 / 512 …
@@ -797,7 +815,9 @@ public sealed class JwtTokenBuilder
                          c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub ||
                          c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(sub))
+            {
                 claims.Add(new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, sub));
+            }
         }
 
         SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
@@ -828,7 +848,10 @@ public sealed class JwtTokenBuilder
                 signingCredentials: signCreds,
                 encryptingCredentials: encCreds);
 
-        foreach (var kv in _header) token.Header[kv.Key] = kv.Value;
+        foreach (var kv in _header)
+        {
+            token.Header[kv.Key] = kv.Value;
+        }
 
         return handler.WriteToken(token);
     }

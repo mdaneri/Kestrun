@@ -33,7 +33,10 @@ public static class KestrunHostManager
         set
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 throw new ArgumentException("Kestrun root path cannot be null or empty.", nameof(value));
+            }
+
             if (Directory.GetCurrentDirectory() != value)
             {
                 Directory.SetCurrentDirectory(value);
@@ -53,16 +56,22 @@ public static class KestrunHostManager
     public static KestrunHost Create(string name, Func<KestrunHost> factory, bool setAsDefault = false)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new ArgumentException("Instance name is required.", nameof(name));
+        }
 
         if (_instances.ContainsKey(name))
+        {
             throw new InvalidOperationException($"A KestrunHost instance with the name '{name}' already exists.");
+        }
 
         var host = factory();
         _instances[name] = host;
 
         if (setAsDefault || _defaultName == null)
+        {
             _defaultName = name;
+        }
 
         return host;
     }
@@ -92,19 +101,27 @@ public static class KestrunHostManager
          string[]? modulePathsObj = null, bool setAsDefault = false)
     {
         if (string.IsNullOrWhiteSpace(name))
+        {
             throw new ArgumentException("Instance name is required.", nameof(name));
+        }
 
         if (_instances.ContainsKey(name))
+        {
             throw new InvalidOperationException($"A KestrunHost instance with the name '{name}' already exists.");
+        }
 
         if (KestrunRoot is null)
+        {
             throw new InvalidOperationException("Kestrun root path must be set before creating a KestrunHost instance.");
+        }
 
         var host = new KestrunHost(name, logger, KestrunRoot, modulePathsObj);
         _instances[name] = host;
 
         if (setAsDefault || _defaultName == null)
+        {
             _defaultName = name;
+        }
 
         return host;
     }
@@ -149,7 +166,9 @@ public static class KestrunHostManager
     public static void SetDefault(string name)
     {
         if (!_instances.ContainsKey(name))
+        {
             throw new InvalidOperationException($"No KestrunHost instance named '{name}' exists.");
+        }
 
         _defaultName = name;
     }
@@ -176,7 +195,10 @@ public static class KestrunHostManager
     public static async Task StartAsync(string name, CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Starting (Async) KestrunHost instance '{Name}'", name);
+        }
+
         if (TryGet(name, out var host))
         {
             if (host is not null)
@@ -202,7 +224,10 @@ public static class KestrunHostManager
     public static async Task StopAsync(string name, CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Stopping (Async) KestrunHost instance '{Name}'", name);
+        }
+
         if (TryGet(name, out var host))
         {
             if (host is not null)
@@ -239,7 +264,10 @@ public static class KestrunHostManager
     public static async Task StopAllAsync(CancellationToken ct = default)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Stopping all KestrunHost instances (Async)");
+        }
+
         foreach (var kv in _instances)
         {
             await kv.Value.StopAsync(ct);
@@ -253,12 +281,17 @@ public static class KestrunHostManager
     public static void Destroy(string name)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Destroying KestrunHost instance '{Name}'", name);
+        }
+
         if (_instances.TryRemove(name, out var host))
         {
             host.Dispose();
             if (_defaultName == name)
+            {
                 _defaultName = _instances.Keys.FirstOrDefault();
+            }
         }
     }
 
@@ -268,7 +301,10 @@ public static class KestrunHostManager
     public static void DestroyAll()
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Destroying all KestrunHost instances");
+        }
+
         foreach (var name in _instances.Keys.ToList())
         {
             Destroy(name);

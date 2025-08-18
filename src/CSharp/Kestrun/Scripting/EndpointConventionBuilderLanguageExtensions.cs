@@ -13,7 +13,10 @@ public static class EndpointConventionBuilderLanguageExtensions
         this TBuilder builder, ScriptLanguage language)
         where TBuilder : IEndpointConventionBuilder
     {
-        if (builder is null) throw new ArgumentNullException(nameof(builder));
+        if (builder is null)
+        {
+            throw new ArgumentNullException(nameof(builder));
+        }
 
         // IEndpointConventionBuilder exposes Add(Action<EndpointBuilder>)
         builder.Add(ep => ep.Metadata.Add(new ScriptLanguageAttribute(language)));

@@ -41,10 +41,15 @@ internal static class JobFactory
     {
         ArgumentNullException.ThrowIfNull(fileInfo);
         if (!fileInfo.Exists)
+        {
             throw new FileNotFoundException(fileInfo.FullName);
+        }
+
         var updatedConfig = config with { Code = await File.ReadAllTextAsync(fileInfo.FullName, ct) };
         if (updatedConfig.Log.IsEnabled(LogEventLevel.Debug))
+        {
             updatedConfig.Log.Debug("Creating job for {File} with language {Lang}", fileInfo.FullName, updatedConfig.Language);
+        }
 
         return JobFactory.Create(updatedConfig);
     }
@@ -63,9 +68,15 @@ internal static class JobFactory
         return async ct =>
         {
             if (config.Log.IsEnabled(LogEventLevel.Debug))
+            {
                 config.Log.Debug("Building PowerShell delegate, script length={Length}", config.Code?.Length);
+            }
+
             if (config.Pool is null)
+            {
                 throw new InvalidOperationException("PowerShell runspace pool must be provided for PowerShell jobs.");
+            }
+
             var runspace = config.Pool.Acquire();
             try
             {
@@ -83,9 +94,14 @@ internal static class JobFactory
                 {
                     config.Log.Debug("PowerShell script output:");
                     foreach (var r in psResults.Take(10))      // first 10 only
+                    {
                         config.Log.Debug("   • {Result}", r);
+                    }
+
                     if (psResults.Count > 10)
+                    {
                         config.Log.Debug("   … {Count} more", psResults.Count - 10);
+                    }
                 }
 
                 if (ps.HadErrors || ps.Streams.Error.Count != 0 || ps.Streams.Verbose.Count > 0 || ps.Streams.Debug.Count > 0 || ps.Streams.Warning.Count > 0 || ps.Streams.Information.Count > 0)

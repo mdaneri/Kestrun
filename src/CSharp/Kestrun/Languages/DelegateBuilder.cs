@@ -26,23 +26,36 @@ internal static class DelegateBuilder
         var krResponse = new KestrunResponse(krRequest);
         var Context = new KestrunContext(krRequest, krResponse, ctx);
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.DebugSanitized("Kestrun context created for {Path}", ctx.Request.Path);
+        }
 
         // Create a shared state dictionary that will be used to store global variables
         // This will be shared across all requests and can be used to store state
         // that needs to persist across multiple requests
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Creating shared state store for Kestrun context");
+        }
+
         var glob = new Dictionary<string, object?>(SharedStateStore.Snapshot());
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.Debug("Shared state store created with {Count} items", glob.Count);
+        }
 
         // Inject the provided arguments into the globals so the script can access them
         if (args != null && args.Count > 0)
         {
             if (log.IsEnabled(LogEventLevel.Debug))
+            {
                 log.Debug("Setting variables from arguments: {Count}", args.Count);
-            foreach (var kv in args) glob[kv.Key] = kv.Value; // add args to globals
+            }
+
+            foreach (var kv in args)
+            {
+                glob[kv.Key] = kv.Value; // add args to globals
+            }
         }
 
         // Create a new CsGlobals instance with the current context and shared state
@@ -61,7 +74,9 @@ internal static class DelegateBuilder
     internal static async Task ApplyResponseAsync(HttpContext ctx, KestrunResponse response, Serilog.ILogger log)
     {
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.DebugSanitized("Applying response to Kestrun context for {Path}", ctx.Request.Path);
+        }
 
         if (!string.IsNullOrEmpty(response.RedirectUrl))
         {
@@ -72,6 +87,8 @@ internal static class DelegateBuilder
         await response.ApplyTo(ctx.Response).ConfigureAwait(false);
 
         if (log.IsEnabled(LogEventLevel.Debug))
+        {
             log.DebugSanitized("Response applied to Kestrun context for {Path}", ctx.Request.Path);
+        }
     }
 }

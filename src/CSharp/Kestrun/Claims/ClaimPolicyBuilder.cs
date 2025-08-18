@@ -20,7 +20,9 @@ public sealed class ClaimPolicyBuilder
         ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
         ArgumentException.ThrowIfNullOrWhiteSpace(claimType);
         if (allowedValues is null || allowedValues.Length == 0)
+        {
             throw new ArgumentException("At least one allowed value must be specified.", nameof(allowedValues));
+        }
 
         _policies[policyName] = new ClaimRule(claimType, allowedValues);
         return this;
@@ -37,7 +39,9 @@ public ClaimPolicyBuilder AddPolicy(string policyName, UserIdentityClaim claimTy
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(policyName); 
         if (allowedValues is null || allowedValues.Length == 0)
+        {
             throw new ArgumentException("At least one allowed value must be specified.", nameof(allowedValues));
+        }
 
         _policies[policyName] = new ClaimRule(claimType.ToClaimUri(), allowedValues);
         return this;

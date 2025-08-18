@@ -38,7 +38,9 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         : base(options, loggerFactory, encoder)
     {
         if (options.CurrentValue.Logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             options.CurrentValue.Logger.Debug("BasicAuthHandler initialized");
+        }
     }
 
     /// <summary>
@@ -63,35 +65,49 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         try
         {
             if (Options.ValidateCredentialsAsync is null)
+            {
                 return Fail("No credentials validation function provided");
+            }
 
             if (Options.RequireHttps && !Request.IsHttps)
+            {
                 return Fail("HTTPS required");
+            }
 
             if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
+            {
                 return Fail("Missing Authorization Header");
+            }
 
             var authHeader = AuthenticationHeaderValue.Parse(authHeaderVal.ToString());
 
             var schemeValidation = ValidateSchemeAndParameter(authHeader);
             if (schemeValidation is not null)
+            {
                 return schemeValidation;
+            }
 
             Log.Information("Processing Basic Authentication for header: {Context}", Context);
 
             var decode = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
             if (!decode.Success)
+            {
                 return Fail(decode.Error!);
+            }
 
             var parse = TryParseCredentials(decode.Value!);
             if (!parse.Success)
+            {
                 return Fail(parse.Error!);
+            }
 
             var user = parse.Username!;
             var pass = parse.Password!;
             var valid = await Options.ValidateCredentialsAsync(Context, user, pass);
             if (!valid)
+            {
                 return Fail("Invalid credentials");
+            }
 
             Options.Logger.Information("Basic auth succeeded for user: {User}", user);
 
@@ -115,13 +131,19 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     private AuthenticateResult? ValidateSchemeAndParameter(AuthenticationHeaderValue authHeader)
     {
         if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
+        {
             return Fail("Invalid Authorization Scheme");
+        }
 
         if (string.IsNullOrEmpty(authHeader.Parameter))
+        {
             return Fail("Missing credentials in Authorization Header");
+        }
 
         if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024)
+        {
             return Fail("Header too large");
+        }
 
         return null;
     }
@@ -157,12 +179,16 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     {
         var match = Options.SeparatorRegex.Match(rawCreds);
         if (!match.Success || match.Groups.Count < 3)
+        {
             return (false, null, null, "Malformed credentials");
+        }
 
         var user = match.Groups[1].Value;
         var pass = match.Groups[2].Value;
         if (string.IsNullOrEmpty(user))
+        {
             return (false, null, null, "Username cannot be empty");
+        }
 
         return (true, user, pass, null);
     }
@@ -225,7 +251,9 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     public static Func<HttpContext, string, string, Task<bool>> BuildPsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildPsValidator  settings: {Settings}", settings);
+        }
 
         return async (ctx, user, pass) =>
         {
@@ -245,7 +273,9 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     public static Func<HttpContext, string, string, Task<bool>> BuildCsValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildCsValidator  settings: {Settings}", settings);
+        }
 
         // pass the settings to the core C# validator
         var core = IAuthHandler.BuildCsValidator(
@@ -270,7 +300,9 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     public static Func<HttpContext, string, string, Task<bool>> BuildVBNetValidator(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
             logger.Debug("BuildCsValidator  settings: {Settings}", settings);
+        }
         // pass the settings to the core VB.NET validator
         var core = IAuthHandler.BuildVBNetValidator(
             settings,

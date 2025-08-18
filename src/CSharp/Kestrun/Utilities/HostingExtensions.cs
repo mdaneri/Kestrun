@@ -78,7 +78,9 @@ namespace Kestrun.Utilities
             {
                 server.Dispose();
                 if (configureConsole)
+                {
                     Console.CancelKeyPress -= Handler;
+                }
             }
 
             // local function so we can unregister it

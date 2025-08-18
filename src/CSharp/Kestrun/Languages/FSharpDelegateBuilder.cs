@@ -12,7 +12,10 @@ internal static class FSharpDelegateBuilder
     {
         // F# scripting not implemented yet
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Building F# delegate, script length={Length}", code?.Length);
+        }
+
         throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");
     }
 }

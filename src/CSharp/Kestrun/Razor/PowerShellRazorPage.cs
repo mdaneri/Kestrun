@@ -58,7 +58,10 @@ public static class PowerShellRazorPage
         ArgumentNullException.ThrowIfNull(pool);
 
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Configuring PowerShell Razor Pages middleware");
+        }
+
         var env = app.ApplicationServices.GetRequiredService<IHostEnvironment>();
         var pagesRoot = Path.Combine(env.ContentRootPath, "Pages");
         Log.Information("Using Pages directory: {Path}", pagesRoot);
@@ -72,7 +75,9 @@ public static class PowerShellRazorPage
         app.Use(async (context, next) =>
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("Processing PowerShell Razor Page request for {Path}", context.Request.Path);
+            }
 
             var relPath = GetRelativePath(context);
             if (relPath is null)
@@ -116,7 +121,9 @@ public static class PowerShellRazorPage
 
                 await next(); // continue the pipeline
                 if (Log.IsEnabled(LogEventLevel.Debug))
+                {
                     Log.Debug("PowerShell Razor Page completed for {Path}", context.Request.Path);
+                }
             }
             catch (Exception ex)
             {
@@ -145,12 +152,18 @@ public static class PowerShellRazorPage
         if (string.IsNullOrEmpty(relPath))
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("Request path is empty, skipping PowerShell Razor Page processing");
+            }
+
             return null;
         }
         relPath = relPath.Replace('/', Path.DirectorySeparatorChar);
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Transformed request path to relative: {RelPath}", relPath);
+        }
+
         return relPath;
     }
 
@@ -178,7 +191,10 @@ public static class PowerShellRazorPage
         if (File.Exists(csfile))
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
+            {
                 Log.Debug("Found C# code-behind file: {CsFile}", csfile);
+            }
+
             return true;
         }
         return false;
@@ -194,7 +210,10 @@ public static class PowerShellRazorPage
     {
         var ok = File.Exists(view) && File.Exists(psfile);
         if (!ok && Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("PowerShell Razor Page files not found: {View} or {PsFile}", view, psfile);
+        }
+
         return ok;
     }
 
@@ -237,7 +256,9 @@ public static class PowerShellRazorPage
     private static void LogExecution(string psfile)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Executing PowerShell script: {ScriptFile}", psfile);
+        }
     }
 
     private static Task<System.Management.Automation.PSDataCollection<System.Management.Automation.PSObject>> InvokePowerShellAsync(PowerShell ps)
@@ -246,16 +267,23 @@ public static class PowerShellRazorPage
     private static void LogResultsCount(int count)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("PowerShell script returned {Count} results", count);
+        }
     }
 
     private static void SetModelIfPresent(PowerShell ps, HttpContext context)
     {
         var model = ps.Runspace.SessionStateProxy.GetVariable("Model");
         if (model is not null)
+        {
             context.Items[MODEL_KEY] = model;
+        }
+
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("PowerShell Razor Page model set: {Model}", model);
+        }
     }
 
     private static bool HasErrors(PowerShell ps) => ps.HadErrors || ps.Streams.Error.Count != 0;
@@ -264,7 +292,10 @@ public static class PowerShellRazorPage
     {
         Log.Error("PowerShell script encountered errors: {ErrorCount}", ps.Streams.Error.Count);
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("PowerShell script errors: {Errors}", BuildError.Text(ps));
+        }
+
         await BuildError.ResponseAsync(context, ps);
     }
 
@@ -283,12 +314,22 @@ public static class PowerShellRazorPage
 
     private static void ReturnRunspaceAndDispose(PowerShell? ps, KestrunRunspacePoolManager pool)
     {
-        if (ps is null) return;
+        if (ps is null)
+        {
+            return;
+        }
+
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Returning runspace to pool: {RunspaceId}", ps.Runspace.InstanceId);
+        }
+
         pool.Release(ps.Runspace);
         if (Log.IsEnabled(LogEventLevel.Debug))
+        {
             Log.Debug("Disposing PowerShell instance: {InstanceId}", ps.InstanceId);
+        }
+
         ps.Dispose();
     }
 }
