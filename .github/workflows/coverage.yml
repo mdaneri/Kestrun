@@ -23,10 +23,10 @@ jobs:
 
     steps:
       - name: 🛎️ Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5 pin
 
       - name: 🧰 Setup .NET 8 & 9
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1 pin
         with:
           dotnet-version: |
             8.0.x
@@ -98,7 +98,6 @@ jobs:
           $cfg.CodeCoverage.OutputPath = 'TestResults/pester-coverage.xml'
           Invoke-Pester -Configuration $cfg
 
-      # --- Sanity: show what coverage files were produced ---
       - name: 🔎 List raw coverage files
         run: |
           echo "Cobertura files:"
@@ -106,7 +105,6 @@ jobs:
           echo "Pester JaCoCo file:"
           ls -la TestResults/pester-coverage.xml || true
 
-      # --- Merge to LCOV ---
       - name: 🧮 Merge coverage to LCOV
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -116,7 +114,6 @@ jobs:
             -reporttypes:lcov \
             -sourcedirs:"src/PowerShell/Kestrun;src/CSharp/Kestrun;."
 
-      # --- Inspect LCOV (debug) ---
       - name: 🔎 Inspect LCOV
         run: |
           echo "lcov size:"
@@ -128,7 +125,7 @@ jobs:
 
       # --- Upload to Coveralls ---
       - name: ☁️ Upload to Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b  # v2.3.6 pin
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: coveragereport/lcov.info
@@ -137,9 +134,8 @@ jobs:
           allow-empty: true
           debug: true
 
-      # Keep the report as an artifact for quick inspection
       - name: 📦 Upload LCOV artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2 pin
         with:
           name: lcov
           path: coveragereport/lcov.info

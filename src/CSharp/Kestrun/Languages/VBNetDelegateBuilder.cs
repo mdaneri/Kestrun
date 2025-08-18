@@ -223,7 +223,7 @@ internal static class VBNetDelegateBuilder
     /// <exception cref="ArgumentException">Thrown when the source code is invalid.</exception>
     private static int GetStartLineOrThrow(string source, Serilog.ILogger log)
     {
-        var startIndex = source.IndexOf(StartMarker);
+        var startIndex = source.IndexOf(StartMarker, StringComparison.Ordinal);
         if (startIndex < 0)
         {
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.");

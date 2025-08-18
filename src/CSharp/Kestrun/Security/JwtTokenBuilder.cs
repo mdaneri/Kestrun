@@ -761,8 +761,8 @@ public sealed class JwtTokenBuilder
             // ────────── build EncryptingCredentials ───────────────────
             return new EncryptingCredentials(
                 key,
-                Map.KeyAlg[KeyAlg.ToUpper()],          // 'dir', 'A256KW', …
-                Map.EncAlg[encEff.ToUpper()]);         // validated / auto-picked enc
+                Map.KeyAlg[KeyAlg.ToUpperInvariant()],          // 'dir', 'A256KW', …
+                Map.EncAlg[encEff.ToUpperInvariant()]);         // validated / auto-picked enc
         }
     }
 

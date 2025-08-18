@@ -363,6 +363,9 @@ public interface IAuthHandler
                         var idx = s.IndexOf(':');
                         claims.Add(new Claim(s[..idx], s[(idx + 1)..]));
                         break;
+                    default:
+                        logger.Warning("PowerShell script returned an unsupported type: {Type}", obj?.GetType());
+                        throw new InvalidOperationException("PowerShell script returned an unsupported type.");
                 }
             }
             return claims;
