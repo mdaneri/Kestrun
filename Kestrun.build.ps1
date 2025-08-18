@@ -1,4 +1,4 @@
-#requires -Module InvokeBuild
+﻿#requires -Module InvokeBuild
 <#
     .SYNOPSIS
     Build script for Kestrun
