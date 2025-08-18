@@ -13,6 +13,7 @@ using Kestrun.Utilities;
 using System.Security.Claims;
 using Kestrun.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace Kestrun.Languages;
 
@@ -70,11 +71,11 @@ internal static class VBNetDelegateBuilder
         {
             try
             {
-               if (log.IsEnabled(LogEventLevel.Debug))
+                if (log.IsEnabled(LogEventLevel.Debug))
                     log.Debug("Preparing execution for C# script at {Path}", ctx.Request.Path);
                 var (Globals, Response, Context) = await DelegateBuilder.PrepareExecutionAsync(ctx, log, args).ConfigureAwait(false);
 
-           
+
 
                 // Execute the script with the current context and shared state
                 if (log.IsEnabled(LogEventLevel.Debug))
@@ -140,12 +141,9 @@ internal static class VBNetDelegateBuilder
         // 🔧 1.  Build a real VB file around the user snippet
         string source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
             locals: locals);
-        var startIndex = source.IndexOf(StartMarker);
-        if (startIndex < 0)
-            throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.", nameof(code));
-        int startLine = CcUtilities.GetLineNumber(source, startIndex);
-        if (log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("VB.NET script starts at line {LineNumber}", startLine);
+
+        // Prepares the source code for compilation.
+        int startLine = GetStartLineOrThrow(source, log);
 
         // Parse the source code into a syntax tree
         // This will allow us to analyze and compile the code
@@ -154,90 +152,156 @@ internal static class VBNetDelegateBuilder
                        new VisualBasicParseOptions(LanguageVersion.VisualBasic16));
 
         // 🔧 2.  References = everything already loaded  +  extras
-        var refs = AppDomain.CurrentDomain.GetAssemblies()
-                     .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
-                     .Select(a => MetadataReference.CreateFromFile(a.Location))
-                     .Concat(extraRefs?.Select(r => MetadataReference.CreateFromFile(r.Location))
-                             ?? Enumerable.Empty<MetadataReference>())
-                                .Append(MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location))
-                                .Append(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))            // System.Private.CoreLib
-                                .Append(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location))        // System.Linq
-                                .Append(MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location))       // Microsoft.AspNetCore.Http
-                                .Append(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))          // System.Console
-                                .Append(MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location))       // Serilog
-                                .Append(MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location))    // System.Security.Claims
-                                ;
-
+        var refs = BuildMetadataReferences(extraRefs);
         // 🔧 3.  Normal DLL compilation
         var compilation = VisualBasicCompilation.Create(
-            assemblyName: $"RouteScript_{Guid.NewGuid():N}",
-            syntaxTrees: [tree],
-            references: refs,
-            options: new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                 assemblyName: $"RouteScript_{Guid.NewGuid():N}",
+                 syntaxTrees: [tree],
+                 references: refs,
+                 options: new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         using var ms = new MemoryStream();
-        var emitResult = compilation.Emit(ms);
-        // Check for compilation errors
-        if (emitResult.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error))
-        {
-            var errors = emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-            if (errors is not null && errors.Length > 0)
-            {
-                // Log the errors with adjusted line numbers                
-                log.Error($"VBNet script compilation completed with {errors.Length} error(s):");
-                foreach (var error in errors)
-                {
-                    var location = error.Location.IsInSource
-                        ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}" // ⬅ adjust line number based on start
-                        : "";
-                    log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
-                }
-                // Throw an exception with the error details
-                // This will stop the execution and provide feedback to the user
-                throw new CompilationErrorException("VBNet route code compilation failed", emitResult.Diagnostics);
-            }
-        }
-        // Log warnings if any (optional - for debugging)
-        var warnings = emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
-        if (warnings is not null && warnings.Length != 0)
-        {
-            // Log the warnings with adjusted line numbers
-            log.Warning($"VBNet script compilation completed with {warnings.Length} warning(s):");
-            foreach (var warning in warnings)
-            {
-                var location = warning.Location.IsInSource
-                    ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}" // ⬅ adjust line number based on start
-                    : "";
-                log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
-            }
-            // If there are warnings, log a debug message
-            if (log.IsEnabled(LogEventLevel.Debug))
-                log.Debug("VB.NET script compiled with warnings: {Count}", warnings.Length);
-        }
-        // If there are no warnings, log a debug message
-        if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
-            log.Debug("VB.NET script compiled successfully with no warnings.");
+        var emitResult = compilation.Emit(ms) ?? throw new InvalidOperationException("Failed to compile VB.NET script.");
+        // 🔧 4.  Log the compilation result
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compilation completed, assembly size={Size} bytes", ms.Length);
+
+        // 🔧 5. Handle diagnostics
+        ThrowIfErrors(emitResult.Diagnostics, startLine, log);
+        // Log any warnings from the compilation process
+        LogWarnings(emitResult.Diagnostics, startLine, log);
+
         // If there are no errors, log a debug message
         if (emitResult.Success && log.IsEnabled(LogEventLevel.Debug))
             log.Debug("VB.NET script compiled successfully with no errors.");
-
 
         // If there are no errors, proceed to load the assembly and create the delegate
         if (log.IsEnabled(LogEventLevel.Debug))
             log.Debug("VB.NET script compiled successfully, loading assembly...");
         ms.Position = 0;
-        var asm = Assembly.Load(ms.ToArray());
+        return LoadDelegateFromAssembly<TResult>(ms.ToArray());
+    }
+
+    /// <summary>
+    /// Prepares the source code for compilation.
+    /// </summary>
+    /// <param name="source">The source code to prepare.</param>
+    /// <param name="log">The logger instance.</param>
+    /// <returns>The prepared source code.</returns>
+    /// <exception cref="ArgumentException">Thrown when the source code is invalid.</exception>
+    private static int GetStartLineOrThrow(string source, Serilog.ILogger log)
+    {
+        var startIndex = source.IndexOf(StartMarker);
+        if (startIndex < 0)
+            throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.");
+        int startLine = CcUtilities.GetLineNumber(source, startIndex);
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script starts at line {LineNumber}", startLine);
+        return startLine;
+    }
+
+    /// <summary>
+    /// Prepares the metadata references for the VB.NET script.
+    /// </summary>
+    /// <param name="extraRefs">The extra references to include.</param>
+    /// <returns>An enumerable of metadata references.</returns>
+    private static IEnumerable<MetadataReference> BuildMetadataReferences(Assembly[]? extraRefs)
+    {
+        var baseRefs = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Select(a => MetadataReference.CreateFromFile(a.Location));
+
+        var extras = extraRefs?.Select(r => MetadataReference.CreateFromFile(r.Location))
+                    ?? Enumerable.Empty<MetadataReference>();
+
+        return baseRefs
+            .Concat(extras)
+            .Append(MetadataReference.CreateFromFile(typeof(Microsoft.VisualBasic.Constants).Assembly.Location))
+            .Append(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))            // System.Private.CoreLib
+            .Append(MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location))        // System.Linq
+            .Append(MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location))       // Microsoft.AspNetCore.Http
+            .Append(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))          // System.Console
+            .Append(MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location))       // Serilog
+            .Append(MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location));   // System.Security.Claims
+    }
+    /// <summary>
+    /// Logs any warnings from the compilation process.
+    /// </summary>
+    /// <param name="diagnostics">The diagnostics to check.</param>
+    /// <param name="startLine">The starting line number.</param>
+    /// <param name="log">The logger instance.</param>
+    private static void LogWarnings(ImmutableArray<Diagnostic> diagnostics, int startLine, Serilog.ILogger log)
+    {
+        var warnings = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
+        // If there are no warnings, log a debug message
+        if (warnings.Length == 0)
+        {
+            if (log.IsEnabled(LogEventLevel.Debug))
+                log.Debug("VB.NET script compiled successfully with no warnings.");
+            return;
+        }
+
+        log.Warning($"VBNet script compilation completed with {warnings.Length} warning(s):");
+        foreach (var warning in warnings)
+        {
+            var location = warning.Location.IsInSource
+                ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}"
+                : "";
+            log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
+        }
+        if (log.IsEnabled(LogEventLevel.Debug))
+            log.Debug("VB.NET script compiled with warnings: {Count}", warnings.Length);
+    }
+
+    /// <summary>
+    /// Throws an exception if there are compilation errors.
+    /// </summary>
+    /// <param name="diagnostics">The diagnostics to check.</param>
+    /// <param name="startLine">The starting line number.</param>
+    /// <param name="log">The logger instance.</param>
+    private static void ThrowIfErrors(ImmutableArray<Diagnostic> diagnostics, int startLine, Serilog.ILogger log)
+    {
+        var errors = diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+        if (errors.Length == 0) return;
+
+        log.Error($"VBNet script compilation completed with {errors.Length} error(s):");
+        foreach (var error in errors)
+        {
+            var location = error.Location.IsInSource
+                ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line - startLine + 1}"
+                : "";
+            log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
+        }
+        throw new CompilationErrorException("VBNet route code compilation failed", diagnostics);
+    }
+
+    /// <summary>
+    /// Loads a delegate from the provided assembly bytes.
+    /// </summary>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
+    /// <param name="asmBytes">The assembly bytes.</param>
+    /// <returns>A delegate that can be invoked with the specified globals.</returns>
+    private static Func<CsGlobals, Task<TResult>> LoadDelegateFromAssembly<TResult>(byte[] asmBytes)
+    {
+        var asm = Assembly.Load(asmBytes);
         var runMethod = asm.GetType("RouteScript")!
                            .GetMethod("Run", BindingFlags.Public | BindingFlags.Static)!;
 
-        // Build Func<CsGlobals, Task<TResult>> at runtime
         var delegateType = typeof(Func<,>).MakeGenericType(
-                               typeof(CsGlobals),
-                               typeof(Task<>).MakeGenericType(typeof(TResult)));
+            typeof(CsGlobals),
+            typeof(Task<>).MakeGenericType(typeof(TResult)));
 
         return (Func<CsGlobals, Task<TResult>>)runMethod.CreateDelegate(delegateType);
     }
 
+    /// <summary>
+    /// Builds the wrapped source code for the VB.NET script.
+    /// </summary>
+    /// <param name="code">The user-provided code to wrap.</param>
+    /// <param name="extraImports">Additional imports to include.</param>
+    /// <param name="vbReturnType">The return type of the VB.NET function.</param>
+    /// <param name="locals">Local variables to bind to the script.</param>
+    /// <returns>The wrapped source code.</returns>
     private static string BuildWrappedSource(string? code, IEnumerable<string>? extraImports,
     string vbReturnType, IReadOnlyDictionary<string, object?>? locals = null
        )

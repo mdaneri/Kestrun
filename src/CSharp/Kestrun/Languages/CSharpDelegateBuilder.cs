@@ -120,128 +120,220 @@ internal static class CSharpDelegateBuilder
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentNullException(nameof(code), "C# code cannot be null or whitespace.");
 
-        // 1. Compose ScriptOptions
-        var coreRefs = new[]
+        // References and imports
+        var coreRefs = BuildCoreReferences();
+        var kestrunAssembly = typeof(Kestrun.Hosting.KestrunHost).Assembly; // Kestrun.dll
+        var kestrunRef = MetadataReference.CreateFromFile(kestrunAssembly.Location);
+        var kestrunNamespaces = CollectKestrunNamespaces(kestrunAssembly);
+        var platformImports = new[]
         {
+            "System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http",
+            "System.Collections.Generic", "System.Security.Claims"
+        };
+        var opts = CreateScriptOptions(platformImports, kestrunNamespaces, coreRefs, kestrunRef);
+        opts = AddExtraImports(opts, extraImports);
+        opts = AddExtraReferences(opts, extraRefs, log);
+
+        // Globals/locals injection
+        code = PrependGlobalsAndLocals(code, locals);
+
+        // Compile
+        var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
+        var diagnostics = CompileAndGetDiagnostics(script, log);
+        ThrowIfDiagnosticsNull(diagnostics);
+        ThrowOnErrors(diagnostics, log);
+        LogWarnings(diagnostics, log);
+        LogSuccessIfNoWarnings(diagnostics, log);
+
+        return script;
+    }
+
+    /// <summary>
+    /// Builds the core assembly references for the script.
+    /// </summary>
+    /// <returns>The core assembly references.</returns>
+    private static MetadataReference[] BuildCoreReferences()
+    {
+        return
+        [
             MetadataReference.CreateFromFile(typeof(object).Assembly.Location),            // System.Private.CoreLib
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),        // System.Linq
             MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location),       // Microsoft.AspNetCore.Http
-            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),          // System.Console
+            MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),           // System.Console
             MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location),       // Serilog
             MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location)    // System.Security.Claims
-        };
-        // 2. Reference *your* Kestrun.dll once (contains Model, Hosting, etc.)
-        var kestrunAssembly = typeof(Kestrun.Hosting.KestrunHost).Assembly;               // ← this *is* Kestrun.dll
-        var kestrunRef = MetadataReference.CreateFromFile(kestrunAssembly.Location);
+        ];
+    }
 
-        // 3. Collect every exported namespace that starts with "Kestrun"
-        var kestrunNamespaces = kestrunAssembly
+    /// <summary>
+    /// Collects the namespaces from the Kestrun assembly.
+    /// </summary>
+    /// <param name="kestrunAssembly">The Kestrun assembly.</param>
+    /// <returns>The collected namespaces.</returns>
+    private static string[] CollectKestrunNamespaces(Assembly kestrunAssembly)
+    {
+        return [.. kestrunAssembly
             .GetExportedTypes()
             .Select(t => t.Namespace)
-            .Where(ns => ns is { Length: > 0 } && ns.StartsWith("Kestrun", StringComparison.Ordinal))
-            .Distinct()
-            .ToArray();
-        // Convert to MetadataReference for each namespace
-        string[] platformImports = ["System", "System.Linq", "System.Threading.Tasks", "Microsoft.AspNetCore.Http",
-            "System.Collections.Generic", "System.Security.Claims"];
-        // Convert to MetadataReference for each namespace
-        var allImports = platformImports.Concat(kestrunNamespaces);
-        if (allImports is null)
-            throw new ArgumentException("No valid imports found.", nameof(allImports));
+            .Where(ns => !string.IsNullOrEmpty(ns) && ns!.StartsWith("Kestrun", StringComparison.Ordinal))
+            .Select(ns => ns!)
+            .Distinct()];
+    }
 
-        // 4. Create ScriptOptions with all imports and references
-        //    - Use MetadataReference.CreateFromFile() for each assembly reference
-        //    - Use .WithImports() to add all imports
-        //    - Use .WithLanguageVersion() to set the C# language version
-        var opts = ScriptOptions.Default
-                   .WithImports((IEnumerable<string>)allImports)
-                   .WithReferences(coreRefs.Concat([kestrunRef]));
+    /// <summary>
+    /// Creates script options for the VB.NET script.
+    /// </summary>
+    /// <param name="platformImports">The platform-specific namespaces to import.</param>
+    /// <param name="kestrunNamespaces">The Kestrun-specific namespaces to import.</param>
+    /// <param name="coreRefs">The core assembly references to include.</param>
+    /// <param name="kestrunRef">The Kestrun assembly reference to include.</param>
+    /// <returns>The created script options.</returns>
+    private static ScriptOptions CreateScriptOptions(
+        IEnumerable<string> platformImports,
+        IEnumerable<string> kestrunNamespaces,
+        IEnumerable<MetadataReference> coreRefs,
+        MetadataReference kestrunRef)
+    {
+        var allImports = platformImports.Concat(kestrunNamespaces) ?? Enumerable.Empty<string>();
+        return ScriptOptions.Default
+            .WithImports(allImports)
+            .WithReferences(coreRefs.Concat(new[] { kestrunRef }));
+    }
 
-        extraImports ??= ["Kestrun"];
+    /// <summary>
+    /// Adds extra using directives to the script options.
+    /// </summary>
+    /// <param name="opts">The script options to modify.</param>
+    /// <param name="extraImports">The extra using directives to add.</param>
+    /// <returns>The modified script options.</returns>
+    private static ScriptOptions AddExtraImports(ScriptOptions opts, string[]? extraImports)
+    {
+        extraImports ??= new[] { "Kestrun" };
         if (!extraImports.Contains("Kestrun"))
         {
             var importsList = extraImports.ToList();
             importsList.Add("Kestrun");
             extraImports = [.. importsList];
         }
-        if (extraImports is { Length: > 0 })
-            opts = opts.WithImports(opts.Imports.Concat(extraImports));
+        return extraImports.Length > 0
+            ? opts.WithImports(opts.Imports.Concat(extraImports))
+            : opts;
+    }
 
-        // Add extra assembly references
-        if (extraRefs is { Length: > 0 })
+    /// <summary>
+    /// Adds extra assembly references to the script options.
+    /// </summary>
+    /// <param name="opts">The script options to modify.</param>
+    /// <param name="extraRefs">The extra assembly references to add.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    /// <returns>The modified script options.</returns>
+    private static ScriptOptions AddExtraReferences(ScriptOptions opts, Assembly[]? extraRefs, Serilog.ILogger log)
+    {
+        if (extraRefs is not { Length: > 0 })
+            return opts;
+
+        foreach (var r in extraRefs)
         {
-            foreach (var r in extraRefs)
-            {
-                if (string.IsNullOrEmpty(r.Location))
-                    log.Warning("Skipping dynamic assembly with no location: {Assembly}", r.FullName);
-                else if (!File.Exists(r.Location))
-                    log.Warning("Skipping missing assembly file: {Location}", r.Location);
-            }
-
-            var safeRefs = extraRefs
-                .Where(r => !string.IsNullOrEmpty(r.Location) && File.Exists(r.Location))
-                .Select(r => MetadataReference.CreateFromFile(r.Location));
-
-            opts = opts.WithReferences(opts.MetadataReferences.Concat(safeRefs));
+            if (string.IsNullOrEmpty(r.Location))
+                log.Warning("Skipping dynamic assembly with no location: {Assembly}", r.FullName);
+            else if (!File.Exists(r.Location))
+                log.Warning("Skipping missing assembly file: {Location}", r.Location);
         }
 
-        // 1. Inject each global as a top-level script variable
+        var safeRefs = extraRefs
+            .Where(r => !string.IsNullOrEmpty(r.Location) && File.Exists(r.Location))
+            .Select(r => MetadataReference.CreateFromFile(r.Location));
+
+        return opts.WithReferences(opts.MetadataReferences.Concat(safeRefs));
+    }
+
+    /// <summary>
+    /// Prepends global and local variable declarations to the provided code.
+    /// </summary>
+    /// <param name="code">The original code to modify.</param>
+    /// <param name="locals">The local variables to include.</param>
+    /// <returns>The modified code with global and local variable declarations.</returns>
+    private static string PrependGlobalsAndLocals(string? code, IReadOnlyDictionary<string, object?>? locals)
+    {
+        var builder = new StringBuilder();
+
         var allGlobals = SharedStateStore.Snapshot();
         if (allGlobals.Count > 0)
         {
-            var sb = new StringBuilder();
             foreach (var kvp in allGlobals)
             {
-                sb.AppendLine(
-                  $"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"];");
+                builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"]; ");
             }
-            code = sb + code;
         }
-        if (locals != null && locals.Count > 0)
+        if (locals is { Count: > 0 })
         {
-            var sb = new StringBuilder();
             foreach (var kvp in locals)
             {
-                sb.AppendLine(
-                  $"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"];");
+                builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"]; ");
             }
-            code = sb + code;
         }
 
-        // 2. Compile once
-        var script = CSharpScript.Create(code, opts, typeof(CsGlobals));
-        ImmutableArray<Diagnostic>? diagnostics = null;
+        return builder.Length > 0 ? builder + code : code ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Compiles the provided VB.NET script and returns any diagnostics.
+    /// </summary>
+    /// <param name="script">The VB.NET script to compile.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    /// <returns>A collection of diagnostics produced during compilation, or null if compilation failed.</returns>
+    private static ImmutableArray<Diagnostic>? CompileAndGetDiagnostics(Script<object> script, Serilog.ILogger log)
+    {
         try
         {
-            diagnostics = script.Compile();
+            return script.Compile();
         }
         catch (CompilationErrorException ex)
         {
             log.Error(ex, "C# script compilation failed with errors.");
+            return null;
         }
+    }
+
+    private static void ThrowIfDiagnosticsNull(ImmutableArray<Diagnostic>? diagnostics)
+    {
         if (diagnostics == null)
-        {
-            log.Error("C# script compilation failed with no diagnostics.");
             throw new CompilationErrorException("C# script compilation failed with no diagnostics.", ImmutableArray<Diagnostic>.Empty);
-        }
-        // Check for compilation errors
-        if (diagnostics?.Any(d => d.Severity == DiagnosticSeverity.Error) == true)
+    }
+
+    /// <summary>
+    /// Throws a CompilationErrorException if the diagnostics are null.
+    /// </summary>
+    /// <param name="diagnostics">The compilation diagnostics.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    /// <exception cref="CompilationErrorException"></exception>
+    private static void ThrowOnErrors(ImmutableArray<Diagnostic>? diagnostics, Serilog.ILogger log)
+    {
+        if (diagnostics?.Any(d => d.Severity == DiagnosticSeverity.Error) != true)
+            return;
+
+        var errors = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+        if (errors is not { Length: > 0 })
+            return;
+
+        log.Error($"C# script compilation completed with {errors.Length} error(s):");
+        foreach (var error in errors)
         {
-            var errors = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-            if (errors is not null && errors.Length > 0)
-            {
-                log.Error($"C# script compilation completed with {errors.Length} error(s):");
-                foreach (var error in errors)
-                {
-                    var location = error.Location.IsInSource
-                        ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
-                        : "";
-                    log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
-                }
-                throw new CompilationErrorException("C# route code compilation failed", diagnostics ?? []);
-            }
+            var location = error.Location.IsInSource
+                ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
+                : string.Empty;
+            log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
         }
-        // Log warnings if any (optional - for debugging)
+        throw new CompilationErrorException("C# route code compilation failed", diagnostics ?? []);
+    }
+
+    /// <summary>
+    /// Logs warning messages if the compilation succeeded with warnings.
+    /// </summary>
+    /// <param name="diagnostics">The compilation diagnostics.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    private static void LogWarnings(ImmutableArray<Diagnostic>? diagnostics, Serilog.ILogger log)
+    {
         var warnings = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings is not null && warnings.Length != 0)
         {
@@ -250,14 +342,21 @@ internal static class CSharpDelegateBuilder
             {
                 var location = warning.Location.IsInSource
                     ? $" at line {warning.Location.GetLineSpan().StartLinePosition.Line + 1}"
-                    : "";
+                    : string.Empty;
                 log.Warning($"  Warning [{warning.Id}]: {warning.GetMessage()}{location}");
             }
         }
-        // If there are no warnings, log a debug message
+    }
+
+    /// <summary>
+    /// Logs a success message if the compilation succeeded without warnings.
+    /// </summary>
+    /// <param name="diagnostics">The compilation diagnostics.</param>
+    /// <param name="log">The logger to use for logging.</param>
+    private static void LogSuccessIfNoWarnings(ImmutableArray<Diagnostic>? diagnostics, Serilog.ILogger log)
+    {
+        var warnings = diagnostics?.Where(d => d.Severity == DiagnosticSeverity.Warning).ToArray();
         if (warnings != null && warnings.Length == 0 && log.IsEnabled(LogEventLevel.Debug))
             log.Debug("C# script compiled successfully with no warnings.");
-
-        return script;
     }
 }
