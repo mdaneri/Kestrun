@@ -135,7 +135,7 @@ server.AddMapRoute("/ps/json",
                 # If you want to return the request body, uncomment the next line
                 RequestBody    = $Context.Request.Body 
             }
-            Write-KrWarningLog -name "audit" -PropertyValues $payload  -MessageTemplate "This is a warning log from PowerShell script"
+            Write-KrWarningLog -Name "audit" -PropertyValues $payload  -MessageTemplate "This is a warning log from PowerShell script"
             Write-KrJsonResponse -InputObject $payload -StatusCode 200
             """,
             ScriptLanguage.PowerShell);
