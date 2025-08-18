@@ -5,13 +5,10 @@ param(
     [string]$ModuleRootPath = './src/PowerShell/Kestrun',
     [string]$FileVersion = './version.json'
 )
-#if (-not $env:KESTRUN_CLEAN_SESSION) {
-#    $env:KESTRUN_CLEAN_SESSION = "1"
-#    pwsh -NoProfile -File $MyInvocation.MyCommand.Path @args
-#    exit
-#}
+
+$ModuleRootPath = Resolve-Path -Path $ModuleRootPath
+
 Write-Host "Current directory: $PWD"
-Write-Host "Creating module manifest for Kestrun at $ModuleRootPath"
 
 $sysfuncs = Get-ChildItem Function:
 
@@ -52,7 +49,8 @@ $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))  ? $Releas
 if ($Release -ne 'Stable') {
     $Prerelease = "Prerelease = '$ReleaseIteration'"
     $FullVersion = "$Version-$ReleaseIteration"
-} else {
+}
+else {
     $Prerelease = ''
     $FullVersion = $Version
 }
@@ -202,4 +200,4 @@ $module = @"
 
 $path = Join-Path -Path $ModuleRootPath -ChildPath 'Kestrun.psd1'
 Write-Host "Creating module manifest at $($ModuleRootPath)/Kestrun.psd1"
-[System.IO.File]::WriteAllText($path, $text, [System.Text.UTF8Encoding]::new($true))
+[System.IO.File]::WriteAllText($path, $module, [System.Text.UTF8Encoding]::new($true))
