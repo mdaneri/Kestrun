@@ -933,7 +933,6 @@ public class KestrunResponse
 
             // ordinary character
             sb.Append(template[i]);
-
         }
         return sb.ToString();
     }
