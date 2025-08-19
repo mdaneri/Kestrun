@@ -94,6 +94,35 @@ runs:
             curl -fsSL "$URL" -o "$PKG"
             echo "Installing $PKG…"
             sudo dpkg -i "$PKG" || sudo apt-get -y -f install
+            # If preview, make it the default 'pwsh' (Debian/Ubuntu)
+            if [[ "${PREVIEW_MODE:-}" == "true" ]]; then
+              echo "Setting PowerShell Preview as the default 'pwsh' via update-alternatives..."
+              if command -v pwsh-preview >/dev/null 2>&1; then
+                PREVIEW_BIN="$(command -v pwsh-preview)"
+                PREVIEW_REAL="$(readlink -f "$PREVIEW_BIN" || echo "$PREVIEW_BIN")"
+              else
+                # Fallback: search the preview install root
+                PREVIEW_REAL="$(ls -d /opt/microsoft/powershell-preview/*/pwsh 2>/dev/null | sort -V | tail -n 1 || true)"
+              fi
+
+              if [[ -n "$PREVIEW_REAL" && -x "$PREVIEW_REAL" ]]; then
+                # Register stable (if present) so the alt group is consistent
+                if command -v pwsh >/dev/null 2>&1; then
+                  STABLE_BIN="$(command -v pwsh)"
+                  STABLE_REAL="$(readlink -f "$STABLE_BIN" || echo "$STABLE_BIN")"
+                  sudo update-alternatives --install /usr/bin/pwsh pwsh "$STABLE_REAL" 10 || true
+                fi
+
+                # Register preview with higher priority and select it
+                sudo update-alternatives --install /usr/bin/pwsh pwsh "$PREVIEW_REAL" 200
+                sudo update-alternatives --set pwsh "$PREVIEW_REAL"
+
+                hash -r  # refresh bash's command hash
+                echo "Default 'pwsh' -> $(command -v pwsh)"
+              else
+                echo "Warning: could not locate 'pwsh-preview' binary after install."
+              fi
+            fi
           else
             # ARM/ARMHF → tarball install
             TARBALL="powershell-${REQUESTED_VERSION}-linux-${TARBALL_ARCH}.tar.gz"
@@ -239,7 +268,6 @@ runs:
 
         echo "pwsh now: $(pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')"
 
-    
     - name: Install PowerShell (Windows)
       if: runner.os == 'Windows'
       shell: powershell
