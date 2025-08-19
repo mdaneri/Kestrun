@@ -26,6 +26,8 @@
     .PARAMETER CommonName
         The common name (CN) to include in the CSR.
         This is typically the fully qualified domain name (FQDN) for the certificate.
+    .OUTPUTS
+        [Kestrun.Certificates.CertificateManager.CsrResult]
 
     .EXAMPLE
         $csr, $priv = New-KestrunCertificateRequest -DnsName 'example.com' -Country US
@@ -41,7 +43,7 @@ function New-KsCertificateRequest {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
-    [OutputType([object])]
+    [OutputType([Kestrun.Certificates.CertificateManager.CsrResult])]
     param(
         [Parameter(Mandatory)]
         [string[]] $DnsName,

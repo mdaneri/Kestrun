@@ -31,7 +31,7 @@ namespace Kestrun.Authentication.Tests
                 RequireHttps = requireHttps,
                 AllowQueryStringFallback = allowQueryStringFallback,
                 Logger = new LoggerConfiguration().MinimumLevel.Debug().CreateLogger(),
-                AdditionalHeaderNames = new string[] { },
+                AdditionalHeaderNames = [],
                 EmitChallengeHeader = true,
                 ChallengeHeaderFormat = ApiKeyChallengeFormat.HeaderOnly
             };

@@ -189,14 +189,19 @@ public static class CertificateManager
 
     #region  CSR
 
-
+    /// <summary>
+    /// Represents the result of creating a Certificate Signing Request (CSR), including the PEM-encoded CSR and the private key.
+    /// </summary>
+    /// <param name="Pem">The PEM-encoded CSR string.</param>
+    /// <param name="PrivateKey">The private key associated with the CSR.</param>
+    public record CsrResult(string Pem, AsymmetricKeyParameter PrivateKey);
 
     /// <summary>
     /// Creates a new Certificate Signing Request (CSR) and returns the PEM-encoded CSR and the private key.
     /// </summary>
     /// <param name="o">Options for creating the CSR.</param>
     /// <returns>A tuple containing the PEM-encoded CSR and the private key.</returns>
-    public static (string csrPem, AsymmetricKeyParameter privateKey) NewCertificateRequest(CsrOptions o)
+    public static CsrResult NewCertificateRequest(CsrOptions o)
     {
         // 0️⃣ Setup
         var random = new SecureRandom(new CryptoApiRandomGenerator());
@@ -263,7 +268,7 @@ public static class CertificateManager
         using var sw = new StringWriter();
         new PemWriter(sw).WriteObject(csr);
 
-        return (sw.ToString(), keyPair.Private);
+        return new CsrResult(sw.ToString(), keyPair.Private);
     }
 
     #endregion

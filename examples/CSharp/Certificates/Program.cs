@@ -112,7 +112,7 @@ class Program
         // ────────────────────────────────────────────────────────────────
         var (csrPem, privKey) = CertificateManager.NewCertificateRequest(
             new CertificateManager.CsrOptions(
-                DnsNames: new[] { "example.com", "www.example.com" },
+                DnsNames: ["example.com", "www.example.com"],
                 KeyType: CertificateManager.KeyType.Ecdsa,
                 KeyLength: 384,
                 Country: "US",
