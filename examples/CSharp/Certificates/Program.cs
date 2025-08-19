@@ -110,7 +110,7 @@ class Program
         // ────────────────────────────────────────────────────────────────
         // 2) Generate an ECDSA CSR
         // ────────────────────────────────────────────────────────────────
-        var (csrPem, privKey) = CertificateManager.NewCertificateRequest(
+        var csrResult = CertificateManager.NewCertificateRequest(
             new CertificateManager.CsrOptions(
                 DnsNames: ["example.com", "www.example.com"],
                 KeyType: CertificateManager.KeyType.Ecdsa,
@@ -120,10 +120,10 @@ class Program
                 CommonName: "example.com"
             ));
 
-        File.WriteAllText("out/example.csr", csrPem);
+        File.WriteAllText("out/example.csr", csrResult.Pem);
         using (var sw = new StreamWriter("out/example.key"))
         {
-            new PemWriter(sw).WriteObject(privKey);
+            new PemWriter(sw).WriteObject(csrResult.PrivateKey);
         }
 
         Console.WriteLine("[CSR] out/example.csr + out/example.key written");

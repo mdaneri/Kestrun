@@ -28,7 +28,6 @@ namespace Kestrun.Models;
 /// </summary>
 public class KestrunResponse
 {
-
     /// <summary>
     /// A set of MIME types that are considered text-based for response content.
     /// </summary>
@@ -886,6 +885,24 @@ public class KestrunResponse
             return template;
         }
 
+        var render = RenderInline(template, vars);
+
+        if (Log.IsEnabled(LogEventLevel.Debug))
+        {
+            Log.Debug("Rendered template length: {RenderedLength}", render.Length);
+        }
+
+        return render;
+    }
+
+    /// <summary>
+    /// Renders a template string by replacing placeholders in the format {{key}} with corresponding values from the provided dictionary.
+    /// </summary>
+    /// <param name="template">The template string containing placeholders.</param>
+    /// <param name="vars">A dictionary of variables to replace in the template.</param>
+    /// <returns>The rendered string with placeholders replaced by variable values.</returns>
+    private static string RenderInline(string template, IReadOnlyDictionary<string, object?> vars)
+    {
         var sb = new StringBuilder(template.Length);
 
         for (int i = 0; i < template.Length; i++)
@@ -916,15 +933,11 @@ public class KestrunResponse
 
             // ordinary character
             sb.Append(template[i]);
-        }
 
-        if (Log.IsEnabled(LogEventLevel.Debug))
-        {
-            Log.Debug("Rendered template length: {RenderedLength}", sb.Length);
         }
-
         return sb.ToString();
     }
+
 
 
     /// <summary>

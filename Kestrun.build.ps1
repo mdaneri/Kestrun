@@ -187,8 +187,18 @@ Add-BuildTask 'Build' 'BuildNoPwsh', 'SyncPowerShellDll', {}
 
 Add-BuildTask 'SyncPowerShellDll' {
     $dest = ".\src\PowerShell\Kestrun\lib"
-    Write-Host "Copy dll to $dest"
-    Copy-Item -Path ".\src\CSharp\Kestrun\bin\$Configuration\*" -Destination "$dest" -Recurse -Force
+    $src = ".\src\CSharp\Kestrun\bin\$Configuration"
+    Write-Host "Preparing to copy files from $src to $dest"
+    foreach ($framework in $Frameworks) {
+        $destFramework = Join-Path -Path $dest -ChildPath $framework
+        $srcFramework = Join-Path -Path $src -ChildPath $framework
+        Write-Host "Copy dll from $srcFramework to $destFramework"
+        if (Test-Path -Path $destFramework) {
+            Remove-Item -Path $destFramework -Recurse -Force | Out-Null
+        }
+        New-Item -Path $destFramework -ItemType Directory -Force | Out-Null
+        Copy-Item -Path "$srcFramework\*" -Destination $destFramework -Recurse -Force
+    }
 }
 
 Add-BuildTask 'Nuget-CodeAnalysis' {

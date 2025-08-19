@@ -43,7 +43,7 @@ function New-KsCertificateRequest {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
-    [OutputType([Kestrun.Certificates.CertificateManager.CsrResult])]
+    [OutputType([Kestrun.Certificates.CsrResult])]
     param(
         [Parameter(Mandatory)]
         [string[]] $DnsName,

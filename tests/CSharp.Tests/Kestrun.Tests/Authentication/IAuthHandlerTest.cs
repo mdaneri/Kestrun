@@ -9,6 +9,8 @@ using Kestrun.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Collections;
+using System.Reflection;
 using Moq;
 using Serilog;
 using Xunit;
@@ -90,7 +92,7 @@ namespace Kestrun.Authentication.Tests
             {
                 Code = "return (System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>) new System.Collections.Generic.List<System.Security.Claims.Claim>() { new System.Security.Claims.Claim(\"role\", \"admin\") };",
                 CSharpVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion.Latest,
-                ExtraImports = new[] { "System", "System.Linq", "System.Collections.Generic", "System.Security.Claims", "Kestrun", "Microsoft.AspNetCore.Http" }
+                ExtraImports = ["System", "System.Linq", "System.Collections.Generic", "System.Security.Claims", "Kestrun", "Microsoft.AspNetCore.Http"]
             };
             var logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 
@@ -117,6 +119,127 @@ namespace Kestrun.Authentication.Tests
 
             // Assert
             Assert.NotNull(func);
+        }
+
+        [Fact]
+        public void TryToClaim_ReturnsTrue_ForClaimInstance()
+        {
+            // Arrange
+            var method = typeof(IAuthHandler).GetMethod("TryToClaim", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var input = new Claim("role", "admin");
+            var args = new object?[] { input, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(null, args)!;
+            var claim = args[1] as Claim;
+
+            // Assert
+            Assert.True(ok);
+            Assert.NotNull(claim);
+            Assert.Equal("role", claim!.Type);
+            Assert.Equal("admin", claim.Value);
+        }
+
+        [Fact]
+        public void TryToClaim_ReturnsTrue_ForDictionaryWithTypeAndValue()
+        {
+            // Arrange
+            var method = typeof(IAuthHandler).GetMethod("TryToClaim", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            IDictionary dict = new Dictionary<string, object?>
+            {
+                { "Type", ClaimTypes.Email },
+                { "Value", "user@example.com" }
+            };
+
+            var args = new object?[] { dict, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(null, args)!;
+            var claim = args[1] as Claim;
+
+            // Assert
+            Assert.True(ok);
+            Assert.NotNull(claim);
+            Assert.Equal(ClaimTypes.Email, claim!.Type);
+            Assert.Equal("user@example.com", claim.Value);
+        }
+
+        [Fact]
+        public void TryToClaim_ReturnsTrue_ForColonSeparatedString()
+        {
+            // Arrange
+            var method = typeof(IAuthHandler).GetMethod("TryToClaim", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var input = "scope:read";
+            var args = new object?[] { input, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(null, args)!;
+            var claim = args[1] as Claim;
+
+            // Assert
+            Assert.True(ok);
+            Assert.NotNull(claim);
+            Assert.Equal("scope", claim!.Type);
+            Assert.Equal("read", claim.Value);
+        }
+
+        [Fact]
+        public void TryToClaim_ReturnsFalse_ForUnsupportedInput()
+        {
+            // Arrange
+            var method = typeof(IAuthHandler).GetMethod("TryToClaim", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var args = new object?[] { 42, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(null, args)!;
+
+            // Assert
+            Assert.False(ok);
+            Assert.Null(args[1]);
+        }
+
+        [Fact]
+        public void GetPowerShell_Throws_WhenMissingFromContext()
+        {
+            // Arrange
+            var getPs = typeof(IAuthHandler).GetMethod("GetPowerShell", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(getPs);
+
+            var context = new DefaultHttpContext();
+
+            // Act + Assert
+            var ex = Assert.Throws<TargetInvocationException>(() => getPs!.Invoke(null, new object?[] { context }));
+            Assert.IsType<InvalidOperationException>(ex.InnerException);
+        }
+
+        [Fact]
+        public void GetPowerShell_ReturnsInstance_WhenPresentInContext()
+        {
+            // Arrange
+            var getPs = typeof(IAuthHandler).GetMethod("GetPowerShell", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(getPs);
+
+            var context = new DefaultHttpContext();
+            using var runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
+            runspace.Open();
+            using var ps = PowerShell.Create();
+            ps.Runspace = runspace;
+            context.Items["PS_INSTANCE"] = ps;
+
+            // Act
+            var result = getPs!.Invoke(null, new object?[] { context });
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<PowerShell>(result);
         }
     }
 }

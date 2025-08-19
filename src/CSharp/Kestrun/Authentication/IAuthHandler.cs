@@ -304,10 +304,6 @@ public interface IAuthHandler
     /// <returns>A task representing the asynchronous operation, with a collection of issued claims.</returns>
     public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity, Serilog.ILogger logger)
     {
-        if (!ctx.Items.TryGetValue("PS_INSTANCE", out var psObj) || psObj is not PowerShell ps || ps.Runspace == null)
-        {
-            throw new InvalidOperationException("PowerShell runspace not found or not set in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-        }
         if (string.IsNullOrWhiteSpace(identity))
         {
             logger.Warning("Identity is null or empty.");
@@ -317,38 +313,32 @@ public interface IAuthHandler
         {
             throw new InvalidOperationException("PowerShell authentication code is null or empty.");
         }
+
         try
         {
+            var ps = GetPowerShell(ctx);
             ps.AddScript(code, useLocalScope: true).AddParameter("identity", identity);
+
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
-            var claims = new List<Claim>();
+            if (psResults is null || psResults.Count == 0)
+            {
+                return [];
+            }
+
+            var claims = new List<Claim>(psResults.Count);
             foreach (var r in psResults)
             {
-                var obj = r.BaseObject;
-                if (obj is Claim c)
+                if (TryToClaim(r?.BaseObject, out var claim))
                 {
-                    claims.Add(c);
-                }
-                else if (obj is IDictionary dict && dict.Contains("Type") && dict.Contains("Value"))
-                {
-                    var typeStr = dict["Type"]?.ToString();
-                    var valueStr = dict["Value"]?.ToString();
-                    if (!string.IsNullOrEmpty(typeStr) && !string.IsNullOrEmpty(valueStr))
-                    {
-                        claims.Add(new Claim(typeStr, valueStr));
-                    }
-                }
-                else if (obj is string s && s.Contains(':'))
-                {
-                    var idx = s.IndexOf(':');
-                    claims.Add(new Claim(s[..idx], s[(idx + 1)..]));
+                    claims.Add(claim);
                 }
                 else
                 {
-                    logger.Warning("PowerShell script returned an unsupported type: {Type}", obj?.GetType());
+                    logger.Warning("PowerShell script returned an unsupported type: {Type}", r?.BaseObject?.GetType());
                     throw new InvalidOperationException("PowerShell script returned an unsupported type.");
                 }
             }
+
             return claims;
         }
         catch (Exception ex)
@@ -357,6 +347,60 @@ public interface IAuthHandler
             return [];
         }
     }
+
+    /// <summary>
+    /// Retrieves the PowerShell instance from the HTTP context.
+    /// </summary>
+    /// <param name="ctx">The HTTP context containing the PowerShell runspace.</param>
+    /// <returns>The PowerShell instance associated with the context.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the PowerShell runspace is not found.</exception>
+    private static PowerShell GetPowerShell(HttpContext ctx)
+    {
+        if (!ctx.Items.TryGetValue("PS_INSTANCE", out var psObj) || psObj is not PowerShell ps || ps.Runspace == null)
+        {
+            throw new InvalidOperationException("PowerShell runspace not found or not set in context items. Ensure PowerShellRunspaceMiddleware is registered.");
+        }
+        return ps;
+    }
+
+/// <summary>
+/// Tries to create a Claim from the provided object.
+/// </summary>
+/// <param name="obj">The object to create a Claim from.</param>
+/// <param name="claim">The created Claim, if successful.</param>
+/// <returns>True if the Claim was created successfully; otherwise, false.</returns>
+    private static bool TryToClaim(object? obj, out Claim claim)
+    {
+        switch (obj)
+        {
+            case Claim c:
+                claim = c;
+                return true;
+
+            case IDictionary dict when dict.Contains("Type") && dict.Contains("Value"):
+                var typeStr = dict["Type"]?.ToString();
+                var valueStr = dict["Value"]?.ToString();
+                if (!string.IsNullOrEmpty(typeStr) && !string.IsNullOrEmpty(valueStr))
+                {
+                    claim = new Claim(typeStr, valueStr);
+                    return true;
+                }
+                break;
+
+            case string s when s.Contains(':'):
+                var idx = s.IndexOf(':');
+                if (idx >= 0 && idx < s.Length - 1)
+                {
+                    claim = new Claim(s[..idx], s[(idx + 1)..]);
+                    return true;
+                }
+                break;
+        }
+
+        claim = default!;
+        return false;
+    }
+
 
     /// <summary>
     /// Builds a C#-based function for issuing claims for a user.
