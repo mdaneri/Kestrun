@@ -378,7 +378,7 @@ public sealed class SchedulerService : IDisposable
     /// </summary>
     /// <param name="name">The name of the job to pause.</param>
     /// <returns>True if the job was found and paused; otherwise, false.</returns>
-    public bool Pause(string name) => Suspend(name, true);
+    public bool Pause(string name) => Suspend(name);
     /// <summary>
     /// Resumes a scheduled job by its name.
     /// </summary>

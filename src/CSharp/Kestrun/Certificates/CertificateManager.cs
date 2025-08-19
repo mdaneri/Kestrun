@@ -470,7 +470,7 @@ public static class CertificateManager
         // ToSecureSpan zero-frees its buffer as soon as this callback returns.
         ReadOnlySpan<char> passwordSpan = default;
         // capture the return value of the span-based overload
-        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: null);
+        result = Import(certPath: certPath, password: passwordSpan);
         return result!;
     }
 

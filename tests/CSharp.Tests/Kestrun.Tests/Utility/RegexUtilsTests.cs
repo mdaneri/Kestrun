@@ -27,7 +27,7 @@ public class RegexUtilsTests
     [Fact]
     public void IsGlobMatch_CaseSensitive_Works()
     {
-        Assert.True(InvokeIsGlobMatch("abc", "ABC", ignoreCase: true));
-        Assert.False(InvokeIsGlobMatch("abc", "ABC", ignoreCase: false));
+        Assert.True(InvokeIsGlobMatch(input:"abc", pattern:"ABC"));
+        Assert.False(InvokeIsGlobMatch(input:"abc", pattern:"ABC", ignoreCase: false));
     }
 }

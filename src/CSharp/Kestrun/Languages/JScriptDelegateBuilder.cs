@@ -10,7 +10,7 @@ namespace Kestrun.Languages;
 
 internal static class JScriptDelegateBuilder
 {
-    static readonly bool Implemented = false;
+    public static bool Implemented { get; set; }
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
         if (Log.IsEnabled(LogEventLevel.Debug))

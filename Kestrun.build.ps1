@@ -177,6 +177,9 @@ Add-BuildTask 'BuildNoPwsh' {
 
     foreach ($framework in $Frameworks) {
         dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
+        if ($LASTEXITCODE -ne 0) {
+            throw "dotnet build failed for framework $framework"
+        }
     }
 }
 

@@ -19,7 +19,7 @@ namespace Kestrun.Languages;
 
 internal static class PyDelegateBuilder
 {
-    static readonly bool Implemented = false;
+    public static bool Implemented { get; set; }
     static public void ConfigurePythonRuntimePath(string path)
     {
         Python.Runtime.Runtime.PythonDLL = path;
@@ -28,7 +28,7 @@ internal static class PyDelegateBuilder
     //  helpers at class level
     // ---------------------------------------------------------------------------
     private static readonly object _pyGate = new();
-    private static bool _pyInit = false;
+    private static bool _pyInit;
 
     private static void EnsurePythonEngine()
     {

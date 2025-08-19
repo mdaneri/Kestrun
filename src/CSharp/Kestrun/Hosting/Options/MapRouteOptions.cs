@@ -48,7 +48,7 @@ public record MapRouteOptions
     /// <summary>
     /// If true, short-circuits the pipeline after this route.
     /// </summary>
-    public bool ShortCircuit { get; internal set; } = false; // If true, short-circuit the pipeline after this route
+    public bool ShortCircuit { get; internal set; } // If true, short-circuit the pipeline after this route
     /// <summary>
     /// Status code to return if short-circuiting the pipeline after this route.
     /// </summary>
@@ -106,5 +106,5 @@ public record MapRouteOptions
     /// <summary>
     /// If true, throws an exception on duplicate routes.
     /// </summary>
-    public bool ThrowOnDuplicate { get; init; } = false;
+    public bool ThrowOnDuplicate { get; init; }
 }

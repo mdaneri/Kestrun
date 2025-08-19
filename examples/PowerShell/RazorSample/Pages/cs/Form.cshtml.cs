@@ -11,7 +11,7 @@ public class CSharpFormModel : PageModel
     [BindProperty]
     public string? Email { get; set; }
 
-    public bool Submitted { get; private set; } = false;
+    public bool Submitted { get; private set; }
 
     public void OnGet()
     {

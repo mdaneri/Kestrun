@@ -126,7 +126,7 @@ public class Table
         }
         else
         {
-            AddRow(false, values);
+            AddRow(values: values);
         }
     }
 

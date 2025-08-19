@@ -28,6 +28,22 @@ namespace Kestrun.Models;
 /// </summary>
 public class KestrunResponse
 {
+
+    /// <summary>
+    /// A set of MIME types that are considered text-based for response content.
+    /// </summary>
+    public static readonly HashSet<string> TextBasedMimeTypes =
+    new(StringComparer.OrdinalIgnoreCase)
+    {
+        "application/json",
+        "application/xml",
+        "application/javascript",
+        "application/xhtml+xml",
+        "application/x-www-form-urlencoded",
+        "application/yaml",
+        "application/graphql"
+    };
+
     /// <summary>
     /// Gets or sets the HTTP status code for the response.
     /// </summary>
@@ -148,11 +164,7 @@ public class KestrunResponse
         }
 
         // Common application types where charset makes sense
-        return type.ToLowerInvariant() switch
-        {
-            "application/json" or "application/xml" or "application/javascript" or "application/xhtml+xml" or "application/x-www-form-urlencoded" or "application/yaml" or "application/graphql" => true,
-            _ => false,
-        };
+        return TextBasedMimeTypes.Contains(type);
     }
     #endregion
 
@@ -373,7 +385,7 @@ public class KestrunResponse
         }
 
         Body = inputObject;
-        ContentType = DetermineContentType(string.Empty, "text/plain"); // Ensure ContentType is set based on Accept header
+        ContentType = DetermineContentType(contentType: string.Empty); // Ensure ContentType is set based on Accept header
 
         if (ContentType.Contains("json"))
         {

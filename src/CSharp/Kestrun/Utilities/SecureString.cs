@@ -14,7 +14,7 @@ public static class SecureStringUtils
     /// <summary>
     /// Represents a delegate that handles a ReadOnlySpan&lt;char&gt;.
     /// </summary>
-    public unsafe delegate void SpanHandler(ReadOnlySpan<char> span);
+    public delegate void SpanHandler(ReadOnlySpan<char> span);
 
 
     /// <summary>

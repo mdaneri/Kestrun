@@ -73,7 +73,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenNoValidator()
         {
-            var options = CreateOptions(validator: null);
+            var options = CreateOptions();
             // Explicitly null out the validator to trigger the intended code path
             options.ValidateCredentialsAsync = null!;
             var handler = CreateHandler(options);
@@ -87,7 +87,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenHttpsRequiredAndNotHttps()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true), requireHttps: true);
+            var options = CreateOptions(validator: (_, _, _)  => Task.FromResult(true), requireHttps: true);
             var context = new DefaultHttpContext();
             context.Request.Scheme = "http";
             var handler = CreateHandler(options, context);
@@ -101,7 +101,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenMissingAuthorizationHeader()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _)  => Task.FromResult(true));
             var context = new DefaultHttpContext();
             var handler = CreateHandler(options, context);
 
@@ -114,7 +114,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenInvalidScheme()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
             var context = new DefaultHttpContext();
             context.Request.Headers["Authorization"] = "Bearer sometoken";
             var handler = CreateHandler(options, context);
@@ -128,7 +128,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenMalformedCredentials_Base64()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
             var context = new DefaultHttpContext();
             // Not a valid base64 string
             context.Request.Headers["Authorization"] = "Basic not_base64";
@@ -143,7 +143,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenMalformedCredentials_NoColon()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
             var context = new DefaultHttpContext();
             var badCreds = Convert.ToBase64String(Encoding.UTF8.GetBytes("nocolon"));
             context.Request.Headers["Authorization"] = $"Basic {badCreds}";
@@ -158,7 +158,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenUsernameEmpty()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
             var context = new DefaultHttpContext();
             var creds = Convert.ToBase64String(Encoding.UTF8.GetBytes(":password"));
             context.Request.Headers["Authorization"] = $"Basic {creds}";
@@ -173,7 +173,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenInvalidCredentials()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(false));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(false));
             var context = new DefaultHttpContext();
             var creds = EncodeBasicAuth("user", "wrongpass");
             context.Request.Headers["Authorization"] = $"Basic {creds}";
@@ -188,7 +188,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsSuccess_WhenValidCredentials()
         {
-            var options = CreateOptions(validator: (ctx, u, p) => Task.FromResult(u == "user" && p == "pass"));
+            var options = CreateOptions(validator: (_, u, p) => Task.FromResult(u == "user" && p == "pass"));
             var context = new DefaultHttpContext();
             var creds = EncodeBasicAuth("user", "pass");
             context.Request.Headers["Authorization"] = $"Basic {creds}";
@@ -196,7 +196,7 @@ namespace Kestrun.Authentication.Tests
 
             // Mock IAuthHandler.GetAuthenticationTicketAsync to return a dummy ticket
             var ticket = new AuthenticationTicket(
-                new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "user") }, "Basic")),
+                new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, "user")], "Basic")),
                 "Basic"
             );
             var getTicketAsync = typeof(IAuthHandler).GetMethod("GetAuthenticationTicketAsync");

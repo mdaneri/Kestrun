@@ -30,7 +30,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// <para>Note: this is less secure, as query strings can be logged.</para>
     /// <para>Use with caution.</para>
     /// </summary>
-    public bool AllowQueryStringFallback { get; set; } = false;
+    public bool AllowQueryStringFallback { get; set; }
 
     /// <summary>
     /// Single expected API key (used if ValidateKey is not set).
@@ -76,7 +76,7 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// <para>This is called for every request, so it should be fast.</para>
     /// </summary>
     //public Func<string, bool> ValidateKey { get; set; } = _ => false;
-    public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (context, key, keyBytes) => Task.FromResult(false);
+    public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (_, _, _) => Task.FromResult(false);
 
     /// <summary>
     /// Settings for the authentication code, if using a script.

@@ -174,11 +174,10 @@ public class ApiKeyAuthHandler
         if (Options.EmitChallengeHeader)
         {
             var header = Options.HeaderName ?? "X-Api-Key";
-            var value = Options.ChallengeHeaderFormat switch
-            {
-                ApiKeyChallengeFormat.HeaderOnly => header,
-                _ => $"ApiKey header=\"{header}\""
-            };
+
+            var value = Options.ChallengeHeaderFormat == ApiKeyChallengeFormat.ApiKeyHeader
+                ? $"ApiKey header=\"{header}\""
+                : header;
 
             Response.Headers.WWWAuthenticate = value;
         }
@@ -205,7 +204,8 @@ public class ApiKeyAuthHandler
                {
                    return await IAuthHandler.ValidatePowerShellAsync(settings.Code, ctx, new Dictionary<string, string>
                    {
-                    { "providedKey", providedKey }
+                    { "providedKey", providedKey },
+                    { "providedKeyBytes", Convert.ToBase64String(providedKeyBytes) }
                    }, logger);
                };
     }

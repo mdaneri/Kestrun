@@ -48,14 +48,14 @@ public partial class BasicAuthenticationOptions : AuthenticationSchemeOptions, I
     /// <summary>
     /// Gets or sets a value indicating whether to suppress the WWW-Authenticate header in responses.
     /// </summary>
-    public bool SuppressWwwAuthenticate { get; set; } = false;
+    public bool SuppressWwwAuthenticate { get; set; }
 
 
     /// <summary>
     /// Delegate to validate user credentials.
     /// Parameters: HttpContext, username, password. Returns: Task&lt;bool&gt; indicating validity.
     /// </summary>
-    public Func<HttpContext, string, string, Task<bool>> ValidateCredentialsAsync { get; set; } = (context, username, password) => Task.FromResult(false);
+    public Func<HttpContext, string, string, Task<bool>> ValidateCredentialsAsync { get; set; } = (_, _, _) => Task.FromResult(false);
 
     /// <summary>
     /// Settings for the authentication code, if using a script.

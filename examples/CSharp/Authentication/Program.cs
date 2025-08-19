@@ -255,7 +255,7 @@ server.AddResponseCompression(options =>
    .AddBasicAuthentication(BasicNativeScheme, opts =>
    {
        opts.Realm = "Native-Kestrun";
-       opts.ValidateCredentialsAsync = async (context, username, password) =>
+       opts.ValidateCredentialsAsync = async (_, username, password) =>
        {
            Log.Information("Validating credentials for {Username}", username);
            // pretend we did some async work:
@@ -267,7 +267,7 @@ server.AddResponseCompression(options =>
        // This code will be executed to issue claims based on the username
        // It can return an array of System.Security.Claims.Claim objects
        // or an empty array if no claims are issued.
-       opts.IssueClaims = async (context, identity) =>
+       opts.IssueClaims = async (_, identity) =>
        {
            if (identity == "admin")
            {
