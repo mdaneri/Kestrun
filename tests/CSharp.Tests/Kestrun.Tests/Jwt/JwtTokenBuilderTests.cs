@@ -78,12 +78,7 @@ public class JwtTokenBuilderTests
     {
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var cert = CreateEcdsaSelfSignedCertOrNull("CN=ES256", ecdsa);
-        if (cert is null) { return; }
-        // Skip if ES256 not actually usable for X509SecurityKey in this environment
-        var cpf = new Microsoft.IdentityModel.Tokens.CryptoProviderFactory();
-        var x509Key = new Microsoft.IdentityModel.Tokens.X509SecurityKey(cert);
-        try { var sp = cpf.CreateForSigning(x509Key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.EcdsaSha256); sp.Dispose(); }
-        catch (NotSupportedException) { return; }
+        if (cert is null) { throw new InvalidOperationException("Unable to create ECDSA certificate for ES256 test."); }
 
         var b = JwtTokenBuilder.New().WithIssuer("iss").WithAudience("aud").WithSubject("s").SignWithCertificate(cert);
         var res = b.Build();

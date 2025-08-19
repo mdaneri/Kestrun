@@ -69,7 +69,8 @@ jobs:
 
       - name: 🧪 Test (.NET) with coverage (Cobertura)
         run: |
-          dotnet test  ./src/CSharp/Kestrun/Kestrun.csproj \
+          mkdir -p coverage
+          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/Kestrun.Tests.csproj \
             -c Release \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
@@ -83,6 +84,7 @@ jobs:
           file: coverage/csharp.cobertura.xml
           parallel: true
           flag-name: csharp
+
 
   # --- PowerShell coverage (one canonical env uploads) ---
   pwsh-coverage:
@@ -138,13 +140,29 @@ jobs:
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
-      - name: 🧪 Test (Pester) with coverage (JaCoCo)
+      - name: 🧪 Test (Pester) with coverage (JaCoCo, Pester 5)
         shell: pwsh
         run: |
-          Invoke-Pester -Output Detailed `
-            -CodeCoverage ./src/PowerShell/Kestrun/*.psm1 `
-            -CodeCoverageOutputFile "TestResults/pester.jacoco.xml" `
-            -CodeCoverageOutputFormat JaCoCo
+          $ErrorActionPreference = 'Stop'
+
+          # Adjust these to your repo layout
+          $moduleGlobs = @('./src/PowerShell/Kestrun/*.psm1')
+          $testPath    = './tests/PowerShell'  # or wherever your Pester tests live
+
+          $cfg = New-PesterConfiguration
+          # What to run
+          $cfg.Run.Path               = $testPath
+          # Verbosity
+          $cfg.Output.Verbosity       = 'Detailed'     # (None|Normal|Detailed|Diagnostic)
+          # Coverage
+          $cfg.CodeCoverage.Enabled   = $true
+          $cfg.CodeCoverage.Path      = $moduleGlobs
+          $cfg.CodeCoverage.OutputFormat = 'JaCoCo'    # 'JaCoCo' or 'Cobertura'
+          $cfg.CodeCoverage.OutputPath   = './coverage/powershell.jacoco.xml'
+          # CI mode (no prompts, nicer summaries)
+          $cfg.Run.CI                 = $true
+
+          Invoke-Pester -Configuration $cfg
 
       - name: ☁️ Upload PowerShell to Coveralls (parallel)
         uses: coverallsapp/github-action@v2

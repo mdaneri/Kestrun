@@ -97,11 +97,7 @@ public class JwtParametersIntegrationTests
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var req = new CertificateRequest("CN=ParamsES256", ecdsa, HashAlgorithmName.SHA256);
         using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddMinutes(10));
-        // Gate on ES256 capability for X509SecurityKey by attempting to create provider
-        var cpf = new Microsoft.IdentityModel.Tokens.CryptoProviderFactory();
-        var x509Key = new Microsoft.IdentityModel.Tokens.X509SecurityKey(cert);
-        try { var sp = cpf.CreateForSigning(x509Key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.EcdsaSha256); sp.Dispose(); }
-        catch (NotSupportedException) { return; }
+        // ES256 capability is enabled via a custom CryptoProviderFactory in tests
 
         var b = JwtTokenBuilder.New()
             .WithIssuer("iss-es")
