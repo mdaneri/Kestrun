@@ -37,7 +37,7 @@
         The X509 certificate used for encryption.
 
     .OUTPUTS
-        [Kestrun.Security.JwtTokenBuilder]
+        [Kestrun.Jwt.JwtTokenBuilder]
         Returns the modified JWT token builder with encryption applied.
 
     .EXAMPLE
@@ -49,7 +49,7 @@
         $builder | Protect-KrJWTPayload -X509Certificate (Get-Item "C:\path\to\certificate.pfx")
 
     .NOTES
-        This function is part of the Kestrun.Security module and is used to build and protect JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to build and protect JWT tokens.
         Internally maps to JwtTokenBuilder.EncryptWithSecretB64, EncryptWithSecretHex, EncryptWithSecret,
         EncryptWithPemPublic, and EncryptWithCertificate methods.
 
@@ -59,10 +59,10 @@
 function Protect-KrJWTPayload {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'Base64Url')]
-    [OutputType([Kestrun.Security.JwtTokenBuilder])]
+    [OutputType([Kestrun.Jwt.JwtTokenBuilder])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtTokenBuilder] $Builder,
+        [Kestrun.Jwt.JwtTokenBuilder] $Builder,
         [Parameter(Mandatory = $true, ParameterSetName = 'HexadecimalKey')]
         [string] $HexadecimalKey,
         [Parameter(Mandatory = $true, ParameterSetName = 'Base64Url')]

@@ -16,7 +16,7 @@
         $isValid = New-KrJWTTokenBuilder | Add-KrJWTSubject -Subject "mySubject" | Build-KrJWT | Test-KrJWT -Token $token
         This example creates a new JWT token builder, adds a subject, and then tests the validity of the JWT token.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to validate JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to validate JWT tokens.
         Maps to JwtBuilderResult.Validate
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
@@ -27,7 +27,7 @@ function Test-KrJWT {
     [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtBuilderResult] $Result,
+        [Kestrun.Jwt.JwtBuilderResult] $Result,
         [Parameter(Mandatory)]
         [string] $Token,
         [Parameter()]

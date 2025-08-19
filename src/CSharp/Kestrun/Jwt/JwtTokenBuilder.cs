@@ -18,7 +18,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using Kestrun.Hosting;  // For Base64UrlEncoder
-namespace Kestrun.Security;
+namespace Kestrun.Jwt;
 
 /// <summary>
 /// Fluent utility to create any flavour of JWS/JWE in one line.

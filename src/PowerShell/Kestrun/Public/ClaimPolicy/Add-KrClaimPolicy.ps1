@@ -17,7 +17,7 @@
         PS C:\> Add-KrClaimPolicy -Builder $builder -PolicyName "ExamplePolicy" -ClaimType "ExampleClaim" -AllowedValues "Value1", "Value2"
         This is an example of how to use the Add-KrClaimPolicy function.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to build Claims
+        This function is part of the Kestrun.Jwt module and is used to build Claims
 #>
 function Add-KrClaimPolicy {
     [KestrunRuntimeApi('Everywhere')]

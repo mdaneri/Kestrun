@@ -19,7 +19,7 @@ using Kestrun.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
-using Kestrun.Security;
+using Kestrun.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;

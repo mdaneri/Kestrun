@@ -284,60 +284,54 @@ runs:
 
         # Resolve 'latest' / 'preview' → concrete version
         if ($req -and $req.Trim().ToLower() -eq 'latest') {
-            $latest = (
-              Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases/latest' `
+          $latest = (
+            Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases/latest' `
               -Headers @{
-                'Accept'              = 'application/vnd.github+json'
-                'Authorization'       = "Bearer $($env:GITHUB_TOKEN)"
-                'X-GitHub-Api-Version'= '2022-11-28'
+                'Accept'='application/vnd.github+json'
+                'Authorization'="Bearer $($env:GITHUB_TOKEN)"
+                'X-GitHub-Api-Version'='2022-11-28'
               }
-            ).tag_name.TrimStart('v')
-            Write-Host "Latest stable PowerShell release detected: $latest"
-            $env:REQUESTED_VERSION = $latest
-
-        } elseif ($req -and $req.Trim().ToLower() -eq 'preview') {
-            # 🔧 NEW: resolve latest preview (e.g., 7.6.0-preview.3)
-            $rels = Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases?per_page=100' `
-                    -Headers @{
-                      'Accept'              = 'application/vnd.github+json'
-                      'Authorization'       = "Bearer $($env:GITHUB_TOKEN)"
-                      'X-GitHub-Api-Version'= '2022-11-28'
-                    }
-            $previewTags =
-              $rels |
-              Where-Object { $_.prerelease -eq $true -and $_.tag_name -match 'preview' } |
-              Select-Object -ExpandProperty tag_name |
-              ForEach-Object { $_.TrimStart('v') }
-
-            if (-not $previewTags) { Write-Error "Could not find a preview release."; exit 1 }
-
-            # Sort by major.minor.patch + preview number
-            $env:REQUESTED_VERSION = $previewTags |
-              Sort-Object {
-                if ($_ -match '^(\d+)\.(\d+)\.(\d+)-preview\.(\d+)$') {
-                  [int]$matches[1], [int]$matches[2], [int]$matches[3], [int]$matches[4]
-                } else {
-                  # fallback: push non-matching to the end
-                  0,0,0,-1
-                }
-              } |
-              Select-Object -Last 1
-
-            Write-Host "Latest preview PowerShell release detected: $($env:REQUESTED_VERSION)"
-            $previewMode = $true
-
-        } elseif ([string]::IsNullOrWhiteSpace($req)) {
-            Write-Host "Error: Version input is required (or use 'latest' or 'preview')"
-            exit 1
+          ).tag_name.TrimStart('v')
+          Write-Host "Latest stable PowerShell release detected: $latest"
+          $env:REQUESTED_VERSION = $latest
+        }
+        elseif ($req -and $req.Trim().ToLower() -eq 'preview') {
+          $rels = Invoke-RestMethod -Uri 'https://api.github.com/repos/PowerShell/PowerShell/releases?per_page=100' `
+                  -Headers @{
+                    'Accept'='application/vnd.github+json'
+                    'Authorization'="Bearer $($env:GITHUB_TOKEN)"
+                    'X-GitHub-Api-Version'='2022-11-28'
+                  }
+          $tags = $rels | Where-Object prerelease |
+            Select-Object -ExpandProperty tag_name |
+            ForEach-Object { $_.TrimStart('v') }
+          if (-not $tags) { Write-Error "Could not find a preview release."; exit 1 }
+          $env:REQUESTED_VERSION = $tags | Sort-Object {
+            if ($_ -match '^(\d+)\.(\d+)\.(\d+)-preview\.(\d+)$') { [int]$matches[1], [int]$matches[2], [int]$matches[3], [int]$matches[4] } else { 0,0,0,-1 }
+          } | Select-Object -Last 1
+          Write-Host "Latest preview PowerShell release detected: $($env:REQUESTED_VERSION)"
+          $previewMode = $true
+        }
+        elseif ([string]::IsNullOrWhiteSpace($req)) {
+          Write-Error "Version input is required (or use 'latest' or 'preview')"
+          exit 1
         }
 
-        # Detect currently installed version
+        # Detect CPU arch: arm64 / x64 / x86
+        $arch =
+          if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64') { 'arm64' }
+          elseif ($env:PROCESSOR_ARCHITECTURE -match '64') { 'x64' }
+          elseif ($env:PROCESSOR_ARCHITECTURE -match '86') { 'x86' }
+          else { 'x64' }
+        Write-Host "Windows CPU architecture detected: $arch"
+
+        # Detect currently installed version (if any)
         $detected = $null
         try {
           $detected = (pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')
           Write-Host "Currently installed PowerShell version: $detected"
         } catch {
-          Write-Host "PowerShell is not currently installed"
+          Write-Host "PowerShell is not currently installed (or not on PATH)"
         }
 
         # Skip install only for exact stable match; for preview we install side-by-side
@@ -346,101 +340,56 @@ runs:
           exit 0
         }
 
-        # Downgrade detection (stable-only; preview installs side-by-side)
-        $isDowngrade = $false
-        if (-not $previewMode -and $detected -and $detected -ne $env:REQUESTED_VERSION) {
-          try {
-            $detectedVersion  = [version]$detected
-            $requestedVersion = [version]$env:REQUESTED_VERSION
-            if ($detectedVersion -gt $requestedVersion) {
-              Write-Host "Downgrade detected: $detected → $($env:REQUESTED_VERSION)"
-              $isDowngrade = $true
-            } else {
-              Write-Host "Upgrade detected: $detected → $($env:REQUESTED_VERSION)"
-            }
-          } catch {
-            Write-Host "Warning: Could not compare versions, proceeding with regular installation"
-          }
-        }
-
-        # If downgrade → fully uninstall current stable PowerShell 7 (preview unaffected)
-        if ($isDowngrade) {
-          Write-Host "Uninstalling existing PowerShell version before downgrade..."
+        # On ARM64, proactively uninstall any existing stable PowerShell 7 to avoid mixed-arch BadImageFormat issues
+        if ($arch -eq 'arm64' -and -not $previewMode) {
+          Write-Host "Ensuring no mixed-architecture stable installs remain (ARM64 cleanup)..."
           $regPaths = @(
             'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
             'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
           )
-
-          $pwshEntries = Get-ItemProperty -Path $regPaths -ErrorAction SilentlyContinue |
+          $pwshStable = Get-ItemProperty -Path $regPaths -ErrorAction SilentlyContinue |
             Where-Object {
-              $_.Publisher      -eq 'Microsoft Corporation' -and
-              $_.DisplayName    -like 'PowerShell 7*'       -and
-              $_.DisplayName    -notlike '*Preview*'        -and
-              $_.DisplayVersion -and
-              $_.DisplayVersion.StartsWith($detected)
+              $_.Publisher -eq 'Microsoft Corporation' -and
+              $_.DisplayName -like 'PowerShell 7*' -and
+              $_.DisplayName -notlike '*Preview*'
             }
-
-          $targetEntry = $pwshEntries | Select-Object -First 1
-          if (-not $targetEntry) {
-            Write-Host "Warning: Could not find an uninstall entry for PowerShell $detected"
-          } else {
-            $uninstallCmd = if ($targetEntry.QuietUninstallString) {
-                              $targetEntry.QuietUninstallString
-                            } else {
-                              $targetEntry.UninstallString
-                            }
-
-            # If the uninstall command is MSI-based and lacks /quiet, add it
-            if ($uninstallCmd -match 'msiexec') {
-              if ($uninstallCmd -notmatch '/quiet')   { $uninstallCmd += ' /quiet' }
-              if ($uninstallCmd -notmatch '/norestart') { $uninstallCmd += ' /norestart' }
-            }
-
-            Write-Host "Running uninstall command:`n$uninstallCmd"
-            $proc = Start-Process 'cmd.exe' -ArgumentList '/c', $uninstallCmd -Wait -PassThru
-            if ($proc.ExitCode -ne 0) {
-              Write-Host "Error: Uninstall failed (exit code $($proc.ExitCode))."
-              exit 1
-            }
-
-            # Double-check removal
-            try {
-              $after = (pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')
-              if ($after) {
-                Write-Host "Error: PowerShell still present ($after) after uninstall. Aborting downgrade."
-                exit 1
+          foreach ($entry in $pwshStable) {
+            $cmd = if ($entry.QuietUninstallString) { $entry.QuietUninstallString } else { $entry.UninstallString }
+            if ($cmd) {
+              if ($cmd -match 'msiexec') {
+                if ($cmd -notmatch '/quiet')     { $cmd += ' /quiet' }
+                if ($cmd -notmatch '/norestart') { $cmd += ' /norestart' }
               }
-            } catch {}
+              Write-Host "Uninstalling existing stable PowerShell: $($entry.DisplayName) $($entry.DisplayVersion)"
+              $p = Start-Process 'cmd.exe' -ArgumentList '/c', $cmd -Wait -PassThru
+              if ($p.ExitCode -ne 0) { Write-Warning "Uninstall returned $($p.ExitCode)" }
+            }
           }
         }
 
-        # Download requested MSI (works for both stable and preview; preview has "-preview.N" in version)
-        $msi = "PowerShell-$($env:REQUESTED_VERSION)-win-x64.msi"
+        # Download requested MSI (arch-aware)
+        $msi = "PowerShell-$($env:REQUESTED_VERSION)-win-$arch.msi"
         $url = "https://github.com/PowerShell/PowerShell/releases/download/v$($env:REQUESTED_VERSION)/$msi"
-        Write-Host "Downloading from: $url"
-
-        $null = Invoke-WebRequest -Uri $url -OutFile $msi -UseBasicParsing -ErrorAction Stop
+        Write-Host "Downloading: $url"
+        Invoke-WebRequest -Uri $url -OutFile $msi -UseBasicParsing -ErrorAction Stop
 
         # Install requested version
-        Write-Host "Starting installation of PowerShell [$($env:REQUESTED_VERSION)]..."
-        $msiProcess = Start-Process msiexec.exe -ArgumentList '/i', $msi, '/quiet', '/norestart' -Wait -PassThru
-        if ($msiProcess.ExitCode -ne 0) {
-          Write-Host "Error: Installation failed (exit code $($msiProcess.ExitCode))."
+        Write-Host "Installing PowerShell $($env:REQUESTED_VERSION) for $arch..."
+        $p = Start-Process msiexec.exe -ArgumentList '/i', $msi, '/quiet', '/norestart' -Wait -PassThru
+        if ($p.ExitCode -ne 0) {
+          Write-Error "Installation failed (exit code $($p.ExitCode))."
           exit 1
         }
 
-        Write-Host "Installation complete. PowerShell [$($env:REQUESTED_VERSION)] is now available."
-
-        # If preview requested, make preview the default 'pwsh' by putting its folder first in PATH
+        # Prefer preview in PATH for this job
         if ($previewMode) {
           Write-Host "Setting PowerShell Preview as the default 'pwsh' for this job..."
           $candidates = @(
             (Join-Path $env:ProgramFiles 'PowerShell\7-preview\pwsh.exe'),
-            (Join-Path $env:ProgramFiles 'PowerShell\7\pwsh-preview\pwsh.exe')  # safety fallback if layout changes
+            (Join-Path $env:ProgramFiles 'PowerShell\7\pwsh-preview\pwsh.exe')
           ) | Where-Object { Test-Path $_ }
-
           if (-not $candidates) {
-            # Broad fallback: search common roots for a "*preview*\pwsh.exe"
+            # Broad fallback: search for *preview*\pwsh.exe
             $roots = @("$env:ProgramFiles\PowerShell", "$env:ProgramFiles")
             foreach ($r in $roots) {
               try {
@@ -451,21 +400,30 @@ runs:
               } catch {}
             }
           }
-
           if ($candidates) {
             $previewBin = $candidates | Select-Object -First 1
             $previewDir = Split-Path $previewBin -Parent
-
-            # Prepend for subsequent steps
             Add-Content -Path $env:GITHUB_PATH -Value $previewDir
-            # Also update current step so following commands in this step use preview immediately
             $env:PATH = "$previewDir;$env:PATH"
-
             Write-Host "Preview path added to PATH: $previewDir"
-            Write-Host "pwsh now resolves to version: $(& pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')"
           } else {
-            Write-Warning "Could not locate PowerShell Preview binary after install. Leaving system default."
+            Write-Warning "Could not locate PowerShell Preview binary; leaving system default."
           }
-        } else {
-          Write-Host "Stable install complete. Current pwsh: $(& pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')"
         }
+
+        # Verify
+        try {
+          $ver = (& pwsh -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()')
+          Write-Host "pwsh now: $ver"
+        } catch {
+          Write-Warning "Launching 'pwsh' failed. Trying explicit path..."
+          $fallback = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+          if (Test-Path $fallback) {
+            $ver = & $fallback -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+            Write-Host "pwsh (explicit) now: $ver"
+          } else {
+            Write-Error "PowerShell not found after install."
+            exit 1
+          }
+        }
+

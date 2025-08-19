@@ -21,7 +21,7 @@
     .PARAMETER X509Certificate
         The X509 certificate to use for signing the JWT token.
     .OUTPUTS
-        [Kestrun.Security.JwtTokenBuilder]
+        [Kestrun.Jwt.JwtTokenBuilder]
         The modified JWT token builder with the signing configuration applied.
     .EXAMPLE
         $builder = New-KrJWTTokenBuilder | Protect-KrJWT -Base64Url "your_base64_url_secret"
@@ -31,7 +31,7 @@
         $builder | Protect-KrJWT -Certificate (Get-Item "C:\path\to\certificate.pfx")
         This example demonstrates how to create a JWT token builder and apply various signing methods.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to build JWT tokens
+        This function is part of the Kestrun.Jwt module and is used to build JWT tokens
         Maps to JwtTokenBuilder.SignWithSecret, JwtTokenBuilder.SignWithSecretHex, JwtTokenBuilder.SignWithSecretPassphrase,
         JwtTokenBuilder.SignWithRsaPem, and JwtTokenBuilder.SignWithCertificate methods.
     .LINK
@@ -40,10 +40,10 @@
 function Protect-KrJWT {
     [KestrunRuntimeApi('Everywhere')]
     [CmdletBinding(DefaultParameterSetName = 'SecretBase64Url')]
-    [OutputType([Kestrun.Security.JwtTokenBuilder])]
+    [OutputType([Kestrun.Jwt.JwtTokenBuilder])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtTokenBuilder] $Builder,
+        [Kestrun.Jwt.JwtTokenBuilder] $Builder,
         [Parameter(Mandatory = $true, ParameterSetName = 'SecretBase64Url')]
         [string] $Base64Url,
         [Parameter(Mandatory = $true, ParameterSetName = 'SecretHexadecimalKey')]
@@ -60,7 +60,7 @@ function Protect-KrJWT {
     )
 
     process {
-        $algEnum = [Kestrun.Security.JwtAlgorithm]::$Algorithm
+        $algEnum = [Kestrun.Jwt.JwtAlgorithm]::$Algorithm
         switch ($PSCmdlet.ParameterSetName) {
             'SecretBase64Url' {
                 $Builder.SignWithSecret($Base64Url, $algEnum) | Out-Null

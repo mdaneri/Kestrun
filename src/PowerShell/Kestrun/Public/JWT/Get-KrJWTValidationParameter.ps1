@@ -24,7 +24,7 @@
         Add-KrJWTBearerAuthentication -Name "JwtScheme" -Options (Build-KrJWT -Builder $JwtTokenBuilder | Get-KrJWTValidation)
         This example creates a JWT token builder, adds an issuer and audience, protects the JWT with a hexadecimal key, and retrieves the validation parameters for use in authentication.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to manage JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to manage JWT tokens.
         Maps to JwtBuilderResult.GetValidationParameters
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
@@ -35,7 +35,7 @@ function Get-KrJWTValidationParameter {
     [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtBuilderResult] $Result,
+        [Kestrun.Jwt.JwtBuilderResult] $Result,
         [Parameter()]
         [TimeSpan] $ClockSkew = ([TimeSpan]::FromMinutes(1))
     )

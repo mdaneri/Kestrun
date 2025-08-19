@@ -22,7 +22,7 @@
         Update-KrJWT -Builder $jwtBuilder -FromContext -Lifetime (New-TimeSpan -Minutes 30)
         This updates the existing JWT token extracted from the HTTP context with a new lifetime of 30 minutes.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to manage JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to manage JWT tokens.
         Maps to JwtBuilderResult.Renew
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
@@ -34,7 +34,7 @@ function Update-KrJWT {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtTokenBuilder] $Builder,
+        [Kestrun.Jwt.JwtTokenBuilder] $Builder,
         [Parameter(Mandatory = $true, ParameterSetName = 'Token')]
         [string]$Token,
         [Parameter(Mandatory = $true, ParameterSetName = 'Context')]

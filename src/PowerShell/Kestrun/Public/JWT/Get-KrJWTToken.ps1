@@ -13,7 +13,7 @@
                   Get-KrJWTToken
         This example creates a new JWT token builder, adds a subject, builds the JWT token, and then retrieves the token.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to retrieve JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to retrieve JWT tokens.
         Maps to JwtBuilderResult.Token
     .LINK
         https://docs.microsoft.com/en-us/dotnet/api/system.identitymodel.tokens.jwt.jwtsecuritytoken
@@ -24,7 +24,7 @@ function Get-KrJWTToken {
     [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtBuilderResult] $Result
+        [Kestrun.Jwt.JwtBuilderResult] $Result
     )
     process {
         return $Result.Token()

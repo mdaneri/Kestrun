@@ -21,20 +21,20 @@
                .Build()
 
     .OUTPUTS
-        [Kestrun.Security.JwtTokenBuilder]
+        [Kestrun.Jwt.JwtTokenBuilder]
         A new cloned instance of the JwtTokenBuilder class.
     .NOTES
-        This function is part of the Kestrun.Security module and is used to build JWT tokens.
+        This function is part of the Kestrun.Jwt module and is used to build JWT tokens.
         Maps to JwtTokenBuilder.New
 #>
 function Copy-KrJWTTokenBuilder {
     [KestrunRuntimeApi('Everywhere')]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '')]
     [CmdletBinding()]
-    [OutputType([Kestrun.Security.JwtTokenBuilder])]
+    [OutputType([Kestrun.Jwt.JwtTokenBuilder])]
     param(
         [Parameter(Mandatory = $true, ValueFromPipeline)]
-        [Kestrun.Security.JwtTokenBuilder] $Builder
+        [Kestrun.Jwt.JwtTokenBuilder] $Builder
     )
     process {
         # Create a new JWT token builder instance

@@ -1,6 +1,6 @@
 using Microsoft.IdentityModel.Tokens;
 
-namespace Kestrun.Security;
+namespace Kestrun.Jwt;
 /// <summary>
 /// Specifies supported JWT signing algorithms.
 /// </summary>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Kestrun.Security;
+namespace Kestrun.Jwt;
 /// <summary>
 /// Provides methods for inspecting and extracting parameters from JWT tokens.
 /// </summary>

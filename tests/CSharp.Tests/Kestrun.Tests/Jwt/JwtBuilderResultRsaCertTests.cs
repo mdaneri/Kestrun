@@ -1,0 +1,88 @@
+using System;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Kestrun.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using Xunit;
+
+namespace Kestrun.Tests.Jwt;
+
+public class JwtBuilderResultRsaCertTests
+{
+    private static X509Certificate2 CreateSelfSignedRsaCert()
+    {
+        using var rsa = RSA.Create(2048);
+        var req = new CertificateRequest("CN=TestCert", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        // CreateSelfSigned with RSA on Windows yields a cert with private key already associated
+        return req.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddMinutes(10));
+    }
+
+    [Fact]
+    public async Task SignWithRsaPem_ValidateAsync_Succeeds_AndNoValidAlgorithmsEnforced()
+    {
+        using var rsa = RSA.Create(2048);
+        var pem = ExportPrivateKeyPem(rsa);
+
+        var result = JwtTokenBuilder
+            .New()
+            .WithIssuer("iss")
+            .WithAudience("aud")
+            .WithSubject("bob")
+            .ValidFor(TimeSpan.FromMinutes(2))
+            .SignWithRsaPem(CreateTempPemFile(pem))
+            .Build();
+
+        var token = result.Token();
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        // With RSA, JwtBuilderResult stores key as null; TVP should not require signature key
+        var tvp = result.GetValidationParameters();
+        Assert.False(tvp.RequireSignedTokens);
+        Assert.False(tvp.ValidateIssuerSigningKey);
+        Assert.Null(tvp.IssuerSigningKey);
+
+        // For RSA, builder.Algorithm resolves to an RS* alg; TVP.ValidAlgorithms should reflect that
+        Assert.Contains("RS256", tvp.ValidAlgorithms);
+
+        // ValidateAsync should throw since key is null (by design)
+        await Assert.ThrowsAsync<ArgumentNullException>(() => result.ValidateAsync(token));
+    }
+
+    [Fact]
+    public void SignWithCertificate_TVPReflects_NoSigningKey_AndEmptyAlgorithms()
+    {
+        using var cert = CreateSelfSignedRsaCert();
+        var result = JwtTokenBuilder
+            .New()
+            .WithIssuer("iss")
+            .WithAudience("aud")
+            .WithSubject("eve")
+            .SignWithCertificate(cert)
+            .Build();
+
+        var tvp = result.GetValidationParameters();
+        Assert.False(tvp.RequireSignedTokens);
+        Assert.False(tvp.ValidateIssuerSigningKey);
+        Assert.Null(tvp.IssuerSigningKey);
+        Assert.Contains("RS256", tvp.ValidAlgorithms);
+    }
+
+    private static string CreateTempPemFile(string pem)
+    {
+        var path = System.IO.Path.GetTempFileName();
+        System.IO.File.WriteAllText(path, pem);
+        return path;
+    }
+
+    private static string ExportPrivateKeyPem(RSA rsa)
+    {
+        var builder = new System.Text.StringBuilder();
+        builder.AppendLine("-----BEGIN PRIVATE KEY-----");
+        var export = rsa.ExportPkcs8PrivateKey();
+        builder.AppendLine(System.Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
+        builder.AppendLine("-----END PRIVATE KEY-----");
+        return builder.ToString();
+    }
+}

@@ -3,7 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using YamlDotNet.Serialization;
-namespace Kestrun.Security;
+namespace Kestrun.Jwt;
 
 /// <summary>
 /// Represents the result of building a JWT, including the token, key, builder, issue time, and expiration.

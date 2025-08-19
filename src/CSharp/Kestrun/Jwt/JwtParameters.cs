@@ -1,5 +1,5 @@
 
-namespace Kestrun.Security;
+namespace Kestrun.Jwt;
 
 /// <summary>
 /// Represents all parameters extracted from a JWT, including header fields, standard properties, and claims.
@@ -20,7 +20,7 @@ public class JwtParameters
     /// <summary>
     /// Gets the audiences ("aud") claim from the JWT.
     /// </summary>
-    public IEnumerable<string> Audiences { get; init; } = Array.Empty<string>();
+    public IEnumerable<string> Audiences { get; init; } = [];
     /// <summary>
     /// Gets the subject ("sub") claim from the JWT.
     /// </summary>
