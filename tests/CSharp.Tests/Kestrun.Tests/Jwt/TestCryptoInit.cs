@@ -30,7 +30,11 @@ internal sealed class EcdsaEnablingCryptoProviderFactory : CryptoProviderFactory
         return base.CreateForSigning(key, algorithm, willCreateSignatures);
     }
 
+    // no override for encryption; we keep JWE providers default
+
     private static bool IsEcdsaAlg(string alg) => alg == SecurityAlgorithms.EcdsaSha256 || alg == SecurityAlgorithms.EcdsaSha384 || alg == SecurityAlgorithms.EcdsaSha512;
+
+
 
     private static bool HasEcdsaKey(SecurityKey key)
         => key is ECDsaSecurityKey
