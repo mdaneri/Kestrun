@@ -67,7 +67,7 @@ server.AddHtmlTemplateRoute(
 server.AddMapRoute("/visit", HttpVerb.Get, async (ctx) =>
 {
     SharedStateStore.TryGet("Visits", out Hashtable? visits);
-    
+
     // Increment visit count and return response
     if (visits != null && visits.ContainsKey("Count"))
     {

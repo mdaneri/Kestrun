@@ -88,7 +88,7 @@ internal static class JobFactory
                 {
                     config.Log.Debug("Executing PowerShell script with {RunspaceId} - {Preview}", runspace.Id, config.Code?[..Math.Min(40, config.Code.Length)]);
                 }
-               
+
                 // Register cancellation
                 using var reg = ct.Register(() => ps.Stop());
 

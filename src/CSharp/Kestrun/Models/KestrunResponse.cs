@@ -208,7 +208,7 @@ public class KestrunResponse
         {
             Log.Debug("Serving file: {FilePath}", fullPath);
         }
-        
+
         // Create a physical file provider for the directory
         var physicalProvider = new PhysicalFileProvider(directory);
         IFileInfo fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
