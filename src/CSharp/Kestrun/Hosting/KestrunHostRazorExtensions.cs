@@ -52,7 +52,7 @@ public static class KestrunHostRazorExtensions
     /// <param name="routePrefix">The route prefix to use for the PowerShell Razor Pages.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host, PathString? routePrefix) =>
-        AddPowerShellRazorPages(host: host, routePrefix: routePrefix);
+        AddPowerShellRazorPages(host: host, routePrefix: routePrefix, cfg: null as RazorPagesOptions);
 
     /// <summary>
     /// Adds PowerShell Razor Pages to the application with default configuration and no route prefix.
@@ -60,7 +60,7 @@ public static class KestrunHostRazorExtensions
     /// <param name="host">The KestrunHost instance to add Razor Pages to.</param>
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host) =>
-        AddPowerShellRazorPages(host: host, routePrefix: null);
+        AddPowerShellRazorPages(host: host, routePrefix: null, cfg: null as RazorPagesOptions);
 
     // helper: true  ⇢ file contains managed metadata
     static bool IsManaged(string path)

@@ -1,0 +1,270 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
+using Kestrun.Hosting;
+using Kestrun.Hosting.Options;
+using Kestrun.Scripting;
+using Kestrun.Claims;
+using Kestrun.SharedState;
+using Microsoft.IdentityModel.Tokens;
+using Xunit;
+using Kestrun.Utilities;
+
+namespace KestrunTests.Hosting;
+
+[Collection("SharedStateSerial")]
+public class KestrunHostMapExtensionsTests
+{
+    private static void SanitizeSharedGlobals()
+    {
+        foreach (var key in SharedStateStore.KeySnapshot())
+        {
+            SharedStateStore.Set(key, null);
+        }
+    }
+
+    [Fact]
+    public void AddMapRoute_Code_DefaultsToGet_WhenNoVerbsSpecified()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/t-code-default",
+            HttpVerbs = Array.Empty<HttpVerb>(),
+            Code = "Context.Response.StatusCode = 204;",
+            Language = ScriptLanguage.CSharp
+        };
+
+        var map = host.AddMapRoute(options);
+        Assert.NotNull(map);
+
+        Assert.True(host.MapExists("/t-code-default", HttpVerb.Get));
+        var saved = host.GetMapRouteOptions("/t-code-default", HttpVerb.Get);
+        Assert.NotNull(saved);
+        Assert.Equal(ScriptLanguage.CSharp, saved!.Language);
+    }
+
+    [Fact]
+    public void AddMapRoute_Duplicate_WithThrowOnDuplicate_Throws()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/dup",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            ThrowOnDuplicate = true
+        };
+
+        Assert.NotNull(host.AddMapRoute(options));
+        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+    }
+
+    [Fact]
+    public void AddMapRoute_Duplicate_WithoutThrow_ReturnsNull()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/dup2",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            ThrowOnDuplicate = false
+        };
+
+        var first = host.AddMapRoute(options);
+        var second = host.AddMapRoute(options);
+        Assert.NotNull(first);
+        Assert.Null(second);
+    }
+
+    [Fact]
+    public void MapExists_MultiVerb_Works()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/multi",
+            HttpVerbs = new[] { HttpVerb.Get, HttpVerb.Post },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp
+        };
+
+        Assert.NotNull(host.AddMapRoute(options));
+
+        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Get }));
+        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Post }));
+        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Get, HttpVerb.Post }));
+        Assert.False(host.MapExists("/multi", new[] { HttpVerb.Put }));
+    }
+
+    [Fact]
+    public void AddMapRoute_RequireSchemes_Unregistered_Throws()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        // Ensure auth services exist so HasAuthScheme can resolve provider
+        host.AddBasicAuthentication("InitAuth", _ => { });
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/auth-needed",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            RequireSchemes = new[] { "NotRegisteredScheme" }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+    }
+
+    [Fact]
+    public void AddMapRoute_RequireSchemes_Registered_Ok()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+
+        // Register a basic auth scheme
+        host.AddBasicAuthentication("BasicX", _ => { });
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/auth-ok",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            RequireSchemes = new[] { "BasicX" }
+        };
+
+        var map = host.AddMapRoute(options);
+        Assert.NotNull(map);
+        Assert.True(host.MapExists("/auth-ok", HttpVerb.Get));
+    }
+
+    [Fact]
+    public void AddMapRoute_RequirePolicies_Unregistered_Throws()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        // Ensure authorization services exist so HasAuthPolicy can resolve provider
+        host.AddAuthorization();
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/policy-needed",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            RequirePolicies = new[] { "NonExistingPolicy" }
+        };
+
+        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+    }
+
+    [Fact]
+    public void AddMapRoute_RequirePolicies_Registered_Ok()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+
+        // Register a scheme with a claim policy
+        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(new string('x', 64)));
+        var tvp = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = key,
+            ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+        };
+
+        var cfg = new ClaimPolicyConfig
+        {
+            Policies = new()
+            {
+                ["MustBeAlice"] = new Kestrun.Claims.ClaimRule(System.Security.Claims.ClaimTypes.Name, "Alice")
+            }
+        };
+
+        host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
+        host.EnableConfiguration();
+
+        var options = new MapRouteOptions
+        {
+            Pattern = "/policy-ok",
+            HttpVerbs = new[] { HttpVerb.Get },
+            Code = "Context.Response.StatusCode = 200;",
+            Language = ScriptLanguage.CSharp,
+            RequirePolicies = new[] { "MustBeAlice" }
+        };
+
+        var map = host.AddMapRoute(options);
+        Assert.NotNull(map);
+        Assert.True(host.MapExists("/policy-ok", HttpVerb.Get));
+    }
+
+    [Fact]
+    public void AddHtmlTemplateRoute_MapsGet_WhenFileExists()
+    {
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+        host.EnableConfiguration();
+
+        var tmp = Path.GetTempFileName();
+        File.WriteAllText(tmp, "<html><body>Hello</body></html>");
+
+        try
+        {
+            var map = host.AddHtmlTemplateRoute(new MapRouteOptions
+            {
+                Pattern = "/tmpl-ok",
+                HttpVerbs = new[] { HttpVerb.Get }
+            }, tmp);
+
+            Assert.NotNull(map);
+        }
+        finally
+        {
+            File.Delete(tmp);
+        }
+    }
+
+    [Fact]
+    public void AddStaticOverride_Code_RegistersMapping_AfterBuild()
+    {
+        SanitizeSharedGlobals();
+        var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+
+        host.AddStaticOverride(
+            pattern: "/override",
+            code: "Context.Response.StatusCode = 201;",
+            language: ScriptLanguage.CSharp);
+
+        // Route is queued and applied during Build
+        host.Build();
+
+        Assert.True(host.MapExists("/override", HttpVerb.Get));
+        var opts = host.GetMapRouteOptions("/override", HttpVerb.Get);
+        Assert.NotNull(opts);
+        Assert.Equal(ScriptLanguage.CSharp, opts!.Language);
+    }
+}

@@ -66,16 +66,20 @@ jobs:
       - name: 🔧 Build
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
-
-      - name: 🧪 Test (.NET) with coverage (Cobertura)
+        
+      - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
         run: |
           mkdir -p coverage
-          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
-            -c Release \
+          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/Kestrun.Tests.csproj \
+            -c Debug -f net9.0 \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=$(pwd)/coverage/csharp
+            /p:CoverletOutput=$(pwd)/coverage/csharp \
+            /p:Include="[Kestrun]*" \
+            /p:Exclude="[*.Tests]*,[xunit.*]*,[FluentAssertions*]*"
+          echo "Produced coverage files:"
           ls -la coverage
+
 
       - name: ☁️ Upload C# to Coveralls (parallel)
         uses: coverallsapp/github-action@v2
@@ -159,7 +163,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: TestResults/powershell.jacoco.xml
+          file: ./coverage/powershell.jacoco.xml
           parallel: true
           flag-name: powershell
 

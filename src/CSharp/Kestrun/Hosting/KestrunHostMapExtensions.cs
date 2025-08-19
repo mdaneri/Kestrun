@@ -194,9 +194,9 @@ public static class KestrunHostMapExtensions
         }
         try
         {
-            if (MapExists(host, options.Pattern, options.HttpVerbs))
+            if (MapExists(host, routeOptions.Pattern, routeOptions.HttpVerbs))
             {
-                var msg = $"Route '{options.Pattern}' with method(s) {string.Join(", ", options.HttpVerbs)} already exists.";
+                var msg = $"Route '{routeOptions.Pattern}' with method(s) {string.Join(", ", routeOptions.HttpVerbs)} already exists.";
                 if (options.ThrowOnDuplicate)
                 {
                     throw new InvalidOperationException(msg);
@@ -220,21 +220,21 @@ public static class KestrunHostMapExtensions
 
                 _ => throw new NotSupportedException(options.Language.ToString())
             };
-            string[] methods = [.. options.HttpVerbs.Select(v => v.ToMethodString())];
-            var map = host.App.MapMethods(options.Pattern, methods, handler).WithLanguage(options.Language);
+            string[] methods = [.. routeOptions.HttpVerbs.Select(v => v.ToMethodString())];
+            var map = host.App.MapMethods(routeOptions.Pattern, methods, handler).WithLanguage(options.Language);
             if (host._Logger.IsEnabled(LogEventLevel.Debug))
             {
-                host._Logger.Debug("Mapped route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+                host._Logger.Debug("Mapped route: {Pattern} with methods: {Methods}", routeOptions.Pattern, string.Join(", ", methods));
             }
 
             host.AddMapOptions(map, options);
 
-            foreach (var method in options.HttpVerbs.Select(v => v.ToMethodString()))
+            foreach (var method in routeOptions.HttpVerbs.Select(v => v.ToMethodString()))
             {
-                host._registeredRoutes[(options.Pattern, method)] = routeOptions;
+                host._registeredRoutes[(routeOptions.Pattern, method)] = routeOptions;
             }
 
-            host._Logger.Information("Added route: {Pattern} with methods: {Methods}", options.Pattern, string.Join(", ", methods));
+            host._Logger.Information("Added route: {Pattern} with methods: {Methods}", routeOptions.Pattern, string.Join(", ", methods));
             return map;
             // Add to the feature queue for later processing
         }
