@@ -64,38 +64,34 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     {
         try
         {
-            if (Options.ValidateCredentialsAsync is null)
+            // Pre-flight validations
+            if (PreValidateRequest() is { } preFail)
             {
-                return Fail("No credentials validation function provided");
+                return preFail;
             }
 
-            if (Options.RequireHttps && !Request.IsHttps)
+            // Read and parse Authorization header safely
+            if (!TryGetAuthorizationHeader(out var authHeader, out var failResult))
             {
-                return Fail("HTTPS required");
+                return failResult!;
             }
 
-            if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
+            // Scheme/parameter validation
+            if (ValidateSchemeAndParameter(authHeader) is { } schemeFail)
             {
-                return Fail("Missing Authorization Header");
-            }
-
-            var authHeader = AuthenticationHeaderValue.Parse(authHeaderVal.ToString());
-
-            var schemeValidation = ValidateSchemeAndParameter(authHeader);
-            if (schemeValidation is not null)
-            {
-                return schemeValidation;
+                return schemeFail;
             }
 
             Log.Information("Processing Basic Authentication for header: {Context}", Context);
 
+            // Extract user/pass
             if (!TryGetUserPass(authHeader, out var user, out var pass, out var err))
             {
                 return Fail(err ?? "Malformed credentials");
             }
 
-            var valid = await Options.ValidateCredentialsAsync(Context, user, pass);
-            if (!valid)
+            // Validate credentials
+            if (!await Options.ValidateCredentialsAsync!(Context, user, pass))
             {
                 return Fail("Invalid credentials");
             }
@@ -114,7 +110,64 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         }
     }
 
-    // Extracts and validates user/password from the Authorization header
+    /// <summary>
+    /// Validates preconditions before processing the Authorization header.
+    /// </summary>
+    /// <returns>An AuthenticateResult indicating the validation result.</returns>
+    private AuthenticateResult? PreValidateRequest()
+    {
+        if (Options.ValidateCredentialsAsync is null)
+        {
+            return Fail("No credentials validation function provided");
+        }
+        if (Options.RequireHttps && !Request.IsHttps)
+        {
+            return Fail("HTTPS required");
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Tries to get and parse the Authorization header, returning a Fail result when absent/invalid
+    /// </summary>
+    /// <param name="authHeader">The parsed Authorization header.</param>
+    /// <param name="fail">An AuthenticateResult indicating the failure reason, if any.</param>
+    /// <returns>True if the header was successfully parsed; otherwise, false.</returns>
+    private bool TryGetAuthorizationHeader(out AuthenticationHeaderValue authHeader, out AuthenticateResult? fail)
+    {
+        fail = null;
+        authHeader = default!;
+        if (!Request.Headers.TryGetValue(Options.HeaderName, out var authHeaderVal))
+        {
+            fail = Fail("Missing Authorization Header");
+            return false;
+        }
+
+        try
+        {
+            authHeader = AuthenticationHeaderValue.Parse(authHeaderVal.ToString());
+            return true;
+        }
+        catch (FormatException)
+        {
+            fail = Fail("Malformed credentials");
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            fail = Fail("Malformed credentials");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Tries to extract and validate user/password from the Authorization header.
+    /// </summary>
+    /// <param name="authHeader">The parsed Authorization header.</param>
+    /// <param name="user">The extracted username.</param>
+    /// <param name="pass">The extracted password.</param>
+    /// <param name="error">An error message, if extraction fails.</param>
+    /// <returns>True if user/password were successfully extracted; otherwise, false.</returns>
     private bool TryGetUserPass(AuthenticationHeaderValue authHeader, out string user, out string pass, out string? error)
     {
         user = string.Empty;

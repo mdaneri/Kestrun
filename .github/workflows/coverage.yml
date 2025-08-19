@@ -1,7 +1,6 @@
+name: Coverage
 permissions:
   contents: read
-
-name: Coverage
 
 on:
   push:
@@ -15,13 +14,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage:
+  # --- C# coverage (one canonical env uploads) ---
+  csharp-coverage:
+    name: C# coverage (ubuntu-24.04, .NET 8/9)
     runs-on: ubuntu-24.04
     env:
       POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
       DOTNET_VERBOSITY: minimal
-      PESTER_VERBOSITY: Normal
-
     steps:
       - name: 🛎️ Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5 pin
@@ -68,104 +67,90 @@ jobs:
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
-      - name: 🗂️ Prep results folders
+      - name: 🧪 Test (.NET) with coverage (Cobertura)
         run: |
-          mkdir -p TestResults/net8 TestResults/net9 TestResults
-          rm -rf coveragereport
-          mkdir -p coveragereport ./.dotnet-tools
+          dotnet test ./src/CSharp/Kestrun.sln \
+            -c Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:CoverletOutput=TestResults/coverage.cobertura.xml
 
-      # --- .NET coverage via built-in XPlat collector (deterministic paths) ---
-      - name: 🧪 .NET tests net8.0 (XPlat -> Cobertura)
-        run: |
-          dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
-            --no-build \
-            -f net8.0 \
-            --collect "XPlat Code Coverage" \
-            --results-directory TestResults/net8 \
-            -v $DOTNET_VERBOSITY
-
-      - name: 🧪 .NET tests net9.0 (XPlat -> Cobertura)
-        run: |
-          dotnet test tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
-            --no-build \
-            -f net9.0 \
-            --collect "XPlat Code Coverage" \
-            --results-directory TestResults/net9 \
-            -v $DOTNET_VERBOSITY
-
-      # --- PowerShell coverage (Pester 5 -> JaCoCo) ---
-      - name: 🧪 PowerShell tests with coverage (Pester 5)
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path TestResults | Out-Null
-          $cfg = New-PesterConfiguration
-          $cfg.Run.Path = @('tests/PowerShell.Tests')
-          $cfg.Run.Exit = $true
-          $cfg.Output.Verbosity = $Env:PESTER_VERBOSITY
-          $cfg.CodeCoverage.Enabled = $true
-          $cfg.CodeCoverage.Path = @('src/PowerShell/Kestrun/*.psm1','src/PowerShell/Kestrun/*.ps1')
-          $cfg.CodeCoverage.OutputFormat = 'JaCoCo'
-          $cfg.CodeCoverage.OutputPath = 'TestResults/pester-coverage.xml'
-          Invoke-Pester -Configuration $cfg
-
-      - name: 🔎 List raw coverage files
-        run: |
-          echo "Expecting:"
-          echo "  TestResults/net8/coverage.cobertura.xml"
-          echo "  TestResults/net9/coverage.cobertura.xml"
-          echo "  TestResults/pester-coverage.xml"
-          echo
-          ls -la TestResults || true
-          ls -la TestResults/net8 || true
-          ls -la TestResults/net9 || true
-          ls -la TestResults/pester-coverage.xml || true
-
-      - name: 🧮 Install reportgenerator (local tool)
-        run: dotnet tool install --tool-path ./.dotnet-tools dotnet-reportgenerator-globaltool
-
-      - name: 🧮 Merge coverage to LCOV (robust)
-        shell: bash
-        run: |
-          set -euo pipefail
-          inputs=()
-          [ -f TestResults/net8/coverage.cobertura.xml ] && inputs+=("TestResults/net8/coverage.cobertura.xml")
-          [ -f TestResults/net9/coverage.cobertura.xml ] && inputs+=("TestResults/net9/coverage.cobertura.xml")
-          [ -f TestResults/pester-coverage.xml ] && inputs+=("TestResults/pester-coverage.xml")
-          if [ ${#inputs[@]} -eq 0 ]; then
-            echo "No coverage files found; creating minimal LCOV to keep pipeline green."
-            printf "TN:\nSF:/dev/null\nDA:1,0\nend_of_record\n" > coveragereport/lcov.info
-          else
-            ./.dotnet-tools/reportgenerator \
-              -reports:"$(IFS=';'; echo "${inputs[*]}")" \
-              -targetdir:"coveragereport" \
-              -reporttypes:lcov \
-              -sourcedirs:"src/PowerShell/Kestrun;src/CSharp/Kestrun;."
-          fi
-
-      - name: 🔎 Inspect LCOV
-        run: |
-          echo "lcov size:"
-          wc -l coveragereport/lcov.info || true
-          echo "first 60 lines:"
-          head -n 60 coveragereport/lcov.info || true
-          echo "count of SF/DA:"
-          grep -E '^(SF|DA):' -n coveragereport/lcov.info || true
-
-      # --- Upload to Coveralls (only if LCOV exists) ---
-      - name: ☁️ Upload to Coveralls
-        if: ${{ hashFiles('coveragereport/lcov.info') != '' }}
-        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b  # v2.3.6 pin
+      - name: ☁️ Upload C# to Coveralls (parallel)
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coveragereport/lcov.info
-          format: lcov
-          base-path: ${{ github.workspace }}
-          allow-empty: true
-          debug: true
+          file: TestResults/coverage.cobertura.xml
+          parallel: true
+          flag-name: csharp
 
-      - name: 📦 Upload LCOV artifact
-        if: ${{ hashFiles('coveragereport/lcov.info') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2 pin
+  # --- PowerShell coverage (one canonical env uploads) ---
+  pwsh-coverage:
+    name: PowerShell coverage (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    env:
+      POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
+      PESTER_VERBOSITY: Normal
+      DOTNET_VERBOSITY: minimal
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v5
+
+      - name: 🧰 Install PowerShell
+        uses: ./.github/actions/Install-PowerShell
         with:
-          name: lcov
-          path: coveragereport/lcov.info
+          Version: latest
+
+      # Non-interactive PSResource install (trust PSGallery)
+      - name: 🧰 Install Invoke-Build & Pester (trusted, non-interactive)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Module -ListAvailable -Name Microsoft.PowerShell.PSResourceGet)) {
+            Install-Module -Name Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+          }
+          Import-Module Microsoft.PowerShell.PSResourceGet -Force
+          $repo = Get-PSResourceRepository -Name PSGallery -ErrorAction SilentlyContinue
+          if (-not $repo) {
+            Register-PSResourceRepository -Name PSGallery -Uri 'https://www.powershellgallery.com/api/v3/index.json' -Trusted
+          } elseif (-not $repo.Trusted) {
+            Set-PSResourceRepository -Name PSGallery -Trusted
+          }
+          Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'InvokeBuild','Pester'
+          Get-Module Pester -ListAvailable | Select Name,Version,Path
+
+      - name: 📦 Restore
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🔧 Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🧪 Test (Pester) with coverage (JaCoCo)
+        shell: pwsh
+        run: |
+          Invoke-Pester -Output Detailed `
+            -CodeCoverage ./src/PowerShell/Kestrun/*.psm1 `
+            -CodeCoverageOutputFile "TestResults/pester.jacoco.xml" `
+            -CodeCoverageOutputFormat JaCoCo
+
+      - name: ☁️ Upload PowerShell to Coveralls (parallel)
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: TestResults/pester.jacoco.xml
+          parallel: true
+          flag-name: powershell
+
+  # --- Finalize (must run AFTER all uploads) ---
+  coveralls-finish:
+    name: Finalize Coveralls
+    runs-on: ubuntu-24.04
+    needs: [csharp-coverage, pwsh-coverage]
+    if: always()
+    steps:
+      - name: ✅ Tell Coveralls we're done
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true

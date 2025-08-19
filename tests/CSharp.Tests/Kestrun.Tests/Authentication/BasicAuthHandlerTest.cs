@@ -209,5 +209,148 @@ namespace Kestrun.Authentication.Tests
             // So, we expect either a success or a fail with "Exception during authentication"
             Assert.True(result.Succeeded || result.Failure?.Message == "Exception during authentication");
         }
+
+        [Fact]
+        public void PreValidateRequest_ReturnsFail_WhenNoValidator()
+        {
+            // Arrange
+            var opts = CreateOptions();
+            opts.ValidateCredentialsAsync = null!;
+            var handler = CreateHandler(opts, new DefaultHttpContext());
+
+            var method = typeof(BasicAuthHandler).GetMethod("PreValidateRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            // Act
+            var result = method!.Invoke(handler, Array.Empty<object>()) as AuthenticateResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result!.Succeeded);
+            Assert.Equal("No credentials validation function provided", result.Failure?.Message);
+        }
+
+        [Fact]
+        public void PreValidateRequest_ReturnsFail_WhenHttpsRequiredAndNotHttps()
+        {
+            // Arrange
+            var opts = CreateOptions(validator: (_, _, _) => Task.FromResult(true), requireHttps: true);
+            var ctx = new DefaultHttpContext();
+            ctx.Request.Scheme = "http";
+            var handler = CreateHandler(opts, ctx);
+
+            var method = typeof(BasicAuthHandler).GetMethod("PreValidateRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            // Act
+            var result = method!.Invoke(handler, Array.Empty<object>()) as AuthenticateResult;
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result!.Succeeded);
+            Assert.Equal("HTTPS required", result.Failure?.Message);
+        }
+
+        [Fact]
+        public void PreValidateRequest_ReturnsNull_WhenAllGood()
+        {
+            // Arrange
+            var opts = CreateOptions(validator: (_, _, _) => Task.FromResult(true), requireHttps: false);
+            var ctx = new DefaultHttpContext();
+            ctx.Request.Scheme = "http"; // doesn't matter since RequireHttps = false
+            var handler = CreateHandler(opts, ctx);
+
+            var method = typeof(BasicAuthHandler).GetMethod("PreValidateRequest", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            // Act
+            var result = method!.Invoke(handler, Array.Empty<object>());
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void TryGetAuthorizationHeader_ReturnsFail_WhenMissingHeader()
+        {
+            // Arrange
+            var opts = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
+            var ctx = new DefaultHttpContext();
+            var handler = CreateHandler(opts, ctx);
+
+            var method = typeof(BasicAuthHandler).GetMethod(
+                "TryGetAuthorizationHeader",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            var parameters = new object?[] { null, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(handler, parameters)!;
+            var failResult = parameters[1] as AuthenticateResult;
+
+            // Assert
+            Assert.False(ok);
+            Assert.NotNull(failResult);
+            Assert.False(failResult!.Succeeded);
+            Assert.Equal("Missing Authorization Header", failResult.Failure?.Message);
+        }
+
+        [Fact]
+        public void TryGetAuthorizationHeader_ParsesHeader_WhenPresent()
+        {
+            // Arrange
+            var opts = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
+            var ctx = new DefaultHttpContext();
+            ctx.Request.Headers["Authorization"] = "Basic dXNlcjpwYXNz"; // user:pass
+            var handler = CreateHandler(opts, ctx);
+
+            var method = typeof(BasicAuthHandler).GetMethod(
+                "TryGetAuthorizationHeader",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            var parameters = new object?[] { null, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(handler, parameters)!;
+            var header = parameters[0] as AuthenticationHeaderValue;
+            var failResult = parameters[1] as AuthenticateResult;
+
+            // Assert
+            Assert.True(ok);
+            Assert.NotNull(header);
+            Assert.Equal("Basic", header!.Scheme);
+            Assert.Equal("dXNlcjpwYXNz", header.Parameter);
+            Assert.Null(failResult);
+        }
+
+        [Fact]
+        public void TryGetAuthorizationHeader_ReturnsFail_WhenHeaderUnparsable()
+        {
+            // Arrange: use invalid scheme characters to trigger Parse exception
+            var opts = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
+            var ctx = new DefaultHttpContext();
+            ctx.Request.Headers["Authorization"] = "B@d value"; // invalid token character '@'
+            var handler = CreateHandler(opts, ctx);
+
+            var method = typeof(BasicAuthHandler).GetMethod(
+                "TryGetAuthorizationHeader",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            Assert.NotNull(method);
+
+            var parameters = new object?[] { null, null };
+
+            // Act
+            var ok = (bool)method!.Invoke(handler, parameters)!;
+            var failResult = parameters[1] as AuthenticateResult;
+
+            // Assert
+            Assert.False(ok);
+            var authFail = parameters[1] as Microsoft.AspNetCore.Authentication.AuthenticateResult;
+            Assert.NotNull(authFail);
+            Assert.False(authFail!.Succeeded);
+            Assert.Equal("Malformed credentials", authFail.Failure?.Message);
+        }
     }
 }
