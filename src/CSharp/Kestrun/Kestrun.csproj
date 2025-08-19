@@ -208,7 +208,7 @@
 
     <!-- Microsoft.AspNetCore -->
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.14.0" />
 
     <!-- Scripting Engines -->
