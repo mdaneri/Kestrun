@@ -95,7 +95,6 @@ if (!CertificateManager.Validate(
 ))
 {
     Console.WriteLine("Certificate validation failed.");
-    //Log.Error("Certificate validation failed. Ensure the certificate is valid.");
     Environment.Exit(1);
 }
 

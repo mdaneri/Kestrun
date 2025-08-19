@@ -20,8 +20,6 @@ namespace Kestrun.Authentication;
 /// </summary>
 public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions>, IAuthHandler
 {
-    // private Serilog.ILogger Logger => Options.Logger;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="BasicAuthHandler"/> class.
     /// </summary>

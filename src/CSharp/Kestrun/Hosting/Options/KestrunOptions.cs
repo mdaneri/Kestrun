@@ -1,12 +1,3 @@
-// KestrelSimpleOptions.cs
-//
-// Simple POCO class with all configurable KestrelServerOptions properties as public settable properties.
-// Use this as a strongly-typed alternative to the _kestrelOptions hashtable.
-//
-// Example usage:
-//   var opts = new KestrelSimpleOptions { AllowSynchronousIO = true, AddServerHeader = false };
-//   server.ApplyConfiguration(opts);
-
 using System;
 using System.Net;
 using System.Text;

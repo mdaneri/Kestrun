@@ -395,6 +395,9 @@ public interface IAuthHandler
                     return true;
                 }
                 break;
+            default:
+                // Unsupported type
+                break;
         }
 
         claim = default!;

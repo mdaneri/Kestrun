@@ -75,7 +75,6 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions, IAuthent
     /// Called to validate the raw key string. Return true if valid.
     /// <para>This is called for every request, so it should be fast.</para>
     /// </summary>
-    //public Func<string, bool> ValidateKey { get; set; } = _ => false;
     public Func<HttpContext, string, byte[], Task<bool>> ValidateKeyAsync { get; set; } = (_, _, _) => Task.FromResult(false);
 
     /// <summary>

@@ -42,8 +42,7 @@ server.ConfigureListener(
     protocols: Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1
 );
 
-//server.AddPowerShellRuntime();
-
+// Create a shared state variable to track visits
 var sharedVisits = new Hashtable
 {
     ["Count"] = 0
@@ -68,8 +67,8 @@ server.AddHtmlTemplateRoute(
 server.AddMapRoute("/visit", HttpVerb.Get, async (ctx) =>
 {
     SharedStateStore.TryGet("Visits", out Hashtable? visits);
-
-    //int visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;
+    
+    // Increment visit count and return response
     if (visits != null && visits.ContainsKey("Count"))
     {
         visits["Count"] = ((visits["Count"] as int?) ?? 0) + 1; // Increment the visit count

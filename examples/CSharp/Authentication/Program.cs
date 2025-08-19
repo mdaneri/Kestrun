@@ -509,7 +509,6 @@ if (!CertificateManager.Validate(
 ))
 {
     Console.WriteLine("Certificate validation failed.");
-    //Log.Error("Certificate validation failed. Ensure the certificate is valid.");
     Environment.Exit(1);
 }
 
@@ -881,7 +880,6 @@ server.AddMapRoute("/token/renew", HttpVerb.Get, async (ctx) =>
         await ctx.Response.WriteErrorResponseAsync("Failed to renew token", 400);
         return;
     }
-    // var token = await builderResult.RenewAsync(TimeSpan.FromHours(1));
     await ctx.Response.WriteJsonResponseAsync(new { access_token = token });
 }, [JwtScheme]);
 

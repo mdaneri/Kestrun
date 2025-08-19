@@ -69,7 +69,7 @@ jobs:
 
       - name: 🧪 Test (.NET) with coverage (Cobertura)
         run: |
-          dotnet test ./src/CSharp/Kestrun.sln \
+          dotnet test  ./src/CSharp/Kestrun/Kestrun.csproj \
             -c Release \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \

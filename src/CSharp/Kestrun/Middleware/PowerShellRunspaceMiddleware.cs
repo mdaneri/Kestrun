@@ -30,7 +30,6 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             {
                 Log.Debug("PowerShellRunspaceMiddleware started for {Path}", context.Request.Path);
             }
-            // EnsureRunspacePoolOpen(_pool);
             // Acquire a runspace from the pool and keep it for the whole request
             var runspace = _pool.Acquire();
             using PowerShell ps = PowerShell.Create();

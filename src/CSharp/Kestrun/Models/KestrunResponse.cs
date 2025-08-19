@@ -86,7 +86,6 @@ public class KestrunResponse
     /// <summary>
     /// Global text encoding for all responses. Defaults to UTF-8.
     /// </summary>
-    //public static System.Text.Encoding TextEncoding { get; set; } = System.Text.Encoding.UTF8;
     public Encoding AcceptCharset { get; private set; }
 
     /// <summary>
@@ -205,7 +204,12 @@ public class KestrunResponse
         var directory = Path.GetDirectoryName(fullPath)
                        ?? throw new InvalidOperationException("Could not determine directory from file path");
 
-        //       var fi = new FileInfo(filePath);
+        if (Log.IsEnabled(LogEventLevel.Debug))
+        {
+            Log.Debug("Serving file: {FilePath}", fullPath);
+        }
+        
+        // Create a physical file provider for the directory
         var physicalProvider = new PhysicalFileProvider(directory);
         IFileInfo fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
         var provider = new FileExtensionContentTypeProvider();

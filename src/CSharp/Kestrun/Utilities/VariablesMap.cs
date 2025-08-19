@@ -58,7 +58,6 @@ public static class VariablesMap
         vars["Cookies"] = ctx.Request.Cookies;
         vars["Headers"] = ctx.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
         vars["UserAgent"] = ctx.Request.Headers["User-Agent"].ToString();
-        //    vars["ServerSoftware"] = "Kestrun/" + Options.ApplicationName;
         vars["ServerVersion"] = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
         vars["ServerOS"] = Environment.OSVersion.ToString();
         vars["ServerArch"] = Environment.Is64BitOperatingSystem ? "x64" : "x86";

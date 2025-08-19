@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Management.Automation;
 using System.Reflection;
 using Kestrun;
@@ -83,10 +84,15 @@ internal static class JobFactory
                 using PowerShell ps = PowerShell.Create();
                 ps.Runspace = runspace;
                 ps.AddScript(config.Code);
-
-                //    var psResults = await ps.InvokeAsync().ConfigureAwait(false);
+                if (config.Log.IsEnabled(LogEventLevel.Debug))
+                {
+                    config.Log.Debug("Executing PowerShell script with {RunspaceId} - {Preview}", runspace.Id, config.Code?[..Math.Min(40, config.Code.Length)]);
+                }
+               
+                // Register cancellation
                 using var reg = ct.Register(() => ps.Stop());
 
+                // Wait for the PowerShell script to complete
                 var psResults = await ps.InvokeAsync().WaitAsync(ct).ConfigureAwait(false);
 
                 config.Log.Verbose($"PowerShell script executed with {psResults.Count} results.");

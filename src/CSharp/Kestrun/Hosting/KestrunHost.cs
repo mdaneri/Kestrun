@@ -387,11 +387,16 @@ public class KestrunHost : IDisposable
                 throw new InvalidOperationException("Failed to create runspace pool.");
             }
 
-            //     KestrelServices(builder);
+            if (_Logger.IsEnabled(LogEventLevel.Verbose))
+            {
+                _Logger.Verbose("Runspace pool created with max runspaces: {MaxRunspaces}", Options.MaxRunspaces);
+            }
+            // Configure Kestrel
             builder.WebHost.UseKestrel(opts =>
             {
                 opts.CopyFromTemplate(Options.ServerOptions);
             });
+
             builder.WebHost.ConfigureKestrel(kestrelOpts =>
             {
                 // Optionally, handle ApplicationName or other properties as needed
@@ -869,7 +874,6 @@ public class KestrunHost : IDisposable
         _isConfigured = false; // Reset configuration state 
         _app = null;
         Scheduler?.Dispose();
-        //  Log.CloseAndFlush(); 
         (_Logger as IDisposable)?.Dispose();
     }
     #endregion

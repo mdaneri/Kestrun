@@ -1,20 +1,3 @@
-// Kestrun -– PowerShell-backed Razor Pages
-// -----------------------------------------------------------------------------
-// Middleware that lets any Razor view (*.cshtml) load a sibling PowerShell
-// script (*.cshtml.ps1) in the SAME request.  The script can set `$Model` which
-// then becomes available to the Razor page through HttpContext.Items.
-// -----------------------------------------------------------------------------
-//
-// Usage (inside KestrunHost.ApplyConfiguration):
-//     builder.Services.AddRazorPages();                    // already present
-//     …
-/*  AFTER you build App and create _runspacePool:  */
-//
-//     App.UsePowerShellRazorPages(_runspacePool);
-//
-// That’s it – no per-page registration.
-//
-
 using System;
 using System.IO;
 using System.Management.Automation;
@@ -30,6 +13,22 @@ namespace Kestrun.Razor;
 /// <summary>
 /// Provides middleware for enabling PowerShell-backed Razor Pages, allowing execution of a sibling PowerShell script (*.cshtml.ps1) for each Razor view (*.cshtml).
 /// </summary>
+/// <remarks>
+/// This middleware allows for dynamic content generation in Razor Pages by leveraging PowerShell scripts.
+/// Middleware that lets any Razor view (*.cshtml) load a sibling PowerShell
+/// script (*.cshtml.ps1) in the SAME request.  The script can set `$Model` which
+/// then becomes available to the Razor page through HttpContext.Items.
+/// -----------------------------------------------------------------------------
+///
+/// Usage (inside KestrunHost.ApplyConfiguration):
+///     builder.Services.AddRazorPages();                    // already present
+///     …
+/// /*  AFTER you build App and create _runspacePool:  */
+///
+///     App.UsePowerShellRazorPages(_runspacePool);
+///
+/// That’s it – no per-page registration.
+/// </remarks>
 public static class PowerShellRazorPage
 {
     private const string MODEL_KEY = "PageModel";
@@ -68,7 +67,6 @@ public static class PowerShellRazorPage
         if (!Directory.Exists(pagesRoot))
         {
             Log.Warning("Pages directory not found: {Path}", pagesRoot);
-            //  throw new DirectoryNotFoundException($"Pages directory not found: {pagesRoot}");
         }
 
         // MUST run before MapRazorPages()

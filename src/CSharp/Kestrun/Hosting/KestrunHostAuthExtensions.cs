@@ -381,6 +381,7 @@ public static class KestrunHostAuthExtensions
     /// Configures the issue claims for Basic authentication.
     /// </summary>
     /// <param name="opts">The options to configure.</param>
+    /// <exception cref="NotSupportedException">Thrown when the language is not supported.</exception>
     private static void ConfigureBasicIssueClaims(BasicAuthenticationOptions opts)
     {
         var settings = opts.IssueClaimsCodeSettings;
@@ -416,11 +417,19 @@ public static class KestrunHostAuthExtensions
                 opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
                 break;
             default:
-                break;
+                if (opts.Logger.IsEnabled(LogEventLevel.Warning))
+                {
+                    opts.Logger.Warning("{language} is not supported for API Basic authentication", settings.Language);
+                }
+                throw new NotSupportedException("Unsupported language");
         }
     }
 
-    // Helpers to reduce complexity in API Key auth wiring
+    /// <summary>
+    /// Configures the API Key validators.
+    /// </summary>
+    /// <param name="opts">The options to configure.</param>
+    /// <exception cref="NotSupportedException">Thrown when the language is not supported.</exception>
     private static void ConfigureApiKeyValidators(ApiKeyAuthenticationOptions opts)
     {
         var settings = opts.ValidateCodeSettings;
@@ -456,10 +465,19 @@ public static class KestrunHostAuthExtensions
                 opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
             default:
-                break;
+                if (opts.Logger.IsEnabled(LogEventLevel.Warning))
+                {
+                    opts.Logger.Warning("{language} is not supported for API Basic authentication", settings.Language);
+                }
+                throw new NotSupportedException("Unsupported language");
         }
     }
 
+    /// <summary>
+    /// Configures the API Key issue claims.
+    /// </summary>
+    /// <param name="opts">The options to configure.</param>
+    /// <exception cref="NotSupportedException">Thrown when the language is not supported.</exception>
     private static void ConfigureApiKeyIssueClaims(ApiKeyAuthenticationOptions opts)
     {
         var settings = opts.IssueClaimsCodeSettings;
@@ -495,7 +513,11 @@ public static class KestrunHostAuthExtensions
                 opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
                 break;
             default:
-                break;
+                if (opts.Logger.IsEnabled(LogEventLevel.Warning))
+                {
+                    opts.Logger.Warning("{language} is not supported for API Basic authentication", settings.Language);
+                }
+                throw new NotSupportedException("Unsupported language");
         }
     }
 

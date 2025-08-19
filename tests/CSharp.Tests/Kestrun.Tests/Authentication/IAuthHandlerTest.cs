@@ -14,9 +14,11 @@ using System.Reflection;
 using Moq;
 using Serilog;
 using Xunit;
+using Kestrun.SharedState;
 
 namespace Kestrun.Authentication.Tests
 {
+    [Collection("SharedStateSerial")]
     public class IAuthHandlerTest
     {
         [Fact]
@@ -88,6 +90,10 @@ namespace Kestrun.Authentication.Tests
         public void BuildCsIssueClaims_ReturnsFunc()
         {
             // Arrange
+            foreach (var key in SharedStateStore.KeySnapshot())
+            {
+                SharedStateStore.Set(key, null);
+            }
             var settings = new AuthenticationCodeSettings
             {
                 Code = "return (System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>) new System.Collections.Generic.List<System.Security.Claims.Claim>() { new System.Security.Claims.Claim(\"role\", \"admin\") };",
