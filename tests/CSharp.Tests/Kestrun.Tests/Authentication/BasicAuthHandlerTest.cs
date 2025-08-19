@@ -29,7 +29,7 @@ namespace Kestrun.Authentication.Tests
         {
             return new BasicAuthenticationOptions
             {
-                ValidateCredentialsAsync = validator ?? ((ctx, u, p) => Task.FromResult(false)),
+                ValidateCredentialsAsync = validator ?? ((_, _, _) => Task.FromResult(false)),
                 RequireHttps = requireHttps,
                 Base64Encoded = base64,
                 HeaderName = headerName ?? "Authorization",
@@ -87,7 +87,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenHttpsRequiredAndNotHttps()
         {
-            var options = CreateOptions(validator: (_, _, _)  => Task.FromResult(true), requireHttps: true);
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true), requireHttps: true);
             var context = new DefaultHttpContext();
             context.Request.Scheme = "http";
             var handler = CreateHandler(options, context);
@@ -101,7 +101,7 @@ namespace Kestrun.Authentication.Tests
         [Fact]
         public async Task HandleAuthenticateAsync_ReturnsFail_WhenMissingAuthorizationHeader()
         {
-            var options = CreateOptions(validator: (_, _, _)  => Task.FromResult(true));
+            var options = CreateOptions(validator: (_, _, _) => Task.FromResult(true));
             var context = new DefaultHttpContext();
             var handler = CreateHandler(options, context);
 

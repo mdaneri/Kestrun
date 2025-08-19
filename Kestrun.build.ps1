@@ -144,6 +144,8 @@ Add-BuildTask Help {
     Write-Host '- CleanHelp: Cleans the PowerShell help documentation.'
     Write-Host '- Install-Module: Installs the Kestrun module.'
     Write-Host '- Remove-Module: Removes the Kestrun module.'
+    Write-Host '- Update-Module: Updates the Kestrun module.'
+    Write-Host '- Format: Formats the codebase.'    
 }
 
 Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
@@ -216,6 +218,11 @@ Add-BuildTask 'Kestrun.Tests' {
     foreach ($framework in $Frameworks) {
         dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
     }
+}
+
+Add-BuildTask 'Format' {
+    Write-Host 'Formatting code...'
+    dotnet format .\Kestrun.sln -v:$DotNetVerbosity
 }
 
 Add-BuildTask 'Test-Pester' {

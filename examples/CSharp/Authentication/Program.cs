@@ -447,7 +447,7 @@ server.AddResponseCompression(options =>
 );*/
 .AddCookieAuthentication(
        scheme: CookieScheme,
-       configure: new CookieAuthenticationOptions()
+       configure: new CookieAuthenticationOptions
        {
            Cookie = new CookieBuilder
            {

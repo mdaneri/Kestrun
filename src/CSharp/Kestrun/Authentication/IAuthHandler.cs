@@ -363,12 +363,12 @@ public interface IAuthHandler
         return ps;
     }
 
-/// <summary>
-/// Tries to create a Claim from the provided object.
-/// </summary>
-/// <param name="obj">The object to create a Claim from.</param>
-/// <param name="claim">The created Claim, if successful.</param>
-/// <returns>True if the Claim was created successfully; otherwise, false.</returns>
+    /// <summary>
+    /// Tries to create a Claim from the provided object.
+    /// </summary>
+    /// <param name="obj">The object to create a Claim from.</param>
+    /// <param name="claim">The created Claim, if successful.</param>
+    /// <returns>True if the Claim was created successfully; otherwise, false.</returns>
     private static bool TryToClaim(object? obj, out Claim claim)
     {
         switch (obj)

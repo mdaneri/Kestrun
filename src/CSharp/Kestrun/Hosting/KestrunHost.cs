@@ -58,7 +58,7 @@ public class KestrunHost : IDisposable
     public KestrunOptions Options { get; private set; } = new();
     private readonly List<string> _modulePaths = [];
 
-    private bool _isConfigured = false;
+    private bool _isConfigured;
 
     private KestrunRunspacePoolManager? _runspacePool;
 

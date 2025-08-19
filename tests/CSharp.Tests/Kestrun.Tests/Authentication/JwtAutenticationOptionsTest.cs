@@ -41,9 +41,9 @@ namespace Kestrun.Authentication.Tests
         {
             var options = new JwtAuthenticationOptions();
             var httpContext = new DefaultHttpContext();
-            options.IssueClaims = (ctx, username) =>
+            options.IssueClaims = (_, _) =>
             {
-                return Task.FromResult<IEnumerable<Claim>>(new[] { new Claim("type", "value") });
+                return Task.FromResult<IEnumerable<Claim>>([new Claim("type", "value")]);
             };
 
             var claims = await options.IssueClaims(httpContext, "user");

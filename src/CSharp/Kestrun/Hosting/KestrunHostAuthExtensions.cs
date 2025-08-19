@@ -369,6 +369,10 @@ public static class KestrunHostAuthExtensions
                 opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
             default:
+                if (opts.Logger.IsEnabled(LogEventLevel.Warning))
+                {
+                    opts.Logger.Warning("No valid language specified for Basic authentication");
+                }
                 break;
         }
     }
