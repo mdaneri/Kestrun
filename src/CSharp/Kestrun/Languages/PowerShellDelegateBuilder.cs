@@ -53,7 +53,7 @@ internal static class PowerShellDelegateBuilder
                 }
 
                 log.Verbose("Applying response to HttpResponse...");
-                await ApplyResponseAsync(context, krContext).ConfigureAwait(false);                
+                await ApplyResponseAsync(context, krContext).ConfigureAwait(false);
             }
             // optional: catch client cancellation to avoid noisy logs
             catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
