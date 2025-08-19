@@ -19,20 +19,24 @@ Kestrun — PowerShell brains. Kestrel speed.
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/1ea6075b819449a1aff2678f41f890c2)](https://app.codacy.com/gh/Kestrun/Kestrun/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Coverage Status](https://coveralls.io/repos/github/Kestrun/Kestrun/badge.svg?branch=main)](https://coveralls.io/github/Kestrun/Kestrun?branch=main)
 
+[![Linux](https://img.shields.io/badge/Linux-Supported-success?logo=linux)](https://github.com/Kestrun/Kestrun/actions)
+[![macOS](https://img.shields.io/badge/macOS-Supported-success?logo=apple)](https://github.com/Kestrun/Kestrun/actions)
+[![Windows](https://img.shields.io/badge/Windows-Supported-success?logo=windows)](https://github.com/Kestrun/Kestrun/actions)
+
+[![x64](https://img.shields.io/badge/Architecture-x64-informational?logo=microchip)](https://github.com/Kestrun/Kestrun/actions)
+[![Arm64](https://img.shields.io/badge/Architecture-Arm64-informational?logo=arm)](https://github.com/Kestrun/Kestrun/actions)
+
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![PowerShell 7.4](https://img.shields.io/badge/PowerShell-7.4-blue)](https://github.com/PowerShell/PowerShell/releases/tag/v7.4.0)
+[![PowerShell 7.5](https://img.shields.io/badge/PowerShell-7.5-blue)](https://github.com/PowerShell/PowerShell/releases/tag/v7.5.0)
+[![PowerShell 7.6](https://img.shields.io/badge/PowerShell-7.6(preview)-blue)](https://github.com/PowerShell/PowerShell/releases/tag/v7.6.0-preview.4)
+
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Releases](https://img.shields.io/github/v/release/Kestrun/Kestrun?display_name=release)](https://github.com/Kestrun/Kestrun/releases)
 
-![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-green)
-![Windows](https://img.shields.io/badge/Windows-✔-blue)
-![Linux](https://img.shields.io/badge/Linux-✔-green)
-![macOS](https://img.shields.io/badge/macOS-✔-lightgrey)
-![.NET 8](https://img.shields.io/badge/.NET-8%2B-blueviolet)
-![.NET 9](https://img.shields.io/badge/.NET-9%2B-blueviolet)
-![PowerShell](https://img.shields.io/badge/PowerShell-7.4-blue)
-![PowerShell](https://img.shields.io/badge/PowerShell-7.5-blue)
-![PowerShell](https://img.shields.io/badge/PowerShell-7.6(preview)-blue)
-
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
 [![NuGet](https://img.shields.io/nuget/v/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Kestrun)](https://www.powershellgallery.com/packages/Kestrun)
