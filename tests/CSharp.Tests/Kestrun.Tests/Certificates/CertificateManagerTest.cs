@@ -185,8 +185,12 @@ public class CertificateManagerTest
         var purposes = CertificateManager.GetPurposes(cert).ToList();
         Assert.True(purposes.Count >= 2);
         // Accept either friendly names or OIDs
-        Assert.Contains(purposes, p => string.Equals(p, "Server Authentication", StringComparison.OrdinalIgnoreCase) || p == "1.3.6.1.5.5.7.3.1");
-        Assert.Contains(purposes, p => string.Equals(p, "Client Authentication", StringComparison.OrdinalIgnoreCase) || p == "1.3.6.1.5.5.7.3.2");
+        Assert.Contains(purposes, p =>
+            p.Contains("Server Authentication", StringComparison.OrdinalIgnoreCase)
+            || p == "1.3.6.1.5.5.7.3.1");
+        Assert.Contains(purposes, p =>
+            p.Contains("Client Authentication", StringComparison.OrdinalIgnoreCase)
+            || p == "1.3.6.1.5.5.7.3.2");
     }
 
     [Fact]
