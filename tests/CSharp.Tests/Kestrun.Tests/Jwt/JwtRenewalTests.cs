@@ -6,7 +6,7 @@ namespace KestrunTests.Jwt;
 public class JwtRenewalTests
 {
     private static string NewSecretB64u(int bytes)
-        => B64Url(Enumerable.Repeat((byte)0xCD, bytes).ToArray());
+        => B64Url([.. Enumerable.Repeat((byte)0xCD, bytes)]);
 
     private static string B64Url(byte[] bytes)
     {

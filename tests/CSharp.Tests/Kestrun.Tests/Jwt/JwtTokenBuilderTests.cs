@@ -13,7 +13,7 @@ public class JwtTokenBuilderTests
     [InlineData(64, "HS512")] // 512-bit
     public void SignWithSecret_Auto_Picks_Expected_Alg(int bytes, string expectedAlg)
     {
-        var secret = B64Url(Enumerable.Repeat((byte)0x01, bytes).ToArray());
+        var secret = B64Url([.. Enumerable.Repeat((byte)0x01, bytes)]);
         var b = JwtTokenBuilder.New().WithIssuer("iss").WithAudience("aud").WithSubject("s").SignWithSecret(secret);
         var res = b.Build();
         Assert.Equal(expectedAlg, b.Algorithm);
@@ -23,7 +23,7 @@ public class JwtTokenBuilderTests
     [Fact]
     public void AddHeader_Appears_In_Token_Header()
     {
-        var secret = B64Url(Enumerable.Repeat((byte)0x02, 32).ToArray());
+        var secret = B64Url([.. Enumerable.Repeat((byte)0x02, 32)]);
         var token = JwtTokenBuilder.New()
             .WithIssuer("iss")
             .WithAudience("aud")
@@ -40,7 +40,7 @@ public class JwtTokenBuilderTests
     [Fact]
     public void EncryptWithSecret_dir_CBC_Builds_Token()
     {
-        var sign = B64Url(Enumerable.Repeat((byte)0x03, 32).ToArray()); // HS256 signing
+        var sign = B64Url([.. Enumerable.Repeat((byte)0x03, 32)]); // HS256 signing
         var encKey = Enumerable.Repeat((byte)0x04, 32).ToArray();       // 256-bit key for A128CBC-HS256
 
         var token = JwtTokenBuilder.New()
@@ -58,7 +58,7 @@ public class JwtTokenBuilderTests
     [Fact]
     public void EncryptWithSecret_dir_GCM_Builds_Token_IfSupported()
     {
-        var sign = B64Url(Enumerable.Repeat((byte)0x0A, 32).ToArray()); // HS256 signing
+        var sign = B64Url([.. Enumerable.Repeat((byte)0x0A, 32)]); // HS256 signing
         var encKey = Enumerable.Repeat((byte)0x0B, 16).ToArray();       // 128-bit key for A128GCM
 
         var sym = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(encKey);
@@ -103,7 +103,7 @@ public class JwtTokenBuilderTests
     [Fact]
     public void EncryptWithSecret_KeyWrapWrongSize_Throws()
     {
-        var sign = B64Url(Enumerable.Repeat((byte)0x05, 32).ToArray());
+        var sign = B64Url([.. Enumerable.Repeat((byte)0x05, 32)]);
         var encKey = Enumerable.Repeat((byte)0x06, 16).ToArray(); // 128-bit but A256GCM requires 256
 
         var b = JwtTokenBuilder.New()

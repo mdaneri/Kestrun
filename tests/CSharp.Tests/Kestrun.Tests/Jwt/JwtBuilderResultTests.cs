@@ -7,7 +7,7 @@ namespace KestrunTests.Jwt;
 public class JwtBuilderResultTests
 {
     private static string NewB64Url(int bytes, byte value = 0xAB)
-        => B64Url(Enumerable.Repeat(value, bytes).Select(b => (byte)b).ToArray());
+        => B64Url([.. Enumerable.Repeat(value, bytes).Select(b => (byte)b)]);
 
     private static string B64Url(byte[] bytes)
     {

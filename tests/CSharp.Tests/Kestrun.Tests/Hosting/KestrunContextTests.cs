@@ -98,10 +98,9 @@ public class KestrunContextTests
         Assert.Equal(cts.Token, ctx.Ct);
     }
 
-    private sealed class TestSessionFeature : ISessionFeature
+    private sealed class TestSessionFeature(ISession session) : ISessionFeature
     {
-        public TestSessionFeature(ISession session) => Session = session;
-        public ISession Session { get; set; }
+        public ISession Session { get; set; } = session;
     }
 
     private sealed class TestSession : ISession

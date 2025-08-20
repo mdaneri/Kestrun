@@ -28,13 +28,13 @@ public class ClaimPolicyExtensionsTests
         Assert.NotNull(p1);
         var req1 = Assert.IsType<ClaimsAuthorizationRequirement>(p1!.Requirements.Single());
         Assert.Equal(ClaimTypes.Role, req1.ClaimType);
-        Assert.Equal(new[] { "Admin", "Owner" }, req1.AllowedValues!.ToArray());
+        Assert.Equal(["Admin", "Owner"], req1.AllowedValues!.ToArray());
 
         var p2 = options.GetPolicy("Named");
         Assert.NotNull(p2);
         var req2 = Assert.IsType<ClaimsAuthorizationRequirement>(p2!.Requirements.Single());
         Assert.Equal(ClaimTypes.Name, req2.ClaimType);
-        Assert.Equal(new[] { "Alice" }, req2.AllowedValues!.ToArray());
+        Assert.Equal(["Alice"], req2.AllowedValues!.ToArray());
     }
 
     [Fact]

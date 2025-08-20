@@ -10,7 +10,7 @@ public class JwtParametersIntegrationTests
     [Fact]
     public void HS256_Parameters_RoundTrip_WithHeaders()
     {
-        var secret = B64Url(Enumerable.Repeat((byte)0xA5, 32).ToArray());
+        var secret = B64Url([.. Enumerable.Repeat((byte)0xA5, 32)]);
         var b = JwtTokenBuilder.New()
             .WithIssuer("iss-hs")
             .WithAudience("aud-hs")
@@ -136,8 +136,8 @@ public class JwtParametersIntegrationTests
 
     private static string CreateTempPemFile(string pem)
     {
-        var path = System.IO.Path.GetTempFileName();
-        System.IO.File.WriteAllText(path, pem);
+        var path = Path.GetTempFileName();
+        File.WriteAllText(path, pem);
         return path;
     }
 

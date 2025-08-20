@@ -30,7 +30,7 @@ public class KestrunHostMapExtensionsTests
         var options = new MapRouteOptions
         {
             Pattern = "/t-code-default",
-            HttpVerbs = Array.Empty<HttpVerb>(),
+            HttpVerbs = [],
             Code = "Context.Response.StatusCode = 204;",
             Language = ScriptLanguage.CSharp
         };
@@ -198,7 +198,7 @@ public class KestrunHostMapExtensionsTests
         {
             Policies = new()
             {
-                ["MustBeAlice"] = new Kestrun.Claims.ClaimRule(System.Security.Claims.ClaimTypes.Name, "Alice")
+                ["MustBeAlice"] = new ClaimRule(System.Security.Claims.ClaimTypes.Name, "Alice")
             }
         };
 

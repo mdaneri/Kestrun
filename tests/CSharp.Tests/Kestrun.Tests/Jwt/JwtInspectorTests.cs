@@ -9,7 +9,7 @@ public class JwtInspectorTests
     public void ReadAllParameters_ExtractsHeaderPayloadAndClaims()
     {
         // Create a simple HS256 token
-        var secretB64u = B64Url(Enumerable.Repeat((byte)0xEF, 32).ToArray());
+        var secretB64u = B64Url([.. Enumerable.Repeat((byte)0xEF, 32)]);
         var builder = JwtTokenBuilder
             .New()
             .WithIssuer("iss-x")

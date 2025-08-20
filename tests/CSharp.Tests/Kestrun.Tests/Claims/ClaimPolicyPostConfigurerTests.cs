@@ -17,10 +17,10 @@ public class ClaimPolicyPostConfigurerTests
         public ClaimPolicyConfig? ClaimPolicyConfig { get; set; }
     }
 
-    private sealed class TestOptionsMonitor<T> : IOptionsMonitor<T>
+    private sealed class TestOptionsMonitor<T>(Func<string, T> getter) : IOptionsMonitor<T>
     {
-        private readonly Func<string, T> _getter;
-        public TestOptionsMonitor(Func<string, T> getter) => _getter = getter;
+        private readonly Func<string, T> _getter = getter;
+
         public T CurrentValue => _getter(Options.DefaultName);
         public T Get(string? name) => _getter(name ?? Options.DefaultName);
         public IDisposable OnChange(Action<T, string> listener) => new DummyDisposable();
