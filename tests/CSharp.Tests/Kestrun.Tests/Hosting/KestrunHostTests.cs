@@ -85,7 +85,7 @@ public class KestrunHostTest
         var options = new MapRouteOptions
         {
             Pattern = "/test",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Write-Output 'Hello'",
             Language = ScriptLanguage.PowerShell
         };
@@ -104,7 +104,7 @@ public class KestrunHostTest
         var options = new MapRouteOptions
         {
             Pattern = "/html",
-            HttpVerbs = new[] { HttpVerb.Get }
+            HttpVerbs = [HttpVerb.Get]
         };
 
         Assert.Throws<FileNotFoundException>(() =>
@@ -254,7 +254,7 @@ public class KestrunHostTest
 
         try
         {
-            var bad = new MapRouteOptions { Pattern = "/tmpl", HttpVerbs = new[] { HttpVerb.Post } };
+            var bad = new MapRouteOptions { Pattern = "/tmpl", HttpVerbs = [HttpVerb.Post] };
             Assert.Throws<ArgumentException>(() => host.AddHtmlTemplateRoute(bad, tmp));
         }
         finally

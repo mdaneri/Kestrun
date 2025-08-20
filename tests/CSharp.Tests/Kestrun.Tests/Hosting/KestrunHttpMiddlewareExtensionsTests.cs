@@ -153,7 +153,7 @@ namespace KestrunTests.Hosting
         public void AddResponseCompression_WithCustomMimeTypes_SetsMimeTypes()
         {
             var host = CreateHost(out var middleware);
-            host.AddResponseCompression(o => o.MimeTypes = new[] { "application/json" });
+            host.AddResponseCompression(o => o.MimeTypes = ["application/json"]);
             Assert.True(middleware.Count > 0);
         }
 

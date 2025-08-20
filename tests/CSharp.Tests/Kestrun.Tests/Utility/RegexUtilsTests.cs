@@ -10,7 +10,7 @@ public class RegexUtilsTests
         var asm = typeof(FixedTimeEquals).Assembly;
         var t = asm.GetType("Kestrun.Utilities.RegexUtils")!;
         var method = t.GetMethod("IsGlobMatch", BindingFlags.Public | BindingFlags.Static)!;
-        return (bool)method.Invoke(null, new object[] { input, pattern, ignoreCase })!;
+        return (bool)method.Invoke(null, [input, pattern, ignoreCase])!;
     }
 
     [Theory]

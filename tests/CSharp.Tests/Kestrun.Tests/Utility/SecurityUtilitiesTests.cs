@@ -7,16 +7,16 @@ public class SecurityUtilitiesTests
     [Fact]
     public void FixedTimeEquals_ByteArrays_Equal_ReturnsTrue()
     {
-        byte[] a = { 1, 2, 3 };
-        byte[] b = { 1, 2, 3 };
+        byte[] a = [1, 2, 3];
+        byte[] b = [1, 2, 3];
         Assert.True(FixedTimeEquals.Test(a, b));
     }
 
     [Fact]
     public void FixedTimeEquals_ByteArrays_Different_ReturnsFalse()
     {
-        byte[] a = { 1, 2, 3 };
-        byte[] b = { 1, 2, 4 };
+        byte[] a = [1, 2, 3];
+        byte[] b = [1, 2, 4];
         Assert.False(FixedTimeEquals.Test(a, b));
     }
 

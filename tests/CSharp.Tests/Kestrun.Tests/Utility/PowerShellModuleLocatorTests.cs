@@ -17,7 +17,7 @@ public class PowerShellModuleLocatorTests
             File.WriteAllText(file, "data");
 
             var method = typeof(PowerShellModuleLocator).GetMethod("FindFileUpwards", BindingFlags.NonPublic | BindingFlags.Static)!;
-            string? found = (string?)method.Invoke(null, new object[] { nested.FullName, Path.Combine("..", "test.txt") });
+            string? found = (string?)method.Invoke(null, [nested.FullName, Path.Combine("..", "test.txt")]);
             Assert.Equal(Path.GetFullPath(file), Path.GetFullPath(found!));
         }
         finally
