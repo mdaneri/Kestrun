@@ -52,8 +52,12 @@ Copy-Item -Path (Join-Path $aspnet '*') -Destination $binDir -Recurse -Force
 
 New-Item -ItemType Directory -Force -Path $CoverageDir | Out-Null
 
+Write-Host "🧹 Cleaning previous builds..."
+
+dotnet clean
+
 Write-Host "🧪 Running tests with coverage..."
- 
+
 $CoverageDir = Resolve-Path -Path $CoverageDir
 if ( -not (Test-Path -Path $CoverageDir) ) {
     throw "Coverage directory not found: $CoverageDir"
@@ -63,89 +67,13 @@ if ($CoverageDir -is [System.Management.Automation.PathInfo]) {
 }
 $coverageFile = Join-Path $CoverageDir "csharp.$Framework.cobertura.xml"
 
-# Ensure the test project references coverlet.collector with PrivateAssets=all
-
-$runSettings = @"
-<?xml version="1.0" encoding="utf-8"?>
-<RunSettings>
-  <RunConfiguration>
-    <DisableParallelization>true</DisableParallelization>
-    <MaxCpuCount>1</MaxCpuCount>
-  </RunConfiguration>
-  <DataCollectionRunSettings>
-    <DataCollectors>
-      <DataCollector friendlyName="XPlat Code Coverage">
-        <Configuration>
-          <Format>cobertura</Format>
-          <Include>[Kestrun*]*</Include>
-          <Exclude>[*.Tests]*</Exclude>
-        </Configuration>
-      </DataCollector>
-    </DataCollectors>
-  </DataCollectionRunSettings>
-</RunSettings>
-"@
-
-$rsPath = Join-Path $CoverageDir "coverlet.runsettings"
-$runSettings | Set-Content -Path $rsPath -Encoding UTF8
-
-
-if ($IsWindows) {
-    Write-Host "💙 Windows detected → using MSBuild coverage (build-time instrumentation)."
-    dotnet build $TestProject -c $Configuration -f $Framework
-    #$out = Join-Path ([System.IO.Path]::GetTempPath()) "kestrun-coverage-$Framework"
-    $out = Join-Path -Path $CoverageDir "kestrun-coverage-$Framework"
-
-
-    if (Test-Path -Path $out) {
-        Remove-Item $out -Recurse -Force
-    }
-    New-Item $out -ItemType Directory -Force | Out-Null
-
-    New-Item "$CoverageDir\logs" -ItemType Directory -Force | Out-Null
-
-    Copy-Item -Path (Join-Path $binDir "*") -Destination $out -Recurse
-
-    # Point vstest at the Coverlet collector package folder
-    $CollectorRoot = Join-Path $env:USERPROFILE ".nuget\packages\coverlet.collector\6.0.4"
-    $AdapterPaths = @(
-        (Join-Path $CollectorRoot "build\netstandard2.0"),
-        $out
-    ) -join ';'
-
-    Push-Location $out
-    try {
-        dotnet vstest "KestrunTests.dll" `
-            --Settings:"$rsPath" `
-            --TestAdapterPath:"$AdapterPaths" `
-            --Diag:"$CoverageDir\logs\diag-vstest-shadow.log"
-    } finally {
-        Pop-Location
-
-        Get-ChildItem "$out\TestResults" -Recurse -Filter 'coverage.cobertura.xml' -File |
-            Sort-Object LastWriteTime -Descending |
-            Select-Object -First 1 |
-            Copy-Item -Destination $coverageFile -Force
-
-        if (Test-Path -Path $out) {
-            Remove-Item $out -Recurse -Force
-        }
-    }
-} else {
-
-    Write-Host "💚 Linux/macOS detected → using Coverlet collector (runsettings)."
-    # Run tests with collector (no shadow-copy, no vstest, no adapter paths)
-    dotnet restore $TestProject
-    dotnet test $TestProject -c $Configuration --framework $Framework --settings $rsPath
-
-    # Find the collector-produced file under TestResults
-    $projDir = Split-Path $TestProject -Parent
-    Get-ChildItem "$projDir\TestResults" -Recurse -Filter 'coverage.cobertura.xml' -File |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1 |
-        Copy-Item -Destination $coverageFile -Force
- 
-}
+dotnet test --collect:"XPlat Code Coverage" --framework $Framework
+# Find the collector-produced file under TestResults
+$projDir = Split-Path $TestProject -Parent
+Get-ChildItem "$projDir\TestResults" -Recurse -Filter 'coverage.cobertura.xml' -File |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1 |
+    Copy-Item -Destination $coverageFile -Force
 
 if (Test-Path $coverageFile) {
     if ((Get-Item $coverageFile).Length -lt 400) {

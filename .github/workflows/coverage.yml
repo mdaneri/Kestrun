@@ -71,8 +71,8 @@ jobs:
         shell: pwsh
         run: |
           # If your Coverage task accepts a framework parameter, pass it explicitly:
-          # Invoke-Build Coverage -Framework net9.0 -DotNetVerbosity $Env:DOTNET_VERBOSITY
-          Invoke-Build Coverage -DotNetVerbosity $Env:DOTNET_VERBOSITY
+          # Invoke-Build Coverage -Framework net9.0
+          Invoke-Build Coverage 
 
       - name: 🔍 Sanity check Cobertura (C#)
         run: |

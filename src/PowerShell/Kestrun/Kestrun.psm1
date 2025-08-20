@@ -1,4 +1,4 @@
-param() {}
+param()
 # Main Kestrun module path
 # This is the root path for the application
 $script:KestrunRoot = $MyInvocation.PSScriptRoot

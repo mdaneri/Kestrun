@@ -7,8 +7,26 @@ using Moq;
 
 namespace KestrunTests.Languages;
 
+[Collection("SharedStateSerial")] // serialize due to SharedStateStore usage and Roslyn warmup
 public class CSharpDelegateBuilderTests
 {
+    // One-time warmup to avoid first-run JIT/compilation flakiness
+    static CSharpDelegateBuilderTests()
+    {
+        try
+        {
+            var log = new Mock<ILogger>(MockBehavior.Loose).Object;
+            var del = CSharpDelegateBuilder.Build("int __warm=0;", log, args: null, extraImports: null, extraRefs: null);
+            var http = new DefaultHttpContext();
+            http.Request.Method = "GET";
+            http.Request.Path = "/warmup";
+            del(http).GetAwaiter().GetResult();
+        }
+        catch
+        {
+            // Ignore warmup failures; tests will still validate behavior
+        }
+    }
     [Fact]
     public void Compile_ThrowsOnNullOrWhitespace()
     {
