@@ -309,7 +309,7 @@ Add-BuildTask 'Clean_CSharp_Help' {
 }
 Add-BuildTask 'Coverage' {
     Write-Host 'Creating coverage report...'
-    & .\Utility\Coverage.ps1
+    & .\Utility\Generate-Coverage.ps1 -CoverageDir (Join-Path -Path $PWD -ChildPath 'coverage')
 }
 
 Add-BuildTask 'Manifest' {
