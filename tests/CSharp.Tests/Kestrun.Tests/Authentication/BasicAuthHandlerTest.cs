@@ -51,7 +51,7 @@ public class BasicAuthHandlerTest
         var ctx = context ?? new DefaultHttpContext();
         if (ctx.RequestServices is null)
         {
-            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection()
+            var services = new ServiceCollection()
                 .AddLogging()
                 .BuildServiceProvider();
             ctx.RequestServices = services;
@@ -218,7 +218,7 @@ public class BasicAuthHandlerTest
         Assert.NotNull(method);
 
         // Act
-        var result = method!.Invoke(handler, Array.Empty<object>()) as AuthenticateResult;
+        var result = method!.Invoke(handler, []) as AuthenticateResult;
 
         // Assert
         Assert.NotNull(result);
@@ -239,7 +239,7 @@ public class BasicAuthHandlerTest
         Assert.NotNull(method);
 
         // Act
-        var result = method!.Invoke(handler, Array.Empty<object>()) as AuthenticateResult;
+        var result = method!.Invoke(handler, []) as AuthenticateResult;
 
         // Assert
         Assert.NotNull(result);
@@ -260,7 +260,7 @@ public class BasicAuthHandlerTest
         Assert.NotNull(method);
 
         // Act
-        var result = method!.Invoke(handler, Array.Empty<object>());
+        var result = method!.Invoke(handler, []);
 
         // Assert
         Assert.Null(result);
@@ -343,7 +343,7 @@ public class BasicAuthHandlerTest
 
         // Assert
         Assert.False(ok);
-        var authFail = parameters[1] as Microsoft.AspNetCore.Authentication.AuthenticateResult;
+        var authFail = parameters[1] as AuthenticateResult;
         Assert.NotNull(authFail);
         Assert.False(authFail!.Succeeded);
         Assert.Equal("Malformed credentials", authFail.Failure?.Message);

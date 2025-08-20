@@ -34,8 +34,5 @@ public class SecureStringUtilsTests
     }
 
     [Fact]
-    public void ToSecureString_ThrowsOnEmpty()
-    {
-        _ = Assert.Throws<ArgumentException>(() => ReadOnlySpan<char>.Empty.ToSecureString());
-    }
+    public void ToSecureString_ThrowsOnEmpty() => _ = Assert.Throws<ArgumentException>(() => ReadOnlySpan<char>.Empty.ToSecureString());
 }

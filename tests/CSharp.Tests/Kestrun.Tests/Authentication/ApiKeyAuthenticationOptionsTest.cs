@@ -105,8 +105,10 @@ public class ApiKeyAuthenticationOptionsTest
     [Fact]
     public async Task IssueClaims_Can_Be_Set_And_Invoked()
     {
-        var options = new ApiKeyAuthenticationOptions();
-        options.IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>([new Claim("type", "value")]);
+        var options = new ApiKeyAuthenticationOptions
+        {
+            IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>([new Claim("type", "value")])
+        };
         var claims = await options.IssueClaims(new DefaultHttpContext(), "user");
         _ = Assert.Single(claims);
         Assert.Equal("type", claims.First().Type);

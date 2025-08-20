@@ -164,9 +164,6 @@ public class PowerShellRunspaceMiddlewareTests
     private sealed class InMemorySink : ILogEventSink
     {
         public List<LogEvent> Events { get; } = new();
-        public void Emit(LogEvent logEvent)
-        {
-            Events.Add(logEvent);
-        }
+        public void Emit(LogEvent logEvent) => Events.Add(logEvent);
     }
 }

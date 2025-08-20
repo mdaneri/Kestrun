@@ -18,10 +18,7 @@ public class RegexUtilsTests
     [InlineData("foo.TXT", "*.txt", true)]
     [InlineData("bar.log", "*.txt", false)]
     [InlineData("abc", "a?c", true)]
-    public void IsGlobMatch_Works(string input, string pattern, bool expected)
-    {
-        Assert.Equal(expected, InvokeIsGlobMatch(input, pattern));
-    }
+    public void IsGlobMatch_Works(string input, string pattern, bool expected) => Assert.Equal(expected, InvokeIsGlobMatch(input, pattern));
 
     [Fact]
     public void IsGlobMatch_CaseSensitive_Works()

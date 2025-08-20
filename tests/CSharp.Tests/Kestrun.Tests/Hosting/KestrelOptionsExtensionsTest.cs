@@ -57,9 +57,10 @@ public class KestrelOptionsExtensionsTest
         // ApplicationServices is in the skip list
         var services = new TestServiceProvider();
         var src = new KestrelServerOptions();
-        var dest = new KestrelServerOptions();
-
-        dest.ApplicationServices = services;
+        var dest = new KestrelServerOptions
+        {
+            ApplicationServices = services
+        };
         src.ApplicationServices = new TestServiceProvider();
 
         dest.CopyFromTemplate(src);

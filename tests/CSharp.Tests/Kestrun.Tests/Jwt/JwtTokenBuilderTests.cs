@@ -68,7 +68,7 @@ public class JwtTokenBuilderTests
         {
             var provider = cpf.CreateAuthenticatedEncryptionProvider(sym, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.Aes128Gcm);
             // Some implementations need only plaintext & AAD
-            _ = provider.Encrypt([0x01], Array.Empty<byte>());
+            _ = provider.Encrypt([0x01], []);
         }
         catch (NotSupportedException)
         {

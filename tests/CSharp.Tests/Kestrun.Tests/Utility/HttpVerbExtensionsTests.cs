@@ -13,8 +13,5 @@ public class HttpVerbExtensionsTests
     [InlineData(HttpVerb.Patch, "PATCH")]
     [InlineData(HttpVerb.Options, "OPTIONS")]
     [InlineData(HttpVerb.Trace, "TRACE")]
-    public void ToMethodString_ReturnsUpperCase(HttpVerb verb, string expected)
-    {
-        Assert.Equal(expected, verb.ToMethodString());
-    }
+    public void ToMethodString_ReturnsUpperCase(HttpVerb verb, string expected) => Assert.Equal(expected, verb.ToMethodString());
 }

@@ -21,10 +21,7 @@ public class SecurityUtilitiesTests
     }
 
     [Fact]
-    public void FixedTimeEquals_Strings_Equal_ReturnsTrue()
-    {
-        Assert.True(FixedTimeEquals.Test("abc", "abc"));
-    }
+    public void FixedTimeEquals_Strings_Equal_ReturnsTrue() => Assert.True(FixedTimeEquals.Test("abc", "abc"));
 
     [Fact]
     public void FixedTimeEquals_Strings_Null_ReturnsFalse()
