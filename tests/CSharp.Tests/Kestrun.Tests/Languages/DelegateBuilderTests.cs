@@ -40,8 +40,8 @@ public class DelegateBuilderTests
         {
             Method = "GET",
             Path = "/",
-            Query = new(),
-            Headers = new(),
+            Query = [],
+            Headers = [],
             Body = string.Empty
         };
         var kr = new KestrunResponse(req);
