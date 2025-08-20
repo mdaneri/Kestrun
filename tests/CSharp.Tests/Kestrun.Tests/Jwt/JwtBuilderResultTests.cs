@@ -6,9 +6,10 @@ namespace KestrunTests.Jwt;
 
 public class JwtBuilderResultTests
 {
+#pragma warning disable IDE0004
     private static string NewB64Url(int bytes, byte value = 0xAB)
         => B64Url([.. Enumerable.Repeat(value, bytes).Select(b => (byte)b)]);
-
+#pragma warning restore IDE0004
     private static string B64Url(byte[] bytes)
     {
         var s = Convert.ToBase64String(bytes);
