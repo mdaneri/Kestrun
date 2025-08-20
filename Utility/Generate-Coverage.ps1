@@ -58,8 +58,7 @@ dotnet test $TestProject `
     /p:CollectCoverage=true `
     /p:CoverletOutputFormat=cobertura `
     /p:CoverletOutput="$CoverageDir/csharp" `
-    /p:Include="[Kestrun*]*" `
-    /p:Exclude="[KestrunTests]*"
+    /p:Include="[Kestrun*]*" # /p:Exclude="[KestrunTests]*"
 
 $coverageFile = Join-Path $CoverageDir "csharp.$Framework.cobertura.xml"
 
