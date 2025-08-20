@@ -72,7 +72,7 @@ public class KestrunHostTest
         var host = new KestrunHost("TestApp", logger);
 
         _ = Assert.Throws<InvalidOperationException>(() =>
-           host.AddMapRoute("/test", HttpVerb.Get, async ctx => { await System.Threading.Tasks.Task.CompletedTask; })
+           host.AddMapRoute("/test", HttpVerb.Get, async ctx => { await Task.CompletedTask; })
         );
     }
 
