@@ -69,7 +69,7 @@ public class KestrunContextTests
     {
         var http = new DefaultHttpContext();
         http.Request.Path = "/api/test";
-        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "alice") }, "test");
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "alice")], "test");
         http.User = new ClaimsPrincipal(identity);
 
         // with no session feature
