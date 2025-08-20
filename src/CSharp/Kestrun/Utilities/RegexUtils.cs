@@ -1,4 +1,3 @@
-
 using System.Text.RegularExpressions;
 
 namespace Kestrun.Utilities;

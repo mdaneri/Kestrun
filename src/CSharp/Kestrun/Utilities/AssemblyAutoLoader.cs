@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Kestrun.Utilities;
 
@@ -150,8 +151,8 @@ public static class AssemblyAutoLoader
             {
                 Console.WriteLine($"Loading assembly: {path}");
             }
-            // Load the assembly from the specified path
-            return Assembly.LoadFrom(path);
+            // Load the assembly from the specified path (Core-friendly)
+            return AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(path));
         }
         catch
         {

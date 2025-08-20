@@ -1,3 +1,5 @@
+using System;
+
 namespace Kestrun.Utilities;
 
 /// <summary>
@@ -28,124 +30,124 @@ public enum HttpVerb
     /// <summary>
     /// Represents the HTTP GET method.
     /// </summary>
-    Get,
+    Get = 1 << 0,
     /// <summary>
     /// Represents the HTTP HEAD method.
     /// </summary>
-    Head,
+    Head = 1 << 1,
     /// <summary>
     /// Represents the HTTP POST method.
     /// </summary>
-    Post,
+    Post = 1 << 2,
     /// <summary>
     /// Represents the HTTP PUT method.
     /// </summary>
-    Put,
+    Put = 1 << 3,
     /// <summary>
     /// Represents the HTTP PATCH method.
     /// </summary>
-    Patch,
+    Patch = 1 << 4,
     /// <summary>
     /// Represents the HTTP DELETE method.
     /// </summary>
-    Delete,
+    Delete = 1 << 5,
     /// <summary>
     /// Represents the HTTP OPTIONS method.
     /// </summary>
-    Options,
+    Options = 1 << 6,
     /// <summary>
     /// Represents the HTTP TRACE method.
     /// </summary>
-    Trace,
+    Trace = 1 << 7,
     // WebDAV verbs
     /// <summary>
     /// Represents the HTTP PROPFIND method (WebDAV).
     /// </summary>
-    PropFind,
+    PropFind = 1 << 8,
     /// <summary>
     /// Represents the HTTP PROPPATCH method (WebDAV).
     /// </summary>
-    PropPatch,
+    PropPatch = 1 << 9,
     /// <summary>
     /// Represents the HTTP MKCOL method (WebDAV).
     /// </summary>
-    MkCol,
+    MkCol = 1 << 10,
     /// <summary>
     /// Represents the HTTP COPY method (WebDAV).
     /// </summary>
-    Copy,
+    Copy = 1 << 11,
     /// <summary>
     /// Represents the HTTP MOVE method (WebDAV).
     /// </summary>
-    Move,
+    Move = 1 << 12,
     /// <summary>
     /// Represents the HTTP LOCK method (WebDAV).
     /// </summary>
-    Lock,
+    Lock = 1 << 13,
     /// <summary>
     /// Represents the HTTP UNLOCK method (WebDAV).
     /// </summary>
-    Unlock,
+    Unlock = 1 << 14,
     /// <summary>
     /// Represents the HTTP REPORT method (WebDAV).
     /// </summary>
-    Report,
+    Report = 1 << 15,
     /// <summary>
     /// Represents the HTTP ACL method (WebDAV).
     /// </summary>
-    Acl,
+    Acl = 1 << 16,
     /// <summary>
     /// Represents the HTTP SEARCH method (WebDAV).
     /// </summary>
-    Search,
+    Search = 1 << 17,
     /// <summary>
     /// Represents the HTTP MERGE method (WebDAV).
     /// </summary>
-    Merge,
+    Merge = 1 << 18,
     /// <summary>
     /// Represents the HTTP BIND method (WebDAV).
     /// </summary>
-    Bind,
+    Bind = 1 << 19,
     /// <summary>
     /// Represents the HTTP UNBIND method (WebDAV).
     /// </summary>
-    Unbind,
+    Unbind = 1 << 20,
     /// <summary>
     /// Represents the HTTP REBIND method (WebDAV).
     /// </summary>
-    Rebind,
+    Rebind = 1 << 21,
     /// <summary>
     /// Represents the HTTP UPDATE method (WebDAV).
     /// </summary>
-    Update,
+    Update = 1 << 22,
     /// <summary>
     /// Represents the HTTP VERSION-CONTROL method (WebDAV).
     /// </summary>
-    VersionControl,
+    VersionControl = 1 << 23,
     /// <summary>
     /// Represents the HTTP CHECKIN method (WebDAV).
     /// </summary>
-    Checkin,
+    Checkin = 1 << 24,
     /// <summary>
     /// Represents the HTTP CHECKOUT method (WebDAV).
     /// </summary>
-    Checkout,
+    Checkout = 1 << 25,
     /// <summary>
     /// Represents the HTTP UNCHECKOUT method (WebDAV).
     /// </summary>
-    Uncheckout,
+    Uncheckout = 1 << 26,
     /// <summary>
     /// Represents the HTTP MKWORKSPACE method (WebDAV).
     /// </summary>
-    MkWorkspace,
+    MkWorkspace = 1 << 27,
     /// <summary>
     /// Represents the HTTP LABEL method (WebDAV).
     /// </summary>
-    Label,
+    Label = 1 << 28,
     /// <summary>
     /// Represents the HTTP ORDERPATCH method (WebDAV).
     /// </summary>
-    OrderPatch
+    OrderPatch = 1 << 29
 }
 
 /// <summary>

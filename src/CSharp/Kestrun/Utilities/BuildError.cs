@@ -1,7 +1,12 @@
 
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Management.Automation;
 using System.Text;
 using Serilog;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Kestrun.Utilities;
 

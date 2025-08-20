@@ -5,6 +5,7 @@ using System.Linq;
 using System.Management.Automation;
 using System.Reflection;
 using System.Text.Json;
+using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Kestrun.Utilities;
@@ -40,6 +41,10 @@ public static class YamlHelper
     /// <returns>A Hashtable containing the deserialized YAML content.</returns>
     public static Hashtable FromYamlToHashtable(string yaml)
     {
+        if (yaml is null)
+        {
+            throw new ArgumentNullException(nameof(yaml));
+        }
         var obj = _deserializer.Deserialize<object>(yaml);
         return (Hashtable)ConvertToPSCompatible(obj);
     }
@@ -51,6 +56,10 @@ public static class YamlHelper
     /// <returns>A PSObject containing the deserialized YAML content.</returns>
     public static PSObject FromYamlToPSCustomObject(string yaml)
     {
+        if (yaml is null)
+        {
+            throw new ArgumentNullException(nameof(yaml));
+        }
         var obj = _deserializer.Deserialize<object>(yaml);
         var hash = (Hashtable)ConvertToPSCompatible(obj);
         return ConvertToPSCustomObject(hash);
