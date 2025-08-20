@@ -113,7 +113,10 @@ public class JwtTokenBuilderTests
             .SignWithSecret(sign)
             .EncryptWithSecret(encKey, keyAlg: "A256KW", encAlg: "A256GCM");
 
+#pragma warning disable IDE0200
+        // Expect an exception due to key size mismatch
         _ = Assert.Throws<ArgumentException>(() => b.Build());
+#pragma warning restore IDE0200
     }
 
     [Fact]

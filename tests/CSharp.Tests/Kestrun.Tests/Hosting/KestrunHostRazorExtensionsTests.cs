@@ -42,7 +42,9 @@ public class KestrunHostRazorExtensionsTests
     public void AddPowerShellRazorPages_Default_DoesNotThrow()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
+#pragma warning disable IDE0200
         var ex = Record.Exception(() => host.AddPowerShellRazorPages());
+#pragma warning restore IDE0200
         Assert.Null(ex);
     }
 

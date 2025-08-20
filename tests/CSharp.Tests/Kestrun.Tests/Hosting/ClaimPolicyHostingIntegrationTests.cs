@@ -43,7 +43,9 @@ public class ClaimPolicyHostingIntegrationTests
         Assert.NotNull(policy);
         var req = Assert.IsType<ClaimsAuthorizationRequirement>(policy!.Requirements.Single());
         Assert.Equal(ClaimTypes.Role, req.ClaimType);
+#pragma warning disable IDE0305
         Assert.Equal(["Admin"], req.AllowedValues!.ToArray());
+#pragma warning restore IDE0305
     }
 
     [Fact]
@@ -78,6 +80,8 @@ public class ClaimPolicyHostingIntegrationTests
         Assert.NotNull(policy);
         var req = Assert.IsType<ClaimsAuthorizationRequirement>(policy!.Requirements.Single());
         Assert.Equal(ClaimTypes.Name, req.ClaimType);
+#pragma warning disable IDE0305
         Assert.Equal(["Bob"], req.AllowedValues!.ToArray());
+#pragma warning restore IDE0305
     }
 }

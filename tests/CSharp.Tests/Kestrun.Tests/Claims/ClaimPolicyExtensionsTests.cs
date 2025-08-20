@@ -28,13 +28,18 @@ public class ClaimPolicyExtensionsTests
         Assert.NotNull(p1);
         var req1 = Assert.IsType<ClaimsAuthorizationRequirement>(p1!.Requirements.Single());
         Assert.Equal(ClaimTypes.Role, req1.ClaimType);
+#pragma warning disable IDE0305
         Assert.Equal(["Admin", "Owner"], req1.AllowedValues!.ToArray());
+#pragma warning restore IDE0305
 
         var p2 = options.GetPolicy("Named");
         Assert.NotNull(p2);
         var req2 = Assert.IsType<ClaimsAuthorizationRequirement>(p2!.Requirements.Single());
         Assert.Equal(ClaimTypes.Name, req2.ClaimType);
+#pragma warning disable IDE0305
         Assert.Equal(["Alice"], req2.AllowedValues!.ToArray());
+#pragma warning restore IDE0305
+
     }
 
     [Fact]

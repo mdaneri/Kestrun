@@ -54,7 +54,10 @@ public class ClaimPolicyPostConfigurerTests
         var req1 = Assert.Single(p1!.Requirements);
         var claimReq1 = Assert.IsType<Microsoft.AspNetCore.Authorization.Infrastructure.ClaimsAuthorizationRequirement>(req1);
         Assert.Equal(ClaimTypes.Role, claimReq1.ClaimType);
+
+#pragma warning disable IDE0305,CA1861
         Assert.Equal(new[] { "Admin" }, claimReq1.AllowedValues!.ToArray());
+#pragma warning restore IDE0305,CA1861
 
         Assert.NotNull(options.GetPolicy("P2"));
     }
