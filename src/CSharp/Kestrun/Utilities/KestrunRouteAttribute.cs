@@ -1,6 +1,5 @@
 // KestrunRouteAttribute.cs
 using System;
-namespace Kestrun.Utilities;
 
 /// <summary>
 /// Specifies the API context in which a Kestrun route or schedule can be executed.
