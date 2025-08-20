@@ -72,11 +72,13 @@ jobs:
           mkdir -p coverage
           dotnet test ./tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
             -c Debug -f net9.0 \
-            /p:CollectCoverage=true \
-            /p:CoverletOutputFormat=cobertura \
-            "/p:CoverletOutput=$(pwd)/coverage/csharp" \
-            '/p:Include=[Kestrun]*'
-          echo "Produced coverage files:"
+            --collect:"XPlat Code Coverage" \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+            
+          # Find the generated cobertura file inside TestResults and copy/rename
+          COV=$(find ./tests/CSharp.Tests/Kestrun.Tests/TestResults -name "coverage.cobertura.xml" -print -quit)
+          echo "Coverage file generated at: $COV"
+          cp "$COV" coverage/csharp.net9.0.cobertura.xml
           ls -la coverage
 
       - name: 🔍 Sanity check Cobertura (C#)

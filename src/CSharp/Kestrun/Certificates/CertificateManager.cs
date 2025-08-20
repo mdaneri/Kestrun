@@ -452,7 +452,6 @@ public static class CertificateManager
     /// <returns>The imported X509Certificate2 instance.</returns>
     public static X509Certificate2 Import(string certPath)
     {
-
         // ToSecureSpan zero-frees its buffer as soon as this callback returns.
         ReadOnlySpan<char> passwordSpan = default;
         // capture the return value of the span-based overload
