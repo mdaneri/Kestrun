@@ -7,7 +7,7 @@ namespace KestrunTests.Claims;
 
 public class ClaimPolicyBuilderTestsTest
 {
-    private static readonly string[] ManagerAllowed = new[] { "Manager" };
+    private static readonly string[] ManagerAllowed = ["Manager"];
 
     [Fact]
     public void AddPolicy_WithEnum_Uses_ToClaimUri_Mapping_UsesStaticArray()

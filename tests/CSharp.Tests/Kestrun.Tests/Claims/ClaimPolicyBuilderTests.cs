@@ -17,7 +17,7 @@ public class ClaimPolicyBuilderTests
 
         var rule = builder.Policies["admin"];
         Assert.Equal("role", rule.ClaimType);
-        Assert.Equal(new[] { "admin", "owner" }, rule.AllowedValues);
+        Assert.Equal(["admin", "owner"], rule.AllowedValues);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class ClaimPolicyBuilderTests
 
         var rule = builder.Policies["RolePolicy"];
         Assert.Equal(ClaimTypes.Role, rule.ClaimType);
-        Assert.Equal(new[] { "Manager" }, rule.AllowedValues);
+        Assert.Equal(["Manager"], rule.AllowedValues);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class ClaimPolicyBuilderTests
         Assert.True(builder.Policies.ContainsKey("POLICYX"));
         var rule = builder.Policies["PolicyX"];
         Assert.Equal("t2", rule.ClaimType); // overwritten
-        Assert.Equal(new[] { "b" }, rule.AllowedValues);
+        Assert.Equal(["b"], rule.AllowedValues);
     }
 
     [Fact]
@@ -119,6 +119,6 @@ public class ClaimPolicyBuilderTests
 
         var rule = config.Policies["admin"];
         Assert.Equal(ClaimTypes.Role, rule.ClaimType);
-        Assert.Equal(new[] { "admin" }, rule.AllowedValues);
+        Assert.Equal(["admin"], rule.AllowedValues);
     }
 }
