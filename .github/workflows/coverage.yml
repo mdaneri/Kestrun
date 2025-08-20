@@ -75,8 +75,7 @@ jobs:
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
             "/p:CoverletOutput=$(pwd)/coverage/csharp" \
-            "/p:Include=[Kestrun]*" \
-            "/p:Exclude=[*.Tests]*;[xunit.*]*;[FluentAssertions*]*"
+            '/p:Include=[Kestrun]*'
           echo "Produced coverage files:"
           ls -la coverage
 
