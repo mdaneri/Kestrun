@@ -23,8 +23,8 @@ Kestrun — PowerShell brains. Kestrel speed.
 [![macOS](https://img.shields.io/badge/macOS-Supported-success?logo=apple)](https://github.com/Kestrun/Kestrun/actions)
 [![Windows](https://img.shields.io/badge/Windows-Supported-success?logo=windows)](https://github.com/Kestrun/Kestrun/actions)
 
-[![x64](https://img.shields.io/badge/Architecture-x64-informational?logo=microchip)](https://github.com/Kestrun/Kestrun/actions)
-[![Arm64](https://img.shields.io/badge/Architecture-Arm64-informational?logo=arm)](https://github.com/Kestrun/Kestrun/actions)
+[![x64](https://img.shields.io/badge/x64-Supported-success?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3QgeD0iNiIgeT0iNiIgd2lkdGg9IjEyIiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0id2hpdGUiLz48cmVjdCB4PSIxIiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjEiIHk9IjE0IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjE5IiB5PSI4IiB3aWR0aD0iNCIgaGVpZ2h0PSIyIiBmaWxsPSJ3aGl0ZSIvPjxyZWN0IHg9IjE5IiB5PSIxNCIgd2lkdGg9IjQiIGhlaWdodD0iMiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=)](https://github.com/Kestrun/Kestrun/actions)
+[![Arm64](https://img.shields.io/badge/Arm64-Supported-success?logo=arm)](https://github.com/Kestrun/Kestrun/actions)
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4)](https://dotnet.microsoft.com/download/dotnet/9.0)

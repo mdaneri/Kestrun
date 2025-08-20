@@ -26,8 +26,8 @@ public class CSharpDelegateBuilderTests
         {
             SharedStateStore.Set(key, null);
         }
-    // Minimal script that compiles and runs without touching response
-    var code = "int a = 1;";
+        // Minimal script that compiles and runs without touching response
+        var code = "int a = 1;";
         var del = CSharpDelegateBuilder.Build(code, log, args: null, extraImports: null, extraRefs: null);
 
         var http = new DefaultHttpContext();
@@ -35,7 +35,7 @@ public class CSharpDelegateBuilderTests
         http.Request.Path = "/";
 
         await del(http);
-    Assert.Equal(200, http.Response.StatusCode);
-    Assert.Equal("text/plain; charset=utf-8", http.Response.ContentType);
+        Assert.Equal(200, http.Response.StatusCode);
+        Assert.Equal("text/plain; charset=utf-8", http.Response.ContentType);
     }
 }

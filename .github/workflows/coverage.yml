@@ -70,16 +70,15 @@ jobs:
       - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
         run: |
           mkdir -p coverage
-          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
+          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/Kestrun.Tests.csproj \
             -c Debug -f net9.0 \
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
-            /p:CoverletOutput=$(pwd)/coverage/csharp \
-            /p:Include="[Kestrun]*" \
-            /p:Exclude="[*.Tests]*,[xunit.*]*,[FluentAssertions*]*"
+            "/p:CoverletOutput=$(pwd)/coverage/csharp" \
+            "/p:Include=[Kestrun]*" \
+            "/p:Exclude=[*.Tests]*;[xunit.*]*;[FluentAssertions*]*"
           echo "Produced coverage files:"
           ls -la coverage
-
 
       - name: ☁️ Upload C# to Coveralls (parallel)
         uses: coverallsapp/github-action@v2
