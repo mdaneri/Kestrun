@@ -67,8 +67,8 @@ public class JwtBuilderResultRsaCertTests
 
     private static string CreateTempPemFile(string pem)
     {
-        var path = System.IO.Path.GetTempFileName();
-        System.IO.File.WriteAllText(path, pem);
+        var path = Path.GetTempFileName();
+        File.WriteAllText(path, pem);
         return path;
     }
 
@@ -77,7 +77,7 @@ public class JwtBuilderResultRsaCertTests
         var builder = new System.Text.StringBuilder();
         _ = builder.AppendLine("-----BEGIN PRIVATE KEY-----");
         var export = rsa.ExportPkcs8PrivateKey();
-        _ = builder.AppendLine(System.Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
+        _ = builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
         _ = builder.AppendLine("-----END PRIVATE KEY-----");
         return builder.ToString();
     }

@@ -120,9 +120,7 @@ public class JwtTokenBuilderTests
     public void SignWithCertificate_ECDSA_ES256_Algorithm()
     {
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var cert = CreateEcdsaSelfSignedCertOrNull("CN=ES256", ecdsa);
-        if (cert is null) { throw new InvalidOperationException("Unable to create ECDSA certificate for ES256 test."); }
-
+        var cert = CreateEcdsaSelfSignedCertOrNull("CN=ES256", ecdsa) ?? throw new InvalidOperationException("Unable to create ECDSA certificate for ES256 test.");
         var b = JwtTokenBuilder.New().WithIssuer("iss").WithAudience("aud").WithSubject("s").SignWithCertificate(cert);
         var res = b.Build();
         Assert.Equal("ES256", b.Algorithm);

@@ -33,7 +33,7 @@ public class KestrelOptionsExtensionsTest
         Assert.Equal(src.Limits.MaxRequestBodySize, dest.Limits.MaxRequestBodySize);
     }
 
-    class TestServiceProvider : IServiceProvider
+    private class TestServiceProvider : IServiceProvider
     {
         public object? GetService(Type serviceType) => null;
     }

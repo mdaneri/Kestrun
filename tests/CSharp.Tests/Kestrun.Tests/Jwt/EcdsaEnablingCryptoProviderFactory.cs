@@ -5,14 +5,7 @@ namespace KestrunTests.Jwt;
 
 internal sealed class EcdsaEnablingCryptoProviderFactory : CryptoProviderFactory
 {
-    public override bool IsSupportedAlgorithm(string algorithm, SecurityKey key)
-    {
-        if (IsEcdsaAlg(algorithm) && (HasEcdsaKey(key)))
-        {
-            return true;
-        }
-        return base.IsSupportedAlgorithm(algorithm, key);
-    }
+    public override bool IsSupportedAlgorithm(string algorithm, SecurityKey key) => (IsEcdsaAlg(algorithm) && HasEcdsaKey(key)) || base.IsSupportedAlgorithm(algorithm, key);
 
     public override SignatureProvider CreateForSigning(SecurityKey key, string algorithm, bool willCreateSignatures = true)
     {
@@ -29,7 +22,7 @@ internal sealed class EcdsaEnablingCryptoProviderFactory : CryptoProviderFactory
 
     // no override for encryption; we keep JWE providers default
 
-    private static bool IsEcdsaAlg(string alg) => alg == SecurityAlgorithms.EcdsaSha256 || alg == SecurityAlgorithms.EcdsaSha384 || alg == SecurityAlgorithms.EcdsaSha512;
+    private static bool IsEcdsaAlg(string alg) => alg is SecurityAlgorithms.EcdsaSha256 or SecurityAlgorithms.EcdsaSha384 or SecurityAlgorithms.EcdsaSha512;
 
 
 
