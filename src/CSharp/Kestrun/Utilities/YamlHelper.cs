@@ -1,11 +1,6 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Management.Automation;
 using System.Reflection;
-using System.Text.Json;
-using System.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 namespace Kestrun.Utilities;
@@ -41,10 +36,7 @@ public static class YamlHelper
     /// <returns>A Hashtable containing the deserialized YAML content.</returns>
     public static Hashtable FromYamlToHashtable(string yaml)
     {
-        if (yaml is null)
-        {
-            throw new ArgumentNullException(nameof(yaml));
-        }
+        ArgumentNullException.ThrowIfNull(yaml);
         var obj = _deserializer.Deserialize<object>(yaml);
         return (Hashtable)ConvertToPSCompatible(obj);
     }
@@ -56,10 +48,7 @@ public static class YamlHelper
     /// <returns>A PSObject containing the deserialized YAML content.</returns>
     public static PSObject FromYamlToPSCustomObject(string yaml)
     {
-        if (yaml is null)
-        {
-            throw new ArgumentNullException(nameof(yaml));
-        }
+        ArgumentNullException.ThrowIfNull(yaml);
         var obj = _deserializer.Deserialize<object>(yaml);
         var hash = (Hashtable)ConvertToPSCompatible(obj);
         return ConvertToPSCustomObject(hash);
@@ -92,7 +81,7 @@ public static class YamlHelper
         }
 
         // Enumerables (not string) → List<object?>
-        if (obj is IEnumerable enumerable && obj is not string)
+        if (obj is IEnumerable enumerable and not string)
         {
             return NormalizeEnumerable(enumerable);
         }
@@ -182,7 +171,7 @@ public static class YamlHelper
                 var array = new ArrayList();
                 foreach (var item in list)
                 {
-                    array.Add(ConvertToPSCompatible(item));
+                    _ = array.Add(ConvertToPSCompatible(item));
                 }
 
                 return array;
@@ -213,7 +202,7 @@ public static class YamlHelper
                 var key = entry.Key.ToString();
                 var value = entry.Value;
 
-                if (value is Hashtable || value is ArrayList)
+                if (value is Hashtable or ArrayList)
                 {
                     value = ConvertToPSCustomObject(value);
                 }
@@ -245,8 +234,5 @@ public static class YamlHelper
     /// <param name="obj">The PSObject to add the property to.</param>
     /// <param name="name">The name of the property.</param>
     /// <param name="value">The value of the property.</param>
-    private static void AddMember(PSObject obj, string name, object value)
-    {
-        obj.Properties.Add(new PSNoteProperty(name, value));
-    }
+    private static void AddMember(PSObject obj, string name, object value) => obj.Properties.Add(new PSNoteProperty(name, value));
 }

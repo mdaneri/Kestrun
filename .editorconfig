@@ -2,7 +2,19 @@
 root = true
 
 # C# files
-[*.cs]
+[*.{cs,vb}]
+
+# default namespace style
+csharp_style_namespace_declarations = file_scoped
+# 
+csharp_style_var_for_built_in_types = true
+csharp_style_var_when_type_is_apparent = true
+csharp_style_var_elsewhere = true
+csharp_style_expression_bodied_methods = when_on_single_line
+csharp_style_expression_bodied_constructors = when_on_single_line
+
+dotnet_diagnostic.IDE0072.severity = none
+dotnet_diagnostic.IDE0010.severity = none
 
 # Require braces on all control blocks (if/else/for/foreach/while/do/using/lock)
 dotnet_style_require_braces = always:warning
@@ -12,3 +24,14 @@ dotnet_diagnostic.IDE0011.severity = warning
 
 # (Optional) Turn the warning into an error locally/CI to keep things tight
 # dotnet_diagnostic.IDE0011.severity = error
+# Remove unnecessary using directives
+dotnet_diagnostic.IDE0005.severity = warning
+
+# Prefer named arguments where Roslyn can flag them (mostly literals/booleans/etc.)
+# Note: This is a suggestion-level rule in Roslyn; for strict "always named", see Section 3.
+dotnet_style_prefer_named_arguments = true:warning
+
+# Good hygiene
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+dotnet_analyzer_diagnostic.category-Design.severity = warning
+dotnet_analyzer_diagnostic.category-Maintainability.severity = warning

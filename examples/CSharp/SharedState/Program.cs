@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections;
+﻿using System.Collections;
 using System.Net;
-using Kestrun;
-using System.Security;
-using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.OpenSsl;
-using System.Collections.Concurrent;
 using Serilog;
 using Kestrun.Utilities;
 using Kestrun.Scripting;
@@ -45,8 +38,10 @@ server.ConfigureListener(
 
 server.AddPowerShellRuntime();
 
-var sharedVisits = new Hashtable();
-sharedVisits["Count"] = 0;
+var sharedVisits = new Hashtable
+{
+    ["Count"] = 0
+};
 // 3.1 Inject global variable
 if (!SharedStateStore.Set("Visits", sharedVisits))
 {
@@ -89,9 +84,9 @@ server.AddMapRoute("/raw", HttpVerb.Get, async (ctx) =>
 {
     Console.WriteLine("Native C# route hit!");
 
-    SharedStateStore.TryGet("Visits", out Hashtable? visits);
+    _ = SharedStateStore.TryGet("Visits", out Hashtable? visits);
 
-    int visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;
+    var visitCount = visits != null && visits["Count"] != null ? (visits["Count"] as int? ?? 0) : 0;
 
     if (visits != null && visits["Count"] != null)
     {

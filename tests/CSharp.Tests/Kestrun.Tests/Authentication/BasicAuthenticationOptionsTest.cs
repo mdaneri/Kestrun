@@ -1,10 +1,9 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
+using Kestrun.Authentication;
 using Microsoft.AspNetCore.Http;
 using Xunit;
-using Kestrun.Authentication;
 
-namespace Kestrun.Authentication.Tests;
+namespace KestrunTests.Authentication;
 
 public class BasicAuthenticationOptionsTest
 {
@@ -100,11 +99,13 @@ public class BasicAuthenticationOptionsTest
     [Fact]
     public async Task IssueClaims_CanBeSet_AndReturnsClaims()
     {
-        var options = new BasicAuthenticationOptions();
-        options.IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>(new[] { new Claim("type", "value") });
+        var options = new BasicAuthenticationOptions
+        {
+            IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>([new Claim("type", "value")])
+        };
         var context = new DefaultHttpContext();
         var claims = await options.IssueClaims(context, "user");
-        Assert.Single(claims);
+        _ = Assert.Single(claims);
         Assert.Equal("type", claims.First().Type);
         Assert.Equal("value", claims.First().Value);
     }

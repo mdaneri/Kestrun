@@ -1,5 +1,3 @@
-using Kestrun;
-
 namespace Kestrun.Scripting;
 
 /// <summary>
@@ -21,7 +19,7 @@ public static class LanguageRuntimeExtensions
     {
         return app.UseWhen(context =>
         {
-            ScriptLanguageAttribute? attr =
+            var attr =
                 context.GetEndpoint()?.Metadata
                    .GetMetadata<ScriptLanguageAttribute>();
             return attr?.Language == language;

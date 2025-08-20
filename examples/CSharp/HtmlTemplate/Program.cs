@@ -1,15 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Collections;
 using System.Net;
-using Kestrun;
-using System.Security;
-using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.OpenSsl;
-using System.Collections.Concurrent;
 using Serilog;
 using Kestrun.Logging;
-using Microsoft.Extensions.Logging;
 using Kestrun.Utilities;
 using Kestrun.SharedState;
 using System.Text;
@@ -66,7 +58,7 @@ server.AddHtmlTemplateRoute(
 
 server.AddMapRoute("/visit", HttpVerb.Get, async (ctx) =>
 {
-    SharedStateStore.TryGet("Visits", out Hashtable? visits);
+    _ = SharedStateStore.TryGet("Visits", out Hashtable? visits);
 
     // Increment visit count and return response
     if (visits != null && visits.ContainsKey("Count"))

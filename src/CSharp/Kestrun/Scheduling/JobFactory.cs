@@ -1,11 +1,8 @@
-using System.Globalization;
 using System.Management.Automation;
 using System.Reflection;
-using Kestrun;
 using Kestrun.Scripting;
 using Kestrun.Utilities;
 using Microsoft.CodeAnalysis.CSharp;
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Scheduling;
@@ -52,14 +49,11 @@ internal static class JobFactory
             updatedConfig.Log.Debug("Creating job for {File} with language {Lang}", fileInfo.FullName, updatedConfig.Language);
         }
 
-        return JobFactory.Create(updatedConfig);
+        return Create(updatedConfig);
     }
 
     public static Func<CancellationToken, Task> Create(
-        JobConfig config, FileInfo fileInfo)
-    {
-        return CreateAsync(config, fileInfo).GetAwaiter().GetResult();
-    }
+        JobConfig config, FileInfo fileInfo) => CreateAsync(config, fileInfo).GetAwaiter().GetResult();
 
 
     /* ----------------  PowerShell  ---------------- */
@@ -81,9 +75,9 @@ internal static class JobFactory
             var runspace = config.Pool.Acquire();
             try
             {
-                using PowerShell ps = PowerShell.Create();
+                using var ps = PowerShell.Create();
                 ps.Runspace = runspace;
-                ps.AddScript(config.Code);
+                _ = ps.AddScript(config.Code);
                 if (config.Log.IsEnabled(LogEventLevel.Debug))
                 {
                     config.Log.Debug("Executing PowerShell script with {RunspaceId} - {Preview}", runspace.Id, config.Code?[..Math.Min(40, config.Code.Length)]);
@@ -141,8 +135,5 @@ internal static class JobFactory
     /// <remarks>
     /// This method uses Roslyn to compile and execute C# or VB.NET code.
     /// </remarks>
-    private static Func<CancellationToken, Task> RoslynJob(JobConfig config)
-    {
-        return RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.Locals, config.LanguageVersion);
-    }
+    private static Func<CancellationToken, Task> RoslynJob(JobConfig config) => RoslynJobFactory.Build(config.Code, config.Log, config.ExtraImports, config.ExtraRefs, config.Locals, config.LanguageVersion);
 }

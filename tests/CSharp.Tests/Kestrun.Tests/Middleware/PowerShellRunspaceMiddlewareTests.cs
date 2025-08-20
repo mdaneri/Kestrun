@@ -1,7 +1,6 @@
 using Kestrun.Middleware;
 using Kestrun.Scripting;
 using Kestrun.Languages;
-using Kestrun.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +24,7 @@ public class PowerShellRunspaceMiddlewareTests
         var pool = new KestrunRunspacePoolManager(minRunspaces: 1, maxRunspaces: 1);
 
         // Use extension (covers both middleware and extension path)
-        app.UsePowerShellRunspace(pool);
+        _ = app.UsePowerShellRunspace(pool);
 
         // Terminal delegate: assert items are present during request
         app.Run(async ctx =>
@@ -66,12 +65,12 @@ public class PowerShellRunspaceMiddlewareTests
         var app = new ApplicationBuilder(services);
         var pool = new KestrunRunspacePoolManager(minRunspaces: 1, maxRunspaces: 1);
 
-        app.UsePowerShellRunspace(pool);
+        _ = app.UsePowerShellRunspace(pool);
 
         // Build a PS delegate that writes to KestrunResponse via the injected Context
         var code = "\r\n$Context.Response.WriteTextResponse('ok from ps')\r\n";
-        var log = Serilog.Log.Logger;
-        var del = Kestrun.Languages.PowerShellDelegateBuilder.Build(code, log, arguments: null);
+        var log = Log.Logger;
+        var del = PowerShellDelegateBuilder.Build(code, log, arguments: null);
 
         app.Run(del);
 
@@ -95,12 +94,12 @@ public class PowerShellRunspaceMiddlewareTests
         var app = new ApplicationBuilder(services);
         var pool = new KestrunRunspacePoolManager(minRunspaces: 1, maxRunspaces: 1);
 
-        app.UsePowerShellRunspace(pool);
+        _ = app.UsePowerShellRunspace(pool);
 
         // Ask PS to set a redirect on the KestrunResponse
         var code = "\r\n$Context.Response.WriteRedirectResponse('https://example.org/next')\r\n";
-        var log = Serilog.Log.Logger;
-        var del = Kestrun.Languages.PowerShellDelegateBuilder.Build(code, log, arguments: null);
+        var log = Log.Logger;
+        var del = PowerShellDelegateBuilder.Build(code, log, arguments: null);
         app.Run(del);
 
         var pipeline = app.Build();
@@ -130,7 +129,7 @@ public class PowerShellRunspaceMiddlewareTests
         var pool = new KestrunRunspacePoolManager(minRunspaces: 0, maxRunspaces: 1);
         pool.Dispose();
 
-        app.UsePowerShellRunspace(pool);
+        _ = app.UsePowerShellRunspace(pool);
 
         // Downstream should still execute without exception; we set a 204 to check flow
         app.Run(ctx =>
@@ -164,10 +163,7 @@ public class PowerShellRunspaceMiddlewareTests
 
     private sealed class InMemorySink : ILogEventSink
     {
-        public List<LogEvent> Events { get; } = new();
-        public void Emit(LogEvent logEvent)
-        {
-            Events.Add(logEvent);
-        }
+        public List<LogEvent> Events { get; } = [];
+        public void Emit(LogEvent logEvent) => Events.Add(logEvent);
     }
 }

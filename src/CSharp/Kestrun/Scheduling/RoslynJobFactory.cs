@@ -1,14 +1,8 @@
 using Kestrun.Languages;
-using Kestrun.Models;
 using Kestrun.SharedState;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Scripting;
 using Serilog.Events;
 using System.Reflection;
-using System.Text;
 
 namespace Kestrun.Scheduling;
 
@@ -43,7 +37,7 @@ internal static class RoslynJobFactory
             }
 
             var globals = new CsGlobals(SharedStateStore.Snapshot());
-            await runner(globals, ct).ConfigureAwait(false);
+            _ = await runner(globals, ct).ConfigureAwait(false);
         };
     }
 
@@ -73,7 +67,7 @@ internal static class RoslynJobFactory
             }
 
             var globals = new CsGlobals(SharedStateStore.Snapshot());
-            await script(globals).ConfigureAwait(false);
+            _ = await script(globals).ConfigureAwait(false);
         };
     }
 }

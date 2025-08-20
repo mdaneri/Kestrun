@@ -27,8 +27,8 @@ public class CsGlobalsTests
         {
             Method = "GET",
             Path = "/",
-            Query = new(),
-            Headers = new(),
+            Query = [],
+            Headers = [],
             Body = string.Empty
         };
         var res = new KestrunResponse(req);
@@ -48,8 +48,8 @@ public class CsGlobalsTests
         {
             Method = "GET",
             Path = "/",
-            Query = new(),
-            Headers = new(),
+            Query = [],
+            Headers = [],
             Body = string.Empty
         };
         var res = new KestrunResponse(req);

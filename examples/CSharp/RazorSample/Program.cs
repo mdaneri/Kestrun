@@ -1,16 +1,12 @@
-using Kestrun;
 using System.Net;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.ResponseCompression;
 using Kestrun.Utilities;
 // Add the namespace that contains HttpVerb
 using System.Text;
 using Serilog;
 using Kestrun.Scripting;
-using Kestrun.Certificates;
 using Kestrun.Logging;
 using Kestrun.Hosting;
-using Microsoft.AspNetCore.Authentication;
 using Kestrun.Authentication;
 
 
@@ -46,15 +42,15 @@ server.ConfigureListener(
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-    {
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+    [
         "text/plain",
         "text/css",
         "application/javascript",
         "application/json",
         "application/xml",
         "text/html"
-    });
+    ]);
     options.Providers.Add<BrotliCompressionProvider>();
 }).AddPowerShellRuntime()
 

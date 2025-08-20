@@ -1,9 +1,9 @@
 using Kestrun.Utilities;
-using System.IO;
 using System.Reflection;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class PowerShellModuleLocatorTests
 {
     [Fact]
@@ -18,7 +18,7 @@ public class PowerShellModuleLocatorTests
             File.WriteAllText(file, "data");
 
             var method = typeof(PowerShellModuleLocator).GetMethod("FindFileUpwards", BindingFlags.NonPublic | BindingFlags.Static)!;
-            string? found = (string?)method.Invoke(null, new object[] { nested.FullName, Path.Combine("..", "test.txt") });
+            var found = (string?)method.Invoke(null, [nested.FullName, Path.Combine("..", "test.txt")]);
             Assert.Equal(Path.GetFullPath(file), Path.GetFullPath(found!));
         }
         finally

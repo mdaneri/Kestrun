@@ -1,5 +1,3 @@
-using System.Security.Claims;
-
 namespace Kestrun.Authentication;
 
 
@@ -14,10 +12,10 @@ public interface IAuthenticationCommonOptions : IClaimsCommonOptions
     /// <remarks>
     /// This allows you to specify the language, code, and additional imports/refs.
     /// </remarks>
-    public AuthenticationCodeSettings ValidateCodeSettings { get; set; }
+    AuthenticationCodeSettings ValidateCodeSettings { get; set; }
 
     /// <summary>
     /// Gets or sets the logger used for authentication-related logging.
     /// </summary>
-    public Serilog.ILogger Logger { get; set; }
+    Serilog.ILogger Logger { get; set; }
 }

@@ -75,17 +75,14 @@ public static class JwtAlgorithmExtensions
     public static string ToJwtString(this JwtAlgorithm alg, int keyByteLength = 0)
     {
         // handle the “Auto” case only for HMAC
-        if (alg == JwtAlgorithm.Auto)
-        {
-            return keyByteLength switch
+        return alg == JwtAlgorithm.Auto
+            ? keyByteLength switch
             {
                 >= 64 => SecurityAlgorithms.HmacSha512,
                 >= 48 => SecurityAlgorithms.HmacSha384,
                 _ => SecurityAlgorithms.HmacSha256
-            };
-        }
-
-        return alg switch
+            }
+            : alg switch
         {
             JwtAlgorithm.HS256 => SecurityAlgorithms.HmacSha256,
             JwtAlgorithm.HS384 => SecurityAlgorithms.HmacSha384,

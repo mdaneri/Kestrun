@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
@@ -10,39 +8,36 @@ namespace Kestrun.Logging.Sinks;
 /// <summary>
 /// A Serilog sink that formats log events and invokes a callback for PowerShell integration.
 /// </summary>
-public class PowerShellSink : ILogEventSink
+/// <remarks>
+/// Initializes a new instance of the <see cref="PowerShellSink"/> class.
+/// </remarks>
+/// <param name="callback">The callback action invoked with the log event and its formatted message.</param>
+/// <param name="outputTemplate">The output template used for formatting log messages.</param>
+/// <exception cref="ArgumentNullException">Thrown if <paramref name="callback"/> is null.</exception>
+/// <remarks>
+/// This constructor initializes the text formatter and callback action for the sink.
+/// </remarks>
+public class PowerShellSink(Action<LogEvent, string> callback, string outputTemplate = PowerShellSink.DEFAULT_OUTPUT_TEMPLATE) : ILogEventSink
 {
     /// <summary>
     /// The default output template used for formatting log messages.
     /// </summary>
     public const string DEFAULT_OUTPUT_TEMPLATE = "{Message:lj}";
 
-    readonly object _syncRoot = new object();
-
+#if NET9_0_OR_GREATER
+    private static readonly Lock _syncRoot = new();
+#else
+    private static readonly object _syncRoot = new();
+#endif
     /// <summary>
     /// Gets or sets the text formatter used to format log events.
     /// </summary>
-    public ITextFormatter TextFormatter { get; set; }
+    public ITextFormatter TextFormatter { get; set; } = new MessageTemplateTextFormatter(outputTemplate);
 
     /// <summary>
     /// Gets or sets the callback action that is invoked with the log event and its formatted message.
     /// </summary>
-    public Action<LogEvent, string> Callback { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PowerShellSink"/> class.
-    /// </summary>
-    /// <param name="callback">The callback action invoked with the log event and its formatted message.</param>
-    /// <param name="outputTemplate">The output template used for formatting log messages.</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="callback"/> is null.</exception>
-    /// <remarks>
-    /// This constructor initializes the text formatter and callback action for the sink.
-    /// </remarks>
-    public PowerShellSink(Action<LogEvent, string> callback, string outputTemplate = DEFAULT_OUTPUT_TEMPLATE)
-    {
-        TextFormatter = new MessageTemplateTextFormatter(outputTemplate);
-        Callback = callback;
-    }
+    public Action<LogEvent, string> Callback { get; set; } = callback;
 
     /// <summary>
     /// Emits a log event by formatting it and invoking the callback action.
@@ -58,7 +53,7 @@ public class PowerShellSink : ILogEventSink
 
         using StringWriter strWriter = new();
         TextFormatter.Format(logEvent, strWriter);
-        string renderedMessage = strWriter.ToString();
+        var renderedMessage = strWriter.ToString();
 
         lock (_syncRoot)
         {

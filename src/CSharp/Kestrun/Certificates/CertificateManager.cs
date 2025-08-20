@@ -1,8 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Security;
 using System.Security.Cryptography;
@@ -21,12 +16,9 @@ using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
-using System.Runtime.InteropServices;
 using System.Text;
 using Org.BouncyCastle.Asn1.X9;
-using System.Text.RegularExpressions;
 using Serilog;
-using Serilog.Events;
 using Kestrun.Utilities;
 
 
@@ -131,7 +123,7 @@ public static class CertificateManager
         var random = new SecureRandom(new CryptoApiRandomGenerator());
 
         // ── 1. Key pair ───────────────────────────────────────────────────────────
-        AsymmetricCipherKeyPair keyPair =
+        var keyPair =
             o.KeyType switch
             {
                 KeyType.Rsa => GenRsaKeyPair(o.KeyLength, random),
@@ -143,7 +135,7 @@ public static class CertificateManager
         var notBefore = DateTime.UtcNow.AddMinutes(-5);
         var notAfter = notBefore.AddDays(o.ValidDays);
         var serial = BigIntegers.CreateRandomInRange(
-                            BigInteger.One, BigInteger.ValueOf(Int64.MaxValue), random);
+                            BigInteger.One, BigInteger.ValueOf(long.MaxValue), random);
 
         var subjectDn = new X509Name($"CN={o.DnsNames.First()}");
         var gen = new X509V3CertificateGenerator();
@@ -367,14 +359,14 @@ public static class CertificateManager
     private static X509Certificate2 LoadCertOnlyPem(string certPath)
     {
         // 1) Read + trim the whole PEM text
-        string pem = File.ReadAllText(certPath).Trim();
+        var pem = File.ReadAllText(certPath).Trim();
 
         // 2) Define the BEGIN/END markers
         const string begin = "-----BEGIN CERTIFICATE-----";
         const string end = "-----END CERTIFICATE-----";
 
         // 3) Find their positions
-        int start = pem.IndexOf(begin, StringComparison.Ordinal);
+        var start = pem.IndexOf(begin, StringComparison.Ordinal);
         if (start < 0)
         {
             throw new InvalidDataException("BEGIN CERTIFICATE marker not found");
@@ -382,18 +374,18 @@ public static class CertificateManager
 
         start += begin.Length;
 
-        int stop = pem.IndexOf(end, start, StringComparison.Ordinal);
+        var stop = pem.IndexOf(end, start, StringComparison.Ordinal);
         if (stop < 0)
         {
             throw new InvalidDataException("END CERTIFICATE marker not found");
         }
 
         // 4) Extract, clean, and decode the Base64 payload
-        string b64 = pem[start..stop]
+        var b64 = pem[start..stop]
                        .Replace("\r", "")
                        .Replace("\n", "")
                        .Trim();
-        byte[] der = Convert.FromBase64String(b64);
+        var der = Convert.FromBase64String(b64);
 
         // 5) Return the X509Certificate2 
 
@@ -446,12 +438,10 @@ public static class CertificateManager
          string? privateKeyPath = null,
          X509KeyStorageFlags flags = X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable)
     {
-        X509Certificate2? result = null;
-
         // ToSecureSpan zero-frees its buffer as soon as this callback returns.
         ReadOnlySpan<char> passwordSpan = default;
         // capture the return value of the span-based overload
-        result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: privateKeyPath, flags: flags);
+        var result = Import(certPath: certPath, password: passwordSpan, privateKeyPath: privateKeyPath, flags: flags);
         return result!;
     }
 
@@ -462,12 +452,11 @@ public static class CertificateManager
     /// <returns>The imported X509Certificate2 instance.</returns>
     public static X509Certificate2 Import(string certPath)
     {
-        X509Certificate2? result = null;
 
         // ToSecureSpan zero-frees its buffer as soon as this callback returns.
         ReadOnlySpan<char> passwordSpan = default;
         // capture the return value of the span-based overload
-        result = Import(certPath: certPath, password: passwordSpan);
+        var result = Import(certPath: certPath, password: passwordSpan);
         return result!;
     }
 
@@ -564,15 +553,11 @@ public static class CertificateManager
     /// <summary>
     /// Represents the password shapes used for exporting certificates.
     /// </summary>
-    private sealed class PasswordShapes : IDisposable
+    private sealed class PasswordShapes(SecureString? secure, char[]? chars) : IDisposable
     {
-        public SecureString? Secure { get; }
-        public char[]? Chars { get; }
-        public PasswordShapes(SecureString? secure, char[]? chars)
-        {
-            Secure = secure;
-            Chars = chars;
-        }
+        public SecureString? Secure { get; } = secure;
+        public char[]? Chars { get; } = chars;
+
         public void Dispose()
         {
             try
@@ -609,7 +594,7 @@ public static class CertificateManager
     /// <param name="password">The SecureString password to protect the exported certificate.</param>
     private static void ExportPfx(X509Certificate2 cert, string filePath, SecureString? password)
     {
-        byte[] pfx = cert.Export(X509ContentType.Pfx, password);
+        var pfx = cert.Export(X509ContentType.Pfx, password);
         File.WriteAllBytes(filePath, pfx);
     }
 
@@ -624,7 +609,7 @@ public static class CertificateManager
     {
         using var sw = new StreamWriter(filePath, false, Encoding.ASCII);
         new PemWriter(sw).WriteObject(
-            Org.BouncyCastle.Security.DotNetUtilities.FromX509Certificate(cert));
+            DotNetUtilities.FromX509Certificate(cert));
 
         if (!includePrivateKey)
         {
@@ -667,8 +652,8 @@ public static class CertificateManager
             pemLabel = "ENCRYPTED PRIVATE KEY";
         }
 
-        string keyPem = PemEncoding.WriteString(pemLabel, keyDer);
-        string keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
+        var keyPem = PemEncoding.WriteString(pemLabel, keyDer);
+        var keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
         File.WriteAllText(keyFilePath, keyPem);
     }
 
@@ -722,7 +707,7 @@ public static class CertificateManager
         }
 
         // 2) Self-signed policy
-        bool isSelfSigned = cert.Subject == cert.Issuer;
+        var isSelfSigned = cert.Subject == cert.Issuer;
         if (denySelfSigned && isSelfSigned)
         {
             return false;
@@ -813,12 +798,12 @@ public static class CertificateManager
     /// <returns>True if the certificate uses weak algorithms; otherwise, false.</returns>
     private static bool UsesWeakAlgorithms(X509Certificate2 cert)
     {
-        bool isSha1 = cert.SignatureAlgorithm?.FriendlyName?
+        var isSha1 = cert.SignatureAlgorithm?.FriendlyName?
                            .Contains("sha1", StringComparison.OrdinalIgnoreCase) == true;
 
-        bool weakRsa = cert.GetRSAPublicKey() is { KeySize: < 2048 };
-        bool weakDsa = cert.GetDSAPublicKey() is { KeySize: < 2048 };
-        bool weakEcdsa = cert.GetECDsaPublicKey() is { KeySize: < 256 };  // P-256 minimum
+        var weakRsa = cert.GetRSAPublicKey() is { KeySize: < 2048 };
+        var weakDsa = cert.GetDSAPublicKey() is { KeySize: < 2048 };
+        var weakEcdsa = cert.GetECDsaPublicKey() is { KeySize: < 256 };  // P-256 minimum
 
         return isSha1 || weakRsa || weakDsa || weakEcdsa;
     }

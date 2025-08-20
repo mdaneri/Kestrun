@@ -1,8 +1,5 @@
-using System.Reflection;
 using Kestrun.Authentication;
 using Kestrun.Scripting;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
 namespace KestrunTests.Authentication;

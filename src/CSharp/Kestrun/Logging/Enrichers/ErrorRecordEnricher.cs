@@ -34,10 +34,7 @@ public class ErrorRecordEnricher : ILogEventEnricher
     /// Initializes a new instance of the <see cref="ErrorRecordEnricher"/> class with the option to destructure objects.
     /// </summary>
     /// <param name="destructureObjects">Indicates whether objects should be destructured when enriching log events.</param>
-    public ErrorRecordEnricher(bool destructureObjects)
-    {
-        DestructureObjects = destructureObjects;
-    }
+    public ErrorRecordEnricher(bool destructureObjects) => DestructureObjects = destructureObjects;
 
     /// <summary>
     /// Enriches the log event with error record and invocation info properties if the exception is a <see cref="WrapperException"/>.
@@ -51,7 +48,7 @@ public class ErrorRecordEnricher : ILogEventEnricher
             logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty(ERR_PROPERTY_NAME_FULL, wrapperException.ErrorRecordWrapper, DestructureObjects));
             logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty(
                 II_PROPERTY_NAME_FULL,
-                wrapperException.ErrorRecordWrapper != null ? wrapperException.ErrorRecordWrapper.InvocationInfoWrapper : null,
+                wrapperException.ErrorRecordWrapper?.InvocationInfoWrapper,
                 DestructureObjects));
         }
     }

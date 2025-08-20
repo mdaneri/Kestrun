@@ -18,10 +18,7 @@ public class Padding
     /// Initializes a new instance of the <see cref="Padding"/> class with the same padding value for both left and right sides.
     /// </summary>
     /// <param name="all">The padding value to apply to both left and right sides.</param>
-    public Padding(int all)
-    {
-        Right = Left = all;
-    }
+    public Padding(int all) => Right = Left = all;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Padding"/> class with specified right and left padding values.
@@ -37,21 +34,12 @@ public class Padding
     /// <summary>
     /// Returns a string consisting of spaces for the right padding.
     /// </summary>
-    public string RightString()
-    {
-        return Padding.PadString(Right);
-    }
+    public string RightString() => PadString(Right);
 
     /// <summary>
     /// Returns a string consisting of spaces for the left padding.
     /// </summary>
-    public string LeftString()
-    {
-        return Padding.PadString(Left);
-    }
+    public string LeftString() => PadString(Left);
 
-    private static string PadString(int padding)
-    {
-        return string.Concat(Enumerable.Repeat(' ', padding));
-    }
+    private static string PadString(int padding) => string.Concat(Enumerable.Repeat(' ', padding));
 }

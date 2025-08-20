@@ -1,10 +1,6 @@
 // File: Middleware/FaviconMiddlewareExtensions.cs
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
-using Serilog.Core;
-using System.Reflection;
 
 namespace Kestrun.Middleware;
 

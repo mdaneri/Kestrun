@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
 using Kestrun.Hosting;
 using Kestrun.Hosting.Options;
 using Kestrun.Scripting;
@@ -21,7 +16,7 @@ public class KestrunHostMapExtensionsTests
     {
         foreach (var key in SharedStateStore.KeySnapshot())
         {
-            SharedStateStore.Set(key, null);
+            _ = SharedStateStore.Set(key, null);
         }
     }
 
@@ -35,7 +30,7 @@ public class KestrunHostMapExtensionsTests
         var options = new MapRouteOptions
         {
             Pattern = "/t-code-default",
-            HttpVerbs = Array.Empty<HttpVerb>(),
+            HttpVerbs = [],
             Code = "Context.Response.StatusCode = 204;",
             Language = ScriptLanguage.CSharp
         };
@@ -59,14 +54,14 @@ public class KestrunHostMapExtensionsTests
         var options = new MapRouteOptions
         {
             Pattern = "/dup",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
             ThrowOnDuplicate = true
         };
 
         Assert.NotNull(host.AddMapRoute(options));
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -79,7 +74,7 @@ public class KestrunHostMapExtensionsTests
         var options = new MapRouteOptions
         {
             Pattern = "/dup2",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
             ThrowOnDuplicate = false
@@ -101,17 +96,17 @@ public class KestrunHostMapExtensionsTests
         var options = new MapRouteOptions
         {
             Pattern = "/multi",
-            HttpVerbs = new[] { HttpVerb.Get, HttpVerb.Post },
+            HttpVerbs = [HttpVerb.Get, HttpVerb.Post],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp
         };
 
         Assert.NotNull(host.AddMapRoute(options));
 
-        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Get }));
-        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Post }));
-        Assert.True(host.MapExists("/multi", new[] { HttpVerb.Get, HttpVerb.Post }));
-        Assert.False(host.MapExists("/multi", new[] { HttpVerb.Put }));
+        Assert.True(host.MapExists("/multi", [HttpVerb.Get]));
+        Assert.True(host.MapExists("/multi", [HttpVerb.Post]));
+        Assert.True(host.MapExists("/multi", [HttpVerb.Get, HttpVerb.Post]));
+        Assert.False(host.MapExists("/multi", [HttpVerb.Put]));
     }
 
     [Fact]
@@ -120,19 +115,19 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         // Ensure auth services exist so HasAuthScheme can resolve provider
-        host.AddBasicAuthentication("InitAuth", _ => { });
+        _ = host.AddBasicAuthentication("InitAuth", _ => { });
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
         {
             Pattern = "/auth-needed",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
-            RequireSchemes = new[] { "NotRegisteredScheme" }
+            RequireSchemes = ["NotRegisteredScheme"]
         };
 
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -142,16 +137,16 @@ public class KestrunHostMapExtensionsTests
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
         // Register a basic auth scheme
-        host.AddBasicAuthentication("BasicX", _ => { });
+        _ = host.AddBasicAuthentication("BasicX", _ => { });
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
         {
             Pattern = "/auth-ok",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
-            RequireSchemes = new[] { "BasicX" }
+            RequireSchemes = ["BasicX"]
         };
 
         var map = host.AddMapRoute(options);
@@ -165,19 +160,19 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         // Ensure authorization services exist so HasAuthPolicy can resolve provider
-        host.AddAuthorization();
+        _ = host.AddAuthorization();
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
         {
             Pattern = "/policy-needed",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
-            RequirePolicies = new[] { "NonExistingPolicy" }
+            RequirePolicies = ["NonExistingPolicy"]
         };
 
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -202,20 +197,20 @@ public class KestrunHostMapExtensionsTests
         {
             Policies = new()
             {
-                ["MustBeAlice"] = new Kestrun.Claims.ClaimRule(System.Security.Claims.ClaimTypes.Name, "Alice")
+                ["MustBeAlice"] = new ClaimRule(System.Security.Claims.ClaimTypes.Name, "Alice")
             }
         };
 
-        host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
+        _ = host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
         {
             Pattern = "/policy-ok",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Context.Response.StatusCode = 200;",
             Language = ScriptLanguage.CSharp,
-            RequirePolicies = new[] { "MustBeAlice" }
+            RequirePolicies = ["MustBeAlice"]
         };
 
         var map = host.AddMapRoute(options);
@@ -237,7 +232,7 @@ public class KestrunHostMapExtensionsTests
             var map = host.AddHtmlTemplateRoute(new MapRouteOptions
             {
                 Pattern = "/tmpl-ok",
-                HttpVerbs = new[] { HttpVerb.Get }
+                HttpVerbs = [HttpVerb.Get]
             }, tmp);
 
             Assert.NotNull(map);
@@ -254,13 +249,13 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
-        host.AddStaticOverride(
+        _ = host.AddStaticOverride(
             pattern: "/override",
             code: "Context.Response.StatusCode = 201;",
             language: ScriptLanguage.CSharp);
 
         // Route is queued and applied during Build
-        host.Build();
+        _ = host.Build();
 
         Assert.True(host.MapExists("/override", HttpVerb.Get));
         var opts = host.GetMapRouteOptions("/override", HttpVerb.Get);

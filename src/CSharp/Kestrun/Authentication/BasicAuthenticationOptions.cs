@@ -1,8 +1,6 @@
-using System.Reflection;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Kestrun.Claims;
 
 namespace Kestrun.Authentication;

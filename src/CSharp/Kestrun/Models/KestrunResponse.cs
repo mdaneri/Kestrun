@@ -4,12 +4,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text;
-using Org.BouncyCastle.Asn1.Ocsp;
 using Serilog;
 using Serilog.Events;
 using System.Buffers;
 using Microsoft.Extensions.FileProviders;
-using System.Net.Mime;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Net;
 using MongoDB.Bson;
@@ -18,7 +16,6 @@ using System.Collections;
 using CsvHelper.Configuration;
 using System.Globalization;
 using CsvHelper;
-using YamlDotNet.Core.Events;
 using System.Reflection;
 
 namespace Kestrun.Models;
@@ -26,7 +23,12 @@ namespace Kestrun.Models;
 /// <summary>
 /// Represents an HTTP response in the Kestrun framework, providing methods to write various content types and manage headers, cookies, and status codes.
 /// </summary>
-public class KestrunResponse
+/// <remarks>
+/// Initializes a new instance of the <see cref="KestrunResponse"/> class with the specified request and optional body async threshold.
+/// </remarks>
+/// <param name="request">The associated <see cref="KestrunRequest"/> for this response.</param>
+/// <param name="bodyAsyncThreshold">The threshold in bytes for using async body write operations. Defaults to 8192.</param>
+public class KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 8192)
 {
     /// <summary>
     /// A set of MIME types that are considered text-based for response content.
@@ -77,35 +79,23 @@ public class KestrunResponse
     /// <summary>
     /// Content-Disposition header value.
     /// </summary>
-    public ContentDispositionOptions ContentDisposition { get; set; }
+    public ContentDispositionOptions ContentDisposition { get; set; } = new ContentDispositionOptions();
     /// <summary>
     /// Gets the associated KestrunRequest for this response.
     /// </summary>
-    public KestrunRequest Request { get; private set; }
+    public KestrunRequest Request { get; private set; } = request ?? throw new ArgumentNullException(nameof(request));
 
     /// <summary>
     /// Global text encoding for all responses. Defaults to UTF-8.
     /// </summary>
-    public Encoding AcceptCharset { get; private set; }
+    public Encoding AcceptCharset { get; private set; } = request.Headers.TryGetValue("Accept-Charset", out var value) ? Encoding.GetEncoding(value) : Encoding.UTF8; // Default to UTF-8 if null
 
     /// <summary>
     /// If the response body is larger than this threshold (in bytes), async write will be used.
     /// </summary>
-    public int BodyAsyncThreshold { get; set; } = 8192; // 8 KB default
+    public int BodyAsyncThreshold { get; set; } = bodyAsyncThreshold;
 
     #region Constructors
-    /// <summary>
-    /// Initializes a new instance of the <see cref="KestrunResponse"/> class with the specified request and optional body async threshold.
-    /// </summary>
-    /// <param name="request">The associated <see cref="KestrunRequest"/> for this response.</param>
-    /// <param name="bodyAsyncThreshold">The threshold in bytes for using async body write operations. Defaults to 8192.</param>
-    public KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 8192)
-    {
-        Request = request ?? throw new ArgumentNullException(nameof(request));
-        AcceptCharset = request.Headers.TryGetValue("Accept-Charset", out string? value) ? Encoding.GetEncoding(value) : Encoding.UTF8; // Default to UTF-8 if null
-        BodyAsyncThreshold = bodyAsyncThreshold;
-        ContentDisposition = new ContentDispositionOptions();
-    }
     #endregion
 
     #region Helpers
@@ -114,16 +104,13 @@ public class KestrunResponse
     /// </summary>
     /// <param name="key">The name of the header to retrieve.</param>
     /// <returns>The value of the header if found; otherwise, null.</returns>
-    public string? GetHeader(string key)
-    {
-        return Headers.TryGetValue(key, out var value) ? value : null;
-    }
+    public string? GetHeader(string key) => Headers.TryGetValue(key, out var value) ? value : null;
 
     private string DetermineContentType(string? contentType, string defaultType = "text/plain")
     {
         if (string.IsNullOrWhiteSpace(contentType))
         {
-            Request.Headers.TryGetValue("Accept", out var acceptHeader);
+            _ = Request.Headers.TryGetValue("Accept", out var acceptHeader);
             contentType = (acceptHeader ?? defaultType)
                                  .ToLowerInvariant();
         }
@@ -211,7 +198,7 @@ public class KestrunResponse
 
         // Create a physical file provider for the directory
         var physicalProvider = new PhysicalFileProvider(directory);
-        IFileInfo fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
+        var fi = physicalProvider.GetFileInfo(Path.GetFileName(filePath));
         var provider = new FileExtensionContentTypeProvider();
         contentType ??= provider.TryGetContentType(fullPath, out var ct)
                 ? ct
@@ -230,20 +217,14 @@ public class KestrunResponse
     /// </summary>
     /// <param name="inputObject">The object to be converted to JSON.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
-    public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
-    {
-        WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode).GetAwaiter().GetResult();
-    }
+    public void WriteJsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK) => WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a JSON response with the specified input object and HTTP status code.
     /// </summary>
     /// <param name="inputObject">The object to be converted to JSON.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
-    public async Task WriteJsonResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK)
-    {
-        await WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode);
-    }
+    public async Task WriteJsonResponseAsync(object? inputObject, int statusCode = StatusCodes.Status200OK) => await WriteJsonResponseAsync(inputObject, depth: 10, compress: false, statusCode: statusCode);
 
     /// <summary>
     /// Writes a JSON response using the specified input object and serializer settings.
@@ -252,10 +233,7 @@ public class KestrunResponse
     /// <param name="serializerSettings">The settings to use for JSON serialization.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteJsonResponseAsync(inputObject, serializerSettings, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteJsonResponse(object? inputObject, JsonSerializerSettings serializerSettings, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteJsonResponseAsync(inputObject, serializerSettings, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a JSON response using the specified input object and serializer settings.
@@ -283,10 +261,7 @@ public class KestrunResponse
     /// <param name="compress">Whether to compress the JSON output (no indentation).</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteJsonResponseAsync(inputObject, depth, compress, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteJsonResponse(object? inputObject, int depth, bool compress, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteJsonResponseAsync(inputObject, depth, compress, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a JSON response with the specified input object, serialization depth, compression option, status code, and content type.
@@ -339,10 +314,7 @@ public class KestrunResponse
     /// <param name="inputObject">The object to be converted to CBOR.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteCborResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteCborResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteCborResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a BSON response with the specified input object, status code, and content type.
@@ -369,10 +341,7 @@ public class KestrunResponse
     /// <param name="inputObject">The object to be converted to BSON.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteBsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteBsonResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteBsonResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteBsonResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a response with the specified input object and HTTP status code.
@@ -414,10 +383,7 @@ public class KestrunResponse
     /// </summary>
     /// <param name="inputObject">The object to be sent in the response body.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
-    public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK)
-    {
-        WriteResponseAsync(inputObject, statusCode).GetAwaiter().GetResult();
-    }
+    public void WriteResponse(object? inputObject, int statusCode = StatusCodes.Status200OK) => WriteResponseAsync(inputObject, statusCode).GetAwaiter().GetResult();
 
     /// <summary>
     /// Writes a CSV response with the specified input object, status code, content type, and optional CsvConfiguration.
@@ -485,7 +451,7 @@ public class KestrunResponse
             using var csv = new CsvWriter(sw, cfg);
 
             // CsvHelper insists on an enumerable; wrap single objects so it stays happy
-            if (inputObject is IEnumerable records && inputObject is not string)
+            if (inputObject is IEnumerable records and not string)
             {
                 csv.WriteRecords(records);              // whole collections (IEnumerable<T>)
             }
@@ -512,10 +478,7 @@ public class KestrunResponse
     /// <param name="inputObject">The object to be converted to YAML.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteYamlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteYamlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteYamlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a YAML response with the specified input object, status code, and content type.
@@ -541,10 +504,7 @@ public class KestrunResponse
     /// <param name="inputObject">The object to be converted to XML.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteXmlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteXmlResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteXmlResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes an XML response with the specified input object, status code, and content type.
@@ -559,7 +519,7 @@ public class KestrunResponse
             Log.Debug("Writing XML response (async), StatusCode={StatusCode}, ContentType={ContentType}", statusCode, contentType);
         }
 
-        XElement xml = await Task.Run(() => XmlUtil.ToXml("Response", inputObject));
+        var xml = await Task.Run(() => XmlUtil.ToXml("Response", inputObject));
         Body = await Task.Run(() => xml.ToString(SaveOptions.DisableFormatting));
         ContentType = string.IsNullOrEmpty(contentType) ? $"application/xml; charset={Encoding.WebName}" : contentType;
         StatusCode = statusCode;
@@ -570,10 +530,7 @@ public class KestrunResponse
     /// <param name="inputObject">The object to be converted to a text response.</param>
     /// <param name="statusCode">The HTTP status code for the response.</param>
     /// <param name="contentType">The MIME type of the response content.</param>
-    public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null)
-    {
-        WriteTextResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
-    }
+    public void WriteTextResponse(object? inputObject, int statusCode = StatusCodes.Status200OK, string? contentType = null) => WriteTextResponseAsync(inputObject, statusCode, contentType).GetAwaiter().GetResult();
 
     /// <summary>
     /// Asynchronously writes a text response with the specified input object, status code, and content type.
@@ -632,7 +589,7 @@ public class KestrunResponse
             // no body: clear any existing body/headers
             Body = null;
             //ContentType = null;
-            Headers.Remove("Content-Length");
+            _ = Headers.Remove("Content-Length");
         }
     }
 
@@ -740,10 +697,7 @@ public class KestrunResponse
       string message,
       int statusCode = StatusCodes.Status500InternalServerError,
       string? contentType = null,
-      string? details = null)
-    {
-        WriteErrorResponseAsync(message, statusCode, contentType, details).GetAwaiter().GetResult();
-    }
+      string? details = null) => WriteErrorResponseAsync(message, statusCode, contentType, details).GetAwaiter().GetResult();
 
 
     /// <summary>
@@ -797,10 +751,7 @@ public class KestrunResponse
             Exception ex,
             int statusCode = StatusCodes.Status500InternalServerError,
             string? contentType = null,
-            bool includeStack = true)
-    {
-        WriteErrorResponseAsync(ex, statusCode, contentType, includeStack).GetAwaiter().GetResult();
-    }
+            bool includeStack = true) => WriteErrorResponseAsync(ex, statusCode, contentType, includeStack).GetAwaiter().GetResult();
 
     /// <summary>
     /// Internal dispatcher: serializes the payload according to the chosen content-type.
@@ -814,7 +765,7 @@ public class KestrunResponse
 
         if (string.IsNullOrWhiteSpace(contentType))
         {
-            Request.Headers.TryGetValue("Accept", out var acceptHeader);
+            _ = Request.Headers.TryGetValue("Accept", out var acceptHeader);
             contentType = (acceptHeader ?? "text/plain")
                                  .ToLowerInvariant();
         }
@@ -909,13 +860,13 @@ public class KestrunResponse
     {
         var sb = new StringBuilder(template.Length);
 
-        for (int i = 0; i < template.Length; i++)
+        for (var i = 0; i < template.Length; i++)
         {
             // opening “{{”
             if (template[i] == '{' && i + 1 < template.Length && template[i + 1] == '{')
             {
-                int start = i + 2;                                        // after “{{”
-                int end = template.IndexOf("}}", start, StringComparison.Ordinal);
+                var start = i + 2;                                        // after “{{”
+                var end = template.IndexOf("}}", start, StringComparison.Ordinal);
 
                 if (end > start)                                          // found closing “}}”
                 {
@@ -923,11 +874,11 @@ public class KestrunResponse
 
                     if (TryResolveValue(rawKey, vars, out var value) && value is not null)
                     {
-                        sb.Append(value);
+                        _ = sb.Append(value);
                     }
                     else
                     {
-                        sb.Append("{{").Append(rawKey).Append("}}");      // leave it as-is if unknown
+                        _ = sb.Append("{{").Append(rawKey).Append("}}");      // leave it as-is if unknown
                     }
 
                     i = end + 1;    // jump past the “}}”
@@ -936,7 +887,7 @@ public class KestrunResponse
             }
 
             // ordinary character
-            sb.Append(template[i]);
+            _ = sb.Append(template[i]);
         }
         return sb.ToString();
     }
@@ -1069,10 +1020,7 @@ public class KestrunResponse
     public void WriteHtmlResponse(
         string template,
         IReadOnlyDictionary<string, object?>? vars,
-        int statusCode = 200)
-    {
-        WriteHtmlResponseAsync(template, vars, statusCode).GetAwaiter().GetResult();
-    }
+        int statusCode = 200) => WriteHtmlResponseAsync(template, vars, statusCode).GetAwaiter().GetResult();
 
     /// <summary>
     /// Reads an .html file, merges in placeholders, and writes it.
@@ -1080,10 +1028,7 @@ public class KestrunResponse
     public void WriteHtmlResponseFromFile(
         string filePath,
         IReadOnlyDictionary<string, object?> vars,
-        int statusCode = 200)
-    {
-        WriteHtmlResponseFromFileAsync(filePath, vars, statusCode).GetAwaiter().GetResult();
-    }
+        int statusCode = 200) => WriteHtmlResponseFromFileAsync(filePath, vars, statusCode).GetAwaiter().GetResult();
 
     #endregion
 
@@ -1230,8 +1175,8 @@ public class KestrunResponse
                 await response.Body.FlushAsync(response.HttpContext.RequestAborted);
                 break;
 
-            case System.IO.Stream stream:
-                bool seekable = stream.CanSeek;
+            case Stream stream:
+                var seekable = stream.CanSeek;
                 Log.Debug("Sending stream (seekable={Seekable}, len={Len})",
                           seekable, seekable ? stream.Length : -1);
 

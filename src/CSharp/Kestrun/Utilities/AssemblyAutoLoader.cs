@@ -1,10 +1,6 @@
 //  File: AssemblyAutoLoader.cs
 //  Namespace: Kestrun.Utilities   (choose any namespace that suits you)
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -24,7 +20,12 @@ public static class AssemblyAutoLoader
     private static bool _hookInstalled;
     private static bool _verbose;
 
-    private static readonly object _gate = new();   // thread-safety
+#if NET9_0_OR_GREATER
+    private static readonly Lock _gate = new();
+#else
+    private static readonly object _gate = new();
+#endif
+
     /// <summary>
     ///  Scans the supplied directories, loads every DLL that isn’t already
     ///  loaded, and installs an <c>AssemblyResolve</c> hook so that any
@@ -62,7 +63,7 @@ public static class AssemblyAutoLoader
                 continue; // skip duplicates
             }
 
-            _searchDirs.Add(Path.GetFullPath(dir));
+            _ = _searchDirs.Add(Path.GetFullPath(dir));
         }
 
         // Install the resolve hook once
@@ -88,7 +89,7 @@ public static class AssemblyAutoLoader
                     Console.WriteLine($"Pre-loading assembly: {dll}");
                 }
 
-                SafeLoad(dll);
+                _ = SafeLoad(dll);
             }
         }
     }

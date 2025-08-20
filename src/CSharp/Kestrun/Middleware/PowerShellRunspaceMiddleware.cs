@@ -32,7 +32,7 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
             }
             // Acquire a runspace from the pool and keep it for the whole request
             var runspace = _pool.Acquire();
-            using PowerShell ps = PowerShell.Create();
+            using var ps = PowerShell.Create();
             ps.Runspace = runspace;
             var krRequest = await KestrunRequest.NewRequest(context);
             var krResponse = new KestrunResponse(krRequest);
@@ -83,7 +83,7 @@ public sealed class PowerShellRunspaceMiddleware(RequestDelegate next, KestrunRu
                     }
                     // Dispose the PowerShell instance
                     ps.Dispose();
-                    context.Items.Remove(PowerShellDelegateBuilder.PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
+                    _ = context.Items.Remove(PowerShellDelegateBuilder.PS_INSTANCE_KEY);     // just in case someone re-uses the ctx object                                                             // Dispose() returns the runspace to the pool
                 }
             }
         }

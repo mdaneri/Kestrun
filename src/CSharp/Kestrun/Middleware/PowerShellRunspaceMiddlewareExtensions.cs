@@ -1,5 +1,3 @@
-using System.Management.Automation.Runspaces;
-using Kestrun.Languages;
 using Kestrun.Scripting;
 namespace Kestrun.Middleware;
 
@@ -12,8 +10,5 @@ public static class PowerShellRunspaceMiddlewareExtensions
     /// Registers <see cref="PowerShellRunspaceMiddleware"/> with the given runspace pool.
     /// </summary>
     public static IApplicationBuilder UsePowerShellRunspace(
-        this IApplicationBuilder app, KestrunRunspacePoolManager pool)
-    {
-        return app.UseMiddleware<PowerShellRunspaceMiddleware>(pool);
-    }
+        this IApplicationBuilder app, KestrunRunspacePoolManager pool) => app.UseMiddleware<PowerShellRunspaceMiddleware>(pool);
 }

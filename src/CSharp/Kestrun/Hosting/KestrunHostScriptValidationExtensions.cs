@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Serilog.Events;
 using Kestrun.Models;
-using Kestrun.Scripting;
 
 
 
@@ -36,9 +35,9 @@ public static class KestrunHostScriptValidationExtensions
         Assembly[]? extraRefs = null,
         LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("ValidateCSharpScript() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+            host.HostLogger.Debug("ValidateCSharpScript() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
         }
 
@@ -117,9 +116,9 @@ public static class KestrunHostScriptValidationExtensions
         Assembly[]? extraRefs = null,
         LanguageVersion languageVersion = LanguageVersion.CSharp12)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("GetCSharpScriptErrors() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
+            host.HostLogger.Debug("GetCSharpScriptErrors() called: {@CodeLength}, imports={ImportsCount}, refs={RefsCount}, lang={Lang}",
                 code?.Length, extraImports?.Length ?? 0, extraRefs?.Length ?? 0, languageVersion);
         }
 
@@ -141,10 +140,10 @@ public static class KestrunHostScriptValidationExtensions
         {
             // Fallback formatting if exception creation fails
             var sb = new StringBuilder();
-            sb.AppendLine($"Script has {errors.Length} compilation error(s):");
-            for (int i = 0; i < errors.Length; i++)
+            _ = sb.AppendLine($"Script has {errors.Length} compilation error(s):");
+            for (var i = 0; i < errors.Length; i++)
             {
-                sb.AppendLine($"  {i + 1}. {errors[i].GetMessage()}");
+                _ = sb.AppendLine($"  {i + 1}. {errors[i].GetMessage()}");
             }
             return sb.ToString();
         }

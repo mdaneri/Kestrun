@@ -1,17 +1,9 @@
-using System.Collections;
-using System.Management.Automation;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
-using Kestrun.Hosting;
-using Kestrun.Languages;
-using Kestrun.Models;
-using Kestrun.SharedState;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Serilog.Core;
 
 namespace Kestrun.Authentication;
 
@@ -118,11 +110,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         {
             return Fail("No credentials validation function provided");
         }
-        if (Options.RequireHttps && !Request.IsHttps)
-        {
-            return Fail("HTTPS required");
-        }
-        return null;
+        return Options.RequireHttps && !Request.IsHttps ? Fail("HTTPS required") : null;
     }
 
     /// <summary>
@@ -172,14 +160,14 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
         pass = string.Empty;
         error = null;
 
-        var decoded = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
-        if (!decoded.Success)
+        var (Success, Value, Error) = TryDecodeCredentials(authHeader.Parameter!, Options.Base64Encoded);
+        if (!Success)
         {
-            error = decoded.Error;
+            error = Error;
             return false;
         }
 
-        var parsed = TryParseCredentials(decoded.Value!);
+        var parsed = TryParseCredentials(Value!);
         if (!parsed.Success)
         {
             error = parsed.Error;
@@ -208,12 +196,7 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
             return Fail("Missing credentials in Authorization Header");
         }
 
-        if ((authHeader.Parameter?.Length ?? 0) > 8 * 1024)
-        {
-            return Fail("Header too large");
-        }
-
-        return null;
+        return (authHeader.Parameter?.Length ?? 0) > 8 * 1024 ? Fail("Header too large") : null;
     }
 
     /// <summary>

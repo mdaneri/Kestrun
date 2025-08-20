@@ -1,15 +1,5 @@
-
-
-using System.Reflection;
-using System.Text;
 using Kestrun.Models;
-using Kestrun.SharedState;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
 using Python.Runtime;
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Languages;
@@ -20,14 +10,16 @@ namespace Kestrun.Languages;
 internal static class PyDelegateBuilder
 {
     public static bool Implemented { get; set; }
-    static public void ConfigurePythonRuntimePath(string path)
-    {
-        Python.Runtime.Runtime.PythonDLL = path;
-    }
+    public static void ConfigurePythonRuntimePath(string path) => Runtime.PythonDLL = path;
     // ---------------------------------------------------------------------------
     //  helpers at class level
     // ---------------------------------------------------------------------------
+
+#if NET9_0_OR_GREATER
+    private static readonly Lock _pyGate = new();
+#else
     private static readonly object _pyGate = new();
+#endif
     private static bool _pyInit;
 
     private static void EnsurePythonEngine()
@@ -49,15 +41,15 @@ internal static class PyDelegateBuilder
             // Runtime.PythonDLL = @"C:\Python312\python312.dll";
 
             PythonEngine.Initialize();        // load CPython once
-            PythonEngine.BeginAllowThreads(); // let other threads run
+            _ = PythonEngine.BeginAllowThreads(); // let other threads run
             _pyInit = true;
         }
     }
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
+        if (logger.IsEnabled(LogEventLevel.Debug))
         {
-            Log.Debug("Building Python delegate, script l   ength={Length}", code?.Length);
+            logger.Debug("Building Python delegate, script l   ength={Length}", code?.Length);
         }
 
         if (string.IsNullOrWhiteSpace(code))
@@ -85,15 +77,15 @@ internal static class PyDelegateBuilder
 
             Scope.Exec compiles & executes that code once per route.
         */
-        scope.Exec(code);
+        _ = scope.Exec(code);
         dynamic pyHandle = scope.Get("handle");
 
         // ---------- return a RequestDelegate ----------
         return async context =>
         {
-            if (Log.IsEnabled(LogEventLevel.Debug))
+            if (logger.IsEnabled(LogEventLevel.Debug))
             {
-                Log.Debug("Python delegate invoked for {Path}", context.Request.Path);
+                logger.Debug("Python delegate invoked for {Path}", context.Request.Path);
             }
 
             try
@@ -118,7 +110,7 @@ internal static class PyDelegateBuilder
             catch (Exception ex)
             {
                 // optional logging
-                Log.Error($"Python route error: {ex}");
+                logger.Error($"Python route error: {ex}");
                 context.Response.StatusCode = 500;
                 context.Response.ContentType = "text/plain; charset=utf-8";
                 await context.Response.WriteAsync(

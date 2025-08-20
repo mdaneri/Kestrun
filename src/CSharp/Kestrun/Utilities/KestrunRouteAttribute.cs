@@ -1,6 +1,4 @@
-// KestrunRouteAttribute.cs
-using System;
-
+#pragma warning disable CA1050
 /// <summary>
 /// Specifies the API context in which a Kestrun route or schedule can be executed.
 /// </summary>
@@ -41,19 +39,18 @@ public enum KestrunApiContext
 /// <summary>
 /// Attribute to specify runtime API context and notes for Kestrun routes or schedules.
 /// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="KestrunRuntimeApiAttribute"/> class with the specified API contexts.
+/// </remarks>
+/// <param name="contexts">The API contexts in which the route or schedule can be executed.</param>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
-public sealed class KestrunRuntimeApiAttribute : Attribute
+public sealed class KestrunRuntimeApiAttribute(KestrunApiContext contexts) : Attribute
 {
     /// <summary>
     /// Gets the API contexts in which the route or schedule can be executed.
     /// </summary>
-    public KestrunApiContext Contexts { get; }
+    public KestrunApiContext Contexts { get; } = contexts;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="KestrunRuntimeApiAttribute"/> class with the specified API contexts.
-    /// </summary>
-    /// <param name="contexts">The API contexts in which the route or schedule can be executed.</param>
-    public KestrunRuntimeApiAttribute(KestrunApiContext contexts) => Contexts = contexts;
     /// <summary>
     /// Indicates whether the route is safe to be executed by untrusted callers.
     /// </summary>
@@ -63,5 +60,5 @@ public sealed class KestrunRuntimeApiAttribute : Attribute
     /// </summary>
     public string? Notes { get; init; }
 }
-
+#pragma warning restore CA1050
 

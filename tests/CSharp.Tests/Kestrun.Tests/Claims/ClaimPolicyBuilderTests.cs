@@ -1,10 +1,8 @@
-using System;
-using System.Linq;
 using System.Security.Claims;
 using Kestrun.Claims;
 using Xunit;
 
-namespace Kestrun.Claims.Tests;
+namespace KestrunTests.Claims;
 
 public class ClaimPolicyBuilderTests
 {
@@ -48,13 +46,13 @@ public class ClaimPolicyBuilderTests
     {
         var builder = new ClaimPolicyBuilder();
         // Null -> ArgumentNullException (a subtype of ArgumentException)
-        Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy(null!, "type", "v"));
+        _ = Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy(null!, "type", "v"));
         // Whitespace -> ArgumentException
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy(" ", "type", "v"));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy(" ", "type", "v"));
 
         var rule = new ClaimRule("type", "v");
-        Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy(null!, rule));
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("", rule));
+        _ = Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy(null!, rule));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("", rule));
     }
 
     [Fact]
@@ -62,9 +60,9 @@ public class ClaimPolicyBuilderTests
     {
         var builder = new ClaimPolicyBuilder();
         // Null -> ArgumentNullException (a subtype of ArgumentException)
-        Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy("P", null!, "v"));
+        _ = Assert.ThrowsAny<ArgumentException>(() => builder.AddPolicy("P", null!, "v"));
         // Whitespace -> ArgumentException
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", " ", "v"));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", " ", "v"));
     }
 
     [Fact]
@@ -72,24 +70,24 @@ public class ClaimPolicyBuilderTests
     {
         var builder = new ClaimPolicyBuilder();
         // No values
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", "type"));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", "type"));
         // Null array explicitly
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", "type", (string[])(object)null!));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", "type", (string[])(object)null!));
     }
 
     [Fact]
     public void AddPolicy_Throws_On_EmptyOrNull_AllowedValues_For_EnumOverload()
     {
         var builder = new ClaimPolicyBuilder();
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", UserIdentityClaim.Name));
-        Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", UserIdentityClaim.Name, (string[])(object)null!));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", UserIdentityClaim.Name));
+        _ = Assert.Throws<ArgumentException>(() => builder.AddPolicy("P", UserIdentityClaim.Name, (string[])(object)null!));
     }
 
     [Fact]
     public void AddPolicy_Throws_On_Null_Rule()
     {
         var builder = new ClaimPolicyBuilder();
-        Assert.Throws<ArgumentNullException>(() => builder.AddPolicy("P", (ClaimRule)null!));
+        _ = Assert.Throws<ArgumentNullException>(() => builder.AddPolicy("P", (ClaimRule)null!));
     }
 
     [Fact]
@@ -114,7 +112,7 @@ public class ClaimPolicyBuilderTests
         var config = builder.Build();
 
         // Independence: subsequent changes to builder shouldn't affect config
-        builder.AddPolicy("Other", ClaimTypes.Name, "bob");
+        _ = builder.AddPolicy("Other", ClaimTypes.Name, "bob");
 
         Assert.True(config.Policies.ContainsKey("ADMIN")); // case-insensitive dictionary
         Assert.False(config.Policies.ContainsKey("Other"));

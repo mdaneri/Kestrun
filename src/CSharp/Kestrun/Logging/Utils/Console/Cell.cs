@@ -23,10 +23,6 @@ internal class Cell
 
     public override string ToString()
     {
-        if (Column == null)
-        {
-            return Value;
-        }
-        return Value.PadRight(Column.MaxWidth, ' ');
+        return Column == null ? Value : Value.PadRight(Column.MaxWidth, ' ');
     }
 }

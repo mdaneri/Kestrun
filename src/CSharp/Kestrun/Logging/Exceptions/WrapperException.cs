@@ -1,5 +1,4 @@
-﻿using System;
-using System.Management.Automation;
+﻿using System.Management.Automation;
 using Kestrun.Logging.Data;
 
 namespace Kestrun.Logging.Exceptions;
@@ -36,10 +35,7 @@ public class WrapperException : Exception
     /// </summary>
     /// <param name="innerException">The exception that is the cause of the current exception.</param>
     /// <param name="errorRecord">The <see cref="ErrorRecord"/> associated with this exception.</param>
-    public WrapperException(Exception innerException, ErrorRecord errorRecord) : base(string.Empty, innerException)
-    {
-        ErrorRecordWrapper = new ErrorRecordWrapper(errorRecord);
-    }
+    public WrapperException(Exception innerException, ErrorRecord errorRecord) : base(string.Empty, innerException) => ErrorRecordWrapper = new ErrorRecordWrapper(errorRecord);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WrapperException"/> class.
@@ -51,8 +47,5 @@ public class WrapperException : Exception
     /// <summary>
     /// Returns a string representation of the inner exception, or an empty string if none exists.
     /// </summary>
-    public override string ToString()
-    {
-        return InnerException?.ToString() ?? string.Empty;
-    }
+    public override string ToString() => InnerException?.ToString() ?? string.Empty;
 }

@@ -1,8 +1,6 @@
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using YamlDotNet.Serialization;
 namespace Kestrun.Jwt;
 
 /// <summary>
@@ -89,8 +87,5 @@ public sealed class JwtBuilderResult(
     /// <param name="jwt">The JWT compact string to validate.</param>
     /// <param name="clockSkew">Optional clock skew to allow when validating token lifetime.</param>
     /// <returns>The token validation result.</returns>
-    public TokenValidationResult Validate(string jwt, TimeSpan? clockSkew = null)
-    {
-        return ValidateAsync(jwt, clockSkew).GetAwaiter().GetResult();
-    }
+    public TokenValidationResult Validate(string jwt, TimeSpan? clockSkew = null) => ValidateAsync(jwt, clockSkew).GetAwaiter().GetResult();
 }

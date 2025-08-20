@@ -1,19 +1,13 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
-using Kestrun.Hosting;
-using Kestrun.SharedState;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.VisualBasic;
-using Serilog;
 using Serilog.Events;
-using Kestrun.Models;
 using Microsoft.CodeAnalysis;
 using Kestrun.Utilities;
 using System.Security.Claims;
 using Kestrun.Logging;
-using Microsoft.AspNetCore.Http;
-using Microsoft.CodeAnalysis.Emit;
 
 namespace Kestrun.Languages;
 
@@ -93,7 +87,7 @@ internal static class VBNetDelegateBuilder
                     log.DebugSanitized("Executing VB.NET script for {Path}", ctx.Request.Path);
                 }
 
-                await script(Globals).ConfigureAwait(false);
+                _ = await script(Globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
                 {
                     log.DebugSanitized("VB.NET script executed successfully for {Path}", ctx.Request.Path);
@@ -161,14 +155,14 @@ internal static class VBNetDelegateBuilder
         }
 
         extraImports ??= [];
-        extraImports = extraImports.Concat(["System.Collections.Generic", "System.Linq", "System.Security.Claims"]).ToArray();
+        extraImports = [.. extraImports, "System.Collections.Generic", "System.Linq", "System.Security.Claims"];
 
         // 🔧 1.  Build a real VB file around the user snippet
-        string source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
+        var source = BuildWrappedSource(code, extraImports, vbReturnType: GetVbReturnType(typeof(TResult)),
             locals: locals);
 
         // Prepares the source code for compilation.
-        int startLine = GetStartLineOrThrow(source, log);
+        var startLine = GetStartLineOrThrow(source, log);
 
         // Parse the source code into a syntax tree
         // This will allow us to analyze and compile the code
@@ -229,7 +223,7 @@ internal static class VBNetDelegateBuilder
             throw new ArgumentException($"VB.NET code must contain the marker '{StartMarker}' to indicate where user code starts.");
         }
 
-        int startLine = CcUtilities.GetLineNumber(source, startIndex);
+        var startLine = CcUtilities.GetLineNumber(source, startIndex);
         if (log.IsEnabled(LogEventLevel.Debug))
         {
             log.Debug("VB.NET script starts at line {LineNumber}", startLine);
@@ -363,13 +357,13 @@ internal static class VBNetDelegateBuilder
           };
 
 
-        foreach (var ns in builtIns.Concat(extraImports ?? Enumerable.Empty<string>())
+        foreach (var ns in builtIns.Concat(extraImports ?? [])
                                    .Distinct(StringComparer.Ordinal))
         {
-            sb.AppendLine($"Imports {ns}");
+            _ = sb.AppendLine($"Imports {ns}");
         }
 
-        sb.AppendLine($"""
+        _ = sb.AppendLine($"""
                 Public Module RouteScript
                     Public Async Function Run(g As CsGlobals) As Task(Of {vbReturnType})
                         Await Task.Yield() ' placeholder await
@@ -381,7 +375,7 @@ internal static class VBNetDelegateBuilder
         // only emit these _when_ you called Compile with locals:
         if (locals?.ContainsKey("username") ?? false)
         {
-            sb.AppendLine("""
+            _ = sb.AppendLine("""
         ' only bind creds if someone passed them in 
                         Dim username As String = CStr(g.Locals("username"))                
         """);
@@ -389,14 +383,14 @@ internal static class VBNetDelegateBuilder
 
         if (locals?.ContainsKey("password") ?? false)
         {
-            sb.AppendLine("""
+            _ = sb.AppendLine("""
                         Dim password As String = CStr(g.Locals("password"))
         """);
         }
 
         if (locals?.ContainsKey("providedKey") == true)
         {
-            sb.AppendLine("""
+            _ = sb.AppendLine("""
         ' only bind keys if someone passed them in
                         Dim providedKey As String = CStr(g.Locals("providedKey"))
         """);
@@ -404,30 +398,30 @@ internal static class VBNetDelegateBuilder
 
         if (locals?.ContainsKey("providedKeyBytes") == true)
         {
-            sb.AppendLine("""
+            _ = sb.AppendLine("""
                         Dim providedKeyBytes As Byte() = CType(g.Locals("providedKeyBytes"), Byte())
         """);
         }
 
         if (locals?.ContainsKey("identity") == true)
         {
-            sb.AppendLine("""
+            _ = sb.AppendLine("""
                         Dim identity As String = CStr(g.Locals("identity"))
         """);
         }
 
         // add the Marker for user code
-        sb.AppendLine(StartMarker);
+        _ = sb.AppendLine(StartMarker);
         // ---- User code starts here ----
 
         if (!string.IsNullOrEmpty(code))
         {
             // indent the user snippet so VB is happy
-            sb.AppendLine(String.Join(
+            _ = sb.AppendLine(string.Join(
                 Environment.NewLine,
                 code.Split('\n').Select(l => "        " + l.TrimEnd('\r'))));
         }
-        sb.AppendLine("""
+        _ = sb.AppendLine("""
                      
                 End Function
             End Module

@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Net;
-using Kestrun;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.OpenSsl;
-using Serilog.Events;
 using Serilog;
 using System.Text;
 using System.Security.Claims;
-using System.Management.Automation;
 using Kestrun.Certificates;
 using Kestrun.Logging;
 using Kestrun.Utilities;
@@ -18,13 +11,10 @@ using Kestrun.Hosting;
 using Kestrun.Authentication;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.IdentityModel.JsonWebTokens;   // JsonWebTokenHandler 
 using Kestrun.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using Org.BouncyCastle.Bcpg;
-using Kestrun.Hosting.Options;
 using Kestrun.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;          // ISecurityTokenValidator
 
@@ -109,16 +99,16 @@ const string ApiKeyPowerShell = "ApiKeyPowerShell";
 const string ApiKeyCSharp = "ApiKeyCSharp";
 const string ApiKeyVBNet = "ApiKeyVBNet";
 
-string issuer = "KestrunApi";
-string audience = "KestrunClients";
+var issuer = "KestrunApi";
+var audience = "KestrunClients";
 // 1) 32-byte hex or ascii secret  (use a vault / env var in production)
 // shared secret = 32-byte array
 
 const string JwtKeyHex =
     "6f1a1ce2e8cc4a5685ad0e1d1f0b8c092b6dce4f7a08b1c2d3e4f5a6b7c8d9e0"; // 32-byte hex string
-byte[] keyBytes = Convert.FromHexString(JwtKeyHex);
-string keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
-string textKey = System.Text.Encoding.UTF8.GetString(keyBytes);
+var keyBytes = Convert.FromHexString(JwtKeyHex);
+var keyB64u = Base64UrlEncoder.Encode(keyBytes);   // <-- supply this
+var textKey = Encoding.UTF8.GetString(keyBytes);
 var tokenBuilder = JwtTokenBuilder.New()
               //          .WithSubject("admin")
               .WithIssuer(issuer)
@@ -142,8 +132,8 @@ Build();
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-    {
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+    [
         "application/json",
         "application/bson",
         "application/cbor",
@@ -151,7 +141,7 @@ server.AddResponseCompression(options =>
         "application/xml",
         "text/plain",
         "text/html"
-    });
+    ]);
     options.Providers.Add<BrotliCompressionProvider>();
 })
 

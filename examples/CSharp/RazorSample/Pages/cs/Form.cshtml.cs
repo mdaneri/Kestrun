@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-
+#pragma warning disable IDE0130
 namespace RazorSample.Pages;
-
+#pragma warning restore IDE0130
 public class CSharpFormModel : PageModel
 {
     [BindProperty]
@@ -18,9 +18,5 @@ public class CSharpFormModel : PageModel
         // Show form
     }
 
-    public void OnPost()
-    {
-        Submitted = true;
-        // Name and Email are auto-bound
-    }
+    public void OnPost() => Submitted = true;// Name and Email are auto-bound
 }

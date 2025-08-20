@@ -1,29 +1,22 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Security;
+﻿using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using Kestrun;
 using Org.BouncyCastle.OpenSsl;   // Only for writing the CSR key
-using Org.BouncyCastle.Asn1.X509;
-using Kestrun.Utilities;
-using Kestrun.Scripting;
 using Kestrun.Certificates;
-using Kestrun.Logging;
-using Kestrun.Hosting;
 
-class Program
+internal class Program
 {
-    static void Main()
+    internal static readonly string[] DnsNames = ["localhost", "127.0.0.1"];
+
+    private static void Main()
     {
-        Directory.CreateDirectory("out");
+        _ = Directory.CreateDirectory("out");
 
         // ────────────────────────────────────────────────────────────────
         // 1) Generate a self-signed RSA “dev” cert
         // ────────────────────────────────────────────────────────────────
         var rsaCert = CertificateManager.NewSelfSigned(
             new CertificateManager.SelfSignedOptions(
-                DnsNames: new[] { "localhost", "127.0.0.1" },
+                DnsNames: DnsNames,
                 KeyType: CertificateManager.KeyType.Rsa,
                 KeyLength: 2048,
                 ValidDays: 30,
@@ -92,7 +85,7 @@ class Program
         // 1f) Export PFX *via* SecureString + ToSecureSpan
         // ────────────────────────────────────────────────────────────────
         var securePwd = new SecureString();
-        foreach (char c in "MyP@ssw0rd")
+        foreach (var c in "MyP@ssw0rd")
         {
             securePwd.AppendChar(c);
         }
@@ -148,7 +141,7 @@ class Program
         // 3d) Import PEM split (cert + key files)  **plain** PEM (no password)
         var impPemPlain = CertificateManager.Import(
             certPath: "out/devcert-plain.crt",
-            password: ReadOnlySpan<char>.Empty,
+            password: [],
             privateKeyPath: "out/devcert-plain.key"
         );
         Console.WriteLine($"[Import PEM plain] Thumbprint: {impPemPlain.Thumbprint}");
@@ -168,9 +161,9 @@ class Program
         // ────────────────────────────────────────────────────────────────
         // 4) Validate *all* imported certs
         // ────────────────────────────────────────────────────────────────
-        void ValidateAndReport(string label, X509Certificate2 cert)
+        static void ValidateAndReport(string label, X509Certificate2 cert)
         {
-            bool ok = CertificateManager.Validate(
+            var ok = CertificateManager.Validate(
                 cert,
                 checkRevocation: false,
                 denySelfSigned: false,

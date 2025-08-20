@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Management.Automation;
 using System.Management.Automation.Runspaces;
-using System.Threading;
 using Serilog;
 using Serilog.Events;
 
@@ -13,9 +10,8 @@ namespace Kestrun.Scripting;
 /// </summary>
 public sealed class KestrunRunspacePoolManager : IDisposable
 {
-    private readonly ConcurrentBag<Runspace> _stash = new();
+    private readonly ConcurrentBag<Runspace> _stash = [];
     private readonly InitialSessionState _iss;
-    private readonly int _max;
     private int _count;        // total live runspaces
     private bool _disposed;
 
@@ -26,7 +22,7 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     /// <summary>
     /// Gets the maximum number of runspaces allowed in the pool.
     /// </summary>
-    public int MaxRunspaces => _max;
+    public int MaxRunspaces { get; }
 
     /// <summary>
     /// Thread‑affinity strategy for *future* runspaces.
@@ -60,12 +56,12 @@ public sealed class KestrunRunspacePoolManager : IDisposable
         }
 
         MinRunspaces = minRunspaces;
-        _max = maxRunspaces;
+        MaxRunspaces = maxRunspaces;
         _iss = initialSessionState ?? InitialSessionState.CreateDefault();
         ThreadOptions = threadOptions;
 
         // warm the stash
-        for (int i = 0; i < minRunspaces; i++)
+        for (var i = 0; i < minRunspaces; i++)
         {
             _stash.Add(CreateRunspace());
         }
@@ -83,7 +79,7 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
         {
-            Log.Debug("Acquiring runspace from pool: CurrentCount={Count}, Max={Max}", _count, _max);
+            Log.Debug("Acquiring runspace from pool: CurrentCount={Count}, Max={Max}", _count, MaxRunspaces);
         }
 
         ObjectDisposedException.ThrowIf(_disposed, nameof(KestrunRunspacePoolManager));
@@ -96,7 +92,7 @@ public sealed class KestrunRunspacePoolManager : IDisposable
                 // If the runspace is not open, we cannot use it.
                 // Discard and try again
                 rs.Dispose();
-                Interlocked.Decrement(ref _count);
+                _ = Interlocked.Decrement(ref _count);
                 return Acquire();
             }
             if (Log.IsEnabled(LogEventLevel.Debug))
@@ -107,15 +103,15 @@ public sealed class KestrunRunspacePoolManager : IDisposable
             return rs;
         }
         // Need a new one?—but only if we haven’t reached max.
-        if (Interlocked.Increment(ref _count) <= _max)
+        if (Interlocked.Increment(ref _count) <= MaxRunspaces)
         {
             Log.Debug("Creating new runspace: TotalCount={Count}", _count);
             return CreateRunspace();
         }
         // Overshot: roll back and complain.
-        Interlocked.Decrement(ref _count);
+        _ = Interlocked.Decrement(ref _count);
 
-        Log.Warning("Runspace limit reached: Max={Max}", _max);
+        Log.Warning("Runspace limit reached: Max={Max}", MaxRunspaces);
         throw new InvalidOperationException("Run-space limit reached.");
     }
 
@@ -128,15 +124,12 @@ public sealed class KestrunRunspacePoolManager : IDisposable
     {
         if (Log.IsEnabled(LogEventLevel.Debug))
         {
-            Log.Debug("Acquiring runspace (async) from pool: CurrentCount={Count}, Max={Max}", _count, _max);
+            Log.Debug("Acquiring runspace (async) from pool: CurrentCount={Count}, Max={Max}", _count, MaxRunspaces);
         }
 
         while (true)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(KestrunRunspacePoolManager));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, nameof(KestrunRunspacePoolManager));
 
             if (_stash.TryTake(out var rs))
             {
@@ -148,13 +141,13 @@ public sealed class KestrunRunspacePoolManager : IDisposable
                 return rs;
             }
 
-            if (Interlocked.Increment(ref _count) <= _max)
+            if (Interlocked.Increment(ref _count) <= MaxRunspaces)
             {
                 Log.Debug("Creating new runspace (async): TotalCount={Count}", _count);
                 // Runspace creation is synchronous, but we can offload to thread pool
-                return await Task.Run(() => CreateRunspace(), cancellationToken).ConfigureAwait(false);
+                return await Task.Run(CreateRunspace, cancellationToken).ConfigureAwait(false);
             }
-            Interlocked.Decrement(ref _count);
+            _ = Interlocked.Decrement(ref _count);
 
             // Wait for a runspace to be returned
             if (Log.IsEnabled(LogEventLevel.Debug))

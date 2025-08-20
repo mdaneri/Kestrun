@@ -1,8 +1,6 @@
 using System.Management.Automation;
 using Kestrun.Hosting;
-using Kestrun.Models;
 using Kestrun.Utilities;
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Languages;
@@ -85,11 +83,9 @@ internal static class PowerShellDelegateBuilder
         log.Verbose("Retrieving PowerShell instance from context items.");
         var ps = context.Items[PS_INSTANCE_KEY] as PowerShell
                  ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
-        if (ps.Runspace == null)
-        {
-            throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
-        }
-        return ps;
+        return ps.Runspace == null
+            ? throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.")
+            : ps;
     }
 
     private static KestrunContext GetKestrunContext(HttpContext context)
@@ -111,10 +107,7 @@ internal static class PowerShellDelegateBuilder
         }
     }
 
-    private static void AddScript(PowerShell ps, string code)
-    {
-        ps.AddScript(code);
-    }
+    private static void AddScript(PowerShell ps, string code) => _ = ps.AddScript(code);
 
     private static async Task<PSDataCollection<PSObject>> InvokeScriptAsync(PowerShell ps, Serilog.ILogger log)
     {

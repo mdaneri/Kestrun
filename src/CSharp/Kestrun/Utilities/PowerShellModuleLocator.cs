@@ -1,9 +1,6 @@
-using System;
-using System.IO;
 using System.Diagnostics;
 using System.Reflection;
 using Serilog;
-using Serilog.Events;
 namespace Kestrun.Utilities;
 
 /// <summary>
@@ -70,14 +67,14 @@ public static class PowerShellModuleLocator
     {
         // 1. Try development search
         var asm = Assembly.GetExecutingAssembly();
-        string dllPath = asm.Location;
+        var dllPath = asm.Location;
         // Get full InformationalVersion
-        string? fullVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var fullVersion = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
         // Strip build metadata if present (everything after and including '+')
-        string? semver = fullVersion?.Split('+')[0];
+        var semver = fullVersion?.Split('+')[0];
 
-        string? devPath = FindFileUpwards(Path.GetDirectoryName(dllPath)!, Path.Combine("src", "PowerShell", "Kestrun", "Kestrun.psm1"));
+        var devPath = FindFileUpwards(Path.GetDirectoryName(dllPath)!, Path.Combine("src", "PowerShell", "Kestrun", "Kestrun.psm1"));
 
         if (devPath != null)
         {
@@ -94,7 +91,7 @@ public static class PowerShellModuleLocator
         Log.Information("🛰  Switching to production lookup via pwsh...");
         foreach (var path in GetPSModulePathsViaPwsh())
         {
-            string full = Path.Combine(path, "Kestrun", semver, "Kestrun.psm1");
+            var full = Path.Combine(path, "Kestrun", semver, "Kestrun.psm1");
             if (File.Exists(full))
             {
                 Console.WriteLine($"✅ Found production module: {full}");
@@ -114,11 +111,11 @@ public static class PowerShellModuleLocator
     /// <returns>The full path to the file if found, otherwise null.</returns>
     private static string? FindFileUpwards(string startDir, string relativeTarget)
     {
-        string? current = startDir;
+        var current = startDir;
 
         while (current != null)
         {
-            string candidate = Path.Combine(current, relativeTarget);
+            var candidate = Path.Combine(current, relativeTarget);
             if (File.Exists(candidate))
             {
                 return candidate;

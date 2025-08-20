@@ -1,5 +1,4 @@
-﻿using System;
-using Serilog;
+﻿using Serilog;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
@@ -25,8 +24,5 @@ public static class PowerShellSinkExtensions
         Action<LogEvent, string> callback,
         LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
         string outputTemplate = PowerShellSink.DEFAULT_OUTPUT_TEMPLATE,
-        LoggingLevelSwitch? levelSwitch = null)
-    {
-        return loggerConfiguration.Sink(new PowerShellSink(callback, outputTemplate), restrictedToMinimumLevel, levelSwitch);
-    }
+        LoggingLevelSwitch? levelSwitch = null) => loggerConfiguration.Sink(new PowerShellSink(callback, outputTemplate), restrictedToMinimumLevel, levelSwitch);
 }

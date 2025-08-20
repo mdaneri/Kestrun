@@ -1,5 +1,3 @@
-
-using System;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Kestrun.Claims;

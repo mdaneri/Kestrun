@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Security;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Kestrun.Certificates;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Xunit;
@@ -66,11 +59,11 @@ public class CertificateManagerTest
         // Parse CSR with BouncyCastle to verify SAN
         using var sr = new StringReader(csr.Pem);
         var obj = new PemReader(sr).ReadObject();
-        Assert.IsType<Pkcs10CertificationRequest>(obj);
+        _ = Assert.IsType<Pkcs10CertificationRequest>(obj);
         var req = (Pkcs10CertificationRequest)obj;
         var attributes = req.GetCertificationRequestInfo().Attributes; // Asn1Set
         AttributePkcs? extAttr = null;
-        for (int i = 0; i < (attributes?.Count ?? 0); i++)
+        for (var i = 0; i < (attributes?.Count ?? 0); i++)
         {
             var attr = AttributePkcs.GetInstance(attributes![i]);
             if (attr.AttrType.Equals(PkcsObjectIdentifiers.Pkcs9AtExtensionRequest))
@@ -155,7 +148,7 @@ public class CertificateManagerTest
         var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "KestrunTests", Guid.NewGuid().ToString("N"))).FullName;
         var pemPath = Path.Combine(dir, "pubonly.pem");
 
-        CertificateManager.Export(cert, pemPath, CertificateManager.ExportFormat.Pem, ReadOnlySpan<char>.Empty, includePrivateKey: false);
+        CertificateManager.Export(cert, pemPath, CertificateManager.ExportFormat.Pem, [], includePrivateKey: false);
         Assert.True(File.Exists(pemPath));
 
         var imported = CertificateManager.Import(pemPath);
@@ -194,14 +187,8 @@ public class CertificateManagerTest
     }
 
     [Fact]
-    public void Import_Throws_OnMissingFile()
-    {
-        Assert.Throws<FileNotFoundException>(() => CertificateManager.Import(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cer")));
-    }
+    public void Import_Throws_OnMissingFile() => _ = Assert.Throws<FileNotFoundException>(() => CertificateManager.Import(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cer")));
 
     [Fact]
-    public void Import_Throws_OnEmptyPath()
-    {
-        Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
-    }
+    public void Import_Throws_OnEmptyPath() => _ = Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
 }

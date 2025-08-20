@@ -18,9 +18,9 @@ public static class KestrunHostStaticFilesExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddDefaultFiles(this KestrunHost host, DefaultFilesOptions? cfg)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Default Files with configuration: {@Config}", cfg);
+            host.HostLogger.Debug("Adding Default Files with configuration: {@Config}", cfg);
         }
 
         if (cfg == null)
@@ -48,7 +48,7 @@ public static class KestrunHostStaticFilesExtensions
         {
             var options = new DefaultFilesOptions();
             cfg?.Invoke(options);
-            app.UseDefaultFiles(options);
+            _ = app.UseDefaultFiles(options);
         });
     }
 
@@ -63,7 +63,7 @@ public static class KestrunHostStaticFilesExtensions
     {
         return host.Use(app =>
         {
-            app.UseFavicon(iconPath);
+            _ = app.UseFavicon(iconPath);
         });
     }
 
@@ -134,9 +134,9 @@ public static class KestrunHostStaticFilesExtensions
     /// </remarks>
     public static KestrunHost AddFileServer(this KestrunHost host, FileServerOptions? cfg)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
+            host.HostLogger.Debug("Adding File Server with configuration: {@Config}", cfg);
         }
 
         if (cfg == null)
@@ -173,16 +173,16 @@ public static class KestrunHostStaticFilesExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddFileServer(this KestrunHost host, Action<FileServerOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding File Server with configuration: {@Config}", cfg);
+            host.HostLogger.Debug("Adding File Server with configuration: {@Config}", cfg);
         }
 
         return host.Use(app =>
         {
             var options = new FileServerOptions();
             cfg?.Invoke(options);
-            app.UseFileServer(options);
+            _ = app.UseFileServer(options);
         });
     }
 
@@ -197,23 +197,23 @@ public static class KestrunHostStaticFilesExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddStaticFiles(this KestrunHost host, Action<StaticFileOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding static files with configuration: {Config}", cfg);
+            host.HostLogger.Debug("Adding static files with configuration: {Config}", cfg);
         }
 
         return host.Use(app =>
         {
             if (cfg == null)
             {
-                app.UseStaticFiles();
+                _ = app.UseStaticFiles();
             }
             else
             {
                 var options = new StaticFileOptions();
                 cfg(options);
 
-                app.UseStaticFiles(options);
+                _ = app.UseStaticFiles(options);
             }
         });
     }
@@ -227,9 +227,9 @@ public static class KestrunHostStaticFilesExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddStaticFiles(this KestrunHost host, StaticFileOptions options)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding static files with options: {@Options}", options);
+            host.HostLogger.Debug("Adding static files with options: {@Options}", options);
         }
 
         if (options == null)

@@ -13,7 +13,7 @@ public static class LoggerConfigurationExtensions
     public static Serilog.ILogger Register(this LoggerConfiguration config, string name, bool setAsDefault = false)
     {
         var logger = config.CreateLogger();
-        LoggerManager.Register(name, logger, setAsDefault);
+        _ = LoggerManager.Register(name, logger, setAsDefault);
         return logger;
     }
 }

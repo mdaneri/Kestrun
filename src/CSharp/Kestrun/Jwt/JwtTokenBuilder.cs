@@ -2,18 +2,13 @@
 // Namespace: Kestrun.Security
 // NuGet: <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.*" />
 
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.IdentityModel.Tokens;
-using System.Buffers.Text;
 using Serilog;
 using Serilog.Events;
-using Microsoft.IdentityModel.JsonWebTokens;
 using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
@@ -92,11 +87,11 @@ public sealed class JwtTokenBuilder
     /// <summary>
     /// Gets the issuer of the JWT token.
     /// </summary>
-    public string Issuer { get => _issuer ?? string.Empty; }
+    public string Issuer => _issuer ?? string.Empty;
     /// <summary>
     /// Gets the audience of the JWT token.
     /// </summary>
-    public string Audience { get => _aud ?? string.Empty; }
+    public string Audience => _aud ?? string.Empty;
     /// <summary>
     /// Gets the algorithm used for signing the JWT token.
     /// </summary>
@@ -132,7 +127,7 @@ public sealed class JwtTokenBuilder
         }
 
         // 1) Decode the incoming Base64Url to bytes
-        byte[] raw = Base64UrlEncoder.DecodeBytes(b64Url);
+        var raw = Base64UrlEncoder.DecodeBytes(b64Url);
 
         // 2) Create (and remember) the SymmetricSecurityKey
         var key = new SymmetricSecurityKey(raw)
@@ -142,7 +137,7 @@ public sealed class JwtTokenBuilder
         _issuerSigningKey = key;
 
         // 3) Resolve "Auto" or map the enum to the exact JWS alg string
-        string resolvedAlg = alg.ToJwtString(raw.Length);
+        var resolvedAlg = alg.ToJwtString(raw.Length);
 
         // 4) Store the pending sign using the resolved algorithm
         _pendingSign = new PendingSymmetricSign(b64Url, resolvedAlg);
@@ -168,8 +163,7 @@ public sealed class JwtTokenBuilder
     /// <param name="hex">The symmetric key as a hexadecimal string.</param>
     /// <param name="alg">The JWT algorithm to use for signing (default is Auto).</param>
     /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
-    public JwtTokenBuilder SignWithSecretHex(string hex, JwtAlgorithm alg = JwtAlgorithm.Auto)
-    { return SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg); }
+    public JwtTokenBuilder SignWithSecretHex(string hex, JwtAlgorithm alg = JwtAlgorithm.Auto) => SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg);
 
 
     /// <summary>
@@ -185,20 +179,20 @@ public sealed class JwtTokenBuilder
         ArgumentNullException.ThrowIfNull(passPhrase);
 
         // Marshal to unmanaged Unicode (UTF-16) buffer
-        IntPtr unicodePtr = Marshal.SecureStringToGlobalAllocUnicode(passPhrase);
+        var unicodePtr = Marshal.SecureStringToGlobalAllocUnicode(passPhrase);
         try
         {
-            int charCount = passPhrase.Length;
-            byte[] unicodeBytes = new byte[charCount * sizeof(char)];
+            var charCount = passPhrase.Length;
+            var unicodeBytes = new byte[charCount * sizeof(char)];
             // copy from unmanaged -> managed
             Marshal.Copy(unicodePtr, unicodeBytes, 0, unicodeBytes.Length);
 
             // convert UTF-16 bytes directly to UTF-8
-            byte[] utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, unicodeBytes);
+            var utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, unicodeBytes);
             // zero-out the intermediate Unicode bytes
             Array.Clear(unicodeBytes, 0, unicodeBytes.Length);
 
-            string b64url = Base64UrlEncoder.Encode(utf8Bytes);
+            var b64url = Base64UrlEncoder.Encode(utf8Bytes);
             // zero-out the UTF-8 bytes too
             Array.Clear(utf8Bytes, 0, utf8Bytes.Length);
 
@@ -226,7 +220,7 @@ public sealed class JwtTokenBuilder
         var pem = File.ReadAllText(pemPath);
 
         // Auto ⇒ default RS256; otherwise map enum to the exact string
-        string resolvedAlg = alg == JwtAlgorithm.Auto
+        var resolvedAlg = alg == JwtAlgorithm.Auto
             ? SecurityAlgorithms.RsaSha256
             : alg.ToJwtString(0);
 
@@ -248,7 +242,7 @@ public sealed class JwtTokenBuilder
         }
 
         // Auto ⇒ ES256 for ECDSA keys, RS256 for RSA keys
-        string resolvedAlg = alg == JwtAlgorithm.Auto
+        var resolvedAlg = alg == JwtAlgorithm.Auto
             ? (cert.GetECDsaPublicKey() is not null
                 ? SecurityAlgorithms.EcdsaSha256
                 : SecurityAlgorithms.RsaSha256)
@@ -305,10 +299,7 @@ public sealed class JwtTokenBuilder
     public JwtTokenBuilder EncryptWithSecretHex(
         string hex,
         string keyAlg = "dir",
-        string encAlg = "A256CBC-HS512")
-    {
-        return EncryptWithSecret(Convert.FromHexString(hex), keyAlg, encAlg);
-    }
+        string encAlg = "A256CBC-HS512") => EncryptWithSecret(Convert.FromHexString(hex), keyAlg, encAlg);
 
     /// <summary>
     /// Encrypts the JWT using a symmetric key provided as a Base64Url-encoded string.
@@ -320,10 +311,7 @@ public sealed class JwtTokenBuilder
     public JwtTokenBuilder EncryptWithSecretB64(
         string b64Url,
         string keyAlg = "dir",
-        string encAlg = "A256CBC-HS512")
-    {
-        return EncryptWithSecret(Base64UrlEncoder.DecodeBytes(b64Url), keyAlg, encAlg);
-    }
+        string encAlg = "A256CBC-HS512") => EncryptWithSecret(Base64UrlEncoder.DecodeBytes(b64Url), keyAlg, encAlg);
 
     /// <summary>
     /// Encrypts the JWT using a symmetric key provided as a byte array.
@@ -337,7 +325,7 @@ public sealed class JwtTokenBuilder
         string keyAlg = "dir",
         string encAlg = "A256CBC-HS512")
     {
-        string b64u = Base64UrlEncoder.Encode(keyBytes);
+        var b64u = Base64UrlEncoder.Encode(keyBytes);
         _pendingEnc = new PendingSymmetricEnc(b64u, keyAlg, encAlg);
         return this;
     }
@@ -358,9 +346,9 @@ public sealed class JwtTokenBuilder
     {
         var handler = new JwtSecurityTokenHandler();
         // ── build creds lazily now ───────────────────────────
-        SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
+        var signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
         Algorithm = signCreds.Algorithm;
-        EncryptingCredentials? encCreds = BuildEncryptingCredentials();
+        var encCreds = BuildEncryptingCredentials();
         if (_nbf < DateTime.UtcNow)
         {
             _nbf = DateTime.UtcNow;
@@ -396,7 +384,7 @@ public sealed class JwtTokenBuilder
     /// </remarks>
     private string BuildToken(out SymmetricSecurityKey? signingKey)
     {
-        string jwt = BuildToken();          // call the original Build()
+        var jwt = BuildToken();          // call the original Build()
         signingKey = _issuerSigningKey;  // may be null for unsigned / RSA / cert
         return jwt;
     }
@@ -413,8 +401,8 @@ public sealed class JwtTokenBuilder
         // ② Parse it immediately to pull out the valid-from / valid-to
         var handler = new JwtSecurityTokenHandler();
         var jwtToken = handler.ReadJwtToken(token);
-        DateTime issuedAt = jwtToken.ValidFrom.ToUniversalTime();
-        DateTime expires = jwtToken.ValidTo.ToUniversalTime();
+        var issuedAt = jwtToken.ValidFrom.ToUniversalTime();
+        var expires = jwtToken.ValidTo.ToUniversalTime();
         // ③ return the helper object
         return new JwtBuilderResult(token, key, this, issuedAt, expires);
     }
@@ -464,7 +452,7 @@ public sealed class JwtTokenBuilder
      out SymmetricSecurityKey key)
     {
         // 1) decode the Base64Url secret
-        byte[] raw = Base64UrlEncoder.DecodeBytes(ps.B64u);
+        var raw = Base64UrlEncoder.DecodeBytes(ps.B64u);
 
         // 2) create the SymmetricSecurityKey (and record its KeyId)
         key = new SymmetricSecurityKey(raw)
@@ -653,7 +641,7 @@ public sealed class JwtTokenBuilder
                 }
                 else
                 {
-                    string keyType = "unknown";
+                    var keyType = "unknown";
                     if (Cert.PublicKey != null && Cert.PublicKey.EncodedKeyValue != null && Cert.PublicKey.EncodedKeyValue.Oid != null)
                     {
                         keyType = Cert.PublicKey.EncodedKeyValue.Oid.FriendlyName ?? "unknown";
@@ -715,10 +703,10 @@ public sealed class JwtTokenBuilder
             }
 
             var key = new SymmetricSecurityKey(Base64UrlEncoder.DecodeBytes(B64));
-            int bits = key.KeySize;                        // 128 / 192 / 256 / 384 / 512 …
+            var bits = key.KeySize;                        // 128 / 192 / 256 / 384 / 512 …
 
             // ────────── auto-pick encAlg for 'dir' default case ───────
-            string encEff = EncAlg;
+            var encEff = EncAlg;
 
             if (KeyAlg.Equals("dir", StringComparison.OrdinalIgnoreCase) &&
                 EncAlg.Equals("A256CBC-HS512", StringComparison.OrdinalIgnoreCase))
@@ -736,10 +724,12 @@ public sealed class JwtTokenBuilder
             }
 
             // ────────── hard validation (caller may specify any enc) ──
-            static void Require(int actualBits, int requiredBits, string alg) =>
+            static void Require(int actualBits, int requiredBits, string alg)
+            {
                 _ = actualBits == requiredBits
                     ? true
                     : throw new ArgumentException($"{alg} requires a {requiredBits}-bit key.");
+            }
 
             switch (encEff.ToUpperInvariant())
             {
@@ -809,20 +799,20 @@ public sealed class JwtTokenBuilder
         var claims = old.Claims.Where(c => !reserved.Contains(c.Type)).ToList();
 
         // If you rely on "sub", make sure it’s there (some libs put it into NameIdentifier)
-        if (!claims.Any(c => c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub))
+        if (!claims.Any(c => c.Type == JwtRegisteredClaimNames.Sub))
         {
             var sub = old.Claims.FirstOrDefault(c =>
-                         c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub ||
-                         c.Type == ClaimTypes.NameIdentifier)?.Value;
+                         c.Type is JwtRegisteredClaimNames.Sub or
+                         ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(sub))
             {
-                claims.Add(new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, sub));
+                claims.Add(new Claim(JwtRegisteredClaimNames.Sub, sub));
             }
         }
 
-        SigningCredentials? signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
+        var signCreds = BuildSigningCredentials(out _issuerSigningKey) ?? throw new InvalidOperationException("No signing credentials configured.");
         Algorithm = signCreds.Algorithm;
-        EncryptingCredentials? encCreds = BuildEncryptingCredentials();
+        var encCreds = BuildEncryptingCredentials();
 
         // Keep the same kid if present by setting it on the signing key
         // signing.Key.KeyId = old.Header.Kid; // uncomment if you must mirror the old 'kid'

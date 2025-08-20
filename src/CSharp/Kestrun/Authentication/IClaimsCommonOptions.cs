@@ -13,14 +13,14 @@ public interface IClaimsCommonOptions
     /// After credentials are valid, this is called to add extra Claims.
     /// Parameters: HttpContext, username → IEnumerable of extra claims.
     /// </summary>
-    public Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
+    Func<HttpContext, string, Task<IEnumerable<Claim>>>? IssueClaims { get; set; }
     /// <summary>
     /// Settings for the claims issuing code, if using a script.
     /// </summary>
     /// <remarks>
     /// This allows you to specify the language, code, and additional imports/refs for claims issuance.
     /// </remarks>
-    public AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; }
+    AuthenticationCodeSettings IssueClaimsCodeSettings { get; set; }
 
     /// <summary>
     /// Gets or sets the claim policy configuration.
@@ -29,5 +29,5 @@ public interface IClaimsCommonOptions
     /// This allows you to define multiple authorization policies based on claims.
     /// Each policy can specify a claim type and allowed values.
     /// </remarks>
-    public ClaimPolicyConfig? ClaimPolicyConfig { get; set; }
+    ClaimPolicyConfig? ClaimPolicyConfig { get; set; }
 }

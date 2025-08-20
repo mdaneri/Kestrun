@@ -20,8 +20,8 @@ public static class FixedTimeEquals
             return false;
         }
 
-        int diff = 0;
-        for (int i = 0; i < a.Length; i++)
+        var diff = 0;
+        for (var i = 0; i < a.Length; i++)
         {
             diff |= a[i] ^ b[i];
         }

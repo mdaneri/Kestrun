@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Immutable;
 using System.Reflection;
 using Kestrun.Hosting;
 using Microsoft.CodeAnalysis;
@@ -92,7 +90,7 @@ public class KestrunHostScriptValidationExtensionsTests
             Assert.Contains(diagsNoImport, d => d.Severity == DiagnosticSeverity.Error);
         }
         // Should succeed with import (or return no diagnostics)
-        var diagnostics = host.ValidateCSharpScript(code, new[] { "System.Linq" });
+        var diagnostics = host.ValidateCSharpScript(code, ["System.Linq"]);
         Assert.True(diagnostics.Length == 0 || diagnostics.All(d => d.Severity != DiagnosticSeverity.Error));
     }
 
@@ -136,7 +134,7 @@ public class KestrunHostScriptValidationExtensionsTests
         }
         else
         {
-            var diagnostics = host.ValidateCSharpScript("return 1;", null, new[] { badAsm });
+            var diagnostics = host.ValidateCSharpScript("return 1;", null, [badAsm]);
             Assert.Contains(diagnostics, d => d.Id == "KESTRUN001");
             Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
         }

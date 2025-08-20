@@ -39,7 +39,7 @@ public static class RateLimiterOptionsExtensions
         foreach (var kvp in policyMap)
         {
             // AddPolicy(string, IRateLimiterPolicy<HttpContext>)
-            AddPolicyMethod.Invoke(target, new[] { kvp.Key, kvp.Value });
+            _ = AddPolicyMethod.Invoke(target, [kvp.Key, kvp.Value]);
         }
 
         // ───── factories awaiting DI (un-activated) ─────
@@ -47,7 +47,7 @@ public static class RateLimiterOptionsExtensions
         foreach (var kvp in factoryMap)
         {
             // AddPolicy(string, Func<IServiceProvider, IRateLimiterPolicy<HttpContext>>)
-            AddPolicyMethod.Invoke(target, new[] { kvp.Key, kvp.Value });
+            _ = AddPolicyMethod.Invoke(target, [kvp.Key, kvp.Value]);
         }
     }
 }

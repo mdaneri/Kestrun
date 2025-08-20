@@ -1,12 +1,6 @@
-
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Management.Automation;
 using System.Text;
 using Serilog;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Kestrun.Utilities;
 
@@ -18,10 +12,7 @@ public static class BuildError
     /// <summary>
     /// Convert the current PowerShell error streams to a plain-text <see cref="IResult"/>.
     /// </summary>
-    public static IResult Result(PowerShell ps)
-    {
-        return Results.Text(content: Text(ps), statusCode: 500, contentType: "text/plain; charset=utf-8");
-    }
+    public static IResult Result(PowerShell ps) => Results.Text(content: Text(ps), statusCode: 500, contentType: "text/plain; charset=utf-8");
 
 
 
@@ -49,7 +40,7 @@ public static class BuildError
                 return;
             }
 
-            sb.AppendLine($"{emoji}[{emoji switch
+            _ = sb.AppendLine($"{emoji}[{emoji switch
             {
                 "❌" => "Error",
                 "💬" => "Verbose",
@@ -59,7 +50,7 @@ public static class BuildError
             }}]");
             foreach (var l in lines)
             {
-                sb.AppendLine($"\t{l}");
+                _ = sb.AppendLine($"\t{l}");
             }
         }
 
@@ -82,7 +73,7 @@ public static class BuildError
     /// </summary>
     public static Task ResponseAsync(HttpContext context, PowerShell ps)
     {
-        var errText = BuildError.Text(ps);
+        var errText = Text(ps);
         context.Response.StatusCode = 500;
         context.Response.ContentType = "text/plain; charset=utf-8";
         return context.Response.WriteAsync(errText);

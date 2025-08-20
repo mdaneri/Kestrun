@@ -19,8 +19,8 @@ internal class Row
             throw new ArgumentException("You must provide cells when creating row!", nameof(values));
         }
 
-        int cellIndex = 0;
-        Cells = new List<Cell>(values.Select(v => new Cell(v, cellIndex++, this)));
+        var cellIndex = 0;
+        Cells = [.. values.Select(v => new Cell(v, cellIndex++, this))];
         Index = index;
         IsHeader = isHeader;
     }

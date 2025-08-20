@@ -1,7 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Options;
-using Kestrun.Authentication; // Add the correct namespace for IClaimsCommonOptions
-
 namespace Kestrun.Claims;
 
 

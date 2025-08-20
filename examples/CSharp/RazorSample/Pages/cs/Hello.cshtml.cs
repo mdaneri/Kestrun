@@ -1,6 +1,8 @@
 
 using Microsoft.AspNetCore.Mvc.RazorPages;
+#pragma warning disable IDE0130
 namespace RazorSample.Pages;
+#pragma warning restore IDE0130
 public class HelloModel : PageModel
 {
     public string SentenceOfTheDay { get; set; } = "No sentence";

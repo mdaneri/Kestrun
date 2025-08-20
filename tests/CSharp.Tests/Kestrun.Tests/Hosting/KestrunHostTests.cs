@@ -1,11 +1,6 @@
-using System;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Reflection;
 using Xunit;
 using Serilog;
-using Serilog.Events;
 using Kestrun;
 using Kestrun.Utilities;
 // Add the following using if MapRouteOptions is in another namespace
@@ -13,7 +8,6 @@ using Kestrun.Hosting;
 using Kestrun.Hosting.Options;
 using Kestrun.Scripting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using System.Security.Cryptography.X509Certificates;
 using Kestrun.SharedState;
 
 namespace KestrunTests.Hosting;
@@ -77,7 +71,7 @@ public class KestrunHostTest
         var logger = new LoggerConfiguration().CreateLogger();
         var host = new KestrunHost("TestApp", logger);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        _ = Assert.Throws<InvalidOperationException>(() =>
            host.AddMapRoute("/test", HttpVerb.Get, async ctx => { await System.Threading.Tasks.Task.CompletedTask; })
         );
     }
@@ -91,7 +85,7 @@ public class KestrunHostTest
         var options = new MapRouteOptions
         {
             Pattern = "/test",
-            HttpVerbs = new[] { HttpVerb.Get },
+            HttpVerbs = [HttpVerb.Get],
             Code = "Write-Output 'Hello'",
             Language = ScriptLanguage.PowerShell
         };
@@ -110,10 +104,10 @@ public class KestrunHostTest
         var options = new MapRouteOptions
         {
             Pattern = "/html",
-            HttpVerbs = new[] { HttpVerb.Get }
+            HttpVerbs = [HttpVerb.Get]
         };
 
-        Assert.Throws<FileNotFoundException>(() =>
+        _ = Assert.Throws<FileNotFoundException>(() =>
             host.AddHtmlTemplateRoute(options, "nonexistent.html")
         );
     }
@@ -122,7 +116,7 @@ public class KestrunHostTest
     public void IsCSharpScriptValid_ReturnsTrueForValid()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        bool valid = host.IsCSharpScriptValid("System.Console.WriteLine(\"hi\");");
+        var valid = host.IsCSharpScriptValid("System.Console.WriteLine(\"hi\");");
         Assert.True(valid);
     }
     [Fact]
@@ -130,7 +124,7 @@ public class KestrunHostTest
     {
         KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        bool valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
+        var valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
         Assert.False(valid);
     }
     [Fact]
@@ -148,7 +142,7 @@ public class KestrunHostTest
         AppContext.SetSwitch("System.Runtime.EnablePreviewFeatures", false);
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
-        host.ConfigureListener(12345, IPAddress.Loopback, x509Certificate: null, protocols: HttpProtocols.Http1AndHttp2AndHttp3, useConnectionLogging: true);
+        _ = host.ConfigureListener(12345, IPAddress.Loopback, x509Certificate: null, protocols: HttpProtocols.Http1AndHttp2AndHttp3, useConnectionLogging: true);
 
         var listener = host.Options.Listeners.Last();
         Assert.Equal(12345, listener.Port);
@@ -163,7 +157,7 @@ public class KestrunHostTest
         AppContext.SetSwitch("System.Runtime.EnablePreviewFeatures", true);
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
-        host.ConfigureListener(12346, IPAddress.Loopback, x509Certificate: null, protocols: HttpProtocols.Http1AndHttp2AndHttp3);
+        _ = host.ConfigureListener(12346, IPAddress.Loopback, x509Certificate: null, protocols: HttpProtocols.Http1AndHttp2AndHttp3);
 
         var listener = host.Options.Listeners.Last();
         Assert.Equal(HttpProtocols.Http1AndHttp2AndHttp3, listener.Protocols);
@@ -178,7 +172,7 @@ public class KestrunHostTest
         var req = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=localhost", ecdsa, System.Security.Cryptography.HashAlgorithmName.SHA256);
         using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
 
-        host.ConfigureListener(44321, IPAddress.Loopback, cert, HttpProtocols.Http1AndHttp2, useConnectionLogging: false);
+        _ = host.ConfigureListener(44321, IPAddress.Loopback, cert, HttpProtocols.Http1AndHttp2, useConnectionLogging: false);
 
         var listener = host.Options.Listeners.Last();
         Assert.True(listener.UseHttps);
@@ -193,15 +187,15 @@ public class KestrunHostTest
     public void AddScheduling_Throws_OnNonPositiveMax(int bad)
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
-        Assert.Throws<ArgumentOutOfRangeException>(() => host.AddScheduling(bad));
+        _ = Assert.Throws<ArgumentOutOfRangeException>(() => host.AddScheduling(bad));
     }
 
     [Fact]
     public void AddScheduling_ConfiguresScheduler_AndHonorsFirstMax()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
-        host.AddScheduling(2);
-        host.AddScheduling(10); // should be ignored since scheduler will already be set
+        _ = host.AddScheduling(2);
+        _ = host.AddScheduling(10); // should be ignored since scheduler will already be set
 
         host.EnableConfiguration();
 
@@ -226,7 +220,7 @@ public class KestrunHostTest
         // Sanitize globals so dynamic C# prelude uses 'object' for casts
         foreach (var key in SharedStateStore.KeySnapshot())
         {
-            SharedStateStore.Set(key, null);
+            _ = SharedStateStore.Set(key, null);
         }
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         host.EnableConfiguration();
@@ -260,8 +254,8 @@ public class KestrunHostTest
 
         try
         {
-            var bad = new MapRouteOptions { Pattern = "/tmpl", HttpVerbs = new[] { HttpVerb.Post } };
-            Assert.Throws<ArgumentException>(() => host.AddHtmlTemplateRoute(bad, tmp));
+            var bad = new MapRouteOptions { Pattern = "/tmpl", HttpVerbs = [HttpVerb.Post] };
+            _ = Assert.Throws<ArgumentException>(() => host.AddHtmlTemplateRoute(bad, tmp));
         }
         finally
         {
@@ -288,7 +282,7 @@ public class KestrunHostTest
     public void AddPowerShellRuntime_BeforeEnableConfiguration_DoesNotThrow_And_Configures()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
-        host.AddPowerShellRuntime();
+        _ = host.AddPowerShellRuntime();
 
         // Should not throw; runspace pool is created before middleware stages are applied
         host.EnableConfiguration();

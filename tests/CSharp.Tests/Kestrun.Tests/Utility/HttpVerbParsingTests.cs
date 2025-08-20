@@ -1,4 +1,3 @@
-using System;
 using Kestrun.Utilities;
 using Xunit;
 
@@ -26,7 +25,7 @@ public class HttpVerbParsingTests
     [Fact]
     public void FromMethodString_ThrowsOnUnknown()
     {
-        Assert.Throws<ArgumentException>(() => HttpVerbExtensions.FromMethodString("NOPE"));
+        _ = Assert.Throws<ArgumentException>(() => HttpVerbExtensions.FromMethodString("NOPE"));
         Assert.False(HttpVerbExtensions.TryFromMethodString("NOPE", out _));
     }
 }

@@ -1,17 +1,14 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Kestrun.Scheduling;
 using Kestrun.Scripting;
 using Serilog;
+using Serilog.Core;
 using Xunit;
 
 namespace KestrunTests.Scheduling;
 
 public class JobFactoryTests
 {
-    private static Serilog.ILogger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
+    private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
 
     [Fact]
     public void PowerShell_Create_Throws_WhenPoolMissing()
@@ -55,7 +52,7 @@ public class JobFactoryTests
 
         var job = JobFactory.Create(cfg);
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => job(cts.Token));
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => job(cts.Token));
     }
 
     [Fact]

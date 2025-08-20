@@ -1,7 +1,5 @@
-using System;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Xunit;
-using Kestrun.Hosting;
 using Kestrun.Hosting.Options;
 
 namespace KestrunTests.Hosting;
@@ -47,9 +45,9 @@ public class KestrelOptionsExtensionsTest
         var dest = new KestrelServerOptions();
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        Assert.Throws<ArgumentNullException>(() => KestrelOptionsExtensions.CopyFromTemplate(null, src));
+        _ = Assert.Throws<ArgumentNullException>(() => KestrelOptionsExtensions.CopyFromTemplate(null, src));
 
-        Assert.Throws<ArgumentNullException>(() => KestrelOptionsExtensions.CopyFromTemplate(dest, null));
+        _ = Assert.Throws<ArgumentNullException>(() => KestrelOptionsExtensions.CopyFromTemplate(dest, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
     }
 
@@ -59,9 +57,10 @@ public class KestrelOptionsExtensionsTest
         // ApplicationServices is in the skip list
         var services = new TestServiceProvider();
         var src = new KestrelServerOptions();
-        var dest = new KestrelServerOptions();
-
-        dest.ApplicationServices = services;
+        var dest = new KestrelServerOptions
+        {
+            ApplicationServices = services
+        };
         src.ApplicationServices = new TestServiceProvider();
 
         dest.CopyFromTemplate(src);

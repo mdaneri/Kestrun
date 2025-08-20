@@ -27,7 +27,7 @@ public static class KestrelOptionsExtensions
         };
 
         // ── 1. copy all simple writable props ───────────────────────────────
-        foreach (PropertyInfo p in typeof(KestrelServerOptions)
+        foreach (var p in typeof(KestrelServerOptions)
                                    .GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!p.CanRead || !p.CanWrite)
@@ -54,7 +54,7 @@ public static class KestrelOptionsExtensions
 
     private static void CopyLimits(KestrelServerLimits dest, KestrelServerLimits src)
     {
-        foreach (PropertyInfo p in typeof(KestrelServerLimits)
+        foreach (var p in typeof(KestrelServerLimits)
                                    .GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
             if (!p.CanRead || !p.CanWrite)

@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
 using Kestrun.Hosting;
-using Kestrun.Razor;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -14,7 +11,7 @@ public class KestrunHostRazorExtensionsTests
     public void AddRazorPages_RegistersService()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
-        host.AddRazorPages();
+        _ = host.AddRazorPages();
         var built = host.Build();
         var svc = built.Services.GetService<Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure.PageLoader>();
         Assert.NotNull(svc);
@@ -24,7 +21,7 @@ public class KestrunHostRazorExtensionsTests
     public void AddRazorPages_WithConfig_RegistersService()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
-        host.AddRazorPages(opts => opts.RootDirectory = "/CustomPages");
+        _ = host.AddRazorPages(opts => opts.RootDirectory = "/CustomPages");
         var built = host.Build();
         var svc = built.Services.GetService<Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure.PageLoader>();
         Assert.NotNull(svc);
@@ -35,7 +32,7 @@ public class KestrunHostRazorExtensionsTests
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         var opts = new RazorPagesOptions { RootDirectory = "/ObjPages" };
-        host.AddRazorPages(opts);
+        _ = host.AddRazorPages(opts);
         var built = host.Build();
         var svc = built.Services.GetService<Microsoft.AspNetCore.Mvc.RazorPages.Infrastructure.PageLoader>();
         Assert.NotNull(svc);

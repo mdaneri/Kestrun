@@ -83,11 +83,9 @@ public static class KestrunHostManager
     /// <param name="setAsDefault">Whether to set this instance as the default.</param>
     /// <returns>The created KestrunHost instance.</returns>
     public static KestrunHost Create(string name,
-         string[]? modulePathsObj = null, bool setAsDefault = false)
-    {
+         string[]? modulePathsObj = null, bool setAsDefault = false) =>
         // Call the overload with a default logger (null or a default instance as appropriate)
-        return Create(name, Log.Logger, modulePathsObj, setAsDefault);
-    }
+        Create(name, Log.Logger, modulePathsObj, setAsDefault);
 
     /// <summary>
     /// Creates a new KestrunHost instance with the specified name, logger, root path, and optional module paths.
@@ -131,10 +129,7 @@ public static class KestrunHostManager
     /// </summary>
     /// <param name="name">The name of the KestrunHost instance to check for existence.</param>
     /// <returns>True if an instance with the specified name exists; otherwise, false.</returns>
-    public static bool Contains(string name)
-    {
-        return _instances.ContainsKey(name);
-    }
+    public static bool Contains(string name) => _instances.ContainsKey(name);
 
     /// <summary>
     /// Attempts to retrieve a KestrunHost instance by its name.
@@ -180,11 +175,7 @@ public static class KestrunHostManager
     /// <returns>True if the instance is running; otherwise, false.</returns>
     public static bool IsRunning(string name)
     {
-        if (TryGet(name, out var host))
-        {
-            return host != null && host.IsRunning;
-        }
-        return false;
+        return TryGet(name, out var host) ? host != null && host.IsRunning : false;
     }
 
     /// <summary>

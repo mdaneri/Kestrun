@@ -23,8 +23,8 @@ public class PowerShellDelegateBuilderTests
         {
             Method = http.Request.Method,
             Path = http.Request.Path,
-            Query = new(),
-            Headers = new(),
+            Query = [],
+            Headers = [],
             Body = string.Empty
         };
         var res = new KestrunResponse(req);

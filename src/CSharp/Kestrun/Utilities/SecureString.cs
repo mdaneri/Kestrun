@@ -35,7 +35,7 @@ public static class SecureStringUtils
         }
         // Convert SecureString to a ReadOnlySpan<char> using a pointer
         // This is safe because SecureString guarantees that the memory is zeroed after use.
-        IntPtr ptr = IntPtr.Zero;
+        var ptr = IntPtr.Zero;
         try
         {
             // Convert SecureString to a pointer
@@ -60,7 +60,7 @@ public static class SecureStringUtils
             if (ptr != IntPtr.Zero)
             {
                 // zero & free
-                for (int i = 0; i < secureString.Length; i++)
+                for (var i = 0; i < secureString.Length; i++)
                 {
                     Marshal.WriteInt16(ptr, i * 2, 0);
                 }
@@ -83,7 +83,7 @@ public static class SecureStringUtils
         }
 
         var secure = new SecureString();
-        foreach (char c in span)
+        foreach (var c in span)
         {
             secure.AppendChar(c);
         }

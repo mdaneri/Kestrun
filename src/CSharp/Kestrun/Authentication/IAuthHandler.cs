@@ -9,7 +9,6 @@ using Kestrun.Languages;
 using Kestrun.Models;
 using Kestrun.SharedState;
 using Microsoft.AspNetCore.Authentication;
-using Serilog;
 
 namespace Kestrun.Authentication;
 
@@ -28,7 +27,7 @@ public interface IAuthHandler
     /// <param name="Scheme">The authentication scheme to use.</param>
     /// <param name="alias">An optional alias for the user.</param>
     /// <returns>An <see cref="AuthenticationTicket"/> representing the authenticated user.</returns>
-    public static async Task<AuthenticationTicket> GetAuthenticationTicketAsync(
+    static async Task<AuthenticationTicket> GetAuthenticationTicketAsync(
         HttpContext Context, string user,
     IAuthenticationCommonOptions Options, AuthenticationScheme Scheme, string? alias = null)
     {
@@ -117,7 +116,7 @@ public interface IAuthHandler
     /// <param name="logger">The logger instance.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials, Serilog.ILogger logger)
+    static async ValueTask<bool> ValidatePowerShellAsync(string? code, HttpContext context, Dictionary<string, string> credentials, Serilog.ILogger logger)
     {
         try
         {
@@ -137,17 +136,17 @@ public interface IAuthHandler
                 throw new InvalidOperationException("PowerShell authentication code is null or empty.");
             }
             // Retrieve the PowerShell instance from the context
-            PowerShell ps = context.Items["PS_INSTANCE"] as PowerShell
+            var ps = context.Items["PS_INSTANCE"] as PowerShell
                   ?? throw new InvalidOperationException("PowerShell instance not found in context items.");
             if (ps.Runspace == null)
             {
                 throw new InvalidOperationException("PowerShell runspace is not set. Ensure PowerShellRunspaceMiddleware is registered.");
             }
 
-            ps.AddScript(code, useLocalScope: true);
+            _ = ps.AddScript(code, useLocalScope: true);
             foreach (var kvp in credentials)
             {
-                ps.AddParameter(kvp.Key, kvp.Value);
+                _ = ps.AddParameter(kvp.Key, kvp.Value);
             }
 
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
@@ -273,11 +272,7 @@ public interface IAuthHandler
 
             var result = await script(globals).ConfigureAwait(false);
 
-            if (result is bool isValid)
-            {
-                return isValid;
-            }
-            return false;
+            return result is bool isValid && isValid;
         };
     }
 
@@ -288,10 +283,11 @@ public interface IAuthHandler
     /// <param name="settings">The authentication code settings containing the PowerShell script.</param>
     /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided PowerShell script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
-  => async (ctx, identity) =>
+    static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildPsIssueClaims(
+        AuthenticationCodeSettings settings, Serilog.ILogger logger) =>
+            async (ctx, identity) =>
         {
-            return await IAuthHandler.IssueClaimsPowerShellAsync(settings.Code, ctx, identity, logger);
+            return await IssueClaimsPowerShellAsync(settings.Code, ctx, identity, logger);
         };
 
     /// <summary>
@@ -302,7 +298,7 @@ public interface IAuthHandler
     /// <param name="identity">The username for which to issue claims.</param>
     /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A task representing the asynchronous operation, with a collection of issued claims.</returns>
-    public static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity, Serilog.ILogger logger)
+    static async Task<IEnumerable<Claim>> IssueClaimsPowerShellAsync(string? code, HttpContext ctx, string identity, Serilog.ILogger logger)
     {
         if (string.IsNullOrWhiteSpace(identity))
         {
@@ -317,7 +313,7 @@ public interface IAuthHandler
         try
         {
             var ps = GetPowerShell(ctx);
-            ps.AddScript(code, useLocalScope: true).AddParameter("identity", identity);
+            _ = ps.AddScript(code, useLocalScope: true).AddParameter("identity", identity);
 
             var psResults = await ps.InvokeAsync().ConfigureAwait(false);
             if (psResults is null || psResults.Count == 0)
@@ -356,11 +352,9 @@ public interface IAuthHandler
     /// <exception cref="InvalidOperationException">Thrown when the PowerShell runspace is not found.</exception>
     private static PowerShell GetPowerShell(HttpContext ctx)
     {
-        if (!ctx.Items.TryGetValue("PS_INSTANCE", out var psObj) || psObj is not PowerShell ps || ps.Runspace == null)
-        {
-            throw new InvalidOperationException("PowerShell runspace not found or not set in context items. Ensure PowerShellRunspaceMiddleware is registered.");
-        }
-        return ps;
+        return !ctx.Items.TryGetValue("PS_INSTANCE", out var psObj) || psObj is not PowerShell ps || ps.Runspace == null
+            ? throw new InvalidOperationException("PowerShell runspace not found or not set in context items. Ensure PowerShellRunspaceMiddleware is registered.")
+            : ps;
     }
 
     /// <summary>
@@ -411,7 +405,7 @@ public interface IAuthHandler
     /// <param name="settings">The authentication code settings containing the C# script.</param>
     /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided C# script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
+    static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildCsIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
         {
@@ -449,7 +443,7 @@ public interface IAuthHandler
     /// <param name="settings">The authentication code settings containing the VB.NET script.</param>
     /// <param name="logger">The logger instance for logging.</param>
     /// <returns>A function that issues claims using the provided VB.NET script.</returns>
-    public static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
+    static Func<HttpContext, string, Task<IEnumerable<Claim>>> BuildVBNetIssueClaims(AuthenticationCodeSettings settings, Serilog.ILogger logger)
     {
         if (logger.IsEnabled(Serilog.Events.LogEventLevel.Debug))
         {

@@ -66,7 +66,7 @@ public sealed class ClaimPolicyBuilder
     /// <summary>
     /// Builds the configuration object.
     /// </summary>
-    public ClaimPolicyConfig Build() => new ClaimPolicyConfig
+    public ClaimPolicyConfig Build() => new()
     {
         Policies = new Dictionary<string, ClaimRule>(_policies, StringComparer.OrdinalIgnoreCase)
     };

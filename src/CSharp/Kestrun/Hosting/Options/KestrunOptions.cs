@@ -1,8 +1,4 @@
-using System;
-using System.Net;
-using System.Text;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using System.Collections;
 namespace Kestrun.Hosting.Options;
 
 /// <summary>
@@ -19,7 +15,7 @@ public class KestrunOptions
     public KestrelServerOptions ServerOptions { get; set; }
 
     /// <summary>Provides access to request limit options. Use a hashtable or a KestrelServerLimits instance.</summary>
-    public KestrelServerLimits ServerLimits { get => ServerOptions.Limits; }
+    public KestrelServerLimits ServerLimits => ServerOptions.Limits;
 
     /// <summary>Application name (optional, for diagnostics).</summary>
     public string? ApplicationName { get; set; }

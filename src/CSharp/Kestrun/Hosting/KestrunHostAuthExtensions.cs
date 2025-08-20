@@ -1,18 +1,11 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
-using System.Security.Claims;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Primitives;
-using Kestrun.Utilities;
 using Kestrun.Authentication;
 using Serilog.Events;
 using Kestrun.Scripting;
@@ -47,7 +40,7 @@ public static class KestrunHostAuthExtensions
            {
                // ← TOptions == BasicAuthenticationOptions
                //    THandler == BasicAuthHandler
-               ab.AddScheme<BasicAuthenticationOptions, BasicAuthHandler>(
+               _ = ab.AddScheme<BasicAuthenticationOptions, BasicAuthHandler>(
                    authenticationScheme: scheme,
                    displayName: "Basic Authentication",
                     configureOptions: opts =>
@@ -63,7 +56,7 @@ public static class KestrunHostAuthExtensions
         //    read BasicAuthenticationOptions for <scheme>
         return h.AddService(services =>
         {
-            services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
+            _ = services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
                 sp => new ClaimPolicyPostConfigurer(
                           scheme,
                           sp.GetRequiredService<
@@ -83,9 +76,9 @@ public static class KestrunHostAuthExtensions
         BasicAuthenticationOptions configure
         )
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Basic Authentication with scheme: {Scheme}", scheme);
+            host.HostLogger.Debug("Adding Basic Authentication with scheme: {Scheme}", scheme);
         }
         // Ensure the scheme is not null
         ArgumentNullException.ThrowIfNull(host);
@@ -108,7 +101,7 @@ public static class KestrunHostAuthExtensions
                 opts.SuppressWwwAuthenticate = configure.SuppressWwwAuthenticate;
                 // Logger configuration
                 opts.Logger = configure.Logger == Serilog.Log.ForContext<BasicAuthenticationOptions>() ?
-                            host._Logger.ForContext<BasicAuthenticationOptions>() : configure.Logger;
+                            host.HostLogger.ForContext<BasicAuthenticationOptions>() : configure.Logger;
 
                 // Copy properties from the provided configure object
                 opts.ValidateCodeSettings = configure.ValidateCodeSettings;
@@ -182,7 +175,7 @@ public static class KestrunHostAuthExtensions
             defaultScheme: scheme,
             buildSchemes: ab =>
             {
-                ab.AddJwtBearer(scheme, opts =>
+                _ = ab.AddJwtBearer(scheme, opts =>
                 {
                     opts.TokenValidationParameters = validationParameters;
                     opts.MapInboundClaims = true;
@@ -212,7 +205,7 @@ public static class KestrunHostAuthExtensions
             defaultScheme: scheme,
             buildSchemes: ab =>
             {
-                ab.AddCookie(
+                _ = ab.AddCookie(
                     authenticationScheme: scheme,
                     configureOptions: opts =>
                     {
@@ -283,7 +276,7 @@ public static class KestrunHostAuthExtensions
             defaultScheme: NegotiateDefaults.AuthenticationScheme,
             buildSchemes: ab =>
             {
-                ab.AddNegotiate();
+                _ = ab.AddNegotiate();
             }
         );
     }
@@ -306,7 +299,7 @@ public static class KestrunHostAuthExtensions
            {
                // ← TOptions == ApiKeyAuthenticationOptions
                //    THandler == ApiKeyAuthHandler
-               ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
+               _ = ab.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthHandler>(
                    authenticationScheme: scheme,
                    displayName: "API Key",
                    configureOptions: opts =>
@@ -322,7 +315,7 @@ public static class KestrunHostAuthExtensions
         //    read BasicAuthenticationOptions for <scheme>
         return h.AddService(services =>
         {
-            services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
+            _ = services.AddSingleton<IPostConfigureOptions<AuthorizationOptions>>(
                 sp => new ClaimPolicyPostConfigurer(
                           scheme,
                           sp.GetRequiredService<
@@ -368,6 +361,10 @@ public static class KestrunHostAuthExtensions
 
                 opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
+            case ScriptLanguage.Native:
+            case ScriptLanguage.FSharp:
+            case ScriptLanguage.Python:
+            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {
@@ -416,6 +413,10 @@ public static class KestrunHostAuthExtensions
 
                 opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
                 break;
+            case ScriptLanguage.Native:
+            case ScriptLanguage.FSharp:
+            case ScriptLanguage.Python:
+            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {
@@ -464,6 +465,10 @@ public static class KestrunHostAuthExtensions
 
                 opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
+            case ScriptLanguage.Native:
+            case ScriptLanguage.FSharp:
+            case ScriptLanguage.Python:
+            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {
@@ -534,9 +539,9 @@ public static class KestrunHostAuthExtensions
     string scheme,
     ApiKeyAuthenticationOptions configure)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding API Key Authentication with scheme: {Scheme}", scheme);
+            host.HostLogger.Debug("Adding API Key Authentication with scheme: {Scheme}", scheme);
         }
 
         ArgumentNullException.ThrowIfNull(host);
@@ -553,7 +558,7 @@ public static class KestrunHostAuthExtensions
                 opts.AllowQueryStringFallback = configure.AllowQueryStringFallback;
                 // Logger configuration
                 opts.Logger = configure.Logger == Serilog.Log.ForContext<ApiKeyAuthenticationOptions>() ?
-                        host._Logger.ForContext<ApiKeyAuthenticationOptions>() : configure.Logger;
+                        host.HostLogger.ForContext<ApiKeyAuthenticationOptions>() : configure.Logger;
 
                 opts.RequireHttps = configure.RequireHttps;
                 opts.EmitChallengeHeader = configure.EmitChallengeHeader;
@@ -592,7 +597,7 @@ public static class KestrunHostAuthExtensions
             defaultScheme: scheme,
             buildSchemes: ab =>
             {
-                ab.AddOpenIdConnect(
+                _ = ab.AddOpenIdConnect(
                     authenticationScheme: scheme,
                     displayName: "OIDC",
                     configureOptions: opts =>
@@ -623,26 +628,19 @@ public static class KestrunHostAuthExtensions
     string defaultScheme = JwtBearerDefaults.AuthenticationScheme,
     Action<AuthorizationOptions>? configureAuthz = null)
     {
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
             var ab = services.AddAuthentication(defaultScheme);
             buildSchemes(ab);                                  // Basic + JWT here
 
             // make sure UseAuthorization() can find its services
-            if (configureAuthz is null)
-            {
-                services.AddAuthorization();
-            }
-            else
-            {
-                services.AddAuthorization(configureAuthz);
-            }
+            _ = configureAuthz is null ? services.AddAuthorization() : services.AddAuthorization(configureAuthz);
         });
 
         return host.Use(app =>
         {
-            app.UseAuthentication();
-            app.UseAuthorization();
+            _ = app.UseAuthentication();
+            _ = app.UseAuthorization();
         });
     }
 
@@ -657,14 +655,7 @@ public static class KestrunHostAuthExtensions
     {
         return host.AddService(s =>
         {
-            if (cfg == null)
-            {
-                s.AddAuthorization();
-            }
-            else
-            {
-                s.AddAuthorization(cfg);
-            }
+            _ = cfg == null ? s.AddAuthorization() : s.AddAuthorization(cfg);
         });
     }
 

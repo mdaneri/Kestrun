@@ -1,9 +1,7 @@
 
-namespace Kestrun.Certificates;
-
 using Org.BouncyCastle.Crypto;
 
-
+namespace Kestrun.Certificates;
 /// <summary>
 /// Represents the result of creating a Certificate Signing Request (CSR), including the PEM-encoded CSR and the private key.
 /// </summary>

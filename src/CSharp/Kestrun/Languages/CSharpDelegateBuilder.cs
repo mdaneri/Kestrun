@@ -1,18 +1,14 @@
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
-using Kestrun.Hosting;
 using Kestrun.SharedState;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using Serilog;
 using Serilog.Events;
-using Kestrun.Models;
 using System.Security.Claims;
 using Kestrun.Logging;
-using Microsoft.AspNetCore.Http;
 
 namespace Kestrun.Languages;
 
@@ -85,7 +81,7 @@ internal static class CSharpDelegateBuilder
                     log.DebugSanitized("Executing C# script for {Path}", ctx.Request.Path);
                 }
 
-                await script.RunAsync(Globals).ConfigureAwait(false);
+                _ = await script.RunAsync(Globals).ConfigureAwait(false);
                 if (log.IsEnabled(LogEventLevel.Debug))
                 {
                     log.DebugSanitized("C# script executed successfully for {Path}", ctx.Request.Path);
@@ -141,7 +137,7 @@ internal static class CSharpDelegateBuilder
 
         // References and imports
         var coreRefs = BuildCoreReferences();
-        var kestrunAssembly = typeof(Kestrun.Hosting.KestrunHost).Assembly; // Kestrun.dll
+        var kestrunAssembly = typeof(Hosting.KestrunHost).Assembly; // Kestrun.dll
         var kestrunRef = MetadataReference.CreateFromFile(kestrunAssembly.Location);
         var kestrunNamespaces = CollectKestrunNamespaces(kestrunAssembly);
         var platformImports = new[]
@@ -213,10 +209,10 @@ internal static class CSharpDelegateBuilder
         IEnumerable<MetadataReference> coreRefs,
         MetadataReference kestrunRef)
     {
-        var allImports = platformImports.Concat(kestrunNamespaces) ?? Enumerable.Empty<string>();
+        var allImports = platformImports.Concat(kestrunNamespaces) ?? [];
         return ScriptOptions.Default
             .WithImports(allImports)
-            .WithReferences(coreRefs.Concat(new[] { kestrunRef }));
+            .WithReferences(coreRefs.Concat([kestrunRef]));
     }
 
     /// <summary>
@@ -227,7 +223,7 @@ internal static class CSharpDelegateBuilder
     /// <returns>The modified script options.</returns>
     private static ScriptOptions AddExtraImports(ScriptOptions opts, string[]? extraImports)
     {
-        extraImports ??= new[] { "Kestrun" };
+        extraImports ??= ["Kestrun"];
         if (!extraImports.Contains("Kestrun"))
         {
             var importsList = extraImports.ToList();
@@ -287,7 +283,7 @@ internal static class CSharpDelegateBuilder
         {
             foreach (var kvp in allGlobals)
             {
-                builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"]; ");
+                _ = builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"]; ");
 
                 // Use object cast to avoid invalid type names (e.g., generics like List`1[System.Int32])
                 //          builder.AppendLine($"var {kvp.Key} = (object)Globals[\"{kvp.Key}\"]; ");
@@ -297,7 +293,7 @@ internal static class CSharpDelegateBuilder
         {
             foreach (var kvp in locals)
             {
-                builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"]; ");
+                _ = builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"]; ");
 
                 // Use object cast to avoid invalid type names (e.g., generics like List`1[System.Int32])
                 //  builder.AppendLine($"var {kvp.Key} = (object)Locals[\"{kvp.Key}\"]; ");
@@ -330,7 +326,7 @@ internal static class CSharpDelegateBuilder
     {
         if (diagnostics == null)
         {
-            throw new CompilationErrorException("C# script compilation failed with no diagnostics.", ImmutableArray<Diagnostic>.Empty);
+            throw new CompilationErrorException("C# script compilation failed with no diagnostics.", []);
         }
     }
 

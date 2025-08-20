@@ -3,14 +3,11 @@
 internal class Column
 {
     public int Index { get; }
-    public List<Cell> Cells { get; } = new List<Cell>();
+    public List<Cell> Cells { get; } = [];
 
     public int MaxWidth => Cells.Max(c => c.Width);
 
-    public Column(int index)
-    {
-        Index = index;
-    }
+    public Column(int index) => Index = index;
 
     public Column(Cell cell)
     {

@@ -1,10 +1,6 @@
-using System;
-using System.IO;
 using System.Management.Automation;
 using Kestrun.Scripting;
 using Kestrun.Utilities;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 
@@ -70,7 +66,7 @@ public static class PowerShellRazorPage
         }
 
         // MUST run before MapRazorPages()
-        app.Use(async (context, next) =>
+        _ = app.Use(async (context, next) =>
         {
             if (Log.IsEnabled(LogEventLevel.Debug))
             {
@@ -135,8 +131,8 @@ public static class PowerShellRazorPage
 
         // static files & routing can be added earlier in pipeline
 
-        app.UseRouting();
-        app.UseEndpoints(e => e.MapRazorPages());
+        _ = app.UseRouting();
+        _ = app.UseEndpoints(e => e.MapRazorPages());
         return app;
     }
     /// <summary>
@@ -244,7 +240,7 @@ public static class PowerShellRazorPage
     private static async Task AddScriptFromFileAsync(PowerShell ps, string path, CancellationToken token)
     {
         var script = await File.ReadAllTextAsync(path, token).ConfigureAwait(false);
-        ps.AddScript(script);
+        _ = ps.AddScript(script);
     }
 
     /// <summary>
@@ -259,7 +255,7 @@ public static class PowerShellRazorPage
         }
     }
 
-    private static Task<System.Management.Automation.PSDataCollection<System.Management.Automation.PSObject>> InvokePowerShellAsync(PowerShell ps)
+    private static Task<PSDataCollection<PSObject>> InvokePowerShellAsync(PowerShell ps)
         => ps.InvokeAsync();
 
     private static void LogResultsCount(int count)

@@ -3,7 +3,6 @@ using Kestrun.Razor;
 using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.FileProviders;
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Hosting;
@@ -23,9 +22,9 @@ public static class KestrunHostRazorExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host, PathString? routePrefix, RazorPagesOptions? cfg)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
+            host.HostLogger.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
         }
 
         return AddPowerShellRazorPages(host, routePrefix, dest =>
@@ -63,7 +62,7 @@ public static class KestrunHostRazorExtensions
         AddPowerShellRazorPages(host: host, routePrefix: null, cfg: null as RazorPagesOptions);
 
     // helper: true  ⇢ file contains managed metadata
-    static bool IsManaged(string path)
+    private static bool IsManaged(string path)
     {
         try { _ = AssemblyName.GetAssemblyName(path); return true; }
         catch { return false; }          // native ⇒ BadImageFormatException
@@ -78,26 +77,26 @@ public static class KestrunHostRazorExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddPowerShellRazorPages(this KestrunHost host, PathString? routePrefix, Action<RazorPagesOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
+            host.HostLogger.Debug("Adding PowerShell Razor Pages with route prefix: {RoutePrefix}, config: {@Config}", routePrefix, cfg);
         }
 
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
             var env = host.Builder.Environment;
-            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
             {
-                host._Logger.Debug("Adding PowerShell Razor Pages to the service with route prefix: {RoutePrefix}", routePrefix);
+                host.HostLogger.Debug("Adding PowerShell Razor Pages to the service with route prefix: {RoutePrefix}", routePrefix);
             }
 
-            services.AddRazorPages().AddRazorRuntimeCompilation();
+            _ = services.AddRazorPages().AddRazorRuntimeCompilation();
 
             // ── NEW: feed Roslyn every assembly already loaded ──────────
             //      var env = builder.Environment;                  // or app.Environment
             var pagesRoot = Path.Combine(env.ContentRootPath, "Pages");
 
-            services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
+            _ = services.Configure<MvcRazorRuntimeCompilationOptions>(opts =>
             {
                 // 1️⃣  everything that’s already loaded and managed
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()
@@ -126,32 +125,32 @@ public static class KestrunHostRazorExtensions
         return host.Use(app =>
         {
             ArgumentNullException.ThrowIfNull(host.RunspacePool);
-            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
             {
-                host._Logger.Debug("Adding PowerShell Razor Pages middleware with route prefix: {RoutePrefix}", routePrefix);
+                host.HostLogger.Debug("Adding PowerShell Razor Pages middleware with route prefix: {RoutePrefix}", routePrefix);
             }
 
             if (routePrefix.HasValue)
             {
                 // ── /ps  (or whatever prefix) ──────────────────────────────
-                app.Map(routePrefix.Value, branch =>
+                _ = app.Map(routePrefix.Value, branch =>
                 {
-                    branch.UsePowerShellRazorPages(host.RunspacePool);   // bridge
-                    branch.UseRouting();                             // add routing
-                    branch.UseEndpoints(e => e.MapRazorPages());     // map pages
+                    _ = branch.UsePowerShellRazorPages(host.RunspacePool);   // bridge
+                    _ = branch.UseRouting();                             // add routing
+                    _ = branch.UseEndpoints(e => e.MapRazorPages());     // map pages
                 });
             }
             else
             {
                 // ── mounted at root ────────────────────────────────────────
-                app.UsePowerShellRazorPages(host.RunspacePool);          // bridge
-                app.UseRouting();                                    // add routing
-                app.UseEndpoints(e => e.MapRazorPages());            // map pages
+                _ = app.UsePowerShellRazorPages(host.RunspacePool);          // bridge
+                _ = app.UseRouting();                                    // add routing
+                _ = app.UseEndpoints(e => e.MapRazorPages());            // map pages
             }
 
-            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
             {
-                host._Logger.Debug("PowerShell Razor Pages middleware added with route prefix: {RoutePrefix}", routePrefix);
+                host.HostLogger.Debug("PowerShell Razor Pages middleware added with route prefix: {RoutePrefix}", routePrefix);
             }
         });
     }
@@ -165,9 +164,9 @@ public static class KestrunHostRazorExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRazorPages(this KestrunHost host, RazorPagesOptions? cfg)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Razor Pages from source: {Source}", cfg);
+            host.HostLogger.Debug("Adding Razor Pages from source: {Source}", cfg);
         }
 
         if (cfg == null)
@@ -198,9 +197,9 @@ public static class KestrunHostRazorExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRazorPages(this KestrunHost host, Action<RazorPagesOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Razor Pages with configuration: {Config}", cfg);
+            host.HostLogger.Debug("Adding Razor Pages with configuration: {Config}", cfg);
         }
 
         return host.AddService(services =>
@@ -209,7 +208,7 @@ public static class KestrunHostRazorExtensions
 
             if (cfg != null)
             {
-                mvc.AddRazorPagesOptions(cfg);          // ← the correct extension
+                _ = mvc.AddRazorPagesOptions(cfg);          // ← the correct extension
             }
             //  —OR—
             // services.Configure(cfg);                 // also works

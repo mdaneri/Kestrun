@@ -1,14 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Net;
-using Kestrun;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.OpenSsl;
-using Serilog.Events;
 using Serilog;
 using Microsoft.AspNetCore.ResponseCompression;
-using Org.BouncyCastle.Utilities.Zlib;
 using System.Text;
 using Kestrun.Utilities;
 using Kestrun.Scripting;
@@ -39,8 +32,8 @@ server.Options.ServerLimits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
 server.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
-    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
-    {
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+    [
         "application/json",
         "application/bson",
         "application/cbor",
@@ -48,7 +41,7 @@ server.AddResponseCompression(options =>
         "application/xml",
         "text/plain",
         "text/html"
-    });
+    ]);
     options.Providers.Add<BrotliCompressionProvider>();
 }).AddFavicon().AddPowerShellRuntime();
 

@@ -1,17 +1,8 @@
-using System.Management.Automation;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
-using Kestrun.Hosting;
-using Kestrun.Languages;
-using Kestrun.Models;
-using Kestrun.SharedState;
-using Kestrun.Utilities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using Org.BouncyCastle.Asn1.Iana;
-using Serilog;
 
 namespace Kestrun.Authentication;
 
@@ -132,16 +123,11 @@ public class ApiKeyAuthHandler
     /// <returns>True if the API key is valid; otherwise, false.</returns>
     private async Task<bool> ValidateApiKeyAsync(string providedKey, byte[] providedKeyBytes)
     {
-        if (Options.ExpectedKeyBytes is not null)
-        {
-            return FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes);
-        }
-        if (Options.ValidateKeyAsync is not null)
-        {
-            return await Options.ValidateKeyAsync(Context, providedKey, providedKeyBytes);
-        }
-
-        throw new InvalidOperationException(
+        return Options.ExpectedKeyBytes is not null
+            ? FixedTimeEquals.Test(providedKeyBytes, Options.ExpectedKeyBytes)
+            : Options.ValidateKeyAsync is not null
+            ? await Options.ValidateKeyAsync(Context, providedKey, providedKeyBytes)
+            : throw new InvalidOperationException(
             "No API key validation configured. Either set ValidateKey or ExpectedKey in ApiKeyAuthenticationOptions.");
     }
 
@@ -158,7 +144,7 @@ public class ApiKeyAuthHandler
     /// </summary>
     /// <param name="reason">The reason for the failure.</param>
     /// <returns>An <see cref="AuthenticateResult"/> indicating the failure.</returns>
-    AuthenticateResult Fail(string reason)
+    private AuthenticateResult Fail(string reason)
     {
         Options.Logger.Warning("API Key authentication failed: {Reason}", reason);
         return AuthenticateResult.Fail(reason);

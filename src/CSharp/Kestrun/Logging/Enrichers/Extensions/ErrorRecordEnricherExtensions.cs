@@ -14,8 +14,5 @@ public static class ErrorRecordEnricherExtensions
     /// <param name="loggerConfiguration">The logger enrichment configuration.</param>
     /// <param name="desctructureObjects">Specifies whether to destructure objects in the error record.</param>
     /// <returns>The logger configuration with error record enrichment.</returns>
-    public static LoggerConfiguration WithErrorRecord(this LoggerEnrichmentConfiguration loggerConfiguration, bool desctructureObjects = false)
-    {
-        return loggerConfiguration.With(new ErrorRecordEnricher(desctructureObjects));
-    }
+    public static LoggerConfiguration WithErrorRecord(this LoggerEnrichmentConfiguration loggerConfiguration, bool desctructureObjects = false) => loggerConfiguration.With(new ErrorRecordEnricher(desctructureObjects));
 }

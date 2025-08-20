@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using Cronos;
 using System.Management.Automation;
-using Serilog;
 using System.Collections;
 using Kestrun.Utilities;
 using static Kestrun.Scheduling.JobFactory;
@@ -19,7 +18,15 @@ namespace Kestrun.Scheduling;
 /// The service uses a runspace pool for PowerShell jobs and supports scheduling via cron expressions or intervals.
 /// It also provides methods to retrieve task reports in various formats, including typed objects and PowerShell-friendly hashtables.
 /// </remarks>
-public sealed class SchedulerService : IDisposable
+/// <remarks>
+/// Initializes a new instance of the <see cref="SchedulerService"/> class.
+/// This constructor sets up the scheduler service with a specified runspace pool, logger, and optional time zone.
+/// The runspace pool is used for executing PowerShell scripts, while the logger is used for logging events.
+/// </remarks>
+/// <param name="pool">The runspace pool manager for executing PowerShell scripts.</param>
+/// <param name="log">The logger instance for logging events.</param>
+/// <param name="tz">The optional time zone information.</param>
+public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.ILogger log, TimeZoneInfo? tz = null) : IDisposable
 {
     /// <summary>
     /// The collection of scheduled tasks.
@@ -37,32 +44,17 @@ public sealed class SchedulerService : IDisposable
     /// It is used to create and manage runspaces for executing scheduled PowerShell jobs.
     /// The pool can be configured with various settings such as maximum runspaces, idle timeout, etc.
     /// </summary>
-    private readonly KestrunRunspacePoolManager _pool;
+    private readonly KestrunRunspacePoolManager _pool = pool;
     /// <summary>
     /// The logger instance used for logging events within the scheduler service.
     /// This logger is used to log information, warnings, and errors related to scheduled tasks.
     /// </summary>
-    private readonly Serilog.ILogger _log;
+    private readonly Serilog.ILogger _log = log;
     /// <summary>
     /// The time zone used for scheduling and reporting.
     /// This is used to convert scheduled times to the appropriate time zone for display and execution.
     /// </summary>
-    private readonly TimeZoneInfo _tz;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SchedulerService"/> class.
-    /// This constructor sets up the scheduler service with a specified runspace pool, logger, and optional time zone.
-    /// The runspace pool is used for executing PowerShell scripts, while the logger is used for logging events.
-    /// </summary>
-    /// <param name="pool">The runspace pool manager for executing PowerShell scripts.</param>
-    /// <param name="log">The logger instance for logging events.</param>
-    /// <param name="tz">The optional time zone information.</param>
-    public SchedulerService(KestrunRunspacePoolManager pool, Serilog.ILogger log, TimeZoneInfo? tz = null)
-    {
-        _pool = pool;
-        _log = log;
-        _tz = tz ?? TimeZoneInfo.Local;
-    }
+    private readonly TimeZoneInfo _tz = tz ?? TimeZoneInfo.Local;
 
     /*────────── C# JOBS ──────────*/
     /// <summary>
@@ -101,7 +93,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, string cron, ScriptBlock scriptblock, bool runImmediately = false)
     {
         JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
-        var job = JobFactory.Create(config);
+        var job = Create(config);
         Schedule(name, cron, job, runImmediately);
     }
     /// <summary>
@@ -114,7 +106,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, TimeSpan interval, ScriptBlock scriptblock, bool runImmediately = false)
     {
         JobConfig config = new(ScriptLanguage.PowerShell, scriptblock.ToString(), _log, _pool);
-        var job = JobFactory.Create(config);
+        var job = Create(config);
         Schedule(name, interval, job, runImmediately);
     }
     /// <summary>
@@ -128,7 +120,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, TimeSpan interval, string code, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, code, _log, _pool);
-        var job = JobFactory.Create(config);
+        var job = Create(config);
         Schedule(name, interval, job, runImmediately);
     }
 
@@ -143,7 +135,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, string cron, string code, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, code, _log, _pool);
-        var job = JobFactory.Create(config);
+        var job = Create(config);
         Schedule(name, cron, job, runImmediately);
     }
 
@@ -158,7 +150,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
-        var job = JobFactory.Create(config, fileInfo);
+        var job = Create(config, fileInfo);
         Schedule(name, interval, job, runImmediately);
     }
 
@@ -173,7 +165,7 @@ public sealed class SchedulerService : IDisposable
     public void Schedule(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
-        var job = JobFactory.Create(config, fileInfo);
+        var job = Create(config, fileInfo);
         Schedule(name, cron, job, runImmediately);
     }
 
@@ -189,7 +181,7 @@ public sealed class SchedulerService : IDisposable
     public async Task ScheduleAsync(string name, TimeSpan interval, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
-        var job = await JobFactory.CreateAsync(config, fileInfo, ct);
+        var job = await CreateAsync(config, fileInfo, ct);
         Schedule(name, interval, job, runImmediately);
     }
 
@@ -205,7 +197,7 @@ public sealed class SchedulerService : IDisposable
     public async Task ScheduleAsync(string name, string cron, FileInfo fileInfo, ScriptLanguage lang, bool runImmediately = false, CancellationToken ct = default)
     {
         JobConfig config = new(lang, string.Empty, _log, _pool);
-        var job = await JobFactory.CreateAsync(config, fileInfo, ct);
+        var job = await CreateAsync(config, fileInfo, ct);
         Schedule(name, cron, job, runImmediately);
     }
     /*────────── CONTROL ──────────*/
@@ -238,7 +230,7 @@ public sealed class SchedulerService : IDisposable
     {
         foreach (var kvp in _tasks.Keys)
         {
-            Cancel(kvp);
+            _ = Cancel(kvp);
         }
     }
 
@@ -258,8 +250,8 @@ public sealed class SchedulerService : IDisposable
             .Select(t =>
             {
                 // store timestamps internally in UTC; convert only for the report
-                DateTimeOffset? last = t.LastRunAt?.ToOffset(tz.GetUtcOffset(t.LastRunAt.Value));
-                DateTimeOffset next = t.NextRunAt.ToOffset(tz.GetUtcOffset(t.NextRunAt));
+                var last = t.LastRunAt?.ToOffset(tz.GetUtcOffset(t.LastRunAt.Value));
+                var next = t.NextRunAt.ToOffset(tz.GetUtcOffset(t.NextRunAt));
 
                 return new JobInfo(t.Name, last, next, t.IsSuspended);
             })
@@ -274,13 +266,13 @@ public sealed class SchedulerService : IDisposable
     /// Generates a report of all scheduled jobs in a PowerShell-friendly hashtable format.
     /// </summary>
     /// <param name="displayTz">The time zone to display times in; defaults to UTC if not specified.</param>
-    /// <returns>A <see cref="System.Collections.Hashtable"/> containing information about all scheduled jobs.</returns>
-    public System.Collections.Hashtable GetReportHashtable(TimeZoneInfo? displayTz = null)
+    /// <returns>A <see cref="Hashtable"/> containing information about all scheduled jobs.</returns>
+    public Hashtable GetReportHashtable(TimeZoneInfo? displayTz = null)
     {
         var rpt = GetReport(displayTz);
 
         var jobsArray = rpt.Jobs
-            .Select(j => new System.Collections.Hashtable
+            .Select(j => new Hashtable
             {
                 ["Name"] = j.Name,
                 ["LastRunAt"] = j.LastRunAt,
@@ -289,7 +281,7 @@ public sealed class SchedulerService : IDisposable
             })
             .ToArray();                       // powershell likes [] not IList<>
 
-        return new System.Collections.Hashtable
+        return new Hashtable
         {
             ["GeneratedAt"] = rpt.GeneratedAt,
             ["Jobs"] = jobsArray
@@ -359,7 +351,7 @@ public sealed class SchedulerService : IDisposable
 
         if (!asHashtable)
         {
-            return jobs.Cast<object>().ToArray();
+            return [.. jobs.Cast<object>()];
         }
 
         // PowerShell-friendly shape
@@ -495,7 +487,7 @@ public sealed class SchedulerService : IDisposable
                 continue;
             }
 
-            TimeSpan delay = task.Interval ?? NextCronDelay(task.Cron!, _tz);
+            var delay = task.Interval ?? NextCronDelay(task.Cron!, _tz);
             if (delay < TimeSpan.Zero)
             {
                 delay = TimeSpan.Zero;

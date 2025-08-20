@@ -1,5 +1,3 @@
-using System;
-
 namespace Kestrun.Utilities;
 
 /// <summary>
@@ -185,12 +183,9 @@ public static class HttpVerbExtensions
             _ => method.Trim()
         };
 
-        if (Enum.TryParse<HttpVerb>(normalizedMethod, true, out var result))
-        {
-            return result;
-        }
-
-        throw new ArgumentException($"Unknown HTTP method: {method}", nameof(method));
+        return Enum.TryParse<HttpVerb>(normalizedMethod, true, out var result)
+            ? result
+            : throw new ArgumentException($"Unknown HTTP method: {method}", nameof(method));
     }
 
     /// <summary>

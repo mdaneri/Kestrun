@@ -1,5 +1,3 @@
-using System;
-
 namespace Kestrun.Utilities;
 /// <summary>
 /// Provides utility methods for Kestrun.
@@ -11,7 +9,7 @@ public static class CcUtilities
     /// </summary>
     public static bool PreviewFeaturesEnabled() =>
         AppContext.TryGetSwitch(
-            "System.Runtime.EnablePreviewFeatures", out bool on) && on;
+            "System.Runtime.EnablePreviewFeatures", out var on) && on;
 
     /// <summary>
     /// Returns the line number in the source string at the specified character index.
@@ -28,8 +26,8 @@ public static class CcUtilities
         }
 
         // Count how many `\n` occur before the index
-        int line = 1;
-        for (int i = 0; i < index; i++)
+        var line = 1;
+        for (var i = 0; i < index; i++)
         {
             if (source[i] == '\n')
             {

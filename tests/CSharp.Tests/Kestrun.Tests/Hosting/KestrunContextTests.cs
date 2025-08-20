@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using Kestrun.Hosting;
 using Kestrun.Models;
 using Microsoft.AspNetCore.Http;
@@ -74,7 +69,7 @@ public class KestrunContextTests
     {
         var http = new DefaultHttpContext();
         http.Request.Path = "/api/test";
-        var identity = new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, "alice") }, "test");
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, "alice")], "test");
         http.User = new ClaimsPrincipal(identity);
 
         // with no session feature
@@ -103,10 +98,9 @@ public class KestrunContextTests
         Assert.Equal(cts.Token, ctx.Ct);
     }
 
-    private sealed class TestSessionFeature : ISessionFeature
+    private sealed class TestSessionFeature(ISession session) : ISessionFeature
     {
-        public TestSessionFeature(ISession session) => Session = session;
-        public ISession Session { get; set; }
+        public ISession Session { get; set; } = session;
     }
 
     private sealed class TestSession : ISession

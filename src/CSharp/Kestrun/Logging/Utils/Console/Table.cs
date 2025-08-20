@@ -52,8 +52,8 @@ public class Table
     /// </summary>
     public const string VERTICAL_LINE = "│";
 
-    private List<Row> Rows { get; } = new List<Row>();
-    private List<Column> Columns { get; set; } = new List<Column>();
+    private List<Row> Rows { get; } = [];
+    private List<Column> Columns { get; set; } = [];
 
     /// <summary>
     /// Gets or sets a value indicating whether the table header has been set.
@@ -69,10 +69,7 @@ public class Table
     /// <summary>
     /// Initializes a new instance of the <see cref="Table"/> class with default padding.
     /// </summary>
-    public Table()
-    {
-        Columns = [];
-    }
+    public Table() => Columns = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Table"/> class with the specified padding.
@@ -105,7 +102,7 @@ public class Table
         if (values.Any(v => v?.ToString()?.Contains(Environment.NewLine) == true))
         {
             var maxLines = values.Max(v => v?.ToString()?.Split('\n').Length ?? 1);
-            for (int i = 0; i < maxLines; i++)
+            for (var i = 0; i < maxLines; i++)
             {
                 var row = new List<object>();
                 foreach (var value in values)
@@ -128,11 +125,6 @@ public class Table
         {
             AddRow(values: values);
         }
-    }
-
-    private void AddRow(bool isHeader = false, params object[] values)
-    {
-        Rows.Add(new Row(_rowIndex++, isHeader, values));
     }
 
     private void CalculateColumns()
@@ -173,9 +165,9 @@ public class Table
 
             foreach (var cell in row.Cells)
             {
-                sb.Append($"{VERTICAL_LINE}{Padding.LeftString()}{cell}{Padding.RightString()}");
+                _ = sb.Append($"{VERTICAL_LINE}{Padding.LeftString()}{cell}{Padding.RightString()}");
             }
-            sb.AppendLine(VERTICAL_LINE);
+            _ = sb.AppendLine(VERTICAL_LINE);
 
             RenderGrid(sb, row.Index, false);
         }
@@ -196,9 +188,9 @@ public class Table
         {
             foreach (var cell in row.Cells)
             {
-                sb.Append($"{Padding.LeftString()}{cell}{Padding.RightString()}");
+                _ = sb.Append($"{Padding.LeftString()}{cell}{Padding.RightString()}");
             }
-            sb.AppendLine();
+            _ = sb.AppendLine();
         }
 
         return sb.ToString();
@@ -222,31 +214,21 @@ public class Table
 
     private void RenderGridLine(StringBuilder sb, string leftJoint, string middleJoint, string rightJoint)
     {
-        for (int i = 0; i < Columns.Count; i++)
+        for (var i = 0; i < Columns.Count; i++)
         {
             var columnWidth = Columns[i].MaxWidth + Padding.Right + Padding.Left;
-            if (i == 0)
-            {
-                sb.Append(leftJoint + string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + middleJoint);
-            }
-            else if (i == Columns.Count - 1)
-            {
-                sb.Append(string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + rightJoint);
-            }
-            else
-            {
-                sb.Append(string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + middleJoint);
-            }
+            _ = i == 0
+                ? sb.Append(leftJoint + string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + middleJoint)
+                : i == Columns.Count - 1
+                    ? sb.Append(string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + rightJoint)
+                    : sb.Append(string.Empty.PadLeft(columnWidth, HORIZONTAL_LINE) + middleJoint);
         }
-        sb.AppendLine();
+        _ = sb.AppendLine();
     }
 
     /// <summary>
     /// Returns a string that represents the current table.
     /// </summary>
     /// <returns>A string representation of the table.</returns>
-    public override string ToString()
-    {
-        return Render();
-    }
+    public override string ToString() => Render();
 }

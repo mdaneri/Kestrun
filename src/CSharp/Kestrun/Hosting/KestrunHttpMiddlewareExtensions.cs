@@ -21,9 +21,9 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddResponseCompression(this KestrunHost host, ResponseCompressionOptions? options)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding response compression with options: {@Options}", options);
+            host.HostLogger.Debug("Adding response compression with options: {@Options}", options);
         }
 
         if (options == null)
@@ -54,21 +54,14 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddResponseCompression(this KestrunHost host, Action<ResponseCompressionOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding response compression with configuration: {Config}", cfg);
+            host.HostLogger.Debug("Adding response compression with configuration: {Config}", cfg);
         }
         // Service side
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
-            if (cfg == null)
-            {
-                services.AddResponseCompression();
-            }
-            else
-            {
-                services.AddResponseCompression(cfg);
-            }
+            _ = cfg == null ? services.AddResponseCompression() : services.AddResponseCompression(cfg);
         });
 
         // Middleware side
@@ -83,9 +76,9 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRateLimiter(this KestrunHost host, RateLimiterOptions cfg)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding rate limiter with configuration: {@Config}", cfg);
+            host.HostLogger.Debug("Adding rate limiter with configuration: {@Config}", cfg);
         }
 
         if (cfg == null)
@@ -93,9 +86,9 @@ public static class KestrunHttpMiddlewareExtensions
             return host.AddRateLimiter();   // fall back to your “blank” overload
         }
 
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
-            services.AddRateLimiter(opts => opts.CopyFrom(cfg));   // ← single line!
+            _ = services.AddRateLimiter(opts => opts.CopyFrom(cfg));   // ← single line!
         });
 
         return host.Use(app => app.UseRateLimiter());
@@ -110,26 +103,26 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddRateLimiter(this KestrunHost host, Action<RateLimiterOptions>? cfg = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
+            host.HostLogger.Debug("Adding rate limiter with configuration: {HasConfig}", cfg != null);
         }
 
         // Register the rate limiter service
-        host.AddService(services =>
+        _ = host.AddService(services =>
             {
-                services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
+                _ = services.AddRateLimiter(cfg ?? (_ => { })); // Always pass a delegate
             });
 
         // Apply the middleware
         return host.Use(app =>
         {
-            if (host._Logger.IsEnabled(LogEventLevel.Debug))
+            if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
             {
-                host._Logger.Debug("Registering rate limiter middleware");
+                host.HostLogger.Debug("Registering rate limiter middleware");
             }
 
-            app.UseRateLimiter();
+            _ = app.UseRateLimiter();
         });
     }
 
@@ -144,9 +137,9 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddAntiforgery(this KestrunHost host, AntiforgeryOptions? options)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Antiforgery with configuration: {@Config}", options);
+            host.HostLogger.Debug("Adding Antiforgery with configuration: {@Config}", options);
         }
 
         if (options == null)
@@ -172,21 +165,14 @@ public static class KestrunHttpMiddlewareExtensions
     /// <returns>The current KestrunHost instance.</returns>
     public static KestrunHost AddAntiforgery(this KestrunHost host, Action<AntiforgeryOptions>? setupAction = null)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding Antiforgery with configuration: {@Config}", setupAction);
+            host.HostLogger.Debug("Adding Antiforgery with configuration: {@Config}", setupAction);
         }
         // Service side
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
-            if (setupAction == null)
-            {
-                services.AddAntiforgery();
-            }
-            else
-            {
-                services.AddAntiforgery(setupAction);
-            }
+            _ = setupAction == null ? services.AddAntiforgery() : services.AddAntiforgery(setupAction);
         });
 
         // Middleware side
@@ -221,9 +207,9 @@ public static class KestrunHttpMiddlewareExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         // 1️⃣ Service‑time registration
-        host.AddService(services =>
+        _ = host.AddService(services =>
         {
-            services.AddCors(options =>
+            _ = services.AddCors(options =>
             {
                 options.AddPolicy(policyName, builder.Build());
             });
@@ -244,9 +230,9 @@ public static class KestrunHttpMiddlewareExtensions
     /// <exception cref="ArgumentException">Thrown when the policy name is null or whitespace.</exception>
     public static KestrunHost AddCors(this KestrunHost host, string policyName, Action<CorsPolicyBuilder> buildPolicy)
     {
-        if (host._Logger.IsEnabled(LogEventLevel.Debug))
+        if (host.HostLogger.IsEnabled(LogEventLevel.Debug))
         {
-            host._Logger.Debug("Adding CORS policy: {PolicyName}", policyName);
+            host.HostLogger.Debug("Adding CORS policy: {PolicyName}", policyName);
         }
 
         if (string.IsNullOrWhiteSpace(policyName))
@@ -256,9 +242,9 @@ public static class KestrunHttpMiddlewareExtensions
 
         ArgumentNullException.ThrowIfNull(buildPolicy);
 
-        host.AddService(s =>
+        _ = host.AddService(s =>
         {
-            s.AddCors(o => o.AddPolicy(policyName, buildPolicy));
+            _ = s.AddCors(o => o.AddPolicy(policyName, buildPolicy));
         });
 
         // apply only that policy

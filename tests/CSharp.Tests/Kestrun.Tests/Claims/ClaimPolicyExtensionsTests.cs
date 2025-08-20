@@ -1,14 +1,16 @@
-using System.Linq;
 using System.Security.Claims;
 using Kestrun.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Xunit;
 
-namespace Kestrun.Claims.Tests;
+namespace KestrunTests.Claims;
 
 public class ClaimPolicyExtensionsTests
 {
+    private static readonly string[] expected = ["Admin", "Owner"];
+    private static readonly string[] expectedArray = ["Alice"];
+
     [Fact]
     public void ToAuthzDelegate_Adds_All_Policies_With_Correct_Requirements()
     {
@@ -29,13 +31,15 @@ public class ClaimPolicyExtensionsTests
         Assert.NotNull(p1);
         var req1 = Assert.IsType<ClaimsAuthorizationRequirement>(p1!.Requirements.Single());
         Assert.Equal(ClaimTypes.Role, req1.ClaimType);
-        Assert.Equal(new[] { "Admin", "Owner" }, req1.AllowedValues!.ToArray());
+#pragma warning disable IDE0305
+        Assert.Equal(expected, req1.AllowedValues!.ToArray());
 
         var p2 = options.GetPolicy("Named");
         Assert.NotNull(p2);
         var req2 = Assert.IsType<ClaimsAuthorizationRequirement>(p2!.Requirements.Single());
         Assert.Equal(ClaimTypes.Name, req2.ClaimType);
-        Assert.Equal(new[] { "Alice" }, req2.AllowedValues!.ToArray());
+        Assert.Equal(expectedArray, req2.AllowedValues!.ToArray());
+#pragma warning restore IDE0305
     }
 
     [Fact]

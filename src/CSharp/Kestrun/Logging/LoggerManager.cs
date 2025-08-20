@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Concurrent;
 using Serilog;
 
@@ -66,7 +65,7 @@ public static class LoggerManager
     /// <summary>
     /// Create a new <see cref="LoggerConfiguration"/> associated with a name.
     /// </summary>
-    public static Serilog.LoggerConfiguration New(string name)
+    public static LoggerConfiguration New(string name)
     {
         var cfg = new LoggerConfiguration()
             .Enrich.WithProperty("LoggerName", name);
@@ -84,7 +83,7 @@ public static class LoggerManager
                 d.Dispose();
             }
 
-            _configs.TryRemove(name, out _);
+            _ = _configs.TryRemove(name, out _);
             return true;
         }
         return false;
@@ -114,7 +113,7 @@ public static class LoggerManager
     /// <summary>Remove and dispose all registered loggers.</summary>
     public static void Clear()
     {
-        foreach (var (name, logger) in _loggers)
+        foreach (var (_, logger) in _loggers)
         {
             if (logger is IDisposable d)
             {
