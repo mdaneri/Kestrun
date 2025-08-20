@@ -83,7 +83,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coverage/csharp.net9.0.cobertura.xml
+          file: tests/CSharp.Tests/Kestrun.Tests/coverage/csharp.net9.0.cobertura.xml
           format: cobertura
           parallel: true
           flag-name: csharp
