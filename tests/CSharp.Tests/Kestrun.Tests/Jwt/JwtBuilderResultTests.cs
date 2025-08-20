@@ -5,7 +5,7 @@ using Kestrun.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
-namespace Kestrun.Tests.Jwt;
+namespace KestrunTests.Jwt;
 
 public class JwtBuilderResultTests
 {

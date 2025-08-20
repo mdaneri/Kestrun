@@ -16,15 +16,18 @@ public class FaviconMiddlewareExtensionsTests
         app.UseFavicon();
         var pipeline = app.Build();
 
-    var ctx = new DefaultHttpContext();
+        var ctx = new DefaultHttpContext();
         ctx.Request.Path = "/favicon.ico";
-    ctx.Response.Body = new MemoryStream();
+        ctx.Response.Body = new MemoryStream();
 
         await pipeline(ctx);
 
         Assert.Equal(200, ctx.Response.StatusCode);
         Assert.Equal("image/x-icon", ctx.Response.ContentType);
         Assert.True(ctx.Response.Headers.ContainsKey("Cache-Control"));
+        var cacheHeader = ctx.Response.Headers["Cache-Control"].ToString();
+        Assert.StartsWith("public,", cacheHeader, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("max-age=31536000", cacheHeader);
         ctx.Response.Body.Position = 0;
         using (var ms = new MemoryStream())
         {
@@ -55,6 +58,10 @@ public class FaviconMiddlewareExtensionsTests
 
             Assert.Equal(200, ctx.Response.StatusCode);
             Assert.Equal("image/x-icon", ctx.Response.ContentType);
+            Assert.True(ctx.Response.Headers.ContainsKey("Cache-Control"));
+            var cacheHeader = ctx.Response.Headers["Cache-Control"].ToString();
+            Assert.StartsWith("public,", cacheHeader, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("max-age=31536000", cacheHeader);
             ctx.Response.Body.Position = 0;
             using (var ms = new MemoryStream())
             {

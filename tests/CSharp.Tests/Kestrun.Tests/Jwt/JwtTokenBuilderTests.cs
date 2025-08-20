@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 using Kestrun.Jwt;
 using Xunit;
 
-namespace Kestrun.Tests.Jwt;
+namespace KestrunTests.Jwt;
 
 public class JwtTokenBuilderTests
 {

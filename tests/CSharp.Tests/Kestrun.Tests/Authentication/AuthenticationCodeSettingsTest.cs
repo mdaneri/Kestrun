@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Xunit;
 
-namespace Kestrun.Tests.Authentication;
+namespace KestrunTests.Authentication;
 
 public class AuthenticationCodeSettingsTest
 {

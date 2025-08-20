@@ -3,7 +3,7 @@ using System.Linq;
 using Kestrun.Jwt;
 using Xunit;
 
-namespace Kestrun.Tests.Jwt;
+namespace KestrunTests.Jwt;
 
 public class JwtInspectorTests
 {

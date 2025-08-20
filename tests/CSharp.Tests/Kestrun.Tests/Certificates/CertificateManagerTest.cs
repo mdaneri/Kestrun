@@ -14,7 +14,7 @@ using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Xunit;
 
-namespace Kestrun.Tests.Certificates;
+namespace KestrunTests.Certificates;
 
 public class CertificateManagerTest
 {

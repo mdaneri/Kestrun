@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Kestrun.Jwt;
 using Xunit;
 
-namespace Kestrun.Tests.Jwt;
+namespace KestrunTests.Jwt;
 
 public class JwtRenewalTests
 {
