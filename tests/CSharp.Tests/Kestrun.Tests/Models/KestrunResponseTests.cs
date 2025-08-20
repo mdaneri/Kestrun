@@ -3,6 +3,7 @@ using Xunit;
 using Kestrun.Models;
 
 namespace KestrunTests.Models;
+
 public class KestrunResponseTests
 {
     private static KestrunResponse NewRes() =>

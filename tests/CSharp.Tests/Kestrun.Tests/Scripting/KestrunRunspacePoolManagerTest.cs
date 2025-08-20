@@ -3,6 +3,7 @@ using Xunit;
 
 
 namespace KestrunTests.Scripting;
+
 public class KestrunRunspacePoolManagerTest
 {
     [Fact]

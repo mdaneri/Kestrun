@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using Xunit;
 
 namespace KestrunTests.Scripting;
+
 public class CompilationErrorExceptionTests
 {
     private static Diagnostic MakeDiag(string msg, DiagnosticSeverity severity)

@@ -3,6 +3,7 @@ using System.Collections;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class YamlHelperTests
 {
     [Fact]

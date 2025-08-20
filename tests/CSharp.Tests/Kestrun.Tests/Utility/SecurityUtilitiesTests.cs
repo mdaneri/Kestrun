@@ -2,6 +2,7 @@ using Kestrun;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class SecurityUtilitiesTests
 {
     [Fact]

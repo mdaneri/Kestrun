@@ -4,6 +4,7 @@ using Xunit;
 using Kestrun.Utilities;
 
 namespace KestrunTests.Utility;
+
 public class BuildErrorTests
 {
     [Fact]

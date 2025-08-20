@@ -2,6 +2,7 @@ using Kestrun.Utilities;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class HttpVerbExtensionsTests
 {
     [Theory]

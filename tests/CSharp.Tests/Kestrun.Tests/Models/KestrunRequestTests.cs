@@ -4,6 +4,7 @@ using System.Text;
 using Xunit;
 
 namespace KestrunTests.Models;
+
 public class KestrunRequestTests
 {
     [Fact]

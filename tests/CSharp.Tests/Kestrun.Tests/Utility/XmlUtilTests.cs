@@ -4,6 +4,7 @@ using System.Xml.Linq;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class XmlUtilTests
 {
     [Fact]

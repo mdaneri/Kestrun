@@ -3,6 +3,7 @@ using System.Reflection;
 using Xunit;
 
 namespace KestrunTests.Utility;
+
 public class PowerShellModuleLocatorTests
 {
     [Fact]
