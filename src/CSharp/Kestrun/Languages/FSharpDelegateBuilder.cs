@@ -1,4 +1,3 @@
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Languages;
@@ -11,9 +10,9 @@ internal static class FSharpDelegateBuilder
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
         // F# scripting not implemented yet
-        if (Log.IsEnabled(LogEventLevel.Debug))
+        if (logger.IsEnabled(LogEventLevel.Debug))
         {
-            Log.Debug("Building F# delegate, script length={Length}", code?.Length);
+            logger.Debug("Building F# delegate, script length={Length}", code?.Length);
         }
 
         throw new NotImplementedException("F# scripting is not yet supported in Kestrun.");

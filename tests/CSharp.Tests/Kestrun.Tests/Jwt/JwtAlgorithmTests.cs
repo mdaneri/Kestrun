@@ -56,6 +56,6 @@ public class JwtAlgorithmTests
     public void Unknown_Enum_Value_Throws()
     {
         var invalid = (JwtAlgorithm)9999;
-        _ = Assert.Throws<ArgumentOutOfRangeException>(() => invalid.ToJwtString());
+        Assert.Throws<ArgumentOutOfRangeException>(() => invalid.ToJwtString());
     }
 }

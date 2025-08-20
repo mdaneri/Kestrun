@@ -43,7 +43,7 @@ public class JwtBuilderResultRsaCertTests
         Assert.Contains("RS256", tvp.ValidAlgorithms);
 
         // ValidateAsync should throw since key is null (by design)
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => result.ValidateAsync(token));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => result.ValidateAsync(token));
     }
 
     [Fact]
@@ -67,18 +67,18 @@ public class JwtBuilderResultRsaCertTests
 
     private static string CreateTempPemFile(string pem)
     {
-        var path = Path.GetTempFileName();
-        File.WriteAllText(path, pem);
+        var path = System.IO.Path.GetTempFileName();
+        System.IO.File.WriteAllText(path, pem);
         return path;
     }
 
     private static string ExportPrivateKeyPem(RSA rsa)
     {
         var builder = new System.Text.StringBuilder();
-        _ = builder.AppendLine("-----BEGIN PRIVATE KEY-----");
+        builder.AppendLine("-----BEGIN PRIVATE KEY-----");
         var export = rsa.ExportPkcs8PrivateKey();
-        _ = builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
-        _ = builder.AppendLine("-----END PRIVATE KEY-----");
+        builder.AppendLine(System.Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
+        builder.AppendLine("-----END PRIVATE KEY-----");
         return builder.ToString();
     }
 }

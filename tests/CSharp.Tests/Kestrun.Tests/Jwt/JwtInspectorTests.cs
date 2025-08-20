@@ -26,9 +26,9 @@ public class JwtInspectorTests
         Assert.Equal("iss-x", p.Issuer);
         Assert.Contains("aud-y", p.Audiences);
         Assert.Equal("sub-z", p.Subject);
-        _ = Assert.NotNull(p.NotBefore);
-        _ = Assert.NotNull(p.Expires);
-        _ = Assert.NotNull(p.IssuedAt);
+        Assert.NotNull(p.NotBefore);
+        Assert.NotNull(p.Expires);
+        Assert.NotNull(p.IssuedAt);
         Assert.Equal("JWT", p.Type); // typ
         Assert.False(string.IsNullOrWhiteSpace(p.Algorithm));
         Assert.True(p.Header.Count >= 1);

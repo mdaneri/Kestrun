@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Http;
 using Kestrun.Scripting;
 
 namespace KestrunTests.Scripting;
-
 public class LanguageRuntimeExtensionsTest
 {
     [Fact]

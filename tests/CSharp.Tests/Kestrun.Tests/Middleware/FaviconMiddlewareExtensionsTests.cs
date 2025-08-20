@@ -13,7 +13,7 @@ public class FaviconMiddlewareExtensionsTests
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var app = new ApplicationBuilder(services);
-        _ = app.UseFavicon();
+        app.UseFavicon();
         var pipeline = app.Build();
 
         var ctx = new DefaultHttpContext();
@@ -29,9 +29,11 @@ public class FaviconMiddlewareExtensionsTests
         Assert.StartsWith("public,", cacheHeader, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("max-age=31536000", cacheHeader);
         ctx.Response.Body.Position = 0;
-        using var ms = new MemoryStream();
-        ctx.Response.Body.CopyTo(ms);
-        Assert.True(ms.Length > 0);
+        using (var ms = new MemoryStream())
+        {
+            ctx.Response.Body.CopyTo(ms);
+            Assert.True(ms.Length > 0);
+        }
     }
 
     [Fact]
@@ -46,7 +48,7 @@ public class FaviconMiddlewareExtensionsTests
 
             var services = new ServiceCollection().BuildServiceProvider();
             var app = new ApplicationBuilder(services);
-            _ = app.UseFavicon(tmp);
+            app.UseFavicon(tmp);
             var pipeline = app.Build();
 
             var ctx = new DefaultHttpContext();
@@ -61,9 +63,11 @@ public class FaviconMiddlewareExtensionsTests
             Assert.StartsWith("public,", cacheHeader, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("max-age=31536000", cacheHeader);
             ctx.Response.Body.Position = 0;
-            using var ms = new MemoryStream();
-            ctx.Response.Body.CopyTo(ms);
-            Assert.True(ms.Length >= bytes.Length);
+            using (var ms = new MemoryStream())
+            {
+                ctx.Response.Body.CopyTo(ms);
+                Assert.True(ms.Length >= bytes.Length);
+            }
         }
         finally
         {

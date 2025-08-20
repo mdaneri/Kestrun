@@ -21,8 +21,5 @@ internal class Cell
         Row = row;
     }
 
-    public override string ToString()
-    {
-        return Column == null ? Value : Value.PadRight(Column.MaxWidth, ' ');
-    }
+    public override string ToString() => Column == null ? Value : Value.PadRight(Column.MaxWidth, ' ');
 }

@@ -3,7 +3,6 @@ using System.Collections;
 using Xunit;
 
 namespace KestrunTests.Utility;
-
 public class YamlHelperTests
 {
     [Fact]
@@ -18,7 +17,7 @@ public class YamlHelperTests
     [Fact]
     public void FromYamlToHashtable_RoundTrip()
     {
-        var yaml = "name: foo\nvalue: 1";
+        string yaml = "name: foo\nvalue: 1";
         var ht = YamlHelper.FromYamlToHashtable(yaml);
         Assert.Equal("foo", ht["name"]);
         Assert.NotNull(ht["value"]);
@@ -28,7 +27,7 @@ public class YamlHelperTests
     [Fact]
     public void FromYamlToPSCustomObject_RoundTrip()
     {
-        var yaml = "name: foo\nvalue: 1";
+        string yaml = "name: foo\nvalue: 1";
         var obj = YamlHelper.FromYamlToPSCustomObject(yaml);
         Assert.Equal("foo", obj.Members["name"].Value);
         Assert.Equal("1", obj.Members["value"].Value);

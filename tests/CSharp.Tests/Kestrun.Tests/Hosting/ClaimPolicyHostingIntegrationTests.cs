@@ -24,7 +24,7 @@ public class ClaimPolicyHostingIntegrationTests
             }
         };
 
-        _ = host.AddBasicAuthentication(
+        host.AddBasicAuthentication(
             scheme: "BasicX",
             configure: opts =>
             {
@@ -59,7 +59,7 @@ public class ClaimPolicyHostingIntegrationTests
             }
         };
 
-        _ = host.AddApiKeyAuthentication(
+        host.AddApiKeyAuthentication(
             scheme: "ApiKeyX",
             configure: opts =>
             {

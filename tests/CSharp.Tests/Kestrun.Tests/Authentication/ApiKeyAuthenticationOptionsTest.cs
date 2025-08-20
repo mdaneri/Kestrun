@@ -1,10 +1,9 @@
 using System.Security.Claims;
-using Kestrun.Authentication;
 using Kestrun.Claims;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace KestrunTests.Authentication;
+namespace Kestrun.Authentication.Tests;
 
 public class ApiKeyAuthenticationOptionsTest
 {
@@ -68,7 +67,7 @@ public class ApiKeyAuthenticationOptionsTest
     public async Task ValidateKeyAsync_Default_Returns_False()
     {
         var options = new ApiKeyAuthenticationOptions();
-        var result = await options.ValidateKeyAsync(new DefaultHttpContext(), "key", [1, 2, 3]);
+        var result = await options.ValidateKeyAsync(new DefaultHttpContext(), "key", new byte[] { 1, 2, 3 });
         Assert.False(result);
     }
 
@@ -105,12 +104,10 @@ public class ApiKeyAuthenticationOptionsTest
     [Fact]
     public async Task IssueClaims_Can_Be_Set_And_Invoked()
     {
-        var options = new ApiKeyAuthenticationOptions
-        {
-            IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>([new Claim("type", "value")])
-        };
+        var options = new ApiKeyAuthenticationOptions();
+        options.IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>(new[] { new Claim("type", "value") });
         var claims = await options.IssueClaims(new DefaultHttpContext(), "user");
-        _ = Assert.Single(claims);
+        Assert.Single(claims);
         Assert.Equal("type", claims.First().Type);
         Assert.Equal("value", claims.First().Value);
     }

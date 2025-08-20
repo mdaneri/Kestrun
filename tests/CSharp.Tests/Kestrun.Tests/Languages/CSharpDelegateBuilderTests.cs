@@ -13,8 +13,8 @@ public class CSharpDelegateBuilderTests
     public void Compile_ThrowsOnNullOrWhitespace()
     {
         var log = new Mock<ILogger>(MockBehavior.Loose).Object;
-        _ = Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile(null, log, null, null, null));
-        _ = Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile("   ", log, null, null, null));
+        Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile(null, log, null, null, null));
+        Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile("   ", log, null, null, null));
     }
 
     [Fact]
@@ -24,7 +24,7 @@ public class CSharpDelegateBuilderTests
         // Ensure SharedStateStore has no problematic values (e.g., generic types) that break script prepends
         foreach (var key in SharedStateStore.KeySnapshot())
         {
-            _ = SharedStateStore.Set(key, null);
+            SharedStateStore.Set(key, null);
         }
         // Minimal script that compiles and runs without touching response
         var code = "int a = 1;";

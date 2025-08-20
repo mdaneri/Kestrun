@@ -83,24 +83,24 @@ public static class JwtAlgorithmExtensions
                 _ => SecurityAlgorithms.HmacSha256
             }
             : alg switch
-        {
-            JwtAlgorithm.HS256 => SecurityAlgorithms.HmacSha256,
-            JwtAlgorithm.HS384 => SecurityAlgorithms.HmacSha384,
-            JwtAlgorithm.HS512 => SecurityAlgorithms.HmacSha512,
+            {
+                JwtAlgorithm.HS256 => SecurityAlgorithms.HmacSha256,
+                JwtAlgorithm.HS384 => SecurityAlgorithms.HmacSha384,
+                JwtAlgorithm.HS512 => SecurityAlgorithms.HmacSha512,
 
-            JwtAlgorithm.RS256 => SecurityAlgorithms.RsaSha256,
-            JwtAlgorithm.RS384 => SecurityAlgorithms.RsaSha384,
-            JwtAlgorithm.RS512 => SecurityAlgorithms.RsaSha512,
+                JwtAlgorithm.RS256 => SecurityAlgorithms.RsaSha256,
+                JwtAlgorithm.RS384 => SecurityAlgorithms.RsaSha384,
+                JwtAlgorithm.RS512 => SecurityAlgorithms.RsaSha512,
 
-            JwtAlgorithm.PS256 => SecurityAlgorithms.RsaSsaPssSha256,
-            JwtAlgorithm.PS384 => SecurityAlgorithms.RsaSsaPssSha384,
-            JwtAlgorithm.PS512 => SecurityAlgorithms.RsaSsaPssSha512,
+                JwtAlgorithm.PS256 => SecurityAlgorithms.RsaSsaPssSha256,
+                JwtAlgorithm.PS384 => SecurityAlgorithms.RsaSsaPssSha384,
+                JwtAlgorithm.PS512 => SecurityAlgorithms.RsaSsaPssSha512,
 
-            JwtAlgorithm.ES256 => SecurityAlgorithms.EcdsaSha256,
-            JwtAlgorithm.ES384 => SecurityAlgorithms.EcdsaSha384,
-            JwtAlgorithm.ES512 => SecurityAlgorithms.EcdsaSha512,
+                JwtAlgorithm.ES256 => SecurityAlgorithms.EcdsaSha256,
+                JwtAlgorithm.ES384 => SecurityAlgorithms.EcdsaSha384,
+                JwtAlgorithm.ES512 => SecurityAlgorithms.EcdsaSha512,
 
-            _ => throw new ArgumentOutOfRangeException(nameof(alg), alg, null)
-        };
+                _ => throw new ArgumentOutOfRangeException(nameof(alg), alg, null)
+            };
     }
 }

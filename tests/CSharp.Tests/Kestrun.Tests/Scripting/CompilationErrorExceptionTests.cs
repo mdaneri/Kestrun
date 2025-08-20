@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 using Xunit;
 
 namespace KestrunTests.Scripting;
-
 public class CompilationErrorExceptionTests
 {
     private static Diagnostic MakeDiag(string msg, DiagnosticSeverity severity)
@@ -20,8 +19,8 @@ public class CompilationErrorExceptionTests
             MakeDiag("err", DiagnosticSeverity.Error),
             MakeDiag("warn", DiagnosticSeverity.Warning));
         var ex = new CompilationErrorException("bad", diags);
-        _ = Assert.Single(ex.GetErrors());
-        _ = Assert.Single(ex.GetWarnings());
+        Assert.Single(ex.GetErrors());
+        Assert.Single(ex.GetWarnings());
         Assert.Contains("err", ex.GetDetailedErrorMessage());
     }
 }

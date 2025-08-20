@@ -1,12 +1,11 @@
 using System.Security.Claims;
 using Kestrun.Authentication;
-using Kestrun.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace KestrunTests.Claims;
+namespace Kestrun.Claims.Tests;
 
 public class ClaimPolicyPostConfigurerTests
 {
@@ -17,17 +16,16 @@ public class ClaimPolicyPostConfigurerTests
         public ClaimPolicyConfig? ClaimPolicyConfig { get; set; }
     }
 
-    private sealed class TestOptionsMonitor<T>(Func<string, T> getter) : IOptionsMonitor<T>
+    private sealed class TestOptionsMonitor<T> : IOptionsMonitor<T>
     {
-        private readonly Func<string, T> _getter = getter;
-
+        private readonly Func<string, T> _getter;
+        public TestOptionsMonitor(Func<string, T> getter) => _getter = getter;
         public T CurrentValue => _getter(Options.DefaultName);
         public T Get(string? name) => _getter(name ?? Options.DefaultName);
         public IDisposable OnChange(Action<T, string> listener) => new DummyDisposable();
 
         private sealed class DummyDisposable : IDisposable { public void Dispose() { } }
     }
-    private static readonly string[] expected = ["Admin"];
 
     [Fact]
     public void PostConfigure_AppliesPolicies_From_MonitoredOptions()
@@ -55,9 +53,8 @@ public class ClaimPolicyPostConfigurerTests
         var req1 = Assert.Single(p1!.Requirements);
         var claimReq1 = Assert.IsType<Microsoft.AspNetCore.Authorization.Infrastructure.ClaimsAuthorizationRequirement>(req1);
         Assert.Equal(ClaimTypes.Role, claimReq1.ClaimType);
-#pragma warning disable IDE0305
-        Assert.Equal(expected, claimReq1.AllowedValues!.ToArray());
-#pragma warning restore IDE0305
+        Assert.Equal(new[] { "Admin" }, claimReq1.AllowedValues!.ToArray());
+
         Assert.NotNull(options.GetPolicy("P2"));
     }
 

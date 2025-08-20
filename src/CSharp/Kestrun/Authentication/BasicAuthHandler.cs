@@ -106,11 +106,9 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <returns>An AuthenticateResult indicating the validation result.</returns>
     private AuthenticateResult? PreValidateRequest()
     {
-        if (Options.ValidateCredentialsAsync is null)
-        {
-            return Fail("No credentials validation function provided");
-        }
-        return Options.RequireHttps && !Request.IsHttps ? Fail("HTTPS required") : null;
+        return Options.ValidateCredentialsAsync is null
+            ? Fail("No credentials validation function provided")
+            : Options.RequireHttps && !Request.IsHttps ? Fail("HTTPS required") : null;
     }
 
     /// <summary>
@@ -186,17 +184,11 @@ public class BasicAuthHandler : AuthenticationHandler<BasicAuthenticationOptions
     /// <returns>An AuthenticateResult indicating the validation result.</returns>
     private AuthenticateResult? ValidateSchemeAndParameter(AuthenticationHeaderValue authHeader)
     {
-        if (Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase))
-        {
-            return Fail("Invalid Authorization Scheme");
-        }
-
-        if (string.IsNullOrEmpty(authHeader.Parameter))
-        {
-            return Fail("Missing credentials in Authorization Header");
-        }
-
-        return (authHeader.Parameter?.Length ?? 0) > 8 * 1024 ? Fail("Header too large") : null;
+        return Options.Base64Encoded && !string.Equals(authHeader.Scheme, "Basic", StringComparison.OrdinalIgnoreCase)
+            ? Fail("Invalid Authorization Scheme")
+            : string.IsNullOrEmpty(authHeader.Parameter)
+            ? Fail("Missing credentials in Authorization Header")
+            : (authHeader.Parameter?.Length ?? 0) > 8 * 1024 ? Fail("Header too large") : null;
     }
 
     /// <summary>

@@ -173,10 +173,7 @@ public static class KestrunHostManager
     /// </summary>
     /// <param name="name">The name of the KestrunHost instance to check.</param>
     /// <returns>True if the instance is running; otherwise, false.</returns>
-    public static bool IsRunning(string name)
-    {
-        return TryGet(name, out var host) ? host != null && host.IsRunning : false;
-    }
+    public static bool IsRunning(string name) => TryGet(name, out var host) && host != null && host.IsRunning;
 
     /// <summary>
     /// Starts the specified KestrunHost instance asynchronously.

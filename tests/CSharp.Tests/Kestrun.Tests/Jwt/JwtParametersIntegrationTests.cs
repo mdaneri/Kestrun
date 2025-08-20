@@ -10,7 +10,7 @@ public class JwtParametersIntegrationTests
     [Fact]
     public void HS256_Parameters_RoundTrip_WithHeaders()
     {
-        var secret = B64Url([.. Enumerable.Repeat((byte)0xA5, 32)]);
+        var secret = B64Url(Enumerable.Repeat((byte)0xA5, 32).ToArray());
         var b = JwtTokenBuilder.New()
             .WithIssuer("iss-hs")
             .WithAudience("aud-hs")
@@ -26,9 +26,9 @@ public class JwtParametersIntegrationTests
         Assert.Equal("iss-hs", p.Issuer);
         Assert.Contains("aud-hs", p.Audiences);
         Assert.Equal("sub-hs", p.Subject);
-        _ = Assert.NotNull(p.NotBefore);
-        _ = Assert.NotNull(p.IssuedAt);
-        _ = Assert.NotNull(p.Expires);
+        Assert.NotNull(p.NotBefore);
+        Assert.NotNull(p.IssuedAt);
+        Assert.NotNull(p.Expires);
         Assert.Equal("JWT", p.Type);
         Assert.False(string.IsNullOrWhiteSpace(p.Algorithm));
         Assert.False(string.IsNullOrWhiteSpace(p.KeyId));
@@ -127,17 +127,17 @@ public class JwtParametersIntegrationTests
     private static string ExportPrivateKeyPem(RSA rsa)
     {
         var builder = new System.Text.StringBuilder();
-        _ = builder.AppendLine("-----BEGIN PRIVATE KEY-----");
+        builder.AppendLine("-----BEGIN PRIVATE KEY-----");
         var export = rsa.ExportPkcs8PrivateKey();
-        _ = builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
-        _ = builder.AppendLine("-----END PRIVATE KEY-----");
+        builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
+        builder.AppendLine("-----END PRIVATE KEY-----");
         return builder.ToString();
     }
 
     private static string CreateTempPemFile(string pem)
     {
-        var path = Path.GetTempFileName();
-        File.WriteAllText(path, pem);
+        var path = System.IO.Path.GetTempFileName();
+        System.IO.File.WriteAllText(path, pem);
         return path;
     }
 

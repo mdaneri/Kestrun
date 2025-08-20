@@ -27,7 +27,7 @@ public class PowerShellRazorPageTests
         try
         {
             var pagesDir = Path.Combine(tmpRoot.FullName, "Pages");
-            _ = Directory.CreateDirectory(pagesDir);
+            Directory.CreateDirectory(pagesDir);
 
             // Create Foo.cshtml and Foo.cshtml.ps1
             var viewPath = Path.Combine(pagesDir, "Foo.cshtml");
@@ -44,20 +44,20 @@ public class PowerShellRazorPageTests
                 EnvironmentName = Environments.Development,
                 ApplicationName = appName
             });
-            _ = wab.Services.AddLogging();
-            _ = wab.Services.AddRazorPages();
+            wab.Services.AddLogging();
+            wab.Services.AddRazorPages();
             var host = wab.Build();
 
             var app = new ApplicationBuilder(host.Services);
             var pool = new KestrunRunspacePoolManager(1, 1);
 
-            _ = app.UsePowerShellRazorPages(pool);
+            app.UsePowerShellRazorPages(pool);
             // End of pipeline: just read model and write it to response
             app.Run(ctx =>
             {
                 var model = ctx.Items["PageModel"];
                 Assert.NotNull(model);
-                var name = "";
+                string name = "";
                 try
                 {
                     dynamic d = model!;
@@ -103,7 +103,7 @@ public class PowerShellRazorPageTests
         try
         {
             var pagesDir = Path.Combine(tmpRoot.FullName, "Pages");
-            _ = Directory.CreateDirectory(pagesDir);
+            Directory.CreateDirectory(pagesDir);
 
             var viewPath = Path.Combine(pagesDir, "Err.cshtml");
             var psPath = viewPath + ".ps1";
@@ -119,14 +119,14 @@ public class PowerShellRazorPageTests
                 EnvironmentName = Environments.Development,
                 ApplicationName = appName
             });
-            _ = wab.Services.AddLogging();
-            _ = wab.Services.AddRazorPages();
+            wab.Services.AddLogging();
+            wab.Services.AddRazorPages();
             var host = wab.Build();
 
             var app = new ApplicationBuilder(host.Services);
             var pool = new KestrunRunspacePoolManager(1, 1);
 
-            _ = app.UsePowerShellRazorPages(pool);
+            app.UsePowerShellRazorPages(pool);
             // Terminal: ensure request completes; middleware handles error itself with response
             var pipeline = app.Build();
             var ctx = new DefaultHttpContext();

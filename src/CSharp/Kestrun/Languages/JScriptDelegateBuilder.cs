@@ -1,6 +1,5 @@
 using Kestrun.Models;
 using Microsoft.ClearScript.V8;
-using Serilog;
 using Serilog.Events;
 
 namespace Kestrun.Languages;
@@ -13,9 +12,9 @@ internal static class JScriptDelegateBuilder
     public static bool Implemented { get; set; }
     internal static RequestDelegate Build(string code, Serilog.ILogger logger)
     {
-        if (Log.IsEnabled(LogEventLevel.Debug))
+        if (logger.IsEnabled(LogEventLevel.Debug))
         {
-            Log.Debug("Building JavaScript delegate, script length={Length}", code?.Length);
+            logger.Debug("Building JavaScript delegate, script length={Length}", code?.Length);
         }
 
         if (!Implemented)
@@ -29,9 +28,9 @@ internal static class JScriptDelegateBuilder
 
         return async context =>
         {
-            if (Log.IsEnabled(LogEventLevel.Debug))
+            if (logger.IsEnabled(LogEventLevel.Debug))
             {
-                Log.Debug("JS delegate invoked for {Path}", context.Request.Path);
+                logger.Debug("JS delegate invoked for {Path}", context.Request.Path);
             }
 
             var krRequest = await KestrunRequest.NewRequest(context);

@@ -1,8 +1,7 @@
 using System.Security.Claims;
-using Kestrun.Claims;
 using Xunit;
 
-namespace KestrunTests.Claims;
+namespace Kestrun.Claims.Tests;
 
 public class UserIdentityClaimTests
 {
@@ -15,7 +14,10 @@ public class UserIdentityClaimTests
     [InlineData(UserIdentityClaim.WindowsAccountName, ClaimTypes.WindowsAccountName)]
     [InlineData(UserIdentityClaim.Surname, ClaimTypes.Surname)]
     [InlineData(UserIdentityClaim.GivenName, ClaimTypes.GivenName)]
-    public void ToClaimUri_ReturnsExpected_ForCoreMappings(UserIdentityClaim input, string expected) => Assert.Equal(expected, input.ToClaimUri());
+    public void ToClaimUri_ReturnsExpected_ForCoreMappings(UserIdentityClaim input, string expected)
+    {
+        Assert.Equal(expected, input.ToClaimUri());
+    }
 
     [Fact]
     public void Email_And_EmailAddress_AreDifferent_AsDocumented()

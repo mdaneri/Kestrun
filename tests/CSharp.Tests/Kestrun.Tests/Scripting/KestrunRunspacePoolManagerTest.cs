@@ -3,19 +3,18 @@ using Xunit;
 
 
 namespace KestrunTests.Scripting;
-
 public class KestrunRunspacePoolManagerTest
 {
     [Fact]
     public void MaxRunspaces_ReturnsConfiguredMax()
     {
         // Arrange
-        var minRunspaces = 1;
-        var maxRunspaces = 5;
+        int minRunspaces = 1;
+        int maxRunspaces = 5;
         var manager = new KestrunRunspacePoolManager(minRunspaces, maxRunspaces);
 
         // Act
-        var actualMax = manager.MaxRunspaces;
+        int actualMax = manager.MaxRunspaces;
 
         // Assert
         Assert.Equal(maxRunspaces, actualMax);

@@ -2,14 +2,13 @@ using System.Collections;
 using Kestrun.Scheduling;
 using Kestrun.Scripting;
 using Serilog;
-using Serilog.Core;
 using Xunit;
 
 namespace KestrunTests.Scheduling;
 
 public class SchedulerServiceTests
 {
-    private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
+    private static Serilog.ILogger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
 
     [Fact]
     public async Task Schedule_Interval_Runs_And_Updates_Timestamps()
@@ -18,10 +17,10 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        var ran = 0;
+        int ran = 0;
         svc.Schedule("tick", TimeSpan.FromMilliseconds(100), async ct =>
         {
-            _ = Interlocked.Increment(ref ran);
+            Interlocked.Increment(ref ran);
             await Task.CompletedTask;
         }, runImmediately: false);
 
@@ -29,7 +28,7 @@ public class SchedulerServiceTests
         var snap = svc.GetSnapshot();
         var job = Assert.Single(snap, j => j.Name == "tick");
         Assert.True(ran >= 2);
-        _ = Assert.NotNull(job.LastRunAt);
+        Assert.NotNull(job.LastRunAt);
         Assert.True(job.NextRunAt > job.LastRunAt);
     }
 
@@ -40,9 +39,9 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        var ran = 0;
+        int ran = 0;
         var interval = TimeSpan.FromMilliseconds(100);
-        svc.Schedule("p", interval, async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; });
+        svc.Schedule("p", interval, async ct => { Interlocked.Increment(ref ran); await Task.CompletedTask; });
         // wait for at least one run
         var start = DateTime.UtcNow;
         while (ran == 0 && (DateTime.UtcNow - start) < TimeSpan.FromSeconds(2))
@@ -74,8 +73,8 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        var ran = 0;
-        svc.Schedule("c", TimeSpan.FromMilliseconds(100), async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; });
+        int ran = 0;
+        svc.Schedule("c", TimeSpan.FromMilliseconds(100), async ct => { Interlocked.Increment(ref ran); await Task.CompletedTask; });
         await Task.Delay(250);
         Assert.True(ran > 0);
 

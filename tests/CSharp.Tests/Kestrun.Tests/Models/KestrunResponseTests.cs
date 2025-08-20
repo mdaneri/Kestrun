@@ -3,7 +3,6 @@ using Xunit;
 using Kestrun.Models;
 
 namespace KestrunTests.Models;
-
 public class KestrunResponseTests
 {
     private static KestrunResponse NewRes() =>
@@ -118,5 +117,8 @@ public class KestrunResponseTests
     [InlineData("text/plain", true)]
     [InlineData("application/json", true)]
     [InlineData("application/octet-stream", false)]
-    public void IsTextBasedContentType_Works(string type, bool expected) => Assert.Equal(expected, KestrunResponse.IsTextBasedContentType(type));
+    public void IsTextBasedContentType_Works(string type, bool expected)
+    {
+        Assert.Equal(expected, KestrunResponse.IsTextBasedContentType(type));
+    }
 }

@@ -90,7 +90,7 @@ public class KestrunHostScriptValidationExtensionsTests
             Assert.Contains(diagsNoImport, d => d.Severity == DiagnosticSeverity.Error);
         }
         // Should succeed with import (or return no diagnostics)
-        var diagnostics = host.ValidateCSharpScript(code, ["System.Linq"]);
+        var diagnostics = host.ValidateCSharpScript(code, new[] { "System.Linq" });
         Assert.True(diagnostics.Length == 0 || diagnostics.All(d => d.Severity != DiagnosticSeverity.Error));
     }
 
@@ -134,7 +134,7 @@ public class KestrunHostScriptValidationExtensionsTests
         }
         else
         {
-            var diagnostics = host.ValidateCSharpScript("return 1;", null, [badAsm]);
+            var diagnostics = host.ValidateCSharpScript("return 1;", null, new[] { badAsm });
             Assert.Contains(diagnostics, d => d.Id == "KESTRUN001");
             Assert.Contains(diagnostics, d => d.Severity == DiagnosticSeverity.Error);
         }

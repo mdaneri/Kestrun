@@ -68,7 +68,7 @@ public class JwtTokenBuilderTests
         {
             var provider = cpf.CreateAuthenticatedEncryptionProvider(sym, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.Aes128Gcm);
             // Some implementations need only plaintext & AAD
-            _ = provider.Encrypt([0x01], Array.Empty<byte>());
+            provider.Encrypt(new byte[] { 0x01 }, Array.Empty<byte>());
         }
         catch (NotSupportedException)
         {
@@ -113,7 +113,7 @@ public class JwtTokenBuilderTests
             .SignWithSecret(sign)
             .EncryptWithSecret(encKey, keyAlg: "A256KW", encAlg: "A256GCM");
 
-        _ = Assert.Throws<ArgumentException>(() => b.Build());
+        Assert.Throws<ArgumentException>(() => b.Build());
     }
 
     [Fact]
@@ -158,14 +158,14 @@ public class JwtTokenBuilderTests
             return null;
         }
 
-        var req = ctor.Invoke([subject, ecdsa, HashAlgorithmName.SHA256]);
-        var mi = t.GetMethod("CreateSelfSigned", [typeof(DateTimeOffset), typeof(DateTimeOffset)]);
+        var req = ctor.Invoke(new object[] { subject, ecdsa, HashAlgorithmName.SHA256 });
+        var mi = t.GetMethod("CreateSelfSigned", new[] { typeof(DateTimeOffset), typeof(DateTimeOffset) });
         if (mi == null)
         {
             return null;
         }
         var notBefore = DateTimeOffset.UtcNow.AddMinutes(-5);
         var notAfter = DateTimeOffset.UtcNow.AddMinutes(10);
-        return (X509Certificate2?)mi.Invoke(req, [notBefore, notAfter]);
+        return (X509Certificate2?)mi.Invoke(req, new object[] { notBefore, notAfter });
     }
 }
