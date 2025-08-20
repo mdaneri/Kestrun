@@ -92,6 +92,7 @@ $runSettings | Set-Content -Path $rsPath -Encoding UTF8
 
 if ($IsWindows) {
     Write-Host "💙 Windows detected → using MSBuild coverage (build-time instrumentation)."
+    $LogPath = "$CoverageDir/logs/diag-vstest-shadow.log"
     dotnet build $TestProject -c $Configuration -f $Framework
     #$out = Join-Path ([System.IO.Path]::GetTempPath()) "kestrun-coverage-$Framework"
     $out = Join-Path -Path $CoverageDir "kestrun-coverage-$Framework"
@@ -118,7 +119,7 @@ if ($IsWindows) {
         dotnet vstest "KestrunTests.dll" `
             --Settings:"$rsPath" `
             --TestAdapterPath:"$AdapterPaths" `
-            --Diag:"$CoverageDir\logs\diag-vstest-shadow.log"
+            --Diag:"$LogPath"
     } finally {
         Pop-Location
 
@@ -133,10 +134,11 @@ if ($IsWindows) {
     }
 } else {
 
+    $LogPath = "$CoverageDir/logs/diag-vstest.log"
     Write-Host "💚 Linux/macOS detected → using Coverlet collector (runsettings)."
     # Run tests with collector (no shadow-copy, no vstest, no adapter paths)
     dotnet restore $TestProject
-    dotnet test $TestProject -c $Configuration --framework $Framework --settings $rsPath
+    dotnet test $TestProject -c $Configuration --framework $Framework --settings $rsPath --diag "$LogPath"
 
     # Find the collector-produced file under TestResults
     $projDir = Split-Path $TestProject -Parent
