@@ -95,7 +95,7 @@ public class KestrunResponseTests
     public void WriteErrorResponse_FromException()
     {
         var res = NewRes();
-        res.WriteErrorResponse(new System.Exception("bad"));
+        res.WriteErrorResponse(new Exception("bad"));
         Assert.Equal(StatusCodes.Status500InternalServerError, res.StatusCode);
         Assert.NotNull(res.Body);
     }

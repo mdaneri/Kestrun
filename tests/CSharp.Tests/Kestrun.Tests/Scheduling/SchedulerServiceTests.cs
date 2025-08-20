@@ -2,13 +2,14 @@ using System.Collections;
 using Kestrun.Scheduling;
 using Kestrun.Scripting;
 using Serilog;
+using Serilog.Core;
 using Xunit;
 
 namespace KestrunTests.Scheduling;
 
 public class SchedulerServiceTests
 {
-    private static Serilog.ILogger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
+    private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
 
     [Fact]
     public async Task Schedule_Interval_Runs_And_Updates_Timestamps()

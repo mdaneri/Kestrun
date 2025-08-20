@@ -2,7 +2,7 @@ using Kestrun;
 using System.Reflection;
 using Xunit;
 
-namespace KestrunTests;
+namespace KestrunTests.Utility;
 
 public class RegexUtilsTests
 {

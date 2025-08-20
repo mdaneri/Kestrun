@@ -10,7 +10,7 @@ public class SharedStateTests
     [Fact]
     public void Set_And_TryGet_Work()
     {
-        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
+        _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
 
         Assert.True(SharedStateStore.Set("foo", new List<int> { 1, 2 }));
         Assert.True(SharedStateStore.TryGet("foo", out List<int>? list));
@@ -21,7 +21,7 @@ public class SharedStateTests
     [Fact]
     public void CaseInsensitive_Access_Works()
     {
-        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
+        _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
         _ = SharedStateStore.Set("Bar", "baz");
 
         Assert.True(SharedStateStore.TryGet("bar", out string? val));
@@ -34,7 +34,7 @@ public class SharedStateTests
     [Fact]
     public void Snapshot_And_KeySnapshot_Work()
     {
-        var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
+        _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
         _ = SharedStateStore.Set("snap", "val");
 
         var map = SharedStateStore.Snapshot();

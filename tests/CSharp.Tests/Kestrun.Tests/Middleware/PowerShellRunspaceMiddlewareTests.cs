@@ -69,8 +69,8 @@ public class PowerShellRunspaceMiddlewareTests
 
         // Build a PS delegate that writes to KestrunResponse via the injected Context
         var code = "\r\n$Context.Response.WriteTextResponse('ok from ps')\r\n";
-        var log = Serilog.Log.Logger;
-        var del = Kestrun.Languages.PowerShellDelegateBuilder.Build(code, log, arguments: null);
+        var log = Log.Logger;
+        var del = PowerShellDelegateBuilder.Build(code, log, arguments: null);
 
         app.Run(del);
 
@@ -98,8 +98,8 @@ public class PowerShellRunspaceMiddlewareTests
 
         // Ask PS to set a redirect on the KestrunResponse
         var code = "\r\n$Context.Response.WriteRedirectResponse('https://example.org/next')\r\n";
-        var log = Serilog.Log.Logger;
-        var del = Kestrun.Languages.PowerShellDelegateBuilder.Build(code, log, arguments: null);
+        var log = Log.Logger;
+        var del = PowerShellDelegateBuilder.Build(code, log, arguments: null);
         app.Run(del);
 
         var pipeline = app.Build();

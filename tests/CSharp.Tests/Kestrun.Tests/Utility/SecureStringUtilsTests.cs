@@ -6,14 +6,6 @@ namespace KestrunTests.Utility;
 
 public class SecureStringUtilsTests
 {
-    private static SecureString MakeSecure(string s)
-    {
-        var ss = new SecureString();
-        foreach (var ch in s)
-            ss.AppendChar(ch);
-        ss.MakeReadOnly();
-        return ss;
-    }
 
     [Fact]
     public void ToSecureString_RoundTrip_Works()
