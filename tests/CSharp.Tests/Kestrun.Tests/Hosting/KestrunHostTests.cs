@@ -116,7 +116,7 @@ public class KestrunHostTest
     public void IsCSharpScriptValid_ReturnsTrueForValid()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        bool valid = host.IsCSharpScriptValid("System.Console.WriteLine(\"hi\");");
+        var valid = host.IsCSharpScriptValid("System.Console.WriteLine(\"hi\");");
         Assert.True(valid);
     }
     [Fact]
@@ -124,7 +124,7 @@ public class KestrunHostTest
     {
         KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        bool valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
+        var valid = host.IsCSharpScriptValid("System.Console.Writeline(\"hi\");");
         Assert.False(valid);
     }
     [Fact]

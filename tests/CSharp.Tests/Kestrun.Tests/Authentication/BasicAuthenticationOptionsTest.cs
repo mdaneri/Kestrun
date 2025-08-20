@@ -1,8 +1,9 @@
 using System.Security.Claims;
+using Kestrun.Authentication;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Kestrun.Authentication.Tests;
+namespace KestrunTests.Authentication;
 
 public class BasicAuthenticationOptionsTest
 {

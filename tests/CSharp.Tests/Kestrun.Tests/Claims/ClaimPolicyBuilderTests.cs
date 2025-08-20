@@ -1,7 +1,8 @@
 using System.Security.Claims;
+using Kestrun.Claims;
 using Xunit;
 
-namespace Kestrun.Claims.Tests;
+namespace KestrunTests.Claims;
 
 public class ClaimPolicyBuilderTests
 {

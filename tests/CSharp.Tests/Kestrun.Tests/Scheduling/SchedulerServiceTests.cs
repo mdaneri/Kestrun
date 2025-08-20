@@ -17,7 +17,7 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        int ran = 0;
+        var ran = 0;
         svc.Schedule("tick", TimeSpan.FromMilliseconds(100), async ct =>
         {
             _ = Interlocked.Increment(ref ran);
@@ -39,7 +39,7 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        int ran = 0;
+        var ran = 0;
         var interval = TimeSpan.FromMilliseconds(100);
         svc.Schedule("p", interval, async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; });
         // wait for at least one run
@@ -73,7 +73,7 @@ public class SchedulerServiceTests
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
-        int ran = 0;
+        var ran = 0;
         svc.Schedule("c", TimeSpan.FromMilliseconds(100), async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; });
         await Task.Delay(250);
         Assert.True(ran > 0);

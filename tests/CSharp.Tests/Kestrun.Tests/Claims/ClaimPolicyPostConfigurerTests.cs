@@ -1,11 +1,12 @@
 using System.Security.Claims;
 using Kestrun.Authentication;
+using Kestrun.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Kestrun.Claims.Tests;
+namespace KestrunTests.Claims;
 
 public class ClaimPolicyPostConfigurerTests
 {

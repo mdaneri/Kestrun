@@ -63,7 +63,7 @@ public class CertificateManagerTest
         var req = (Pkcs10CertificationRequest)obj;
         var attributes = req.GetCertificationRequestInfo().Attributes; // Asn1Set
         AttributePkcs? extAttr = null;
-        for (int i = 0; i < (attributes?.Count ?? 0); i++)
+        for (var i = 0; i < (attributes?.Count ?? 0); i++)
         {
             var attr = AttributePkcs.GetInstance(attributes![i]);
             if (attr.AttrType.Equals(PkcsObjectIdentifiers.Pkcs9AtExtensionRequest))

@@ -57,7 +57,7 @@ public class PowerShellRazorPageTests
             {
                 var model = ctx.Items["PageModel"];
                 Assert.NotNull(model);
-                string name = "";
+                var name = "";
                 try
                 {
                     dynamic d = model!;
