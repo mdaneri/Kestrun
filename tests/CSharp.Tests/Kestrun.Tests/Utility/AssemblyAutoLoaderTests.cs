@@ -10,7 +10,7 @@ public class AssemblyAutoLoaderTests
     {
         // Create a temporary empty directory to register
         var tempDir = Path.Combine(Path.GetTempPath(), "kestrun-autoloader-tests", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        _ = Directory.CreateDirectory(tempDir);
         try
         {
             AssemblyAutoLoader.PreloadAll(verbose: false, tempDir);

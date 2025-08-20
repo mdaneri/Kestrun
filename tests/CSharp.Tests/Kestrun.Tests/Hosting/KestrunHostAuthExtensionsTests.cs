@@ -23,7 +23,7 @@ public class KestrunHostAuthExtensionsTests
         // Ensure any leftover globals use 'object' typing in script prelude
         foreach (var key in SharedStateStore.KeySnapshot())
         {
-            SharedStateStore.Set(key, null);
+            _ = SharedStateStore.Set(key, null);
         }
     }
     [Fact]
@@ -50,7 +50,7 @@ public class KestrunHostAuthExtensionsTests
             }
         };
 
-        host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
+        _ = host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
 
         var app = host.Build();
 
@@ -78,8 +78,8 @@ public class KestrunHostAuthExtensionsTests
             ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
         };
 
-        host.AddJwtBearerAuthentication("BearerNoPolicy", tvp);
-        host.Build();
+        _ = host.AddJwtBearerAuthentication("BearerNoPolicy", tvp);
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("BearerNoPolicy"));
         Assert.False(host.HasAuthPolicy("SomeMissingPolicy"));
@@ -98,7 +98,7 @@ public class KestrunHostAuthExtensionsTests
             }
         };
 
-        host.AddCookieAuthentication("CookieX", configure: _ => { }, claimPolicy: cfg);
+        _ = host.AddCookieAuthentication("CookieX", configure: _ => { }, claimPolicy: cfg);
 
         var app = host.Build();
 
@@ -114,8 +114,8 @@ public class KestrunHostAuthExtensionsTests
     public void Cookie_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
-        host.AddCookieAuthentication("CookieNoPolicy", _ => { });
-        host.Build();
+        _ = host.AddCookieAuthentication("CookieNoPolicy", _ => { });
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("CookieNoPolicy"));
         Assert.False(host.HasAuthPolicy("NonExistentCookiePolicy"));
@@ -125,8 +125,8 @@ public class KestrunHostAuthExtensionsTests
     public void Windows_Negotiate_Adds_Scheme()
     {
         var host = new KestrunHost("TestApp");
-        host.AddWindowsAuthentication();
-        host.Build();
+        _ = host.AddWindowsAuthentication();
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme(NegotiateDefaults.AuthenticationScheme));
     }
@@ -135,8 +135,8 @@ public class KestrunHostAuthExtensionsTests
     public void OpenIdConnect_Adds_Scheme()
     {
         var host = new KestrunHost("TestApp");
-        host.AddOpenIdConnectAuthentication("OidcX", "client", "secret", "https://example.com");
-        host.Build();
+        _ = host.AddOpenIdConnectAuthentication("OidcX", "client", "secret", "https://example.com");
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("OidcX"));
     }
@@ -145,8 +145,8 @@ public class KestrunHostAuthExtensionsTests
     public void OpenIdConnect_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
-        host.AddOpenIdConnectAuthentication("OidcNoPolicy", "client", "secret", "https://example.com");
-        host.Build();
+        _ = host.AddOpenIdConnectAuthentication("OidcNoPolicy", "client", "secret", "https://example.com");
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("OidcNoPolicy"));
         Assert.False(host.HasAuthPolicy("NonExistentOidcPolicy"));
@@ -175,7 +175,7 @@ public class KestrunHostAuthExtensionsTests
             ClaimPolicyConfig = cfg
         };
 
-        host.AddBasicAuthentication("BasicY", opts);
+        _ = host.AddBasicAuthentication("BasicY", opts);
         var app = host.Build();
 
         Assert.True(host.HasAuthScheme("BasicY"));
@@ -191,8 +191,8 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddBasicAuthentication("BasicNoPolicy", _ => { });
-        host.Build();
+        _ = host.AddBasicAuthentication("BasicNoPolicy", _ => { });
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("BasicNoPolicy"));
         Assert.False(host.HasAuthPolicy("NonExistentBasicPolicy"));
@@ -204,7 +204,7 @@ public class KestrunHostAuthExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp");
 
-        host.AddBasicAuthentication("BasicCode", opts =>
+        _ = host.AddBasicAuthentication("BasicCode", opts =>
         {
             opts.ValidateCodeSettings = new AuthenticationCodeSettings
             {
@@ -256,7 +256,7 @@ public class KestrunHostAuthExtensionsTests
             ClaimPolicyConfig = cfg
         };
 
-        host.AddApiKeyAuthentication("ApiKeyY", opts);
+        _ = host.AddApiKeyAuthentication("ApiKeyY", opts);
         var app = host.Build();
 
         Assert.True(host.HasAuthScheme("ApiKeyY"));
@@ -272,8 +272,8 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddApiKeyAuthentication("ApiKeyNoPolicy", _ => { });
-        host.Build();
+        _ = host.AddApiKeyAuthentication("ApiKeyNoPolicy", _ => { });
+        _ = host.Build();
 
         Assert.True(host.HasAuthScheme("ApiKeyNoPolicy"));
         Assert.False(host.HasAuthPolicy("NonExistentApiKeyPolicy"));
@@ -285,7 +285,7 @@ public class KestrunHostAuthExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp");
 
-        host.AddApiKeyAuthentication("ApiKeyCode", opts =>
+        _ = host.AddApiKeyAuthentication("ApiKeyCode", opts =>
         {
             opts.ValidateCodeSettings = new AuthenticationCodeSettings
             {
@@ -319,7 +319,7 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddBasicAuthentication("BasicPS", opts =>
+        _ = host.AddBasicAuthentication("BasicPS", opts =>
             {
                 opts.ValidateCodeSettings = new AuthenticationCodeSettings
                 {
@@ -360,7 +360,7 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddApiKeyAuthentication("ApiKeyPS", opts =>
+        _ = host.AddApiKeyAuthentication("ApiKeyPS", opts =>
             {
                 opts.ValidateCodeSettings = new AuthenticationCodeSettings
                 {
@@ -401,7 +401,7 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddBasicAuthentication("BasicVB", opts =>
+        _ = host.AddBasicAuthentication("BasicVB", opts =>
             {
                 opts.ValidateCodeSettings = new AuthenticationCodeSettings
                 {
@@ -435,7 +435,7 @@ public class KestrunHostAuthExtensionsTests
     {
         var host = new KestrunHost("TestApp");
 
-        host.AddApiKeyAuthentication("ApiKeyVB", opts =>
+        _ = host.AddApiKeyAuthentication("ApiKeyVB", opts =>
             {
                 opts.ValidateCodeSettings = new AuthenticationCodeSettings
                 {

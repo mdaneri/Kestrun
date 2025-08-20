@@ -21,8 +21,8 @@ namespace Kestrun.Authentication.Tests
             var context = new DefaultHttpContext();
             var loggerMock = new Mock<ILogger>();
             var optionsMock = new Mock<IAuthenticationCommonOptions>();
-            optionsMock.SetupGet(o => o.IssueClaims).Returns((Func<HttpContext, string, Task<IEnumerable<Claim>>>)null!);
-            optionsMock.SetupGet(o => o.Logger).Returns(loggerMock.Object);
+            _ = optionsMock.SetupGet(o => o.IssueClaims).Returns((Func<HttpContext, string, Task<IEnumerable<Claim>>>)null!);
+            _ = optionsMock.SetupGet(o => o.Logger).Returns(loggerMock.Object);
 
             var scheme = new AuthenticationScheme("TestScheme", null, typeof(Kestrun.Authentication.BasicAuthHandler));
             var user = "testuser";
@@ -85,7 +85,7 @@ namespace Kestrun.Authentication.Tests
             // Arrange
             foreach (var key in SharedStateStore.KeySnapshot())
             {
-                SharedStateStore.Set(key, null);
+                _ = SharedStateStore.Set(key, null);
             }
             var settings = new AuthenticationCodeSettings
             {
@@ -216,7 +216,7 @@ namespace Kestrun.Authentication.Tests
 
             // Act + Assert
             var ex = Assert.Throws<TargetInvocationException>(() => getPs!.Invoke(null, new object?[] { context }));
-            Assert.IsType<InvalidOperationException>(ex.InnerException);
+            _ = Assert.IsType<InvalidOperationException>(ex.InnerException);
         }
 
         [Fact]
@@ -238,7 +238,7 @@ namespace Kestrun.Authentication.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<PowerShell>(result);
+            _ = Assert.IsType<PowerShell>(result);
         }
     }
 }

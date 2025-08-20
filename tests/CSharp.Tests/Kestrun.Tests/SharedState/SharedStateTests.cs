@@ -22,7 +22,7 @@ public class SharedStateTests
     public void CaseInsensitive_Access_Works()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        SharedStateStore.Set("Bar", "baz");
+        _ = SharedStateStore.Set("Bar", "baz");
 
         Assert.True(SharedStateStore.TryGet("bar", out string? val));
         Assert.Equal("baz", val);
@@ -35,7 +35,7 @@ public class SharedStateTests
     public void Snapshot_And_KeySnapshot_Work()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        SharedStateStore.Set("snap", "val");
+        _ = SharedStateStore.Set("snap", "val");
 
         var map = SharedStateStore.Snapshot();
         var keys = SharedStateStore.KeySnapshot();
@@ -50,14 +50,14 @@ public class SharedStateTests
     public void Invalid_Name_Throws()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("1bad", "oops"));
-        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("bad-name", "oops"));
+        _ = Assert.Throws<ArgumentException>(() => SharedStateStore.Set("1bad", "oops"));
+        _ = Assert.Throws<ArgumentException>(() => SharedStateStore.Set("bad-name", "oops"));
     }
 
     [Fact]
     public void ValueType_Throws()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
-        Assert.Throws<ArgumentException>(() => SharedStateStore.Set("num", 123)); // int ⇒ value‑type
+        _ = Assert.Throws<ArgumentException>(() => SharedStateStore.Set("num", 123)); // int ⇒ value‑type
     }
 }

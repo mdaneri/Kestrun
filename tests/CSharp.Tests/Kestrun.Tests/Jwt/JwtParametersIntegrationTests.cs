@@ -26,9 +26,9 @@ public class JwtParametersIntegrationTests
         Assert.Equal("iss-hs", p.Issuer);
         Assert.Contains("aud-hs", p.Audiences);
         Assert.Equal("sub-hs", p.Subject);
-        Assert.NotNull(p.NotBefore);
-        Assert.NotNull(p.IssuedAt);
-        Assert.NotNull(p.Expires);
+        _ = Assert.NotNull(p.NotBefore);
+        _ = Assert.NotNull(p.IssuedAt);
+        _ = Assert.NotNull(p.Expires);
         Assert.Equal("JWT", p.Type);
         Assert.False(string.IsNullOrWhiteSpace(p.Algorithm));
         Assert.False(string.IsNullOrWhiteSpace(p.KeyId));
@@ -127,10 +127,10 @@ public class JwtParametersIntegrationTests
     private static string ExportPrivateKeyPem(RSA rsa)
     {
         var builder = new System.Text.StringBuilder();
-        builder.AppendLine("-----BEGIN PRIVATE KEY-----");
+        _ = builder.AppendLine("-----BEGIN PRIVATE KEY-----");
         var export = rsa.ExportPkcs8PrivateKey();
-        builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
-        builder.AppendLine("-----END PRIVATE KEY-----");
+        _ = builder.AppendLine(Convert.ToBase64String(export, Base64FormattingOptions.InsertLineBreaks));
+        _ = builder.AppendLine("-----END PRIVATE KEY-----");
         return builder.ToString();
     }
 

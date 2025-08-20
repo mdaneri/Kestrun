@@ -30,12 +30,12 @@ public class SecureStringUtilsTests
     {
         var empty = new SecureString();
         empty.MakeReadOnly();
-        Assert.Throws<ArgumentException>(() => empty.ToSecureSpan(_ => { }));
+        _ = Assert.Throws<ArgumentException>(() => empty.ToSecureSpan(_ => { }));
     }
 
     [Fact]
     public void ToSecureString_ThrowsOnEmpty()
     {
-        Assert.Throws<ArgumentException>(() => ReadOnlySpan<char>.Empty.ToSecureString());
+        _ = Assert.Throws<ArgumentException>(() => ReadOnlySpan<char>.Empty.ToSecureString());
     }
 }

@@ -51,7 +51,7 @@ public class JobFactoryTests
 
         var job = JobFactory.Create(cfg);
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => job(cts.Token));
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => job(cts.Token));
     }
 
     [Fact]

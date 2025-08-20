@@ -42,7 +42,7 @@ public class JwtBuilderResultTests
         Assert.Equal(TimeSpan.FromMinutes(1), tvp.ClockSkew);
         Assert.True(tvp.RequireSignedTokens);
         Assert.True(tvp.ValidateIssuerSigningKey);
-        Assert.IsType<SymmetricSecurityKey>(tvp.IssuerSigningKey);
+        _ = Assert.IsType<SymmetricSecurityKey>(tvp.IssuerSigningKey);
 
         // Issuer/audience configured on builder are flowed
         Assert.True(tvp.ValidateIssuer);
@@ -51,7 +51,7 @@ public class JwtBuilderResultTests
         Assert.Equal("api://aud", tvp.ValidAudience);
 
         // The algorithm list should contain exactly the builder's algorithm
-        Assert.Single(tvp.ValidAlgorithms);
+        _ = Assert.Single(tvp.ValidAlgorithms);
         Assert.Equal(builder.Algorithm, tvp.ValidAlgorithms.Single());
 
         // Round-trip validation succeeds
@@ -87,7 +87,7 @@ public class JwtBuilderResultTests
             issuedAt: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddMinutes(1));
 
-        await Assert.ThrowsAsync<ArgumentNullException>(() => dummy.ValidateAsync("x.y.z"));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(() => dummy.ValidateAsync("x.y.z"));
 
         // But GetValidationParameters should still be produced (no signing key)
         var tvp = dummy.GetValidationParameters();

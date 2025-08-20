@@ -102,7 +102,7 @@ public class BasicAuthenticationOptionsTest
         options.IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>(new[] { new Claim("type", "value") });
         var context = new DefaultHttpContext();
         var claims = await options.IssueClaims(context, "user");
-        Assert.Single(claims);
+        _ = Assert.Single(claims);
         Assert.Equal("type", claims.First().Type);
         Assert.Equal("value", claims.First().Value);
     }

@@ -19,8 +19,8 @@ public class CompilationErrorExceptionTests
             MakeDiag("err", DiagnosticSeverity.Error),
             MakeDiag("warn", DiagnosticSeverity.Warning));
         var ex = new CompilationErrorException("bad", diags);
-        Assert.Single(ex.GetErrors());
-        Assert.Single(ex.GetWarnings());
+        _ = Assert.Single(ex.GetErrors());
+        _ = Assert.Single(ex.GetWarnings());
         Assert.Contains("err", ex.GetDetailedErrorMessage());
     }
 }

@@ -39,8 +39,8 @@ namespace Kestrun.Authentication.Tests
         {
             var effectiveOptions = options ?? CreateOptions();
             var optMonitorMock = new Mock<IOptionsMonitor<BasicAuthenticationOptions>>();
-            optMonitorMock.Setup(m => m.CurrentValue).Returns(effectiveOptions);
-            optMonitorMock.Setup(m => m.Get(It.IsAny<string>())).Returns(effectiveOptions);
+            _ = optMonitorMock.Setup(m => m.CurrentValue).Returns(effectiveOptions);
+            _ = optMonitorMock.Setup(m => m.Get(It.IsAny<string>())).Returns(effectiveOptions);
             var optMonitor = optMonitorMock.Object;
             var loggerFactory = new LoggerFactory();
             var encoder = UrlEncoder.Default;

@@ -34,8 +34,8 @@ namespace Kestrun.Authentication.Tests
             HttpContext context)
         {
             var optionsMonitorMock = new Moq.Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>();
-            optionsMonitorMock.Setup(m => m.CurrentValue).Returns(options);
-            optionsMonitorMock.Setup(m => m.Get(It.IsAny<string>())).Returns(options);
+            _ = optionsMonitorMock.Setup(m => m.CurrentValue).Returns(options);
+            _ = optionsMonitorMock.Setup(m => m.Get(It.IsAny<string>())).Returns(options);
             var optionsMonitor = optionsMonitorMock.Object;
             var loggerFactory = new Microsoft.Extensions.Logging.LoggerFactory();
             var encoder = System.Text.Encodings.Web.UrlEncoder.Default;

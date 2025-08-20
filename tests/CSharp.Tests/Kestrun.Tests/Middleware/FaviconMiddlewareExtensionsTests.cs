@@ -13,7 +13,7 @@ public class FaviconMiddlewareExtensionsTests
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var app = new ApplicationBuilder(services);
-        app.UseFavicon();
+        _ = app.UseFavicon();
         var pipeline = app.Build();
 
         var ctx = new DefaultHttpContext();
@@ -48,7 +48,7 @@ public class FaviconMiddlewareExtensionsTests
 
             var services = new ServiceCollection().BuildServiceProvider();
             var app = new ApplicationBuilder(services);
-            app.UseFavicon(tmp);
+            _ = app.UseFavicon(tmp);
             var pipeline = app.Build();
 
             var ctx = new DefaultHttpContext();

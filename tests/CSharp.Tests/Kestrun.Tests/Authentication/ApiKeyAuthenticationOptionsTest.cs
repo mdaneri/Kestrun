@@ -107,7 +107,7 @@ public class ApiKeyAuthenticationOptionsTest
         var options = new ApiKeyAuthenticationOptions();
         options.IssueClaims = (_, _) => Task.FromResult<IEnumerable<Claim>>(new[] { new Claim("type", "value") });
         var claims = await options.IssueClaims(new DefaultHttpContext(), "user");
-        Assert.Single(claims);
+        _ = Assert.Single(claims);
         Assert.Equal("type", claims.First().Type);
         Assert.Equal("value", claims.First().Value);
     }

@@ -10,8 +10,8 @@ public class BuildErrorTests
     public void Text_ReturnsFormattedErrors()
     {
         using PowerShell ps = PowerShell.Create();
-        ps.AddScript("Write-Error 'boom'");
-        ps.Invoke();
+        _ = ps.AddScript("Write-Error 'boom'");
+        _ = ps.Invoke();
         string text = BuildError.Text(ps);
         Assert.Contains("boom", text);
     }
@@ -20,8 +20,8 @@ public class BuildErrorTests
     public async Task ResponseAsync_WritesToContext()
     {
         using PowerShell ps = PowerShell.Create();
-        ps.AddScript("Write-Error 'oops'");
-        ps.Invoke();
+        _ = ps.AddScript("Write-Error 'oops'");
+        _ = ps.Invoke();
         var ctx = new DefaultHttpContext();
         ctx.Response.Body = new MemoryStream();
         await BuildError.ResponseAsync(ctx, ps);
@@ -34,8 +34,8 @@ public class BuildErrorTests
     public void Result_ReturnsIResult()
     {
         using PowerShell ps = PowerShell.Create();
-        ps.AddScript("Write-Error 'uh'");
-        ps.Invoke();
+        _ = ps.AddScript("Write-Error 'uh'");
+        _ = ps.Invoke();
         var result = BuildError.Result(ps);
         Assert.NotNull(result);
     }

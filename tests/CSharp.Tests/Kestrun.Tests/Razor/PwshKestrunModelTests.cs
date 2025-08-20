@@ -49,7 +49,7 @@ public class PwshKestrunModelTests
         var mem = new Dictionary<string, string?> { ["App:Name"] = "Kestrun" };
         var config = new ConfigurationBuilder().AddInMemoryCollection(mem!).Build();
         var services = new ServiceCollection();
-        services.AddSingleton<IConfiguration>(config);
+        _ = services.AddSingleton<IConfiguration>(config);
         var sp = services.BuildServiceProvider();
 
         var ctx = new DefaultHttpContext { RequestServices = sp };

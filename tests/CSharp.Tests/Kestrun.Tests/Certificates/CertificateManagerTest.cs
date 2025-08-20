@@ -59,7 +59,7 @@ public class CertificateManagerTest
         // Parse CSR with BouncyCastle to verify SAN
         using var sr = new StringReader(csr.Pem);
         var obj = new PemReader(sr).ReadObject();
-        Assert.IsType<Pkcs10CertificationRequest>(obj);
+        _ = Assert.IsType<Pkcs10CertificationRequest>(obj);
         var req = (Pkcs10CertificationRequest)obj;
         var attributes = req.GetCertificationRequestInfo().Attributes; // Asn1Set
         AttributePkcs? extAttr = null;
@@ -189,12 +189,12 @@ public class CertificateManagerTest
     [Fact]
     public void Import_Throws_OnMissingFile()
     {
-        Assert.Throws<FileNotFoundException>(() => CertificateManager.Import(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cer")));
+        _ = Assert.Throws<FileNotFoundException>(() => CertificateManager.Import(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cer")));
     }
 
     [Fact]
     public void Import_Throws_OnEmptyPath()
     {
-        Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
+        _ = Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
     }
 }

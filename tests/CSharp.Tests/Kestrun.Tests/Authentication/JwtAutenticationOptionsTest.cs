@@ -45,7 +45,7 @@ namespace Kestrun.Authentication.Tests
 
             var claims = await options.IssueClaims(httpContext, "user");
             var list = new List<Claim>(claims);
-            Assert.Single(list);
+            _ = Assert.Single(list);
             Assert.Equal("type", list[0].Type);
         }
 

@@ -68,7 +68,7 @@ public class JwtTokenBuilderTests
         {
             var provider = cpf.CreateAuthenticatedEncryptionProvider(sym, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.Aes128Gcm);
             // Some implementations need only plaintext & AAD
-            provider.Encrypt([0x01], Array.Empty<byte>());
+            _ = provider.Encrypt([0x01], Array.Empty<byte>());
         }
         catch (NotSupportedException)
         {
@@ -113,7 +113,7 @@ public class JwtTokenBuilderTests
             .SignWithSecret(sign)
             .EncryptWithSecret(encKey, keyAlg: "A256KW", encAlg: "A256GCM");
 
-        Assert.Throws<ArgumentException>(() => b.Build());
+        _ = Assert.Throws<ArgumentException>(() => b.Build());
     }
 
     [Fact]

@@ -16,7 +16,7 @@ public class KestrunHostMapExtensionsTests
     {
         foreach (var key in SharedStateStore.KeySnapshot())
         {
-            SharedStateStore.Set(key, null);
+            _ = SharedStateStore.Set(key, null);
         }
     }
 
@@ -61,7 +61,7 @@ public class KestrunHostMapExtensionsTests
         };
 
         Assert.NotNull(host.AddMapRoute(options));
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         // Ensure auth services exist so HasAuthScheme can resolve provider
-        host.AddBasicAuthentication("InitAuth", _ => { });
+        _ = host.AddBasicAuthentication("InitAuth", _ => { });
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
@@ -127,7 +127,7 @@ public class KestrunHostMapExtensionsTests
             RequireSchemes = new[] { "NotRegisteredScheme" }
         };
 
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class KestrunHostMapExtensionsTests
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
         // Register a basic auth scheme
-        host.AddBasicAuthentication("BasicX", _ => { });
+        _ = host.AddBasicAuthentication("BasicX", _ => { });
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
@@ -160,7 +160,7 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         // Ensure authorization services exist so HasAuthPolicy can resolve provider
-        host.AddAuthorization();
+        _ = host.AddAuthorization();
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
@@ -172,7 +172,7 @@ public class KestrunHostMapExtensionsTests
             RequirePolicies = new[] { "NonExistingPolicy" }
         };
 
-        Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
+        _ = Assert.Throws<InvalidOperationException>(() => host.AddMapRoute(options));
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class KestrunHostMapExtensionsTests
             }
         };
 
-        host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
+        _ = host.AddJwtBearerAuthentication("BearerX", tvp, claimPolicy: cfg);
         host.EnableConfiguration();
 
         var options = new MapRouteOptions
@@ -249,13 +249,13 @@ public class KestrunHostMapExtensionsTests
         SanitizeSharedGlobals();
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
 
-        host.AddStaticOverride(
+        _ = host.AddStaticOverride(
             pattern: "/override",
             code: "Context.Response.StatusCode = 201;",
             language: ScriptLanguage.CSharp);
 
         // Route is queued and applied during Build
-        host.Build();
+        _ = host.Build();
 
         Assert.True(host.MapExists("/override", HttpVerb.Get));
         var opts = host.GetMapRouteOptions("/override", HttpVerb.Get);
