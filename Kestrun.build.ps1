@@ -145,7 +145,8 @@ Add-BuildTask Help {
     Write-Host '- Install-Module: Installs the Kestrun module.'
     Write-Host '- Remove-Module: Removes the Kestrun module.'
     Write-Host '- Update-Module: Updates the Kestrun module.'
-    Write-Host '- Format: Formats the codebase.'    
+    Write-Host '- Format: Formats the codebase.'
+    Write-Host '- Coverage: Generates code coverage reports.'
 }
 
 Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
@@ -306,8 +307,10 @@ Add-BuildTask 'Clean_CSharp_Help' {
     Write-Host 'Cleaning C# Help...'
     & .\Utility\Prepare-DocRefs.ps1 -Clean
 }
-
-
+Add-BuildTask 'Coverage' {
+    Write-Host 'Creating coverage report...'
+    & .\Utility\Coverage.ps1
+}
 
 Add-BuildTask 'Manifest' {
     Write-Host 'Updating Kestrun.psd1 manifest...'

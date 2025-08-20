@@ -68,18 +68,11 @@ jobs:
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
         
       - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
+        shell: pwsh
         run: |
-          mkdir -p coverage
-          dotnet test ./tests/CSharp.Tests/Kestrun.Tests/KestrunTests.csproj \
-            -c Debug -f net9.0 \
-            --collect:"XPlat Code Coverage" \
-            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
-            
-          # Find the generated cobertura file inside TestResults and copy/rename
-          COV=$(find ./tests/CSharp.Tests/Kestrun.Tests/TestResults -name "coverage.cobertura.xml" -print -quit)
-          echo "Coverage file generated at: $COV"
-          cp "$COV" coverage/csharp.net9.0.cobertura.xml
-          ls -la coverage
+          # If your Coverage task accepts a framework parameter, pass it explicitly:
+          # Invoke-Build Coverage -Framework net9.0 -DotNetVerbosity $Env:DOTNET_VERBOSITY
+          Invoke-Build Coverage -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
       - name: 🔍 Sanity check Cobertura (C#)
         run: |

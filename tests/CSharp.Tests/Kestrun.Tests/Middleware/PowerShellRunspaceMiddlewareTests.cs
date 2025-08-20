@@ -12,6 +12,7 @@ using Serilog.Events;
 
 namespace KestrunTests.Middleware;
 
+[Collection("SharedStateSerial")] // Avoid races with global Serilog Log.Logger
 public class PowerShellRunspaceMiddlewareTests
 {
     [Fact]
@@ -150,10 +151,19 @@ public class PowerShellRunspaceMiddlewareTests
             // Either upstream or middleware sets status; at minimum, the request completed
             Assert.True(http.Response.HasStarted || http.Response.StatusCode >= 200);
 
-            // Verify an error was logged by the middleware
-            Assert.Contains(collectingSink.Events, e =>
-                e.Level == LogEventLevel.Error &&
-                e.MessageTemplate.Text.Contains("Error occurred in PowerShellRunspaceMiddleware"));
+            // Verify an error was logged by the middleware (allow brief time for sinks)
+            var found = false;
+            for (var i = 0; i < 10 && !found; i++)
+            {
+                found = collectingSink.Events.Any(e =>
+                    e.Level == LogEventLevel.Error &&
+                    e.MessageTemplate.Text.Contains("Error occurred in PowerShellRunspaceMiddleware"));
+                if (!found)
+                {
+                    await Task.Delay(25);
+                }
+            }
+            Assert.True(found, "Expected error log from PowerShellRunspaceMiddleware not found.");
         }
         finally
         {
