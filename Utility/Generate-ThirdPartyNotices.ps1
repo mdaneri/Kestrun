@@ -42,7 +42,7 @@ $kestrunHeader = @"
   To regenerate, run: .\Kestrun.build.ps1
   Do not modify manually; changes will be overwritten.
 -->
-
+<!-- markdownlint-disable MD034 -->
 # Kestrun - Third-Party Notices
 
 **License:** [MIT](https://licenses.nuget.org/MIT) (SPDX: MIT)
@@ -57,13 +57,12 @@ This document lists third-party software components used by Kestrun, along with 
 [System.Text.StringBuilder]$sb = [System.Text.StringBuilder]::new()
 # Add a note about the generation of this file
 foreach ($line in $nugetLicenses ) {
-
+    $null = $sb.AppendLine()
     $null = $sb.Append( ($line -replace 'ΓÇô', '-' -replace '┬⌐', '© '
             #-replace 'https://licenses.nuget.org/MIT', '[MIT](https://licenses.nuget.org/MIT)' `
             #-replace 'https://licenses.nuget.org/Apache-2.0', '[Apache-2.0](https://opensource.org/license/apache-2-0/)')
         )
     )
-    $null = $sb.AppendLine()
 }
 
 # Combine everything

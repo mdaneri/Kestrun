@@ -178,5 +178,3 @@ Sample JSON report (UTC):
 | **Keep runspace pools small** (`Options.MaxSchedulerRunspaces`) | Scheduler work is usually lightweight.          |
 | **Log failures inside `SafeRun`**                               | A failed job should never crash the server.     |
 | **Pause, don’t delete, for temporary outages**                  | `IsSuspended` keeps next execution predictable. |
-
-

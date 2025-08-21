@@ -10,7 +10,6 @@ nav_order: 11
 >
 > This page is currently under development. Content will be expanded with guides, examples, and best practices soon.  
 > Thank you for your patience while we build it out.
-
 > *Dynamic ASP.NET Core UI powered by PowerShell scripts — all inside **Kestrun***
 > Plus: how to collect form data both from PowerShell and C# Razor Pages
 
@@ -41,7 +40,7 @@ During a single HTTP request the pipeline looks like this:
 └───────────────┘
 ```
 
-*Advantages*
+### Advantages
 
 * **Zero compile step** — change the `.ps1` file, hit *F5*, refresh.
 * **Full access to Kestrun abstractions** (`$Context.Request`, `$Context.Response`, loggers, DI).
@@ -360,5 +359,3 @@ app.UsePowerShellRazorPages(runspacePool,
 var pool = new KestrunRunspacePoolManager(min: 2, max: 32);
 app.UsePowerShellRazorPages(pool);
 ```
-
- 

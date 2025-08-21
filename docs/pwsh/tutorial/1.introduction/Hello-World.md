@@ -51,19 +51,19 @@ Start-KrServer
 
 ## Step-by-step
 
-- [New-KrServer](/docs/pwsh/cmdlets/New-KrServer) — creates an in‑process server host that will hold listeners, middleware, and routes.
-- [Add-KrListener](/docs/pwsh/cmdlets/Add-KrListener) — binds the Kestrel web server to 127.0.0.1:5000 over HTTP/1.1 (default).
-- [Add-KrPowerShellRuntime](/docs/pwsh/cmdlets/Add-KrPowerShellRuntime) — registers the PowerShell runtime so routes and middleware implemented in PS can execute.
-- [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration) — applies your staged configuration (listeners, runtimes, options) to the running host.
-- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute) — maps a GET /hello route with a PowerShell script block handler.
-- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse) — sets the HTTP status code (200) and writes a text/plain response body.
-- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer) — starts listening; press Ctrl+C in the terminal to stop.
+- [New-KrServer][New-KrServer] — creates an in‑process server host that will hold listeners, middleware, and routes.
+- [Add-KrListener][Add-KrListener] — binds the Kestrel web server to 127.0.0.1:5000 over HTTP/1.1 (default).
+- [Add-KrPowerShellRuntime][Add-KrPowerShellRuntime] — registers the PowerShell runtime so routes and middleware implemented in PS can execute.
+- [Enable-KrConfiguration][Enable-KrConfiguration] — applies your staged configuration (listeners, runtimes, options) to the running host.
+- [Add-KrMapRoute][Add-KrMapRoute] — maps a GET /hello route with a PowerShell script block handler.
+- [Write-KrTextResponse][Write-KrTextResponse] — sets the HTTP status code (200) and writes a text/plain response body.
+- [Start-KrServer][Start-KrServer] — starts listening; press Ctrl+C in the terminal to stop.
 
 ### How it works
 
 - Configuration is staged by cmdlets, then committed with [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration).
 - Each route runs inside a request context (available as $Context) with Request/Response properties.
-- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse) is a convenience wrapper that sets Content‑Type to text/plain and writes the body.
+- [Write-KrTextResponse][Write-KrTextResponse] is a convenience wrapper that sets Content‑Type to text/plain and writes the body.
 - By default, a single listener is configured on 127.0.0.1:5000; you can add more listeners (e.g., HTTPS) later.
 
 ## Try it
@@ -92,15 +92,23 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 
 ## Cmdlet references
 
-- [New-KrServer](/docs/pwsh/cmdlets/New-KrServer)
-- [Add-KrListener](/docs/pwsh/cmdlets/Add-KrListener)
-- [Add-KrPowerShellRuntime](/docs/pwsh/cmdlets/Add-KrPowerShellRuntime)
-- [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration)
-- [Add-KrMapRoute](/docs/pwsh/cmdlets/Add-KrMapRoute)
-- [Write-KrTextResponse](/docs/pwsh/cmdlets/Write-KrTextResponse)
-- [Start-KrServer](/docs/pwsh/cmdlets/Start-KrServer)
+- [New-KrServer][New-KrServer]
+- [Add-KrListener][Add-KrListener]
+- [Add-KrPowerShellRuntime][Add-KrPowerShellRuntime]
+- [Enable-KrConfiguration][Enable-KrConfiguration]
+- [Add-KrMapRoute][Add-KrMapRoute]
+- [Write-KrTextResponse][Write-KrTextResponse]
+- [Start-KrServer][Start-KrServer]
 
 ## Troubleshooting
 
 - If the port is in use, choose a different port in Add‑KrListener.
 - If responses are empty, ensure Add‑KrPowerShellRuntime was called before Enable‑KrConfiguration.
+
+[New-KrServer]: /docs/pwsh/cmdlets/New-KrServer
+[Add-KrListener]: /docs/pwsh/cmdlets/Add-KrListener
+[Add-KrPowerShellRuntime]: /docs/pwsh/cmdlets/Add-KrPowerShellRuntime
+[Enable-KrConfiguration]: /docs/pwsh/cmdlets/Enable-KrConfiguration
+[Add-KrMapRoute]: /docs/pwsh/cmdlets/Add-KrMapRoute
+[Write-KrTextResponse]: /docs/pwsh/cmdlets/Write-KrTextResponse
+[Start-KrServer]: /docs/pwsh/cmdlets/Start-KrServer

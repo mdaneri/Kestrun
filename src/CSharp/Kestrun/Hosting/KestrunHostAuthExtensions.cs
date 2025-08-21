@@ -413,10 +413,6 @@ public static class KestrunHostAuthExtensions
 
                 opts.IssueClaims = IAuthHandler.BuildVBNetIssueClaims(settings, opts.Logger);
                 break;
-            case ScriptLanguage.Native:
-            case ScriptLanguage.FSharp:
-            case ScriptLanguage.Python:
-            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {
@@ -465,10 +461,6 @@ public static class KestrunHostAuthExtensions
 
                 opts.ValidateKeyAsync = ApiKeyAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
-            case ScriptLanguage.Native:
-            case ScriptLanguage.FSharp:
-            case ScriptLanguage.Python:
-            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {

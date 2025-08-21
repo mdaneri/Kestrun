@@ -35,13 +35,13 @@ Install-PSResource -Name 'Invoke-Build','Pester' -Scope CurrentUser
 
 From the repository root:
 
-**Restore & Build**
+### Restore & Build
 
 ```powershell
 Invoke-Build Restore ; Invoke-Build Build
 ```
 
-**Run Tests**
+### Run Tests
 
 ```powershell
 Invoke-Build Test
@@ -58,6 +58,7 @@ That’s the canonical pipeline used locally and by CI—keep it consistent.
    ```bash
    git checkout -b feature/my-delicious-change
    ```
+
 2. **Code** (follow style guides below).
 3. **Build & test**
 
@@ -65,31 +66,33 @@ That’s the canonical pipeline used locally and by CI—keep it consistent.
    Invoke-Build Restore ; Invoke-Build Build
    Invoke-Build Test
    ```
+
 4. **Commit clearly**
 
    ```bash
    git commit -m "Add: KestrunHostManager supports multi-instance selection"
    ```
+
 5. **Open a Pull Request** and fill out the PR template.
 
 ---
 
 ## 📝 Style & Quality
 
-**C#**
+### C\#
 
 * Follow Microsoft C# conventions.
 * Prefer explicit types for public APIs; keep internals tidy.
 * Use nullable reference types and `ConfigureAwait(false)` in library code where relevant.
 
-**PowerShell**
+### PowerShell
 
 * Approved verbs (`Get-`, `New-`, `Add-`, `Set-`, `Remove-`, `Test-`, etc.).
 * Include comment-based help for all public functions.
 * Avoid global state; design for pipeline-friendliness.
 * Keep cmdlets fast and predictable—pure where possible.
 
-**Testing**
+### Testing
 
 * Prefer **Pester v5** tests colocated under `tests/`.
 * One behavioral concern per test; name tests descriptively.
@@ -149,7 +152,7 @@ Get-KrScheduleReport -AsHashtable
 * **Server** — …
 * **TimeZoneId** — …
 
-````
+````text
 
 **Tutorial page (example):**
 ```markdown
@@ -169,7 +172,7 @@ A crisp overview…
 Invoke-Build Restore ; Invoke-Build Build
 ````
 
-````
+````text
 
 ### Navigation Tips (Just-the-Docs)
 - Root landing page should be a friendly overview of features with deep links.

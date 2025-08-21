@@ -13,7 +13,8 @@ nav_order: 6
 
 ## Overview
 
-Kestrun provides helper APIs to generate, import, export and validate X.509 certificates. These utilities build on Bouncy Castle so they run the same on Windows, Linux and macOS. They allow you to:
+Kestrun provides helper APIs to generate, import, export and validate X.509 certificates.
+These utilities build on Bouncy Castle so they run the same on Windows, Linux and macOS. They allow you to:
 
 * **Create self‑signed certificates** with RSA or ECDSA keys.
 * **Generate certificate requests (CSR)** for signing by a real CA.
@@ -128,4 +129,3 @@ Add-KrListener -Server $server -Port 5001 -X509Certificate $cert -Protocols Http
 | **`Export-KrCertificate`** | Exports a certificate to PFX or PEM format. | n/a |
 | **`Test-KrCertificate`** | Validates a certificate’s chain and strength. | n/a |
 | **`Get-KrCertificatePurpose`** | Lists the EKU values on a certificate. | n/a |
-
