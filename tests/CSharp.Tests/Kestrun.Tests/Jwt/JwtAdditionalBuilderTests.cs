@@ -1,6 +1,5 @@
 using System.Security;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using Kestrun.Hosting;
 using Kestrun.Jwt;
 using Kestrun.Models;
@@ -15,7 +14,11 @@ public class JwtAdditionalBuilderTests
     public void SignWithSecretPassphrase_32Bytes_Uses_HS256()
     {
         using var pass = new SecureString();
-        for (var i = 0; i < 32; i++) pass.AppendChar('a');
+        for (var i = 0; i < 32; i++)
+        {
+            pass.AppendChar('a');
+        }
+
         pass.MakeReadOnly();
 
         var b = JwtTokenBuilder.New()
@@ -38,7 +41,7 @@ public class JwtAdditionalBuilderTests
 
         try
         {
-            var sign = B64Url(Enumerable.Repeat((byte)0x11, 32).ToArray());
+            var sign = B64Url([.. Enumerable.Repeat((byte)0x11, 32)]);
             var token = JwtTokenBuilder.New()
                 .WithIssuer("iss")
                 .WithAudience("aud")
@@ -52,14 +55,14 @@ public class JwtAdditionalBuilderTests
         }
         finally
         {
-            try { System.IO.File.Delete(pemPath); } catch { /* ignore */ }
+            try { File.Delete(pemPath); } catch { /* ignore */ }
         }
     }
 
     [Fact]
     public async Task RenewJwt_FromContext_ParsesBearerAndRenews()
     {
-        var sign = B64Url(Enumerable.Repeat((byte)0x22, 32).ToArray());
+        var sign = B64Url([.. Enumerable.Repeat((byte)0x22, 32)]);
         var b = JwtTokenBuilder.New()
             .WithIssuer("iss")
             .WithAudience("aud")
@@ -86,7 +89,7 @@ public class JwtAdditionalBuilderTests
     [Fact]
     public async Task RenewJwt_FromContext_NoBearer_ReturnsEmpty()
     {
-        var sign = B64Url(Enumerable.Repeat((byte)0x33, 32).ToArray());
+        var sign = B64Url([.. Enumerable.Repeat((byte)0x33, 32)]);
         var b = JwtTokenBuilder.New()
             .WithIssuer("iss")
             .WithAudience("aud")
