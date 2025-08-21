@@ -33,8 +33,8 @@ public class VBNetAndPowerShellDelegateBuilderTests
     {
         var code = "Write-Host 'hi'";
         var del = PowerShellDelegateBuilder.Build(code, Log.Logger, null);
-    var ctx = new DefaultHttpContext();
-    _ = await Assert.ThrowsAsync<InvalidOperationException>(() => del(ctx));
+        var ctx = new DefaultHttpContext();
+        _ = await Assert.ThrowsAsync<InvalidOperationException>(() => del(ctx));
     }
 
     [Fact]
