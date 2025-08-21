@@ -62,6 +62,12 @@ public class KestrunHost : IDisposable
     /// </summary>
     public SchedulerService Scheduler { get; internal set; } = null!; // Initialized in ConfigureServices
 
+
+    /// <summary>
+    /// Gets the stack used for managing route groups in the Kestrun host.
+    /// </summary>
+    public System.Collections.Stack RouteGroupStack { get; } = new();
+
     // ── ✦ QUEUE #1 : SERVICE REGISTRATION ✦ ─────────────────────────────
     private readonly List<Action<IServiceCollection>> _serviceQueue = [];
 

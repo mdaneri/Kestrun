@@ -29,8 +29,6 @@
         An optional array of additional namespaces to import for the route.
     .PARAMETER ExtraRefs
         An optional array of additional assemblies to reference for the route.
-    .PARAMETER PassThru
-        If specified, the function will return the created route object.
     .PARAMETER AllowDuplicate
         If specified, allows the addition of duplicate routes with the same path and HTTP verb.
     .PARAMETER Arguments
@@ -38,6 +36,8 @@
     .PARAMETER DuplicateAction
         Specifies the action to take if a duplicate route is detected. Options are 'Throw', 'Skip', 'Allow', or 'Warn'.
         Default is 'Throw', which will raise an error if a duplicate route is found.
+    .PARAMETER PassThru
+        If specified, the function will return the created route object.
     .OUTPUTS
         Returns the Kestrun server instance with the new route added.
     .EXAMPLE
@@ -113,14 +113,14 @@ function Add-KrMapRoute {
         [hashtable]$Arguments,
 
         [Parameter()]
-        [switch]$PassThru,
-
-        [Parameter()]
         [switch]$AllowDuplicate,
 
         [Parameter()]
         [ValidateSet('Throw', 'Skip', 'Allow', 'Warn')]
-        [string]$DuplicateAction = 'Throw'
+        [string]$DuplicateAction = 'Throw',
+
+        [Parameter()]
+        [switch]$PassThru
 
     )
     process {
@@ -198,13 +198,15 @@ function Add-KrMapRoute {
         } else {
             Write-Verbose 'Using provided MapRouteOptions instance.'
         }
-        if ($script:KrRouteGroupStack -and $script:KrRouteGroupStack.Count -gt 0) {
-            $grp = $script:KrRouteGroupStack.Peek()
+        if ($Server.RouteGroupStack.Count -gt 0) {
+            $grp = $Server.RouteGroupStack.Peek()
             $Options = _KrMerge-MRO -Parent $grp -Child $Options
         }
         [Kestrun.Hosting.KestrunHostMapExtensions]::AddMapRoute($Server, $Options) | Out-Null
 
-        if ($PassThru) {
+        if ($PassThru.IsPresent) {
+            # if the PassThru switch is specified, return the server instance
+            # Return the modified server instance
             return $Server
         }
     }

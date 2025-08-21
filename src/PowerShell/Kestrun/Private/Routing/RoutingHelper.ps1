@@ -1,8 +1,6 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '')]
 param()
-# In your module scope
-$script:KrRouteGroupStack = [System.Collections.Stack]::new()
 
 <#
     .SYNOPSIS

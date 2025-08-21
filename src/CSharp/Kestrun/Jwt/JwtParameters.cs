@@ -1,4 +1,3 @@
-
 namespace Kestrun.Jwt;
 
 /// <summary>

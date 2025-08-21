@@ -1,7 +1,3 @@
-// File: JwtTokenBuilder.cs
-// Namespace: Kestrun.Security
-// NuGet: <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.*" />
-
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -13,6 +9,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using Kestrun.Hosting;  // For Base64UrlEncoder
+
 namespace Kestrun.Jwt;
 
 /// <summary>
