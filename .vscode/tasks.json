@@ -89,19 +89,6 @@
 				"build",
 				"c:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\src\\CSharp\\Kestrun\\Kestrun.csproj"
 			]
-		},
-		{
-			"label": "run all tests after utilities update",
-			"type": "shell",
-			"command": "dotnet",
-			"args": [
-				"test",
-				"c:\\Users\\m_dan\\Documents\\GitHub\\Kestrun\\Kestrun.sln",
-				"-c",
-				"Debug",
-				"-v",
-				"m"
-			]
 		}
 	]
 }
