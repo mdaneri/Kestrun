@@ -860,7 +860,9 @@ public class KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 81
     {
         var sb = new StringBuilder(template.Length);
 
-        for (var i = 0; i < template.Length; i++)
+        // Iterate through the template
+        var i = 0;
+        while (i < template.Length)
         {
             // opening “{{”
             if (template[i] == '{' && i + 1 < template.Length && template[i + 1] == '{')
@@ -874,20 +876,21 @@ public class KestrunResponse(KestrunRequest request, int bodyAsyncThreshold = 81
 
                     if (TryResolveValue(rawKey, vars, out var value) && value is not null)
                     {
-                        _ = sb.Append(value);
+                        _ = sb.Append(value); // append resolved value
                     }
                     else
                     {
                         _ = sb.Append("{{").Append(rawKey).Append("}}");      // leave it as-is if unknown
                     }
 
-                    i = end + 1;    // jump past the “}}”
+                    i = end + 2;    // jump past the “}}”
                     continue;
                 }
             }
 
             // ordinary character
             _ = sb.Append(template[i]);
+            i++; // move to the next character
         }
         return sb.ToString();
     }

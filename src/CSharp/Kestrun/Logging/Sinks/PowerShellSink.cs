@@ -32,12 +32,12 @@ public class PowerShellSink(Action<LogEvent, string> callback, string outputTemp
     /// <summary>
     /// Gets or sets the text formatter used to format log events.
     /// </summary>
-    public ITextFormatter TextFormatter { get; set; } = new MessageTemplateTextFormatter(outputTemplate);
+    public ITextFormatter TextFormatter { get; set; } = new MessageTemplateTextFormatter(string.IsNullOrWhiteSpace(outputTemplate) ? DEFAULT_OUTPUT_TEMPLATE : outputTemplate);
 
     /// <summary>
     /// Gets or sets the callback action that is invoked with the log event and its formatted message.
     /// </summary>
-    public Action<LogEvent, string> Callback { get; set; } = callback;
+    public Action<LogEvent, string> Callback { get; set; } = callback ?? throw new ArgumentNullException(nameof(callback));
 
     /// <summary>
     /// Emits a log event by formatting it and invoking the callback action.
