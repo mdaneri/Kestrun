@@ -1,59 +1,85 @@
+using System.Text;
 using Kestrun.Languages;
-using Kestrun.SharedState;
 using Microsoft.AspNetCore.Http;
 using Serilog;
 using Xunit;
-using Moq;
 
 namespace KestrunTests.Languages;
 
-[Collection("SharedStateSerial")] // serialize due to SharedStateStore usage and Roslyn warmup
+[Collection("SharedStateSerial")]
 public class CSharpDelegateBuilderTests
 {
-    // One-time warmup to avoid first-run JIT/compilation flakiness
-    static CSharpDelegateBuilderTests()
-    {
-        try
-        {
-            var log = new Mock<ILogger>(MockBehavior.Loose).Object;
-            var del = CSharpDelegateBuilder.Build("int __warm=0;", log, args: null, extraImports: null, extraRefs: null);
-            var http = new DefaultHttpContext();
-            http.Request.Method = "GET";
-            http.Request.Path = "/warmup";
-            del(http).GetAwaiter().GetResult();
-        }
-        catch
-        {
-            // Ignore warmup failures; tests will still validate behavior
-        }
-    }
     [Fact]
-    public void Compile_ThrowsOnNullOrWhitespace()
+    public void CSharp_Build_Throws_On_Empty_Code()
     {
-        var log = new Mock<ILogger>(MockBehavior.Loose).Object;
-        _ = Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile(null, log, null, null, null));
-        _ = Assert.Throws<ArgumentNullException>(() => CSharpDelegateBuilder.Compile("   ", log, null, null, null));
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+        {
+            return CSharpDelegateBuilder.Build(" ", Log.Logger, null, null, null);
+        });
+        _ = Assert.IsType<ArgumentNullException>(ex);
     }
 
     [Fact]
-    public async Task Build_ReturnsDelegateThatRunsScript_AndAppliesResponse()
+    public async Task CSharp_Build_Executes_Text_Write()
     {
-        var log = new Mock<ILogger>(MockBehavior.Loose).Object;
-        // Ensure SharedStateStore has no problematic values (e.g., generic types) that break script prepends
-        foreach (var key in SharedStateStore.KeySnapshot())
+        var code = "await Context.Response.WriteTextResponseAsync(\"ok\");";
+        var del = CSharpDelegateBuilder.Build(code, Log.Logger, null, null, null);
+
+        var ctx = new DefaultHttpContext();
+        using var ms = new MemoryStream();
+        ctx.Response.Body = ms;
+
+        await del(ctx);
+
+        ctx.Response.Body.Position = 0;
+        using var sr = new StreamReader(ctx.Response.Body, Encoding.UTF8);
+        var body = await sr.ReadToEndAsync();
+        Assert.Equal("ok", body);
+        Assert.Equal("text/plain; charset=utf-8", ctx.Response.ContentType);
+    }
+
+    [Fact]
+    public async Task CSharp_Build_Executes_Redirect()
+    {
+        var code = "Context.Response.WriteRedirectResponse(\"/next\");";
+        var del = CSharpDelegateBuilder.Build(code, Log.Logger, null, null, null);
+
+        var ctx = new DefaultHttpContext();
+        await del(ctx);
+
+        Assert.Equal(302, ctx.Response.StatusCode);
+        Assert.Equal("/next", ctx.Response.Headers["Location"].ToString());
+    }
+
+    [Fact]
+    public void FSharp_Build_NotImplemented()
+    {
+        var ex = Assert.Throws<NotImplementedException>(() =>
         {
-            _ = SharedStateStore.Set(key, null);
-        }
-        // Minimal script that compiles and runs without touching response
-        var code = "int a = 1;";
-        var del = CSharpDelegateBuilder.Build(code, log, args: null, extraImports: null, extraRefs: null);
+            return FSharpDelegateBuilder.Build("printfn \"hi\"", Log.Logger);
+        });
+        _ = Assert.IsType<NotImplementedException>(ex);
+    }
 
-        var http = new DefaultHttpContext();
-        http.Request.Method = "GET";
-        http.Request.Path = "/";
+    [Fact]
+    public void JScript_Build_NotImplemented_When_Flag_False()
+    {
+        JScriptDelegateBuilder.Implemented = false;
+        var ex = Assert.Throws<NotImplementedException>(() =>
+        {
+            return JScriptDelegateBuilder.Build("function handle(ctx,res){ }", Log.Logger);
+        });
+        _ = Assert.IsType<NotImplementedException>(ex);
+    }
 
-        await del(http);
-        Assert.Equal(200, http.Response.StatusCode);
-        Assert.Equal("text/plain; charset=utf-8", http.Response.ContentType);
+    [Fact]
+    public void Python_Build_NotImplemented_When_Flag_False()
+    {
+        PyDelegateBuilder.Implemented = false;
+        var ex = Assert.Throws<NotImplementedException>(() =>
+        {
+            return PyDelegateBuilder.Build("def handle(ctx,res): pass", Log.Logger);
+        });
+        _ = Assert.IsType<NotImplementedException>(ex);
     }
 }

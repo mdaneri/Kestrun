@@ -1,0 +1,77 @@
+using Kestrun.Languages;
+using Microsoft.AspNetCore.Http;
+using Serilog;
+using Xunit;
+using System.Management.Automation;
+
+namespace KestrunTests.Languages;
+
+[Collection("SharedStateSerial")]
+public class VBNetAndPowerShellDelegateBuilderTests
+{
+    [Fact]
+    public async Task VB_Build_Executes_Text_Write()
+    {
+        var code = "Response.WriteTextResponse(\"vb-ok\")";
+        var del = VBNetDelegateBuilder.Build(code, Log.Logger, null, null, null);
+
+        var ctx = new DefaultHttpContext();
+        using var ms = new MemoryStream();
+        ctx.Response.Body = ms;
+
+        await del(ctx);
+
+        ctx.Response.Body.Position = 0;
+        using var sr = new StreamReader(ctx.Response.Body);
+        var body = await sr.ReadToEndAsync();
+        Assert.Equal("vb-ok", body);
+        Assert.Equal("text/plain; charset=utf-8", ctx.Response.ContentType);
+    }
+
+    [Fact]
+    public async Task PowerShell_Build_Missing_Runspace_Throws_InvalidOperation()
+    {
+        var code = "Write-Host 'hi'";
+        var del = PowerShellDelegateBuilder.Build(code, Log.Logger, null);
+    var ctx = new DefaultHttpContext();
+    _ = await Assert.ThrowsAsync<InvalidOperationException>(() => del(ctx));
+    }
+
+    [Fact]
+    public async Task PowerShell_ErrorStream_Triggers_Error_Response()
+    {
+        // Arrange: build trivial PS delegate and inject a PS instance with an error
+        var del = PowerShellDelegateBuilder.Build("Write-Host 'noop'", Log.Logger, null);
+        var ctx = new DefaultHttpContext();
+
+        using var ps = PowerShell.Create();
+        // Force a runspace to satisfy GetPowerShellFromContext's checks
+        ps.Runspace = System.Management.Automation.Runspaces.RunspaceFactory.CreateRunspace();
+        ps.Runspace.Open();
+        // Add an error to Streams to trigger BuildError.ResponseAsync
+        ps.Streams.Error.Add(new ErrorRecord(new Exception("boom"), "BoomId", ErrorCategory.InvalidOperation, targetObject: null));
+
+        ctx.Items[PowerShellDelegateBuilder.PS_INSTANCE_KEY] = ps;
+        ctx.Items[PowerShellDelegateBuilder.KR_CONTEXT_KEY] = new Kestrun.Hosting.KestrunContext(
+            await Kestrun.Models.KestrunRequest.NewRequest(ctx),
+            new Kestrun.Models.KestrunResponse(await Kestrun.Models.KestrunRequest.NewRequest(ctx)),
+            ctx);
+
+        // Act
+        await del(ctx);
+
+        // Assert: BuildError.ResponseAsync should have applied a non-200 status and text/plain
+        Assert.NotEqual(200, ctx.Response.StatusCode);
+        Assert.Equal("text/plain; charset=utf-8", ctx.Response.ContentType);
+    }
+
+    [Fact]
+    public void VB_Build_Throws_On_Whitespace()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+        {
+            return VBNetDelegateBuilder.Build("   ", Log.Logger, null, null, null);
+        });
+        _ = Assert.IsType<ArgumentNullException>(ex);
+    }
+}
