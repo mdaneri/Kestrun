@@ -19,6 +19,17 @@ public static class TableExtensions
             return;
         }
 
-        table.AddRow(propertyName, propertyValue);
+        // Avoid calling ToString() on non-string values here; Table and Cell will defer formatting.
+        // Clamp extremely long strings to keep rendering safe and bounded.
+        if (propertyValue is string s)
+        {
+            const int maxLen = 8_192; // safety cap
+            var safe = s.Length > maxLen ? s[..maxLen] + "…" : s;
+            table.AddRow(propertyName, safe);
+        }
+        else
+        {
+            table.AddRow(propertyName, propertyValue);
+        }
     }
 }

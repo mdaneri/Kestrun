@@ -316,5 +316,5 @@ KestrunLogConfigurator.Configure("default")
 | **Rolling File with JSON Formatter** |                                                | Same as File sink but formats each event as JSON                                     | `.Sink(w => w.File("logs/audit-.json", rollingInterval: RollingInterval.Day, formatter: new Serilog.Formatting.Json.JsonFormatter()))` |
 | **Custom Sink**                      | any `ILogEventSink` you implement or reference | Drop events anywhere you like—e.g. Azure Tables, Elasticsearch, AWS CloudWatch, etc. | `.Sink(w => w.Sink(new MyCustomSink()))`                                                                                               |
 
-> **Note:** Because `Sink(...)` takes a `Func<LoggerSinkConfiguration, LoggerConfiguration>`,you can invoke *any* extension method provided 
+> **Note:** Because `Sink(...)` takes a `Func<LoggerSinkConfiguration, LoggerConfiguration>`,you can invoke *any* extension method provided
 by the sinks you reference—even ones not listed here.

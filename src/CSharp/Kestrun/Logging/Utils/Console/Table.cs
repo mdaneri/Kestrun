@@ -98,23 +98,24 @@ public class Table
     /// <param name="values">An array of objects representing the cell values for the row.</param>
     public void AddRow(params object[] values)
     {
-        // In case there is multiline cell value we need to divide it into multiple rows
-        if (values.Any(v => v?.ToString()?.Contains(Environment.NewLine) == true))
+        // Only consider string values for multiline handling to avoid heavy ToString() on complex objects
+        if (values.Any(v => v is string s && s.Contains(Environment.NewLine)))
         {
-            var maxLines = values.Max(v => v?.ToString()?.Split('\n').Length ?? 1);
+            var maxLines = values.Max(v => v is string s ? s.Split('\n').Length : 1);
             for (var i = 0; i < maxLines; i++)
             {
                 var row = new List<object>();
                 foreach (var value in values)
                 {
-                    var valueLines = value?.ToString()?.Split('\n') ?? [string.Empty];
-                    if (i < valueLines.Length)
+                    if (value is string s)
                     {
-                        row.Add(valueLines[i].Replace("\r", ""));
+                        var valueLines = s.Split('\n');
+                        row.Add(i < valueLines.Length ? valueLines[i].Replace("\r", "") : string.Empty);
                     }
                     else
                     {
-                        row.Add(string.Empty);
+                        // Non-strings are treated as single-line values
+                        row.Add(i == 0 ? value : string.Empty);
                     }
                 }
 
@@ -123,7 +124,8 @@ public class Table
         }
         else
         {
-            AddRow(values: values);
+            // Add a single row (fixes previous accidental recursion)
+            Rows.Add(new Row(_rowIndex++, false, values));
         }
     }
 

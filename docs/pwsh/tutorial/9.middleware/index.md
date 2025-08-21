@@ -22,4 +22,3 @@ pwsh .\examples\PowerShell\Tutorial\2-Multiple-Content-Types.ps1
 # 2) Multi-language routes (PS/C#/VB)
 pwsh .\examples\PowerShell\Tutorial\3-Multi-Language-Routes.ps1
 ```
- 

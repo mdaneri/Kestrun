@@ -5,13 +5,14 @@ nav_order: 1
 description: "Kestrun Documentation."
 permalink: /
 ---
-
+<!-- markdownlint-disable MD033 -->
 <h1 class="wordmark wordmark--gradient wordmark--glow">Kestrun</h1>
 <p class="wordmark-tagline">
 PowerShell brains. Kestrel speed
 </p>
 
-Kestrun jumpstarts your web automation with a fast, PowerShell-centric framework built on ASP.NET Core, blending scriptable flexibility with modern .NET performance.
+Kestrun jumpstarts your web automation with a fast, PowerShell-centric framework built on ASP.NET Core,
+blending scriptable flexibility with modern .NET performance.
 {: .fs-5 .fw-300 }
 
 [Get started now](#getting-started){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }

@@ -361,10 +361,6 @@ public static class KestrunHostAuthExtensions
 
                 opts.ValidateCredentialsAsync = BasicAuthHandler.BuildVBNetValidator(settings, opts.Logger);
                 break;
-            case ScriptLanguage.Native:
-            case ScriptLanguage.FSharp:
-            case ScriptLanguage.Python:
-            case ScriptLanguage.JavaScript:
             default:
                 if (opts.Logger.IsEnabled(LogEventLevel.Warning))
                 {
