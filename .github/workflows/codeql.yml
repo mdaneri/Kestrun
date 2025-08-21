@@ -33,9 +33,33 @@ jobs:
           languages: ${{ matrix.language }}
           # queries: security-extended  # optional: stricter rules
 
-      - name: Autobuild (C# only)
-        if: matrix.language == 'csharp'
-        uses: github/codeql-action/autobuild@v3
+         # Build C# so your DLLs exist (good for your optional import check)
+      - name: 🧰 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: 🧰 Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 🧰 Install Invoke-Build
+        shell: pwsh
+        run: Install-Module InvokeBuild -Force -Scope CurrentUser
+
+      - name: 📦 Restore solution
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity minimal
+
+      - name: 🔧 Run C# Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity minimal
+
 
       # If autobuild can't infer your build, replace with explicit dotnet steps:
       # - if: matrix.language == 'csharp'
@@ -57,6 +81,44 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # Build C# so your DLLs exist (good for your optional import check)
+      - name: 🧰 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: 🧰 Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 🧰 Install Invoke-Build
+        shell: pwsh
+        run: Install-Module InvokeBuild -Force -Scope CurrentUser
+
+      - name: 🔧 Run C# Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity minimal
+
+      # Optional: import check in a separate step, non-blocking
+      - name: ✅ Sanity import (optional)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $manifest = 'src/PowerShell/Kestrun/Kestrun.psd1'
+          if (Test-Path $manifest) {
+            Import-Module $manifest -Force -ErrorAction Stop
+            Write-Host "Module import OK."
+          } else {
+            Write-Warning "Manifest not found at $manifest; skipping import check."
+          }
+
+      # Actual static analysis — no imports here
       - name: Run PSScriptAnalyzer with settings
         id: pssa
         uses: microsoft/psscriptanalyzer-action@v1.0
@@ -72,13 +134,10 @@ jobs:
           sarif_file: pssa.sarif
           category: powershell
 
-      # Optional: fail on PSSA errors
       - name: Fail on PSSA errors
         shell: pwsh
         run: |
           $sarif = Get-Content pssa.sarif -Raw | ConvertFrom-Json
           $errors = @($sarif.runs.results | Where-Object { $_.level -eq 'error' })
-          if ($errors.Count) {
-            Write-Error "PSScriptAnalyzer found $($errors.Count) error-level issues."
-          }
+          if ($errors.Count) { Write-Error "PSScriptAnalyzer found $($errors.Count) error-level issues." }
 

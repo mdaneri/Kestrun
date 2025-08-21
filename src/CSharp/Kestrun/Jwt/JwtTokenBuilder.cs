@@ -162,7 +162,6 @@ public sealed class JwtTokenBuilder
     /// <returns>The current <see cref="JwtTokenBuilder"/> instance.</returns>
     public JwtTokenBuilder SignWithSecretHex(string hex, JwtAlgorithm alg = JwtAlgorithm.Auto) => SignWithSecret(Base64UrlEncoder.Encode(Convert.FromHexString(hex)), alg);
 
-
     /// <summary>
     /// Signs the JWT using a symmetric key derived from the provided passphrase.
     /// </summary>
