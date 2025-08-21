@@ -269,12 +269,29 @@ public class KestrunHostTest
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
         // Bind to an ephemeral port on loopback to avoid conflicts when tests run together
         host.ConfigureListener(port: 0, ipAddress: IPAddress.Loopback, useConnectionLogging: false);
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
-        await host.StartAsync(cts.Token);
+        // Use a more generous timeout for startup to avoid flakiness on slower CI hosts.
+        using var startCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        await host.StartAsync(startCts.Token);
+
+        // Poll briefly for the IsRunning flag (it should normally be true immediately after StartAsync)
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (!host.IsRunning && sw.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            await Task.Delay(50);
+        }
         Assert.True(host.IsRunning);
 
-        await host.StopAsync(cts.Token);
+        // Separate cancellation token for shutdown so that an approaching startup timeout doesn't cancel StopAsync
+        using var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await host.StopAsync(stopCts.Token);
+
+        // Allow a brief moment for IsRunning to flip
+        sw.Restart();
+        while (host.IsRunning && sw.Elapsed < TimeSpan.FromSeconds(2))
+        {
+            await Task.Delay(25);
+        }
         Assert.False(host.IsRunning);
     }
 

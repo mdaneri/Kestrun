@@ -1,54 +1,46 @@
 ﻿@{
-    # Load all default rules; we’ll override specifics in `Rules`.
-    ExcludeRules = @('PSAvoidUsingWriteHost')
+    # Be explicit
+    IncludeDefaultRules = $true
 
-    # Where your custom rules live (file or folder).
-    <#
-    CustomRulePath = @(
-        './Lint',                         # folder form (recommended)
-        './Lint/AvoidNewObjectRule.psm1'  # file form (optional; keep only one if you prefer)
-    )
-    #>
+    # Drop PSAvoidUsingWriteHost at the top and keep the per-rule disable below, or uncomment here:
+    # ExcludeRules = @()
+
+    # Where your custom rules live (folder or file). Uncomment if you have custom rules.
+    # CustomRulePath = @('./Lint')
 
     Rules = @{
-        # Built-in rule with your traversal customization
+        # Built-in rule tuning
         PSReviewUnusedParameter = @{
             Enable = $true
-            CommandsToTraverse = @('Where-Object') # Example of traversing a specific command
+            CommandsToTraverse = @(
+                'Where-Object', 'ForEach-Object', 'Group-Object', 'Sort-Object'
+            )
         }
 
-        # Your custom rule
-        AvoidNewObjectRule = @{
-            Enable = $true
-            Severity = 'Warning'
-        }
-
-        # Align assignment statements
+        # Style alignment (exists in PSSA)
         PSAlignAssignmentStatement = @{
             Enable = $true
             CheckHashtable = $false
             CheckPipeline = $true
         }
 
-        # Avoid long lines
         PSAvoidLongLines = @{
             Enable = $true
             MaximumLineLength = 220
         }
 
-        # Avoid using cmdlet aliases
         PSAvoidUsingCmdletAliases = @{
-            AllowList = @('ScriptBlock')
+            # Allow only these aliases; use real aliases
+            AllowList = @('foreach', 'where')  # tweak to taste
         }
 
-        # Place open brace on new line
+        # Braces — comment and setting agree: open brace on the same line
         PSPlaceOpenBrace = @{
             Enable = $true
             OnSameLine = $true
             NewLineAfter = $true
             IgnoreOneLineBlock = $true
         }
-        # Place close brace on new line
         PSPlaceCloseBrace = @{
             Enable = $true
             NoEmptyLineBefore = $true
@@ -56,7 +48,6 @@
             NewLineAfter = $false
         }
 
-        # Provide comment-based help
         PSProvideCommentHelp = @{
             Enable = $true
             ExportedOnly = $false
@@ -65,7 +56,6 @@
             Placement = 'before'
         }
 
-        # Indentation
         PSUseConsistentIndentation = @{
             Enable = $true
             IndentationSize = 4
@@ -73,7 +63,6 @@
             Kind = 'space'
         }
 
-        # Whitespace
         PSUseConsistentWhitespace = @{
             Enable = $true
             CheckInnerBrace = $true
@@ -87,7 +76,6 @@
             IgnoreAssignmentOperatorInsideHashTable = $true
         }
 
-        # Casing
         PSUseCorrectCasing = @{
             Enable = $true
             CheckCommands = $true
@@ -95,18 +83,17 @@
             CheckOperator = $true
         }
 
-        # Noun
         PSUseSingularNouns = @{
             Enable = $true
-            NounAllowList = 'Data', 'Windows', 'Metadata'#, 'MarkdownMetadata'
+            NounAllowList = @('Data', 'Windows', 'Metadata')
         }
 
-        # Use BOM for Unicode encoded files
+        # Enforce BOM in Unicode files
         UseBOMForUnicodeEncodedFile = @{
             Enable = $true
         }
 
-        # (Optional) a few opinionated “proof it’s working” rules
+        # Opinionated toggles
         PSAvoidUsingWriteHost = @{ Enable = $false }
         PSUseApprovedVerbs = @{ Enable = $true }
     }

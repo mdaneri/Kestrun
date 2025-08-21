@@ -1,27 +1,84 @@
-name: CodeQL
+name: Security analysis (CodeQL + PS)
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
+  schedule:
+    - cron: '15 5 * * 3'   # weekly baseline scan
+
+permissions:
+  contents: read
 
 jobs:
-  analyze:
+  # --- CodeQL for C# and GitHub Actions ---
+  codeql:
+    name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: read
-      security-events: write   # <-- required for SARIF upload
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ csharp, actions ]
     steps:
       - uses: actions/checkout@v5
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: actions
+          languages: ${{ matrix.language }}
+          # queries: security-extended  # optional: stricter rules
 
-      - name: Autobuild
-        run: echo "No build step required"
+      - name: Autobuild (C# only)
+        if: matrix.language == 'csharp'
+        uses: github/codeql-action/autobuild@v3
 
-      - name: Run CodeQL Analysis
+      # If autobuild can't infer your build, replace with explicit dotnet steps:
+      # - if: matrix.language == 'csharp'
+      #   run: |
+      #     dotnet restore
+      #     dotnet build --configuration Release --no-restore
+
+      - name: Analyze
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # --- PowerShell via PSScriptAnalyzer -> SARIF upload ---
+  powershell-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run PSScriptAnalyzer with settings
+        id: pssa
+        uses: microsoft/psscriptanalyzer-action@v1.0
+        with:
+          path: .
+          recurse: true
+          settings: ./PSScriptAnalyzerSettings.psd1
+          output: pssa.sarif
+
+      - name: Upload PSSA SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pssa.sarif
+          category: powershell
+
+      # Optional: fail on PSSA errors
+      - name: Fail on PSSA errors
+        shell: pwsh
+        run: |
+          $sarif = Get-Content pssa.sarif -Raw | ConvertFrom-Json
+          $errors = @($sarif.runs.results | Where-Object { $_.level -eq 'error' })
+          if ($errors.Count) {
+            Write-Error "PSScriptAnalyzer found $($errors.Count) error-level issues."
+          }
+

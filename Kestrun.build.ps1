@@ -84,6 +84,7 @@ if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.My
     return
 }
 
+$SolutionPath = Join-Path -Path $PSScriptRoot -ChildPath "Kestrun.sln"
 <#
     .SYNOPSIS
     Retrieves the version information from the version file.
@@ -152,12 +153,12 @@ Add-BuildTask Help {
 Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
     Write-Host 'Cleaning solution...'
     foreach ($framework in $Frameworks) {
-        dotnet clean .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
+        dotnet clean "$SolutionPath" -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
 Add-BuildTask 'Restore' {
     Write-Host 'Restore Packages'
-    dotnet restore .\Kestrun.sln -v:$DotNetVerbosity
+    dotnet restore "$SolutionPath" -v:$DotNetVerbosity
 }, 'Nuget-CodeAnalysis'
 
 Add-BuildTask 'BuildNoPwsh' {
@@ -179,7 +180,7 @@ Add-BuildTask 'BuildNoPwsh' {
     }
 
     foreach ($framework in $Frameworks) {
-        dotnet build .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
+        dotnet build "$SolutionPath" -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion
         if ($LASTEXITCODE -ne 0) {
             throw "dotnet build failed for framework $framework"
         }
@@ -217,13 +218,13 @@ Add-BuildTask 'Clean-CodeAnalysis' {
 Add-BuildTask 'Kestrun.Tests' {
     Write-Host 'Running Kestrun DLL tests...'
     foreach ($framework in $Frameworks) {
-        dotnet test .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity
+        dotnet test "$SolutionPath" -c $Configuration -f $framework -v:$DotNetVerbosity
     }
 }
 
 Add-BuildTask 'Format' {
     Write-Host 'Formatting code...'
-    dotnet format .\Kestrun.sln -v:$DotNetVerbosity
+    dotnet format "$SolutionPath" -v:$DotNetVerbosity
 }
 
 Add-BuildTask 'Test-Pester' {
@@ -267,7 +268,7 @@ Add-BuildTask 'Test' 'Kestrun.Tests', 'Test-Pester'
 Add-BuildTask 'Package' 'Build', {
     Write-Host 'Packaging the solution...'
     foreach ($framework in $Frameworks) {
-        dotnet pack .\Kestrun.sln -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
+        dotnet pack "$SolutionPath" -c $Configuration -f $framework -v:$DotNetVerbosity -p:Version=$Version -p:InformationalVersion=$InformationalVersion --no-build
     }
 }
 
@@ -290,23 +291,29 @@ Add-BuildTask 'Build_CSharp_Help' {
     & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot 'docs/cs/api' -TopParent 'C# API'
 }
 
+# Build Help will call Build_Powershell_Help and Build_CSharp_Help
 Add-BuildTask 'BuildHelp' {
     Write-Host 'Generate Help...'
 }, 'Build_Powershell_Help', 'Build_CSharp_Help'
 
-
+# Clean Help will call Clean_Powershell_Help and Clean_CSharp_Help
 Add-BuildTask 'CleanHelp' {
     Write-Host 'Cleaning Help...'
 }, 'Clean_Powershell_Help', 'Clean_CSharp_Help'
 
+# Clean PowerShell Help
 Add-BuildTask 'Clean_Powershell_Help' {
     Write-Host 'Cleaning Powershell Help...'
     & .\Utility\Generate-Help.ps1 -Clean
 }
+
+# Clean CSharp Help
 Add-BuildTask 'Clean_CSharp_Help' {
     Write-Host 'Cleaning C# Help...'
     & .\Utility\Prepare-DocRefs.ps1 -Clean
 }
+
+# Code Coverage
 Add-BuildTask 'Coverage' {
     Write-Host 'Creating coverage report...'
     & .\Utility\Generate-Coverage.ps1
@@ -316,8 +323,6 @@ Add-BuildTask 'Manifest' {
     Write-Host 'Updating Kestrun.psd1 manifest...'
     pwsh -NoProfile -File .\Utility\Update-Manifest.ps1
 }
-
-
 
 Add-BuildTask 'Generate-LargeFile' 'Clean-LargeFile', {
     Write-Host 'Generating large file...'
