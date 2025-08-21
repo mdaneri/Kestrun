@@ -11,14 +11,7 @@ public class KestrunContextTests
 {
     private static KestrunContext NewContext(DefaultHttpContext http)
     {
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = http.Request.Path.HasValue ? http.Request.Path.Value! : "/",
-            Query = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-            Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-            Body = string.Empty
-        };
+        var req = TestRequestFactory.Create(path: http.Request.Path.HasValue ? http.Request.Path.Value! : "/");
         var res = new KestrunResponse(req);
         return new KestrunContext(req, res, http);
     }

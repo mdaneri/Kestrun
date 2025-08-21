@@ -15,19 +15,17 @@ public class VariablesMapTests
         http.Request.Method = "GET";
         http.Request.Path = "/hello";
         http.Features.Set<ISessionFeature>(new SessionFeature { Session = new DummySession() });
-        http.Request.Headers["User-Agent"] = "xunit";
+        http.Request.Headers.UserAgent = "xunit";
 
-        var req = new KestrunRequest
-        {
-            Method = http.Request.Method,
-            Path = http.Request.Path,
-            Query = [],
-            Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        var req = TestRequestFactory.Create(
+            method: http.Request.Method,
+            path: http.Request.Path,
+            headers: new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["User-Agent"] = "xunit"
             },
-            Body = string.Empty
-        };
+            body: string.Empty
+        );
         var resp = new KestrunResponse(req);
         var ctx = new KestrunContext(req, resp, http);
         return (ctx, http);

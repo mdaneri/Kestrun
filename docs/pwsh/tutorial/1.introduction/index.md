@@ -34,31 +34,31 @@ From the repository root:
 
 ```powershell
 # 1) Hello World
-pwsh .\examples\PowerShell\Tutorial\Sample-1.ps1
+pwsh .\examples\PowerShell\Tutorial\1-Hello-World.ps1
 ```
 
 Then browse the routes (default listener: <http://127.0.0.1:5000>):
 
-- Sample-1: GET /hello
-- Sample-2: GET /hello, /hello-json, /hello-xml, /hello-yaml
-- Sample-3: GET /hello (defined in PowerShell, C#, and VB.NET examples)
+- 1-Hello-World.ps1: GET /hello
+- 2-Multiple-Content-Types: GET /hello, /hello-json, /hello-xml, /hello-yaml
+- 3-Multi-Language-Routes: GET /hello (defined in PowerShell, C#, and VB.NET examples)
 
 Stop the server with Ctrl+C in the terminal.
 
 ## What each sample shows
 
-### Sample-1: Minimal server and one route
+### 1-Hello-World: Minimal server and one route
 
 - Create a server, add a listener on 127.0.0.1:5000
 - Enable the PowerShell runtime and configuration
 - Map a GET route and return a text response
 
-### Sample-2: Content negotiation made simple
+### 2-Multiple-Content-Types: Content negotiation made simple
 
 - Return JSON, XML, YAML, and plain text using dedicated helpers
 - See how to call `Write-KrJsonResponse`, `Write-KrXmlResponse`, `Write-KrYamlResponse`, and `Write-KrTextResponse`
 
-### Sample-3: Mix languages inline
+### 3-Multi-Language-Routes: Mix languages inline
 
 - Keep your server and plumbing in PowerShell
 - Author individual routes in C# or VB.NET using the `-Language` and `-Code` parameters

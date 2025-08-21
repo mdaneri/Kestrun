@@ -23,14 +23,7 @@ public class CsGlobalsTests
     {
         var g = new Dictionary<string, object?>();
         var http = new DefaultHttpContext();
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = [],
-            Body = string.Empty
-        };
+        var req = TestRequestFactory.Create();
         var res = new KestrunResponse(req);
         var ctx = new KestrunContext(req, res, http);
 
@@ -44,14 +37,7 @@ public class CsGlobalsTests
         var g = new Dictionary<string, object?>();
         var l = new Dictionary<string, object?> { ["x"] = 1 };
         var http = new DefaultHttpContext();
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = [],
-            Body = string.Empty
-        };
+        var req = TestRequestFactory.Create();
         var res = new KestrunResponse(req);
         var ctx = new KestrunContext(req, res, http);
 

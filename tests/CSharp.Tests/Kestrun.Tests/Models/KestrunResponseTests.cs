@@ -8,23 +8,8 @@ namespace KestrunTests.Models;
 
 public partial class KestrunResponseTests
 {
-    private static KestrunRequest MakeReq(string accept = "application/json")
-    {
-        var ctx = new DefaultHttpContext();
-        ctx.Request.Method = "GET";
-        ctx.Request.Path = "/test";
-        ctx.Request.Headers["Accept"] = accept;
-        return new KestrunRequest
-        {
-            Method = ctx.Request.Method,
-            Path = ctx.Request.Path,
-            Query = [],
-            Headers = ctx.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString()),
-            Body = string.Empty,
-            Cookies = ctx.Request.Cookies,
-            Form = []
-        };
-    }
+    private static KestrunRequest MakeReq(string accept = "application/json") =>
+        TestRequestFactory.Create(path: "/test", headers: new Dictionary<string, string> { { "Accept", accept } });
 
     [Theory]
     [InlineData("text/plain", true)]
@@ -115,15 +100,7 @@ public partial class KestrunResponseTests
         _ = ctx.Response.Body.Read(buf, 0, 3);
         Assert.Equal("bin", Encoding.UTF8.GetString(buf));
     }
-    private static KestrunResponse NewRes() =>
-        new(new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = [],
-            Body = string.Empty
-        });
+    private static KestrunResponse NewRes() => new(TestRequestFactory.Create());
 
     [Fact]
     public void WriteTextResponse_SetsFields()
@@ -508,16 +485,7 @@ public partial class KestrunResponseTests
         ctx.Request.Headers["Accept"] = "text/plain";
         ctx.Request.Headers["Accept-Charset"] = "utf-16";
 
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = ctx.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString()),
-            Body = string.Empty,
-            Cookies = ctx.Request.Cookies,
-            Form = []
-        };
+        var req = TestRequestFactory.Create(headers: ctx.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString()), form: []);
 
         var res = new KestrunResponse(req);
         await res.WriteTextResponseAsync("hi");
@@ -539,16 +507,7 @@ public partial class KestrunResponseTests
         ctx.Request.Headers["Accept"] = "text/plain";
         ctx.Request.Headers["Accept-Charset"] = "iso-8859-1";
 
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = ctx.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString()),
-            Body = string.Empty,
-            Cookies = ctx.Request.Cookies,
-            Form = []
-        };
+        var req = TestRequestFactory.Create(headers: ctx.Request.Headers.ToDictionary(k => k.Key, v => v.Value.ToString()), form: []);
 
         var res = new KestrunResponse(req)
         {

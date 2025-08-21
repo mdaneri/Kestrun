@@ -36,14 +36,7 @@ public class DelegateBuilderTests
     public async Task ApplyResponseAsync_UsesRedirect_WhenSet()
     {
         var (http, log) = MakeCtx();
-        var req = new KestrunRequest
-        {
-            Method = "GET",
-            Path = "/",
-            Query = [],
-            Headers = [],
-            Body = string.Empty
-        };
+        var req = TestRequestFactory.Create();
         var kr = new KestrunResponse(req);
         kr.WriteRedirectResponse("/elsewhere");
 

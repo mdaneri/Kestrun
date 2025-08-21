@@ -6,49 +6,116 @@ namespace Kestrun.Models;
 /// <summary>
 /// Represents a request model for Kestrun, containing HTTP method, path, query, headers, body, authorization, cookies, and form data.
 /// </summary>
-public class KestrunRequest
+public partial class KestrunRequest
 {
+
+    private KestrunRequest(HttpRequest request, Dictionary<string, string>? formDict, string body)
+    {
+        Request = request;
+        Query = request.Query
+                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+        Headers = request.Headers
+                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+        Cookies = request.Cookies
+                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+        Form = formDict;
+        Body = body;
+        RouteValues = request.RouteValues
+                 .ToDictionary(x => x.Key, x => x.Value?.ToString() ?? string.Empty);
+    }
+
+
+    private HttpRequest Request { get; init; }
     /// <summary>
-    /// Gets or sets the HTTP method for the request (e.g., GET, POST).
+    /// Gets the HTTP method for the request (e.g., GET, POST).
     /// </summary>
-    public required string Method { get; set; }
+    public string Method => Request.Method;
 
     /// <summary>
-    /// Gets or sets the request path (e.g., "/api/resource").
+    /// Gets the host header value for the request.
     /// </summary>
-    public required string Path { get; set; }
+    public string Host => Request.Host.ToUriComponent();
 
     /// <summary>
-    /// Gets or sets the query parameters for the request as a dictionary of key-value pairs.
+    /// Gets the query string for the request (e.g., "?id=123").
     /// </summary>
-    public required Dictionary<string, string> Query { get; set; }
+    public string QueryString => Request.QueryString.ToUriComponent();
+
+    /// <summary>
+    /// Gets the content type of the request (e.g., "application/json").
+    /// </summary>
+    public string? ContentType => Request.ContentType;
+
+    /// <summary>
+    /// Gets the protocol used for the request (e.g., "HTTP/1.1").
+    /// </summary>
+    public string Protocol => Request.Protocol;
+
+    /// <summary>
+    /// Gets a value indicating whether the request is made over HTTPS.
+    /// </summary>
+    public bool IsHttps => Request.IsHttps;
+
+    /// <summary>
+    /// Gets the content length of the request, if available.
+    /// </summary>
+    public long? ContentLength => Request.ContentLength;
+
+    /// <summary>
+    /// Gets a value indicating whether the request has a form content type.
+    /// </summary>
+    public bool HasFormContentType => Request.HasFormContentType;
+
+    /// <summary>
+    /// Gets the request scheme (e.g., "http", "https").
+    /// </summary>
+    public string Scheme => Request.Scheme;
+
+    /// <summary>
+    /// Gets the request path (e.g., "/api/resource").
+    /// </summary>
+    public string Path => Request.Path.ToString();
+
+    /// <summary>
+    /// Gets the base path for the request (e.g., "/api").
+    /// </summary>
+    public string PathBase => Request.PathBase.ToString();
+
+    /// <summary>
+    /// Gets the query parameters for the request as a dictionary of key-value pairs.
+    /// </summary>
+    public Dictionary<string, string> Query { get; init; }
 
 
     /// <summary>
-    /// Gets or sets the headers for the request as a dictionary of key-value pairs.
+    /// Gets the headers for the request as a dictionary of key-value pairs.
     /// </summary>
-    public required Dictionary<string, string> Headers { get; set; }
-
+    public Dictionary<string, string> Headers { get; init; }
 
     /// <summary>
-    /// Gets or sets the body content of the request as a string.
+    /// Gets the body content of the request as a string.
     /// </summary>
-    public required string Body { get; set; }
+    public string Body { get; init; }
 
     /// <summary>
     /// Gets the authorization header value for the request, if present.
     /// </summary>
-    public string? Authorization { get; private set; }
-
+    public string? Authorization => Request.Headers.Authorization.ToString();
     /// <summary>
     /// Gets the cookies for the request as an <see cref="IRequestCookieCollection"/>, if present.
     /// </summary>
-    public IRequestCookieCollection? Cookies { get; internal set; }
+    public Dictionary<string, string> Cookies { get; init; }
 
     /// <summary>
     /// Gets the form data for the request as a dictionary of key-value pairs, if present.
     /// </summary>
-    public Dictionary<string, string>? Form { get; internal set; }
+    public Dictionary<string, string>? Form { get; init; }
+
+
+    /// <summary>
+    /// Gets the route values for the request as a <see cref="RouteValueDictionary"/>, if present.
+    /// </summary>
+    public Dictionary<string, string> RouteValues { get; init; }
 
 
     /// <summary>
@@ -84,18 +151,12 @@ public class KestrunRequest
             }
         }
 
-        return new KestrunRequest
-        {
-            Method = context.Request.Method,
-            Path = context.Request.Path.ToString(),
-            Query = context.Request.Query
-                                  .ToDictionary(x => x.Key, x => x.Value.ToString()),
-            Headers = context.Request.Headers
-                                  .ToDictionary(x => x.Key, x => x.Value.ToString()),
-            Authorization = context.Request.Headers.Authorization.ToString(),
-            Cookies = context.Request.Cookies,
-            Form = formDict,
-            Body = body
-        };
+        return new KestrunRequest(request: context.Request, formDict: formDict, body: body);
     }
+
+    /// <summary>
+    /// Synchronous helper for tests and simple call sites that prefer not to use async/await.
+    /// Avoid in ASP.NET request pipelines; intended for unit tests only.
+    /// </summary>
+    public static KestrunRequest NewRequestSync(HttpContext context) => NewRequest(context).GetAwaiter().GetResult();
 }
