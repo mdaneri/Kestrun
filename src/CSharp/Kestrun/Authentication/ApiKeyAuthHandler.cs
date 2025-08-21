@@ -111,7 +111,8 @@ public class ApiKeyAuthHandler
             return false;
         }
 
-        providedKey = values.ToString();
+        // Normalize potential whitespace/newlines from transport
+        providedKey = values.ToString().Trim();
         return true;
     }
 

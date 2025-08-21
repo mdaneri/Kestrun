@@ -234,7 +234,6 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
         }
     }
 
-
     /// <summary>
     /// Generates a report of all scheduled jobs, including their last and next run times, and suspension status.
     /// </summary>
@@ -243,15 +242,15 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
     public ScheduleReport GetReport(TimeZoneInfo? displayTz = null)
     {
         // default to Zulu
-        var tz = displayTz ?? TimeZoneInfo.Utc;
+        var timezone = displayTz ?? TimeZoneInfo.Utc;
         var now = DateTimeOffset.UtcNow;
 
         var jobs = _tasks.Values
             .Select(t =>
             {
                 // store timestamps internally in UTC; convert only for the report
-                var last = t.LastRunAt?.ToOffset(tz.GetUtcOffset(t.LastRunAt.Value));
-                var next = t.NextRunAt.ToOffset(tz.GetUtcOffset(t.NextRunAt));
+                var last = t.LastRunAt?.ToOffset(timezone.GetUtcOffset(t.LastRunAt.Value));
+                var next = t.NextRunAt.ToOffset(timezone.GetUtcOffset(t.NextRunAt));
 
                 return new JobInfo(t.Name, last, next, t.IsSuspended);
             })
@@ -260,7 +259,6 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
 
         return new ScheduleReport(now, jobs);
     }
-
 
     /// <summary>
     /// Generates a report of all scheduled jobs in a PowerShell-friendly hashtable format.

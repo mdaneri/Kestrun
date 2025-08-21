@@ -48,48 +48,51 @@ public static class AssemblyAutoLoader
             throw new ArgumentException("At least one folder is required.", nameof(directories));
         }
 
-        _verbose = verbose;
-        // Remember new folders
-        foreach (var dir in directories.Where(Directory.Exists))
+        lock (_gate)
         {
-            if (_verbose)
-            {
-                // Use Console.WriteLine for simplicity, or use your logging framework
-                Console.WriteLine($"Adding search directory: {dir}");
-            }
-
-            if (_searchDirs.Contains(dir))
-            {
-                continue; // skip duplicates
-            }
-
-            _ = _searchDirs.Add(Path.GetFullPath(dir));
-        }
-
-        // Install the resolve hook once
-        if (!_hookInstalled)
-        {
-            if (_verbose)
-            {
-                // Use Console.WriteLine for simplicity, or use your logging framework
-                Console.WriteLine("Installing AssemblyResolve hook for Kestrun.Utilities");
-            }
-            // This will be called whenever the runtime fails to find an assembly
-            AppDomain.CurrentDomain.AssemblyResolve += ResolveFromSearchDirs;
-            _hookInstalled = true;
-        }
-
-        // Pre-load everything so types are immediately available
-        foreach (var dir in _searchDirs)
-        {
-            foreach (var dll in Directory.GetFiles(dir, "*.dll"))
+            _verbose = verbose;
+            // Remember new folders
+            foreach (var dir in directories.Where(Directory.Exists))
             {
                 if (_verbose)
                 {
-                    Console.WriteLine($"Pre-loading assembly: {dll}");
+                    // Use Console.WriteLine for simplicity, or use your logging framework
+                    Console.WriteLine($"Adding search directory: {dir}");
                 }
 
-                _ = SafeLoad(dll);
+                if (_searchDirs.Contains(dir))
+                {
+                    continue; // skip duplicates
+                }
+
+                _ = _searchDirs.Add(Path.GetFullPath(dir));
+            }
+
+            // Install the resolve hook once
+            if (!_hookInstalled)
+            {
+                if (_verbose)
+                {
+                    // Use Console.WriteLine for simplicity, or use your logging framework
+                    Console.WriteLine("Installing AssemblyResolve hook for Kestrun.Utilities");
+                }
+                // This will be called whenever the runtime fails to find an assembly
+                AppDomain.CurrentDomain.AssemblyResolve += ResolveFromSearchDirs;
+                _hookInstalled = true;
+            }
+
+            // Pre-load everything so types are immediately available
+            foreach (var dir in _searchDirs)
+            {
+                foreach (var dll in Directory.GetFiles(dir, "*.dll"))
+                {
+                    if (_verbose)
+                    {
+                        Console.WriteLine($"Pre-loading assembly: {dll}");
+                    }
+
+                    _ = SafeLoad(dll);
+                }
             }
         }
     }

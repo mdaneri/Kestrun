@@ -52,7 +52,6 @@ Kestrun is distributed under the MIT License.
 This document lists third-party software components used by Kestrun, along with their licenses.
 
 ---
-
 "@
 [System.Text.StringBuilder]$sb = [System.Text.StringBuilder]::new()
 # Add a note about the generation of this file
