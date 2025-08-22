@@ -1,11 +1,12 @@
 using System.Security;
-using System.Security.Cryptography.X509Certificates;
 using Kestrun.Certificates;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Xunit;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace KestrunTests.Certificates;
 
@@ -31,14 +32,16 @@ public class CertificateManagerTest
         Assert.Contains("CN=localhost", cert.Subject, StringComparison.OrdinalIgnoreCase);
 
         // SAN present
-        Assert.Contains(cert.Extensions.Cast<System.Security.Cryptography.X509Certificates.X509Extension>(),
-                e => string.Equals(e.Oid?.Value, "2.5.29.17", StringComparison.Ordinal));
+        Assert.Contains(
+            cert.Extensions.Cast<System.Security.Cryptography.X509Certificates.X509Extension>(),
+            e => string.Equals(e.Oid?.Value, "2.5.29.17", StringComparison.Ordinal));
 
         // EKU contains serverAuth and clientAuth
-        var eku = cert.Extensions.OfType<X509EnhancedKeyUsageExtension>()
-                   .SelectMany(e => e.EnhancedKeyUsages.Cast<System.Security.Cryptography.Oid>())
-                           .Select(o => o.Value)
-                           .ToHashSet();
+        var eku = cert.Extensions
+            .OfType<X509EnhancedKeyUsageExtension>()
+            .SelectMany(e => e.EnhancedKeyUsages.Cast<Oid>())
+            .Select(o => o.Value)
+            .ToHashSet();
         Assert.Contains("1.3.6.1.5.5.7.3.1", eku); // serverAuth
         Assert.Contains("1.3.6.1.5.5.7.3.2", eku); // clientAuth
     }
@@ -191,4 +194,85 @@ public class CertificateManagerTest
 
     [Fact]
     public void Import_Throws_OnEmptyPath() => _ = Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
+
+    [Fact]
+    public void Import_Pfx_With_SecureString_Password_Succeeds()
+    {
+        var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
+        var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "KestrunTests", Guid.NewGuid().ToString("N"))).FullName;
+        var pfxPath = Path.Combine(dir, "secure.pfx");
+        var pwd = "Sup3rS3cure".AsSpan();
+        CertificateManager.Export(cert, pfxPath, CertificateManager.ExportFormat.Pfx, pwd);
+        Assert.True(File.Exists(pfxPath));
+
+        using var ss = new SecureString();
+        foreach (var c in pwd)
+        {
+            ss.AppendChar(c);
+        }
+        ss.MakeReadOnly();
+
+        var imported = CertificateManager.Import(pfxPath, ss);
+        Assert.True(imported.HasPrivateKey);
+        Assert.Contains("CN=localhost", imported.Subject, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Import_Pem_With_Unencrypted_SeparateKey_Manual()
+    {
+        // Generate a non-ephemeral exportable self-signed cert for key extraction
+        var cert = CertificateManager.NewSelfSigned(new CertificateManager.SelfSignedOptions([
+            "localhost", "127.0.0.1"
+        ], KeyType: CertificateManager.KeyType.Rsa, KeyLength: 2048, ValidDays: 30, Ephemeral: false, Exportable: true));
+        using var rsa = cert.GetRSAPrivateKey();
+        Assert.NotNull(rsa);
+
+        var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "KestrunTests", Guid.NewGuid().ToString("N"))).FullName;
+        var certPemPath = Path.Combine(dir, "manual.pem");
+        var keyPemPath = Path.Combine(dir, "manual.key");
+
+        // Write certificate PEM
+        var certDer = cert.Export(X509ContentType.Cert);
+        var certB64 = Convert.ToBase64String(certDer, Base64FormattingOptions.InsertLineBreaks);
+        File.WriteAllText(certPemPath, $"-----BEGIN CERTIFICATE-----\n{certB64}\n-----END CERTIFICATE-----\n");
+
+        // Write unencrypted PKCS#1 RSA PRIVATE KEY (CreateFromPemFile supports it)
+        var keyDer = rsa!.ExportRSAPrivateKey();
+        var keyB64 = Convert.ToBase64String(keyDer, Base64FormattingOptions.InsertLineBreaks);
+        File.WriteAllText(keyPemPath, $"-----BEGIN RSA PRIVATE KEY-----\n{keyB64}\n-----END RSA PRIVATE KEY-----\n");
+
+        var imported = CertificateManager.Import(certPemPath, privateKeyPath: keyPemPath, flags: X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable);
+        Assert.True(imported.HasPrivateKey);
+        Assert.Contains("CN=localhost", imported.Subject, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Validate_Purposes_Strict_Mismatch_Fails_But_NonStrict_Subset_Passes()
+    {
+        var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
+        // Build OidCollections
+        var serverAuth = new Oid("1.3.6.1.5.5.7.3.1");
+        var clientAuth = new Oid("1.3.6.1.5.5.7.3.2");
+        var subset = new OidCollection { serverAuth }; // only server
+        var exact = new OidCollection { serverAuth, clientAuth };
+
+        // Non-strict subset should succeed
+        Assert.True(CertificateManager.Validate(cert, expectedPurpose: subset, strictPurpose: false));
+        // Strict subset should fail (missing clientAuth)
+        Assert.False(CertificateManager.Validate(cert, expectedPurpose: subset, strictPurpose: true));
+        // Strict exact set should pass
+        Assert.True(CertificateManager.Validate(cert, expectedPurpose: exact, strictPurpose: true));
+    }
+
+    [Fact]
+    public void NewCertificateRequest_Ecdsa_Uses_ECDSA_KeyPair()
+    {
+        var csr = CertificateManager.NewCertificateRequest(new CertificateManager.CsrOptions([
+            "localhost"
+        ], KeyType: CertificateManager.KeyType.Ecdsa, KeyLength: 256, CommonName: "localhost"));
+        Assert.NotNull(csr.PrivateKey);
+        // Private key should be EC
+        var ecKey = Assert.IsType<Org.BouncyCastle.Crypto.Parameters.ECPrivateKeyParameters>(csr.PrivateKey);
+        Assert.NotNull(ecKey.Parameters);
+    }
 }

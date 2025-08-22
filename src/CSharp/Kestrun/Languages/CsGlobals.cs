@@ -35,6 +35,18 @@ public record CsGlobals
     }
 
     /// <summary>
+    /// Initializes a new instance with the specified global and local variables (no execution context).
+    /// </summary>
+    /// <param name="globals">Global variables.</param>
+    /// <param name="locals">Local variables.</param>
+    public CsGlobals(IReadOnlyDictionary<string, object?> globals, IReadOnlyDictionary<string, object?> locals)
+    {
+        Globals = globals;
+        Locals = locals;
+        Context = null;
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="CsGlobals"/> class with the specified global variables, context, and local variables.
     /// </summary>
     /// <param name="globals">A dictionary containing global variables.</param>

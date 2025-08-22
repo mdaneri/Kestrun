@@ -64,7 +64,7 @@ server.Scheduler.Schedule("Roslyn VB.Net Heartbeat", TimeSpan.FromSeconds(15), c
 
 server.Scheduler.Schedule("Powershell Heartbeat", TimeSpan.FromSeconds(20), code: """
     # PowerShell code runs inside the server process
-    Write-KrInformationLog  -MessageTemplate "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
+    Write-KrInformationLog  -Message "💓  Heartbeat (PowerShell) at {0:O}" -PropertyValues $([DateTimeOffset]::UtcNow)
 """, lang: ScriptLanguage.PowerShell, runImmediately: false);
 
 // (B) PowerShell inline – every minute

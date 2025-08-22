@@ -966,7 +966,7 @@ server.AddMapRoute("/cookies/logout", HttpVerb.Get, async ctx =>
 server.AddMapRoute("/cookies/login2", HttpVerb.Post, """
     write-host 'Processing login request...'
     # Check if the form contains the expected fields
-    Write-KrInformationLog -MessageTemplate 'Received login request with form data: {@Position}' -PropertyValues $Context.Request.Form
+    Write-KrInformationLog -Message 'Received login request with form data: {@Position}' -PropertyValues $Context.Request.Form
     Write-Host "User: $($Context.Request.Form['user']), Password: $($Context.Request.Form['pass'])"
     if ($Context.Request.Form['user'] -eq 'admin' -and $Request.Form['pass'] -eq 'secret') {
         # Build claims principal

@@ -175,6 +175,7 @@ internal static class CSharpDelegateBuilder
             MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location),        // System.Linq
             MetadataReference.CreateFromFile(typeof(HttpContext).Assembly.Location),       // Microsoft.AspNetCore.Http
             MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),           // System.Console
+            MetadataReference.CreateFromFile(typeof(StringBuilder).Assembly.Location),     // System.Text
             MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location),       // Serilog
             MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location)    // System.Security.Claims
         ];
@@ -210,9 +211,12 @@ internal static class CSharpDelegateBuilder
         MetadataReference kestrunRef)
     {
         var allImports = platformImports.Concat(kestrunNamespaces) ?? [];
-        return ScriptOptions.Default
+        // Keep default references then add our core + Kestrun to avoid losing essential BCL assemblies
+        var opts = ScriptOptions.Default
             .WithImports(allImports)
-            .WithReferences(coreRefs.Concat([kestrunRef]));
+            .AddReferences(coreRefs)
+            .AddReferences(kestrunRef);
+        return opts;
     }
 
     /// <summary>
@@ -277,24 +281,69 @@ internal static class CSharpDelegateBuilder
     private static string PrependGlobalsAndLocals(string? code, IReadOnlyDictionary<string, object?>? locals)
     {
         var builder = new StringBuilder();
-
         var allGlobals = SharedStateStore.Snapshot();
-        if (allGlobals.Count > 0)
+        // Merge names: locals override globals if duplicate
+        var merged = new Dictionary<string, (string Dict, object? Value)>(StringComparer.OrdinalIgnoreCase);
+        foreach (var g in allGlobals)
         {
-            foreach (var kvp in allGlobals)
-            {
-                _ = builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Globals[\"{kvp.Key}\"]; ");
-            }
+            merged[g.Key] = ("Globals", g.Value);
         }
         if (locals is { Count: > 0 })
         {
-            foreach (var kvp in locals)
+            foreach (var l in locals)
             {
-                _ = builder.AppendLine($"var {kvp.Key} = ({kvp.Value?.GetType().FullName ?? "object"})Locals[\"{kvp.Key}\"]; ");
+                merged[l.Key] = ("Locals", l.Value); // override if exists
             }
+        }
+        foreach (var kvp in merged)
+        {
+            var typeName = FormatTypeName(kvp.Value.Value?.GetType());
+            _ = builder.AppendLine($"var {kvp.Key} = ({typeName}){kvp.Value.Dict}[\"{kvp.Key}\"]; ");
         }
 
         return builder.Length > 0 ? builder + code : code ?? string.Empty;
+    }
+
+    // Produces a C# friendly type name for reflection types (handles generics, arrays, nullable, and fallbacks).
+    private static string FormatTypeName(Type? t)
+    {
+        if (t == null)
+        {
+            return "object";
+        }
+        if (t.IsGenericParameter)
+        {
+            return "object";
+        }
+        if (t.IsArray)
+        {
+            return FormatTypeName(t.GetElementType()) + "[]";
+        }
+        // Nullable<T>
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            return FormatTypeName(t.GetGenericArguments()[0]) + "?";
+        }
+        if (t.IsGenericType)
+        {
+            try
+            {
+                var genericDefName = t.Name;
+                var tickIndex = genericDefName.IndexOf('`');
+                if (tickIndex > 0)
+                {
+                    genericDefName = genericDefName[..tickIndex];
+                }
+                var args = t.GetGenericArguments().Select(FormatTypeName);
+                return (t.Namespace != null ? t.Namespace + "." : string.Empty) + genericDefName + "<" + string.Join(",", args) + ">";
+            }
+            catch
+            {
+                return "object";
+            }
+        }
+        // Non generic
+        return t.FullName ?? t.Name ?? "object";
     }
 
     /// <summary>
@@ -343,15 +392,18 @@ internal static class CSharpDelegateBuilder
             return;
         }
 
-        log.Error($"C# script compilation completed with {errors.Length} error(s):");
+        var sb = new StringBuilder();
+        _ = sb.AppendLine($"C# script compilation completed with {errors.Length} error(s):");
         foreach (var error in errors)
         {
             var location = error.Location.IsInSource
                 ? $" at line {error.Location.GetLineSpan().StartLinePosition.Line + 1}"
                 : string.Empty;
-            log.Error($"  Error [{error.Id}]: {error.GetMessage()}{location}");
+            var msg = $"  Error [{error.Id}]: {error.GetMessage()}{location}";
+            log.Error(msg);
+            _ = sb.AppendLine(msg);
         }
-        throw new CompilationErrorException("C# route code compilation failed", diagnostics ?? []);
+        throw new CompilationErrorException("C# route code compilation failed\n" + sb.ToString(), diagnostics ?? []);
     }
 
     /// <summary>

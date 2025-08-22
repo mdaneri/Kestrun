@@ -36,7 +36,9 @@ internal static class RoslynJobFactory
                 log.Debug("Executing C# job at {Now:O}", DateTimeOffset.UtcNow);
             }
 
-            var globals = new CsGlobals(SharedStateStore.Snapshot());
+            var globals = locals is { Count: > 0 }
+                ? new CsGlobals(SharedStateStore.Snapshot(), locals)
+                : new CsGlobals(SharedStateStore.Snapshot());
             _ = await runner(globals, ct).ConfigureAwait(false);
         };
     }

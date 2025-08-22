@@ -4,6 +4,8 @@ using Kestrun.Scripting;
 using Serilog;
 using Serilog.Core;
 using Xunit;
+using System.Management.Automation;
+using JobInfo = Kestrun.Scheduling.JobInfo;
 
 namespace KestrunTests.Scheduling;
 
@@ -133,5 +135,222 @@ public class SchedulerServiceTests
         {
             try { File.Delete(tmp); } catch { }
         }
+    }
+
+    [Fact]
+    public async Task Schedule_RunImmediately_CSharp_Interval_Fires()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        var ran = 0;
+        svc.Schedule("immediate-int", TimeSpan.FromMinutes(5), async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; }, runImmediately: true);
+
+        var start = DateTime.UtcNow;
+        while (ran == 0 && DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+        {
+            await Task.Delay(25);
+        }
+        Assert.True(ran > 0);
+        var job = Assert.Single(svc.GetSnapshot(), j => j.Name == "immediate-int");
+        _ = Assert.NotNull(job.LastRunAt);
+    }
+
+    [Fact]
+    public async Task Schedule_Cron_CSharp_RunImmediately()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        var ran = 0;
+        svc.Schedule("cron-cs", "* * * * * *", async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; }, runImmediately: true);
+
+        var start = DateTime.UtcNow;
+        while (ran == 0 && DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+        {
+            await Task.Delay(25);
+        }
+        Assert.True(ran > 0);
+        var job = Assert.Single(svc.GetSnapshot(), j => j.Name == "cron-cs");
+        _ = Assert.NotNull(job.LastRunAt);
+    }
+
+    [Fact]
+    public async Task Schedule_Cron_PowerShell_ScriptBlock()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        // Script block as PowerShell job
+        var ranFlag = new ManualResetEventSlim();
+        var script = ScriptBlock.Create("$global:__psCronRuns = ($global:__psCronRuns + 1); if(-not $global:__psCronRuns){$global:__psCronRuns=1}");
+        svc.Schedule("ps-cron", "* * * * * *", script, runImmediately: true);
+
+        // Poll snapshot for LastRunAt (runImmediately path)
+        var start = DateTime.UtcNow;
+        while (DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+        {
+            var snap = svc.GetSnapshot();
+            if (snap.Any(j => j.Name == "ps-cron" && j.LastRunAt != null))
+            {
+                ranFlag.Set();
+                break;
+            }
+            await Task.Delay(50);
+        }
+        Assert.True(ranFlag.IsSet, "PowerShell cron job did not run immediately");
+    }
+
+    [Fact]
+    public async Task Schedule_Cron_PowerShell_Code_String()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        svc.Schedule("ps-code-cron", "* * * * * *", "$null | Out-Null", ScriptLanguage.PowerShell, runImmediately: true);
+
+        var start = DateTime.UtcNow;
+        var seen = false;
+        while (!seen && DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+        {
+            seen = svc.GetSnapshot().Any(j => j.Name == "ps-code-cron" && j.LastRunAt != null);
+            if (!seen)
+            {
+                await Task.Delay(50);
+            }
+        }
+        Assert.True(seen);
+    }
+
+    [Fact]
+    public async Task Schedule_File_Cron_PowerShell()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        var tmp = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tmp, "$x=42 # cron file");
+            svc.Schedule("ps-file-cron", "* * * * * *", new FileInfo(tmp), ScriptLanguage.PowerShell, runImmediately: true);
+
+            var start = DateTime.UtcNow;
+            var seen = false;
+            while (!seen && DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+            {
+                seen = svc.GetSnapshot().Any(j => j.Name == "ps-file-cron" && j.LastRunAt != null);
+                if (!seen)
+                {
+                    await Task.Delay(50);
+                }
+            }
+            Assert.True(seen);
+        }
+        finally
+        {
+            try { File.Delete(tmp); } catch { }
+        }
+    }
+
+    [Fact]
+    public async Task ScheduleAsync_File_Interval_And_Cron()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        var tmp1 = Path.GetTempFileName();
+        var tmp2 = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(tmp1, "$null | Out-Null # interval async");
+            await File.WriteAllTextAsync(tmp2, "$null | Out-Null # cron async");
+            await svc.ScheduleAsync("ps-file-int-async", TimeSpan.FromMinutes(10), new FileInfo(tmp1), ScriptLanguage.PowerShell, runImmediately: true);
+            await svc.ScheduleAsync("ps-file-cron-async", "* * * * * *", new FileInfo(tmp2), ScriptLanguage.PowerShell, runImmediately: true);
+
+            var start = DateTime.UtcNow;
+            var seen1 = false; var seen2 = false;
+            while (!(seen1 && seen2) && DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
+            {
+                var snap = svc.GetSnapshot();
+                seen1 = snap.Any(j => j.Name == "ps-file-int-async" && j.LastRunAt != null);
+                seen2 = snap.Any(j => j.Name == "ps-file-cron-async" && j.LastRunAt != null);
+                if (!(seen1 && seen2))
+                {
+                    await Task.Delay(50);
+                }
+            }
+            Assert.True(seen1);
+            Assert.True(seen2);
+        }
+        finally
+        {
+            try { File.Delete(tmp1); } catch { }
+            try { File.Delete(tmp2); } catch { }
+        }
+    }
+
+    [Fact]
+    public void CancelAll_Removes_All_Tasks()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        svc.Schedule("a1", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+        svc.Schedule("a2", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+        Assert.Equal(2, svc.GetSnapshot().Count);
+        svc.CancelAll();
+        Assert.Empty(svc.GetSnapshot());
+    }
+
+    [Fact]
+    public void Duplicate_Name_Throws()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        svc.Schedule("dup", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+        var ex = Assert.Throws<InvalidOperationException>(() => svc.Schedule("dup", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask));
+        Assert.NotNull(ex);
+    }
+
+    [Fact]
+    public void Invalid_Name_Operations_Throw()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        _ = Assert.Throws<ArgumentException>(() => svc.Cancel(" "));
+        _ = Assert.Throws<ArgumentException>(() => svc.Pause(""));
+        _ = Assert.Throws<ArgumentException>(() => svc.Resume(null!));
+    }
+
+    [Fact]
+    public void Snapshot_Filtering_And_Hashtable_Output()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        svc.Schedule("job-alpha", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+        svc.Schedule("job-beta", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+        svc.Schedule("other", TimeSpan.FromMinutes(1), async ct => await Task.CompletedTask);
+
+        var filtered = svc.GetSnapshot(TimeZoneInfo.Utc, asHashtable: false, "job-*");
+        Assert.Equal(2, filtered.Count);
+        Assert.All(filtered, o => Assert.StartsWith("job-", ((JobInfo)o).Name));
+
+        var ht = svc.GetSnapshot(TimeZoneInfo.Utc, asHashtable: true, "other");
+        var entry = Assert.Single(ht);
+        var h = Assert.IsType<Hashtable>(entry);
+        Assert.Equal("other", h["Name"]);
     }
 }
