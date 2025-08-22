@@ -36,7 +36,7 @@ Kestrun — PowerShell brains. Kestrel speed.
 [![Contributions](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Releases](https://img.shields.io/github/v/release/Kestrun/Kestrun?display_name=release)](https://github.com/Kestrun/Kestrun/releases)
 
-[![Docs](https://img.shields.io/badge/docs-online-blue)](https://kestrun.github.io)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://docs.kestrun.dev)
 [![NuGet](https://img.shields.io/nuget/v/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Kestrun)](https://www.nuget.org/packages/Kestrun/)
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Kestrun)](https://www.powershellgallery.com/packages/Kestrun)
@@ -44,6 +44,11 @@ Kestrun — PowerShell brains. Kestrel speed.
 Kestrun is a hybrid web framework that combines the speed and scalability of ASP.NET Core (Kestrel) with the
 flexibility and scripting power of PowerShell. It enables you to build web APIs, automation endpoints, and
 dynamic services using both C# and PowerShell in a single, integrated environment.
+
+## Documentation
+
+Full documentation for Kestrun is available online at [docs.kestrun.dev](https://docs.kestrun.dev).  
+You can find guides, API references, and usage examples to help you get started and explore advanced features.
 
 ## Core Capabilities
 

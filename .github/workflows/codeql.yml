@@ -79,17 +79,69 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v5 
-       
-      - name: Run PSScriptAnalyzer
-        uses: microsoft/psscriptanalyzer-action@6b2948b1944407914a58661c49941824d149734f
-        with:
-          path: .\src\PowerShell\Kestrun
-          recurse: true
-          settings: .\PSScriptAnalyzerSettings.psd1
-          output: results.sarif
+      - uses: actions/checkout@v5
 
-      - name: Upload SARIF results file
+      - name: 🧪 Show pwsh + repo layout
+        shell: pwsh -NoLogo -NoProfile
+        run: |
+          $PSVersionTable.PSVersion
+          Get-ChildItem -Force -Recurse -Depth 2 | Select-Object -First 40 | Format-Table -Auto
+          if (-not (Test-Path ./PSScriptAnalyzerSettings.psd1)) {
+            Write-Error "Settings file not found at ./PSScriptAnalyzerSettings.psd1"
+          }
+
+      - name: 🔍 Run PSScriptAnalyzer and write SARIF
+        shell: pwsh -NoLogo -NoProfile
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+            Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+          Import-Module PSScriptAnalyzer -Force
+
+          # Exclude build output to avoid noise/time
+          $exclude = @('**/bin/**','**/obj/**','**/.out/**','**/coverage/**','**/.git/**')
+
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 `
+                      -ExcludeRule @() -Severity @() -ErrorAction Stop `
+                      -IgnoreFile .pssaignore -IncludeDefaultRules:$true `
+                      -FilterScript { param($path) -not ($exclude | ForEach-Object { $path -like $_ }) }
+
+          # Minimal valid SARIF — no external module needed
+          $sarif = @{
+            '$schema'='https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json'
+            version='2.1.0'
+            runs=@(@{
+              tool=@{ driver=@{ name='PSScriptAnalyzer'; version=(Get-Module PSScriptAnalyzer).Version.ToString() } }
+              results=@()
+            })
+          }
+          foreach ($r in $results) {
+            $level = if ($r.Severity -eq 'Error') { 'error' } else { 'warning' }
+            $sarif.runs[0].results += @{
+              ruleId   = $r.RuleName
+              level    = $level
+              message  = @{ text = $r.Message }
+              locations=@(@{ physicalLocation=@{
+                artifactLocation=@{ uri = $r.ScriptPath }
+                region=@{ startLine = $r.Line; startColumn = $r.Column }
+              }})
+            }
+          }
+          $sarif | ConvertTo-Json -Depth 8 | Set-Content pssa.sarif -Encoding UTF8
+          Write-Host "SARIF written to $(Resolve-Path pssa.sarif)"
+
+      - name: ⬆️ Upload PSSA SARIF
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: results.sarif
+          sarif_file: pssa.sarif
+          category: powershell
+
+      - name: ❗ Fail on PSSA errors
+        shell: pwsh -NoLogo -NoProfile
+        run: |
+          $sarif = Get-Content pssa.sarif -Raw | ConvertFrom-Json
+          $errors = @($sarif.runs.results | Where-Object { $_.level -eq 'error' })
+          if ($errors.Count) { Write-Error "PSScriptAnalyzer found $($errors.Count) error-level issues." }
+
