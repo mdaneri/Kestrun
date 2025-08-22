@@ -270,7 +270,7 @@ Enable-KrConfiguration
 # Add a route with a script block
 
 Add-KrRouteGroup -Prefix '/secure/ps' -AuthorizationSchema $BasicPowershellScheme {
-    Add-KrMapRoute -Verbs Get -Path '/hello' {
+    Add-KrMapRoute -Verbs Get -Pattern '/hello' {
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by PowerShell Code." -ContentType 'text/plain'
     }
@@ -319,12 +319,12 @@ Add-KrRouteGroup -Prefix '/secure/ps' -AuthorizationSchema $BasicPowershellSchem
     }
 }
 
-Add-KrMapRoute -Verbs Get -Path '/secure/cs/hello' -AuthorizationSchema $BasicCSharpScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/secure/cs/hello' -AuthorizationSchema $BasicCSharpScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by C# Code." -ContentType 'text/plain'
 }
 
-Add-KrMapRoute -Verbs Get -Path '/secure/vb/hello' -AuthorizationSchema $BasicVBNetScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/secure/vb/hello' -AuthorizationSchema $BasicVBNetScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
     Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by VB.NET Code." -ContentType 'text/plain'
 }
@@ -384,22 +384,22 @@ Add-KrMapRoute -Options (New-MapRouteOption -Property @{
 # KESTRUN KEY MATCHING AUTHENTICATION ROUTES
 Add-KrRouteGroup -Prefix '/secure/key' {
 
-    Add-KrMapRoute -Verbs Get -Path '/simple/hello' -AuthorizationSchema $ApiKeySimple -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/simple/hello' -AuthorizationSchema $ApiKeySimple -ScriptBlock {
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated using simple key matching." -ContentType 'text/plain'
     }
 
-    Add-KrMapRoute -Verbs Get -Path '/ps/hello' -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/ps/hello' -AuthorizationSchema $ApiKeyPowerShell -ScriptBlock {
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code." -ContentType 'text/plain'
     }
 
-    Add-KrMapRoute -Verbs Get -Path '/cs/hello' -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/cs/hello' -AuthorizationSchema $ApiKeyCSharp -ScriptBlock {
 
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching C# Code." -ContentType 'text/plain'
     }
-    Add-KrMapRoute -Verbs Get -Path '/Vb/hello' -AuthorizationSchema $ApiKeyVBNet -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/Vb/hello' -AuthorizationSchema $ApiKeyVBNet -ScriptBlock {
 
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching VB.NET Code." -ContentType 'text/plain'
@@ -407,22 +407,22 @@ Add-KrRouteGroup -Prefix '/secure/key' {
 
     # KESTRUN KEY MATCHING AUTHENTICATION ROUTES
     Add-KrRouteGroup -Prefix '/ps/policy' -AuthorizationSchema $ApiKeyPowerShell {
-        Add-KrMapRoute -Verbs Get -Path '/' -ScriptBlock {
+        Add-KrMapRoute -Verbs Get -Pattern '/' -ScriptBlock {
             $user = $Context.User.Identity.Name
             Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_read' permission." -ContentType 'text/plain'
         } -AuthorizationPolicy 'CanRead'
 
-        Add-KrMapRoute -Verbs Put -Path '/' -ScriptBlock {
+        Add-KrMapRoute -Verbs Put -Pattern '/' -ScriptBlock {
             $user = $Context.User.Identity.Name
             Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_write' permission." -ContentType 'text/plain'
         } -AuthorizationPolicy 'CanWrite'
 
-        Add-KrMapRoute -Verbs Post -Path '/' -ScriptBlock {
+        Add-KrMapRoute -Verbs Post -Pattern '/' -ScriptBlock {
             $user = $Context.User.Identity.Name
             Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_create' permission." -ContentType 'text/plain'
         } -AuthorizationPolicy 'CanCreate'
 
-        Add-KrMapRoute -Verbs Delete -Path '/' -ScriptBlock {
+        Add-KrMapRoute -Verbs Delete -Pattern '/' -ScriptBlock {
             $user = $Context.User.Identity.Name
             Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Key Matching PowerShell Code because you have the 'can_delete' permission." -ContentType 'text/plain'
         } -AuthorizationPolicy 'CanDelete'
@@ -431,7 +431,7 @@ Add-KrRouteGroup -Prefix '/secure/key' {
 
 # KESTRUN JWT AUTHENTICATION ROUTES
 Add-KrRouteGroup -Prefix '/secure/jwt' -AuthorizationSchema $JwtScheme {
-    Add-KrMapRoute -Verbs Get -Path '/hello' -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/hello' -ScriptBlock {
         Expand-KrObject $Context
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by JWT Bearer Token." -ContentType 'text/plain'
@@ -459,7 +459,7 @@ Add-KrRouteGroup -Prefix '/secure/jwt' -AuthorizationSchema $JwtScheme {
     }
 }
 
-Add-KrMapRoute -Verbs Get -Path '/token/renew' -AuthorizationSchema $JwtScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/token/renew' -AuthorizationSchema $JwtScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
 
     Write-KrInformationLog -Message 'Generating JWT token for user {0}' -Values $user
@@ -473,7 +473,7 @@ Add-KrMapRoute -Verbs Get -Path '/token/renew' -AuthorizationSchema $JwtScheme -
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/token/new' -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/token/new' -AuthorizationSchema $BasicPowershellScheme -ScriptBlock {
     $user = $Context.User.Identity.Name
 
     Write-KrInformationLog -Message 'Regenerating JWT token for user {0}' -Values $user
@@ -505,7 +505,7 @@ Add-KrMapRoute -Verbs Get -Path '/token/new' -AuthorizationSchema $BasicPowershe
     Cookie authentication routes
 *********************************************
 #>
-Add-KrMapRoute -Verbs Get -Path '/cookies/login' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/cookies/login' -ScriptBlock {
     Write-KrTextResponse -InputObject @'
        <!DOCTYPE html>
 <html>
@@ -531,7 +531,7 @@ Add-KrMapRoute -Verbs Get -Path '/cookies/login' -ScriptBlock {
 '@ -ContentType 'text/html'
 }
 
-Add-KrMapRoute -Verbs Post -Path '/cookies/login' -ScriptBlock {
+Add-KrMapRoute -Verbs Post -Pattern '/cookies/login' -ScriptBlock {
     $form = $Context.Request.Form
     if ($null -eq $form) {
         Write-KrJsonResponse -InputObject @{ success = $false; error = 'Form data missing' } -ContentType 'application/json'
@@ -560,7 +560,7 @@ Add-KrMapRoute -Verbs Post -Path '/cookies/login' -ScriptBlock {
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/cookies/logout' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/cookies/logout' -ScriptBlock {
 
     [Microsoft.AspNetCore.Authentication.AuthenticationHttpContextExtensions]::SignOutAsync($Context.HttpContext, 'Cookies').Wait()
     Write-KrRedirectResponse -Location '/cookies/login'
@@ -568,12 +568,12 @@ Add-KrMapRoute -Verbs Get -Path '/cookies/logout' -ScriptBlock {
 
 
 Add-KrRouteGroup -Prefix '/secure/cookies' -AuthorizationSchema $CookieScheme {
-    Add-KrMapRoute -Verbs Get -Path '/hello' -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/hello' -ScriptBlock {
         $user = $Context.User.Identity.Name
         Write-KrTextResponse -InputObject "Welcome, $user! You are authenticated by Cookies Authentication." -ContentType 'text/plain'
     }
 
-    Add-KrMapRoute -Verbs Get -Path '/map' -ScriptBlock {
+    Add-KrMapRoute -Verbs Get -Pattern '/map' -ScriptBlock {
         $incremental['Count'] = $incremental['Count'] + 1
         @{
             'BasicPowershellScheme' = $BasicPowershellScheme

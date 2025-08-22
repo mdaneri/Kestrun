@@ -8,6 +8,7 @@
 # Import the Kestrun module
 #Install-PSResource -Name Kestrun
 
+
 # Create a new Kestrun server
 New-KrServer -Name "Simple Server"
 
@@ -22,27 +23,30 @@ Add-KrPowerShellRuntime
 Enable-KrConfiguration
 
 # Map the route
-Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
-    Write-KrTextResponse -InputObject "Hello, World!" -StatusCode 200
+Add-KrMapRoute -Verbs Get -Pattern "/xml/{message}" -ScriptBlock {
+    $message = Get-KrRequestRouteValue -Name 'message'
+    Write-KrXmlResponse -InputObject @{ message = $message } -StatusCode 200
 }
 
+# YAML Route using MapRouteOption
 Add-KrMapRoute -Options (New-MapRouteOption -Property @{
         Pattern = "/yaml"
         HttpVerbs = 'Get'
         Code = {
-            $message = $Context.Request.Query['message']
+            $message = Get-KrRequestRouteValue -Name 'message'
             Write-KrYamlResponse -InputObject @{ message = $message } -StatusCode 200
         }
         Language = 'PowerShell'
-        # DisableAntiforgery = $true
+        DisableAntiforgery = $true
     }
 )
 
+# JSON Route using MapRouteOption
 $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
 $options.Pattern = "/json"
 $options.HttpVerbs = [Kestrun.Utilities.HttpVerb[]] @('get')
 $options.Code = {
-    $message = $Context.Request.Headers['message']
+    $message = Get-KrRequestHeader -Name 'message'
     Write-KrJsonResponse -InputObject @{ message = $message } -StatusCode 200
 }
 $options.Language = 'PowerShell'

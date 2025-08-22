@@ -4,6 +4,7 @@
 
     # Drop PSAvoidUsingWriteHost at the top and keep the per-rule disable below, or uncomment here:
     # ExcludeRules = @()
+    ExcludeRules = @('PSAvoidUsingWriteHost')
 
     # Where your custom rules live (folder or file). Uncomment if you have custom rules.
     # CustomRulePath = @('./Lint')

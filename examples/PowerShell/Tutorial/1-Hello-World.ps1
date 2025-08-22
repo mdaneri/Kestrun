@@ -22,7 +22,7 @@ Add-KrPowerShellRuntime
 Enable-KrConfiguration
 
 # Map the route
-Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello" -ScriptBlock {
     Write-KrTextResponse -InputObject "Hello, World!" -StatusCode 200
     # Or the shorter version
     # Write-KrTextResponse "Hello, World!"

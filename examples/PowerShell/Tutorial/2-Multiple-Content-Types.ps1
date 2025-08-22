@@ -22,17 +22,17 @@ Add-KrPowerShellRuntime
 Enable-KrConfiguration
 
 # Map the route
-Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello" -ScriptBlock {
     Write-KrTextResponse -InputObject "Hello, World!" -StatusCode 200
 }
 
-Add-KrMapRoute -Verbs Get -Path "/hello" -Code @"
+Add-KrMapRoute -Verbs Get -Pattern "/hello" -Code @"
     await Context.Response.WriteTextResponseAsync(inputObject: "Hello, World!", statusCode: 200);
     // Or the synchronous version
     // Context.Response.WriteTextResponse( "Hello, World!", 200);
 "@ -Language CSharp
 
-Add-KrMapRoute -Verbs Get -Path "/hello" -Code @"
+Add-KrMapRoute -Verbs Get -Pattern "/hello" -Code @"
     Await Context.Response.WriteTextResponseAsync( "Hello, World!", 200)
     ' Or the synchronous version
     ' Context.Response.WriteTextResponse( "Hello, World!", 200);

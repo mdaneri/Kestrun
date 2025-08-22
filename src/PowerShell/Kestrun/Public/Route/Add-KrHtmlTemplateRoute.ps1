@@ -9,7 +9,7 @@
         The Kestrun server instance to which the route will be added.
         If not specified, the function will attempt to resolve the current server context.
 
-    .PARAMETER Path
+    .PARAMETER Pattern
         The URL path for the new route.
 
     .PARAMETER HtmlTemplatePath
@@ -43,7 +43,8 @@ function Add-KrHtmlTemplateRoute {
         [Kestrun.Hosting.KestrunHost]$Server,
 
         [Parameter(Mandatory = $true)]
-        [string]$Path,
+        [alias('Path')]
+        [string]$Pattern,
 
         [Parameter(Mandatory = $true)]
         [string]$HtmlTemplatePath,
@@ -60,7 +61,7 @@ function Add-KrHtmlTemplateRoute {
 
         $options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
         $options.HttpVerbs = [Kestrun.Utilities.HttpVerb[]]::new([Kestrun.Utilities.HttpVerb]::Get)
-        $options.Pattern = $Path
+        $options.Pattern = $Pattern
         $options.RequireAuthorization = $Authorization
 
         [Kestrun.Hosting.KestrunHostMapExtensions]::AddHtmlTemplateRoute($Server, $options, $HtmlTemplatePath) | Out-Null

@@ -8,22 +8,20 @@ namespace Kestrun.Models;
 /// </summary>
 public partial class KestrunRequest
 {
-
     private KestrunRequest(HttpRequest request, Dictionary<string, string>? formDict, string body)
     {
         Request = request;
         Query = request.Query
-                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+                            .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
         Headers = request.Headers
-                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+                            .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
         Cookies = request.Cookies
-                                .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
+                            .ToDictionary(x => x.Key, x => x.Value.ToString() ?? string.Empty);
         Form = formDict;
         Body = body;
         RouteValues = request.RouteValues
-                 .ToDictionary(x => x.Key, x => x.Value?.ToString() ?? string.Empty);
+                            .ToDictionary(x => x.Key, x => x.Value?.ToString() ?? string.Empty);
     }
-
 
     private HttpRequest Request { get; init; }
     /// <summary>

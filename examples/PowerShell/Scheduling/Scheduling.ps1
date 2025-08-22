@@ -46,7 +46,7 @@ Set-KrSharedState -Name 'Visits' -Value @{Count = 0 }
 New-KrServer -Name 'MyKestrunServer' -Logger $logger
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 -passThru |
+Add-KrListener -Port 5000 -PassThru |
     # Add run-space runtime & scheduler (8 RS for jobs)
     Add-KrPowerShellRuntime -PassThru | Add-KrScheduling -MaxRunspaces 8 -PassThru |
     # Seed a global counter (Visits) — injected as $Visits in every runspace
@@ -78,13 +78,13 @@ Register-KrSchedule -Name 'nightly-clean' -Cron '0 0 3 * * *' `
 # 4.  ─── Routes ───────────────────────────────────────────────
 
 # /visit   (increments Visits)
-Add-KrMapRoute -Verbs Get -Path '/visit' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/visit' -ScriptBlock {
     $Visits['Count']++
     Write-KrTextResponse "🔢 Visits now: $($Visits['Count'])" 200
 }
 
 # /schedule/report   (JSON snapshot)
-Add-KrMapRoute -Verbs Get -Path '/schedule/report' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/schedule/report' -ScriptBlock {
     $report = Get-KrScheduleReport
     Write-KrJsonResponse -InputObject $report -StatusCode 200
 }

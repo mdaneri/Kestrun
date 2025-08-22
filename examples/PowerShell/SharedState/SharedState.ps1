@@ -49,7 +49,7 @@ Set-KrSharedState -Name 'Visits' -Value @{Count = 0 }
 $server = New-KrServer -Name 'MyKestrunServer' -Logger $logger -PassThru
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 -passThru | Add-KrPowerShellRuntime -PassThru |
+Add-KrListener -Port 5000 -PassThru | Add-KrPowerShellRuntime -PassThru |
 
     Enable-KrConfiguration -PassThru
 
@@ -59,7 +59,7 @@ Add-KrListener -Port 5000 -passThru | Add-KrPowerShellRuntime -PassThru |
 #   • $Visits is already injected as a PS variable
 #   • Just read and write it back in the response
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/show' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/ps/show' -ScriptBlock {
     # $Visits is available
     Write-KrTextResponse -InputObject "Visits so far: $($Visits.Count)" -StatusCode 200
 }
@@ -69,7 +69,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/show' -ScriptBlock {
 #   • Increment $Visits directly
 #   • Persist the new value back into the global store
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/ps/visit' -ScriptBlock {
     # increment the injected variable
     $Visits.Count++
 
@@ -81,7 +81,7 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/visit' -ScriptBlock {
 #   • $Visits is already injected as a PS variable
 #   • Just read and write it back in the response
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/show' -Code @'
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/cs/show' -Code @'
     // $Visits is available
     Context.Response.WriteTextResponse($"Visits so far: {Visits["Count"]}", 200);
 '@ -Language CSharp
@@ -91,14 +91,14 @@ Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/show' -Code @'
 #   • Increment $Visits directly
 #   • Persist the new value back into the global store
 # ─────────────────────────────────────────────────────────────────────────────
-Add-KrMapRoute -Server $server -Verbs Get -Path '/cs/visit' -Code @'
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/cs/visit' -Code @'
     // increment the injected variable
     Visits["Count"] = ((int)Visits["Count"]) + 1;
 
     Context.Response.WriteTextResponse($"Incremented to {Visits["Count"]}", 200);
 '@ -Language CSharp
 
-Add-KrMapRoute -Server $server -Verbs Get -Path '/' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/' -ScriptBlock {
     # $Visits is available
     Write-KrRedirectResponse -Url '/ps/show' -Message 'Redirecting to /ps/show'
 }

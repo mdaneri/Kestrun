@@ -134,7 +134,7 @@ Enable-KrConfiguration
 # Set-KrPythonRuntime
 
 # Add a route with a script block
-Add-KrMapRoute -Verbs Get -Path '/ps/json' -Authorization 'BasicAuth' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/json' -Authorization 'BasicAuth' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Json Response'
     # Payload
@@ -142,7 +142,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/json' -Authorization 'BasicAuth' -ScriptBlo
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/ps/bson' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/bson' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Bson Response'
     # Payload
@@ -158,7 +158,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/bson' -ScriptBlock {
     Write-KrBsonResponse -InputObject $payload -StatusCode 200
 }
 
-Add-KrMapRoute -Verbs Get -Path '/ps/cbor' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/cbor' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Cbor Response'
     # Payload
@@ -174,7 +174,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/cbor' -ScriptBlock {
     Write-KrCborResponse -InputObject $payload -StatusCode 200
 }
 
-Add-KrMapRoute -Verbs Get -Path '/ps/csv' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/csv' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Csv Response'
 
@@ -182,7 +182,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/csv' -ScriptBlock {
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/ps/yaml' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/yaml' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Yaml Response'
     # Payload
@@ -199,7 +199,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/yaml' -ScriptBlock {
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/ps/xml' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/xml' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Xml Response'
     # Payload
@@ -216,7 +216,7 @@ Add-KrMapRoute -Verbs Get -Path '/ps/xml' -ScriptBlock {
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/ps/text' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/text' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Text Response'
     # Payload
@@ -233,13 +233,13 @@ Add-KrMapRoute -Verbs Get -Path '/ps/text' -ScriptBlock {
 }
 
 
-Add-KrMapRoute -Verbs Get -Path '/ps/file' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/ps/file' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - file Response'
     Write-KrFileResponse -FilePath '..\..\README.md' -FileDownloadName 'README.md' -ContentDisposition Inline -StatusCode 200 -ContentType 'text/markdown'
 }
 
-Add-KrMapRoute -Verbs Get -Path '/cs/xml' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/xml' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Xml Response(From PowerShell)");
             var payload = new
@@ -254,7 +254,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/xml' -Language CSharp -Code @'
             Context.Response.WriteXmlResponse( payload,  200);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/cs/json' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/json' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Json Response(From PowerShell)");
             var payload = new
@@ -269,7 +269,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/json' -Language CSharp -Code @'
             Context.Response.WriteJsonResponse( Orders,  200);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/cs/bson' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/bson' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Bson Response(From PowerShell)");
             var payload = new
@@ -285,7 +285,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/bson' -Language CSharp -Code @'
 '@
 
 
-Add-KrMapRoute -Verbs Get -Path '/cs/csv' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/csv' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Csv Response(From PowerShell)");
             var payload = new
@@ -300,7 +300,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/csv' -Language CSharp -Code @'
             Context.Response.WriteCsvResponse(Orders);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/cs/cbor' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/cbor' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Cbor Response(From PowerShell)");
             var payload = new
@@ -315,7 +315,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/cbor' -Language CSharp -Code @'
             Context.Response.WriteCborResponse( payload,  200);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/cs/yaml' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/yaml' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Yaml Response(From PowerShell)");
             var payload = new
@@ -330,7 +330,7 @@ Add-KrMapRoute -Verbs Get -Path '/cs/yaml' -Language CSharp -Code @'
             Context.Response.WriteYamlResponse( payload,  200);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/cs/text' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/text' -Language CSharp -Code @'
 
             Console.WriteLine("Hello from C# script! - Text Response(From PowerShell)");
             var payload = new
@@ -346,13 +346,13 @@ Add-KrMapRoute -Verbs Get -Path '/cs/text' -Language CSharp -Code @'
 '@
 
 
-Add-KrMapRoute -Verbs Get -Path '/cs/file' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/cs/file' -Language CSharp -Code @'
 
     Console.WriteLine("Hello from C# script! - file Response(From C#)");
     Context.Response.WriteFileResponse("..\\..\\README.md", null, 200);
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/messagestream' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/messagestream' -ScriptBlock {
     $DebugPreference = 'Continue'
     $VerbosePreference = 'Continue'
 
@@ -370,7 +370,7 @@ Add-KrMapRoute -Verbs Get -Path '/messagestream' -ScriptBlock {
 # ------------------------------------------------------------------
 # 1. PowerShell route  ─ /hello-ps
 # ------------------------------------------------------------------
-Add-KrMapRoute -Verbs Get -Path '/hello-ps' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/hello-ps' -ScriptBlock {
     $Context.Response.ContentType = 'text/plain'
     $Context.Response.Body = "Hello from PowerShell at $(Get-Date -Format o)"
 }
@@ -379,7 +379,7 @@ Add-KrMapRoute -Verbs Get -Path '/hello-ps' -ScriptBlock {
 # 2. C# script route  ─ /hello-cs
 #    (wrap the C# source in a here-string *inside* the ScriptBlock)
 # ------------------------------------------------------------------
-Add-KrMapRoute -Verbs Get -Path '/hello-cs' -Language CSharp -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/hello-cs' -Language CSharp -Code @'
 
 Context.Response.ContentType = "text/plain";
 Context.Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
@@ -388,7 +388,7 @@ Context.Response.Body        = $"Hello from C# at {DateTime.UtcNow:o}";
 
 
 
-Add-KrMapRoute -Verbs Get -Path '/status' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/status' -ScriptBlock {
     $html = @'
 <!DOCTYPE html>
 <html>
@@ -421,7 +421,7 @@ Add-KrMapRoute -Verbs Get -Path '/status' -ScriptBlock {
     }
 }
 
-Add-KrMapRoute -Verbs Get -Path '/vb/text' -Language VBNet -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/vb/text' -Language VBNet -Code @'
     Console.WriteLine("Hello from VB.NET script! - Text Response (From VB.NET)")
 
     Dim payload = New With {
@@ -437,7 +437,7 @@ Add-KrMapRoute -Verbs Get -Path '/vb/text' -Language VBNet -Code @'
 '@
 
 
-Add-KrMapRoute -Verbs Get -Path '/vb/xml' -Language VBNet -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/vb/xml' -Language VBNet -Code @'
     Console.WriteLine("Hello from VB.NET script! - Xml Response(From VB.NET)")
 
     Dim payload = New With {
@@ -452,7 +452,7 @@ Add-KrMapRoute -Verbs Get -Path '/vb/xml' -Language VBNet -Code @'
     Await Context.Response.WriteXmlResponseAsync(payload, 200)
 '@
 
-Add-KrMapRoute -Verbs Get -Path '/vb/yaml' -Language VBNet -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/vb/yaml' -Language VBNet -Code @'
     Console.WriteLine("Hello from VB.NET script! - Yaml Response(From VB.NET)")
 
     Dim payload = New With {
@@ -468,7 +468,7 @@ Add-KrMapRoute -Verbs Get -Path '/vb/yaml' -Language VBNet -Code @'
 '@
 
 
-Add-KrMapRoute -Verbs Get -Path '/vb/json' -Language VBNet -Code @'
+Add-KrMapRoute -Verbs Get -Pattern '/vb/json' -Language VBNet -Code @'
     Console.WriteLine("Hello from VB.NET script! - Json Response(From VB.NET)")
 
     Dim payload = New With {

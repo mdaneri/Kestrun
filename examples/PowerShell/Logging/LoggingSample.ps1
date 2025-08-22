@@ -1,4 +1,3 @@
- 
 try {
     # Get the path of the current script
     # This allows the script to be run from any location
@@ -17,31 +16,29 @@ try {
     # Import the Kestrun module from the source path if it exists, otherwise from installed modules
     if (Test-Path -Path $kestrunModulePath -PathType Leaf) {
         Import-Module $kestrunModulePath -Force -ErrorAction Stop
-    }
-    else {
+    } else {
         Import-Module -Name 'Kestrun' -MaximumVersion 2.99 -ErrorAction Stop
     }
-}
-catch {
+} catch {
     Write-Error "Failed to import Kestrun module: $_"
     Write-Error "Ensure the Kestrun module is installed or the path is correct."
     exit 1
 }
 
 
-$server = New-KrServer -Name "MyKestrunServer"
+New-KrServer -Name "MyKestrunServer"
 
 # Level switch allows you to switch minimum logging level
 $levelSwitch = New-KrLevelSwitch -MinimumLevel Verbose
 
-$l0 = New-KrLogger  |
-Set-KrMinimumLevel -Value Verbose -ToPreference |
-Add-KrEnrichWithEnvironment |
-Add-EnrichWithExceptionDetail |
-Add-KrEnrichFromLogContext |
-Add-KrSinkPowerShell |
-Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" | 
-Register-KrLogger -PassThru -SetAsDefault -Name "DefaultLogger"
+$l0 = New-KrLogger |
+    Set-KrMinimumLevel -Value Verbose -ToPreference |
+    Add-KrEnrichWithEnvironment |
+    Add-EnrichWithExceptionDetail |
+    Add-KrEnrichFromLogContext |
+    Add-KrSinkPowerShell |
+    Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
+    Register-KrLogger -PassThru -SetAsDefault -Name "DefaultLogger"
 
 Write-KrInformationLog -Message 'Some default log'
 
@@ -49,14 +46,14 @@ Close-KrLogger -Logger $l0
 
 # Setup new logger
 New-KrLogger |
-Set-KrMinimumLevel -Value Verbose |
-Add-KrEnrichWithEnvironment |
-Add-EnrichWithExceptionDetail |
-Add-KrSinkFile -Path ".\logs\test-.log" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
-Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
-Register-KrLogger -Name "Logger1"
+    Set-KrMinimumLevel -Value Verbose |
+    Add-KrEnrichWithEnvironment |
+    Add-EnrichWithExceptionDetail |
+    Add-KrSinkFile -Path ".\logs\test-.log" -RollingInterval Hour -OutputTemplate '{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception} {Properties:j}{NewLine}' |
+    Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
+    Register-KrLogger -Name "Logger1"
 
-Register-KrLogger -FilePath ".\logs\test2-.log" -Console -MinimumLevel Verbose -Name "Logger2" 
+Register-KrLogger -FilePath ".\logs\test2-.log" -Console -MinimumLevel Verbose -Name "Logger2"
 
 # Write-KrVerboseLog "test verbose"
 Write-KrDebugLog -Message "test debug asd" -Name "Logger1"
@@ -77,20 +74,18 @@ Write-KrErrorLog -Message "test error {asd}, {num}, {@levelSwitch}" -Values "tes
 
 try {
     Get-Content -Path 'asd' -ErrorAction Stop
-}
-catch {
+} catch {
     Write-KrFatalLog -ErrorRecord $_ -Message 'Error while reading file!'
 }
 
 
 New-KrLogger |
-Set-KrMinimumLevel -Value Verbose |
-Add-KrEnrichWithEnvironment |
-Add-EnrichWithExceptionDetail |
- 
-Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
-Add-KrSinkEventLog  -Source "MyApp" -ManageEventSource  |
-Register-KrLogger -Name "Logger3"
+    Set-KrMinimumLevel -Value Verbose |
+    Add-KrEnrichWithEnvironment |
+    Add-EnrichWithExceptionDetail |
+    Add-KrSinkConsole -OutputTemplate "[{MachineName} {Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}" |
+    Add-KrSinkEventLog -Source "MyApp" -ManageEventSource |
+    Register-KrLogger -Name "Logger3"
 Write-KrInformationLog -Name "Logger3" -Message "test info"
 
 Close-KrLogger

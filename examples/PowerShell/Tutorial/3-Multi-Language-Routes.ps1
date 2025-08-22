@@ -22,22 +22,22 @@ Add-KrPowerShellRuntime
 Enable-KrConfiguration
 
 # Map the route
-Add-KrMapRoute -Verbs Get -Path "/hello" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello" -ScriptBlock {
     Write-KrTextResponse -InputObject "Hello, World!" -StatusCode 200
 }
 
 # Map the route for JSON response
-Add-KrMapRoute -Verbs Get -Path "/hello-json" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello-json" -ScriptBlock {
     Write-KrJsonResponse -InputObject @{ message = "Hello, World!" } -StatusCode 200
 }
 
 # Map the route for XML response
-Add-KrMapRoute -Verbs Get -Path "/hello-xml" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello-xml" -ScriptBlock {
     Write-KrXmlResponse -InputObject @{ message = "Hello, World!" } -StatusCode 200
 }
 
 # Map the route for YAML response
-Add-KrMapRoute -Verbs Get -Path "/hello-yaml" -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern "/hello-yaml" -ScriptBlock {
     Write-KrYamlResponse -InputObject @{ message = "Hello, World!" } -StatusCode 200
 }
 

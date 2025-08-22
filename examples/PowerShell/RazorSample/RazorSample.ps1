@@ -49,7 +49,7 @@ $server = New-KrServer -Name 'MyKestrunServer' -PassThru |
     Set-KrServerOption -DenyServerHeader -PassThru |
     Set-KrServerLimit -MaxConcurrentConnections 100 -MaxRequestBodySize 10485760 -MaxRequestHeaderCount 100 -KeepAliveTimeout 120 -PassThru |
     # Listen on port 5000 (HTTP)
-    Add-KrListener -Port 5000 -passThru | Add-KrResponseCompression -EnableForHttps -MimeTypes @(
+    Add-KrListener -Port 5000 -PassThru | Add-KrResponseCompression -EnableForHttps -MimeTypes @(
         'text/plain',
         'text/css',
         'application/javascript',
@@ -61,7 +61,7 @@ $server = New-KrServer -Name 'MyKestrunServer' -PassThru |
     Add-KrPowerShellRazorPagesRuntime -PassThru | Enable-KrConfiguration -PassThru
 
 
-Add-KrMapRoute -Server $server -Verbs Get -Path '/ps/json' -ScriptBlock {
+Add-KrMapRoute -Server $server -Verbs Get -Pattern '/ps/json' -ScriptBlock {
 
     Write-Output 'Hello from PowerShell script! - Json Response'
     # Payload

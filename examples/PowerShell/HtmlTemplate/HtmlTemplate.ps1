@@ -49,15 +49,15 @@ Set-KrSharedState -Name 'Visits' -Value @{Count = 0 }
 $server = New-KrServer -Name 'Kestrun HtmlTemplate' -Logger $logger -PassThru
 
 # Listen on port 5000 (HTTP)
-Add-KrListener -Port 5000 -passThru | Add-KrPowerShellRuntime -PassThru |
+Add-KrListener -Port 5000 -PassThru | Add-KrPowerShellRuntime -PassThru |
 
     Enable-KrConfiguration -PassThru
 
 
-Add-KrHtmlTemplateRoute -Path '/status' -HtmlTemplatePath './Pages/status.html'
+Add-KrHtmlTemplateRoute -Pattern '/status' -HtmlTemplatePath './Pages/status.html'
 
 # Inject the global variable into the route
-Add-KrMapRoute -Verbs Get -Path '/visit' -ScriptBlock {
+Add-KrMapRoute -Verbs Get -Pattern '/visit' -ScriptBlock {
     # increment the injected variable
     $Visits.Count++
 

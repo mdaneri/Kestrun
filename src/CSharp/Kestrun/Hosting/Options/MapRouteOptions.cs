@@ -16,7 +16,7 @@ public record MapRouteOptions
     /// <summary>
     /// The HTTP verbs (methods) that this route responds to.
     /// </summary>
-    public IEnumerable<HttpVerb> HttpVerbs { get; set; } = [];
+    public List<HttpVerb> HttpVerbs { get; set; } = [];
     /// <summary>
     /// The script code to execute for this route.
     /// </summary>

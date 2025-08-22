@@ -76,7 +76,17 @@ function New-MapRouteOption {
                     }
                 }
 
-                $prop.SetValue($options, [Kestrun.Utilities.HttpVerb[]]$converted, $null)
+                # Support both List[HttpVerb] and HttpVerb[] property types
+                if ($prop.PropertyType -eq ([System.Collections.Generic.List[Kestrun.Utilities.HttpVerb]])) {
+                    $list = [System.Collections.Generic.List[Kestrun.Utilities.HttpVerb]]::new()
+                    foreach ($item in $converted) { [void]$list.Add([Kestrun.Utilities.HttpVerb]$item) }
+                    $prop.SetValue($options, $list, $null)
+                } elseif ($prop.PropertyType.IsArray) {
+                    $prop.SetValue($options, [Kestrun.Utilities.HttpVerb[]]$converted, $null)
+                } else {
+                    # Fallback: try to convert via LanguagePrimitives
+                    $prop.SetValue($options, [System.Management.Automation.LanguagePrimitives]::ConvertTo($converted, $prop.PropertyType), $null)
+                }
                 continue
             }
 

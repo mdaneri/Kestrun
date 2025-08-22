@@ -11,7 +11,7 @@
         This parameter is used to specify various options for the route, such as HTTP verbs, path, authorization schemes, and more.
     .PARAMETER Verbs
         The HTTP verbs (GET, POST, etc.) that the route should respond to.
-    .PARAMETER Path
+    .PARAMETER Pattern
         The URL path for the new route.
     .PARAMETER ScriptBlock
         The script block to be executed when the route is accessed.
@@ -73,7 +73,8 @@ function Add-KrMapRoute {
         [Parameter(ParameterSetName = 'Code')]
         [Parameter(ParameterSetName = 'CodeFilePath')]
         [ValidatePattern('^/')]
-        [string]$Path = '/',
+        [alias('Path')]
+        [string]$Pattern = '/',
 
         [Parameter(Mandatory = $true, Position = 0, ParameterSetName = 'ScriptBlock')]
         [scriptblock]$ScriptBlock,
@@ -127,19 +128,19 @@ function Add-KrMapRoute {
         # Ensure the server instance is resolved
         $Server = Resolve-KestrunServer -Server $Server
 
-        $exists = Test-KrRoute -Path $Path -Verb $Verbs
+        $exists = Test-KrRoute -Path $Pattern -Verb $Verbs
 
         if ($exists) {
             if ($AllowDuplicate -or $DuplicateAction -eq 'Allow') {
-                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Path, ($Verbs -join ',')
+                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists; adding another." -Values $Pattern, ($Verbs -join ',')
             } elseif ($DuplicateAction -eq 'Skip') {
-                Write-KrVerboseLog -Message "Route '{Path}' ({Verbs}) exists; skipping." -Values $Path, ($Verbs -join ',')
+                Write-KrVerboseLog -Message "Route '{Path}' ({Verbs}) exists; skipping." -Values $Pattern, ($Verbs -join ',')
                 return
             } elseif ($DuplicateAction -eq 'Warn') {
-                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists." -Values $Path, ($Verbs -join ',')
+                Write-KrWarningLog -Message "Route '{Path}' ({Verbs}) already exists." -Values $Pattern, ($Verbs -join ',')
             } else {
                 throw [System.InvalidOperationException]::new(
-                    "Route '$Path' with method(s) $($Verbs -join ',') already exists.")
+                    "Route '$Pattern' with method(s) $($Verbs -join ',') already exists.")
             }
         }
 
@@ -147,7 +148,7 @@ function Add-KrMapRoute {
         if ($PSCmdlet.ParameterSetName -ne 'Options') {
             $Options = [Kestrun.Hosting.Options.MapRouteOptions]::new()
             $Options.HttpVerbs = $Verbs
-            $Options.Pattern = $Path
+            $Options.Pattern = $Pattern
             $Options.ExtraImports = $ExtraImports
             $Options.ExtraRefs = $ExtraRefs
             if ($null -ne $AuthorizationSchema) {

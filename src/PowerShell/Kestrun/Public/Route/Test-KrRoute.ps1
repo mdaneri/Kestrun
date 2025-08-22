@@ -3,7 +3,7 @@
         Tests if a route exists in the Kestrun host.
     .DESCRIPTION
         This function checks if a specific route is defined in the Kestrun host's routing table.
-    .PARAMETER Path
+    .PARAMETER Pattern
         The path of the route to test.
     .PARAMETER Verbs
         The HTTP verb(s) to test for the route.
@@ -22,7 +22,8 @@ function Test-KrRoute {
     [OutputType([bool])]
     param(
         [Parameter(Mandatory)]
-        [string]$Path,
+        [alias('Path')]
+        [string]$Pattern,
 
         [Parameter()]
         [Kestrun.Utilities.HttpVerb[]]$Verbs = @([Kestrun.Utilities.HttpVerb]::Get)
@@ -30,5 +31,5 @@ function Test-KrRoute {
     # Ensure the server instance is resolved
     $Server = Resolve-KestrunServer -Server $Server
 
-    return [Kestrun.Hosting.KestrunHostMapExtensions]::MapExists($Server, $Path, $Verbs)
+    return [Kestrun.Hosting.KestrunHostMapExtensions]::MapExists($Server, $Pattern, $Verbs)
 }

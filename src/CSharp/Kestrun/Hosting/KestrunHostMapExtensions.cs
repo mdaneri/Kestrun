@@ -46,7 +46,7 @@ public static class KestrunHostMapExtensions
         return host.AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
-            HttpVerbs = httpVerbs,
+            HttpVerbs = [.. httpVerbs],
             Language = ScriptLanguage.Native,
             RequireSchemes = requireSchemes ?? [] // No authorization by default
         }, handler);
@@ -144,7 +144,7 @@ public static class KestrunHostMapExtensions
         return host.AddMapRoute(new MapRouteOptions
         {
             Pattern = pattern,
-            HttpVerbs = httpVerbs,
+            HttpVerbs = [.. httpVerbs],
             Code = scriptBlock,
             Language = language,
             RequireSchemes = requireSchemes ?? [], // No authorization by default            
