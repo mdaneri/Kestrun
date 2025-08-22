@@ -79,46 +79,8 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v5
-
-      # Build C# so your DLLs exist (good for your optional import check)
-      - name: 🧰 Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-          cache: true
-          cache-dependency-path: |
-            **/*.csproj
-            **/packages.lock.json
-
-      - name: 🧰 Setup .NET 9
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: 🧰 Install Invoke-Build
-        shell: pwsh
-        run: Install-Module InvokeBuild -Force -Scope CurrentUser
-
-      - name: 🔧 Run C# Build
-        shell: pwsh
-        run: Invoke-Build Build -DotNetVerbosity minimal
-
-      # Optional: import check in a separate step, non-blocking
-      - name: ✅ Sanity import (optional)
-        shell: pwsh
-        continue-on-error: true
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $manifest = 'src/PowerShell/Kestrun/Kestrun.psd1'
-          if (Test-Path $manifest) {
-            Import-Module $manifest -Force -ErrorAction Stop
-            Write-Host "Module import OK."
-          } else {
-            Write-Warning "Manifest not found at $manifest; skipping import check."
-          }
-
-      # Actual static analysis — no imports here
+      - uses: actions/checkout@v5 
+       
       - name: Run PSScriptAnalyzer with settings
         id: pssa
         uses: microsoft/psscriptanalyzer-action@v1.0

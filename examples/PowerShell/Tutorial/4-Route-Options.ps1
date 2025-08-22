@@ -1,13 +1,11 @@
 <#
-    Sample Kestrun Server Configuration with Multiple Content Types
-    This script demonstrates how to set up a simple Kestrun server with multiple routes.
-    The server will respond with different content types based on the requested route.
-    FileName: 2-Multi-Language-Routes.ps1
+    Sample Kestrun Server Configuration using MapRouteOptions class.
+    These examples demonstrate how to use the MapRouteOptions class to configure routes in a Kestrun server.
+    FileName: 4-Route-Options.ps1
 #>
 
 # Import the Kestrun module
-#Install-PSResource -Name Kestrun
-
+Install-PSResource -Name Kestrun
 
 # Create a new Kestrun server
 New-KrServer -Name "Simple Server"
@@ -50,8 +48,18 @@ $options.Code = {
     Write-KrJsonResponse -InputObject @{ message = $message } -StatusCode 200
 }
 $options.Language = 'PowerShell'
-
 Add-KrMapRoute -Options $options
+
+# Text Route using MapRouteOption and Pipeline
+New-MapRouteOption -Property @{
+    Pattern = "/txt"
+    HttpVerbs = 'Get'
+    Code = @"
+            var message= Context.Request.Query["message"];
+            Context.Response.WriteTextResponse($"message = {message}");
+"@
+    Language = 'CSharp'
+} | Add-KrMapRoute
 
 # Start the server asynchronously
 Start-KrServer

@@ -51,9 +51,6 @@ function New-KrServer {
                     [Kestrun.KestrunHostManager]::Stop($Name)
                 }
                 [Kestrun.KestrunHostManager]::Destroy($Name)
-            } else {
-                Write-Error "Kestrun server '$Name' already exists. Use -Force to overwrite."
-                exit 1
             }
         }
         $server = [Kestrun.KestrunHostManager]::Create($Name, $Logger, [string[]] $modulePaths)

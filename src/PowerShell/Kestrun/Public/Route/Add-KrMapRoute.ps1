@@ -61,7 +61,7 @@ function Add-KrMapRoute {
         [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
         [Kestrun.Hosting.KestrunHost]$Server,
 
-        [Parameter(Mandatory = $true, ParameterSetName = 'Options')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Options', ValueFromPipeline = $true)]
         [Kestrun.Hosting.Options.MapRouteOptions]$Options,
 
         [Parameter(ParameterSetName = 'ScriptBlock')]

@@ -105,6 +105,14 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 - If the port is in use, choose a different port in Add‑KrListener.
 - If responses are empty, ensure Add‑KrPowerShellRuntime was called before Enable‑KrConfiguration.
 
+---
+
+### Next
+
+{: .fs-4 .fw-500}
+
+Continue to [Route Options (MapRouteOptions)][Next] or explore more advanced patterns with middleware later in the tutorial.
+
 [New-KrServer]: /docs/pwsh/cmdlets/New-KrServer
 [Add-KrListener]: /docs/pwsh/cmdlets/Add-KrListener
 [Add-KrPowerShellRuntime]: /docs/pwsh/cmdlets/Add-KrPowerShellRuntime
@@ -112,3 +120,4 @@ Invoke-WebRequest -Uri 'http://127.0.0.1:5000/hello' | Select-Object -ExpandProp
 [Add-KrMapRoute]: /docs/pwsh/cmdlets/Add-KrMapRoute
 [Write-KrTextResponse]: /docs/pwsh/cmdlets/Write-KrTextResponse
 [Start-KrServer]: /docs/pwsh/cmdlets/Start-KrServer
+[Next]: ./1.Multiple-Content-Types
