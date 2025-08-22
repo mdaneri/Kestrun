@@ -8,11 +8,11 @@ nav_order: 1
 
 This sample spins up a small Kestrun server and returns plain text from a single route.
 
-> Prerequisites: see [Introduction](./Introduction.md#prerequisites).
+> Prerequisites: see [Introduction][Introduction].
 
 ## Full source
 
-File: [`examples/PowerShell/Tutorial/1-Hello-World.ps1`](https://github.com/Kestrun/Kestrun/blob/main/examples/PowerShell/Tutorial/1-Hello-World.ps1)
+File: [`examples/PowerShell/Tutorial/1-Hello-World.ps1`][1-Hello-World.ps1]
 
 ```powershell
 <#
@@ -61,7 +61,7 @@ Start-KrServer
 
 ### How it works
 
-- Configuration is staged by cmdlets, then committed with [Enable-KrConfiguration](/docs/pwsh/cmdlets/Enable-KrConfiguration).
+- Configuration is staged by cmdlets, then committed with [Enable-KrConfiguration][Enable-KrConfiguration].
 - Each route runs inside a request context (available as $Context) with Request/Response properties.
 - [Write-KrTextResponse][Write-KrTextResponse] is a convenience wrapper that sets Content‑Type to text/plain and writes the body.
 - By default, a single listener is configured on 127.0.0.1:5000; you can add more listeners (e.g., HTTPS) later.
@@ -121,3 +121,5 @@ Continue to [Route Options (MapRouteOptions)][Next] or explore more advanced pat
 [Write-KrTextResponse]: /docs/pwsh/cmdlets/Write-KrTextResponse
 [Start-KrServer]: /docs/pwsh/cmdlets/Start-KrServer
 [Next]: ./1.Multiple-Content-Types
+[1-Hello-World.ps1]: https://github.com/Kestrun/Kestrun/blob/main/examples/PowerShell/Tutorial/1-Hello-World.ps1
+[Introduction]: [./Introduction#prerequisites]
