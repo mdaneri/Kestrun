@@ -148,6 +148,7 @@ Add-BuildTask Help {
     Write-Host '- Update-Module: Updates the Kestrun module.'
     Write-Host '- Format: Formats the codebase.'
     Write-Host '- Coverage: Generates code coverage reports.'
+    Write-Host '- Report: Generates code coverage report webpage.'
 }
 
 Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
@@ -317,6 +318,11 @@ Add-BuildTask 'Clean_CSharp_Help' {
 Add-BuildTask 'Coverage' {
     Write-Host 'Creating coverage report...'
     & .\Utility\Generate-Coverage.ps1
+}
+
+Add-BuildTask 'Report' {
+    Write-Host 'Creating coverage report webpage...'
+    & .\Utility\Generate-Coverage.ps1 -ReportGenerator
 }
 
 Add-BuildTask 'Manifest' {

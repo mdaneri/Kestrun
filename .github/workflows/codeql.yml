@@ -80,7 +80,6 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v5
-
       - name: 🧪 Show pwsh + repo layout
         shell: pwsh
         run: |
@@ -90,44 +89,39 @@ jobs:
             Write-Error "Settings file not found at ./PSScriptAnalyzerSettings.psd1"
           }
 
-      - name: 🔍 Run PSScriptAnalyzer and write SARIF
+      - name: 🧰 Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: 🧰 Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 🧰 Install Invoke-Build
         shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
+        run: Install-Module InvokeBuild -Force -Scope CurrentUser
 
-          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
-            Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -SkipPublisherCheck
-          }
-          Import-Module PSScriptAnalyzer -Force
+      - name: 📦 Restore solution
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity minimal
 
-          # (Optional) exclude noisy dirs to speed up
-          $exclude = @('**/bin/**','**/obj/**','**/.out/**','**/coverage/**','**/.git/**')
-
-          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1 `
-                      -ErrorAction Stop
-
-          # Minimal valid SARIF without external converters
-          $sarif = @{
-            '$schema'='https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json'
-            version='2.1.0'
-            runs=@(@{
-              tool=@{ driver=@{ name='PSScriptAnalyzer'; version=(Get-Module PSScriptAnalyzer).Version.ToString() } }
-              results=@()
-            })
-          }
-          foreach ($r in $results) {
-            $level = if ($r.Severity -eq 'Error') { 'error' } else { 'warning' }
-            $sarif.runs[0].results += @{
-              ruleId   = $r.RuleName
-              level    = $level
-              message  = @{ text = $r.Message }
-              locations=@(@{ physicalLocation=@{
-                artifactLocation=@{ uri = $r.ScriptPath }
-                region=@{ startLine = $r.Line; startColumn = $r.Column }
-              }})
-            }
-          }
-          $sarif | ConvertTo-Json -Depth 8 | Set-Content pssa.sarif -Encoding UTF8
+      - name: 🔧 Run C# Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity minimal
+      - name: Run PSScriptAnalyzer with settings
+        id: pssa
+        uses: microsoft/psscriptanalyzer-action@v1.0
+        with:
+          path: .\src\PowerShell\Kestrun
+          recurse: true
+          settings: ./PSScriptAnalyzerSettings.psd1
+          output: pssa.sarif
 
       - name: ⬆️ Upload PSSA SARIF
         uses: github/codeql-action/upload-sarif@v3

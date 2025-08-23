@@ -252,3 +252,100 @@ jobs:
           coverage-reports: coverage/csharp.net9.0.cobertura.xml
           # or a comma-separated list for multiple reports
           # coverage-reports: <PATH_TO_REPORT>, <PATH_TO_REPORT>
+
+  report-generator:
+    runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
+    env:
+      POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
+      DOTNET_VERBOSITY: minimal 
+      DEST_REPO: Kestrun/coverage           # <-- change to your coverage repo
+      DEST_PATH: report
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5 pin
+
+      - name: 🧰 Setup .NET 8 & 9
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4.3.1 pin
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+          cache: true
+          cache-dependency-path: |
+            **/*.csproj
+            **/packages.lock.json
+
+      - name: 🧰 Install PowerShell
+        uses: ./.github/actions/Install-PowerShell
+        with:
+          Version: latest
+
+      # Non-interactive PSResource install (trust PSGallery)
+      - name: 🧰 Install Invoke-Build & Pester (trusted, non-interactive)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Module -ListAvailable -Name Microsoft.PowerShell.PSResourceGet)) {
+            Install-Module -Name Microsoft.PowerShell.PSResourceGet -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+          }
+          Import-Module Microsoft.PowerShell.PSResourceGet -Force
+          $repo = Get-PSResourceRepository -Name PSGallery -ErrorAction SilentlyContinue
+          if (-not $repo) {
+            Register-PSResourceRepository -Name PSGallery -Uri 'https://www.powershellgallery.com/api/v3/index.json' -Trusted
+          } elseif (-not $repo.Trusted) {
+            Set-PSResourceRepository -Name PSGallery -Trusted
+          }
+          Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'InvokeBuild','Pester'
+          Get-Module Pester -ListAvailable | Select Name,Version,Path
+
+      - name: 📦 Restore
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🔧 Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
+        
+      - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
+        shell: pwsh
+        run: |
+          Invoke-Build Report
+
+          if (-not (Test-Path "./coverage/report/index.html")) {
+            throw "coverage/report/index.html not found — ensure Invoke-Build Report writes there."
+          }
+
+      - name: 📥 Checkout destination coverage repo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.DEST_REPO }}
+          token: ${{ secrets.COVERAGE_REPO_PAT }}  # PAT with 'repo' write access
+          path: coverage-publish
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: 🔁 Sync report → destination/report
+        run: |
+          set -euo pipefail
+          rm -rf "coverage-publish/${{ env.DEST_PATH }}"
+          mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
+          cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
+          # Optional (helps GitHub Pages):
+          touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
+
+      - name: ✅ Commit & push if changed
+        run: |
+          set -euo pipefail
+          cd coverage-publish
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update coverage report from ${GITHUB_REPOSITORY}@${GITHUB_SHA} on $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          fi
+    
+          
