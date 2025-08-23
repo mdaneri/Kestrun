@@ -218,8 +218,17 @@ Add-BuildTask 'Clean-CodeAnalysis' {
 
 Add-BuildTask 'Kestrun.Tests' {
     Write-Host 'Running Kestrun DLL tests...'
+    $failures = @()
     foreach ($framework in $Frameworks) {
+        Write-Host "Running tests for $framework"
         dotnet test "$SolutionPath" -c $Configuration -f $framework -v:$DotNetVerbosity
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Tests failed for $framework" -ForegroundColor Red
+            $failures += $framework
+        }
+    }
+    if ($failures.Count -gt 0) {
+        throw "Kestrun.Tests failed for frameworks: $($failures -join ', ')"
     }
 }
 
@@ -244,7 +253,14 @@ Add-BuildTask 'Test-Pester' {
     $cfg.Filter.ExcludeTag = $excludeTag
 
     if ($RunPesterInProcess) {
-        Invoke-Pester -Configuration $cfg
+        $result = Invoke-Pester -Configuration $cfg
+        if ($null -eq $result) {
+            throw 'Invoke-Pester did not return a result object.'
+        }
+        if ($result.FailedCount -gt 0) {
+            Write-Host "Pester tests failed: $($result.FailedCount) failed." -ForegroundColor Red
+            throw "Pester tests failed."
+        }
     } else {
         $json = $cfg | ConvertTo-Json -Depth 10
         $child = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "run-pester-$([guid]::NewGuid()).ps1"
