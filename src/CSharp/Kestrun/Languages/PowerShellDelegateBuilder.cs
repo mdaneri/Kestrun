@@ -182,7 +182,7 @@ internal static class PowerShellDelegateBuilder
         {
             // This can happen if the response has already been completed
             // or the client has disconnected
-            log.Debug(odex, "Response already completed for {Path}", context.Request.Path);
+            log.DebugSanitized(odex, "Response already completed for {Path}", context.Request.Path);
         }
         catch (InvalidOperationException ioex)
         {

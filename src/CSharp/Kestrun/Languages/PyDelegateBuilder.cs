@@ -83,10 +83,6 @@ internal static class PyDelegateBuilder
         // ---------- return a RequestDelegate ----------
         return async context =>
         {
-            if (logger.IsEnabled(LogEventLevel.Debug))
-            {
-                logger.Debug("Python delegate invoked for {Path}", context.Request.Path);
-            }
 
             try
             {
