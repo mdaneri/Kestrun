@@ -5,6 +5,9 @@ param(
     [Parameter()] [string]$TestProject = ".\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj",
     [Parameter()] [string]$CoverageDir = ".\coverage",
 
+    [Parameter(Mandatory = $true, ParameterSetName = 'Clean')]
+    [switch]$Clean,
+
     [Parameter(Mandatory = $true, ParameterSetName = 'Report')]
     [switch]$ReportGenerator,
 
@@ -24,25 +27,21 @@ param(
     [switch]$OpenWhenDone
 )
 
-function Get-AspNetSharedDir([string]$framework) {
-    $major = ($framework -replace '^net(\d+)\..+$', '$1')
-    $runtimes = & dotnet --list-runtimes | Select-String 'Microsoft.AspNetCore.App'
-    if (-not $runtimes) { throw "Microsoft.AspNetCore.App runtime not found" }
+# Add Helper utility
+. ./Utility/Helper.ps1
 
-    $aspnetMatches = @()
-    foreach ($r in $runtimes) {
-        $parts = ($r.ToString() -split '\s+')
-        $ver = $parts[1]
-        $base = ($r.ToString() -replace '.*\[(.*)\].*', '$1')
-        if ($ver -like "$major.*") {
-            $aspnetMatches += [pscustomobject]@{ Version = [version]$ver; Dir = (Join-Path $base $ver) }
-        }
+# Clean coverage reports
+if ($Clean) {
+    if (Test-Path $CoverageDir) {
+        Write-Host "🧹 Cleaning coverage report..."
+        Remove-Item -Path $CoverageDir -Recurse -Force
+    } else {
+        Write-Host "🧹 No coverage report found to clean."
     }
-
-    if (-not $aspnetMatches) { throw "No Microsoft.AspNetCore.App runtime found for net$major.x" }
-    ($aspnetMatches | Sort-Object Version -Descending | Select-Object -First 1).Dir
+    return
 }
 
+# Generate coverage reports
 Write-Host "🔎 Resolving ASP.NET runtime path for $Framework..."
 $aspnet = Get-AspNetSharedDir $Framework
 Write-Host "📦 Using ASP.NET runtime: $aspnet"
@@ -91,18 +90,12 @@ if ((Get-Item $coverageFile).Length -lt 400) {
 }
 
 if ($ReportGenerator) {
-    if (-not (Get-Command reportgenerator -ErrorAction SilentlyContinue)) {
-        Write-Host "⬇️  Installing ReportGenerator (dotnet global tool)..."
-        dotnet tool install -g dotnet-reportgenerator-globaltool | Out-Host
-        $env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'User') + ';' +
-        [Environment]::GetEnvironmentVariable('PATH', 'Machine')
-    }
-
+    $rg = Install-ReportGenerator
     New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
     $reportsArg = '"{0}"' -f $coverageFile
 
     Write-Host "📈 Generating coverage report → $ReportDir"
-    & reportgenerator `
+    & $rg `
         -reports:$reportsArg `
         -targetdir:$ReportDir `
         -reporttypes:$ReportTypes `

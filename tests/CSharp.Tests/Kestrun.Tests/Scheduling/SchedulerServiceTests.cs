@@ -191,7 +191,8 @@ public class SchedulerServiceTests
 
         // Poll snapshot for LastRunAt (runImmediately path)
         var start = DateTime.UtcNow;
-        while (DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
+        // Allow a little more time on slower CI / Linux environments; was 2s and proved flaky on .NET 9
+        while (DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
         {
             var snap = svc.GetSnapshot();
             if (snap.Any(j => j.Name == "ps-cron" && j.LastRunAt != null))

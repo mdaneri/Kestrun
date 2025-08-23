@@ -84,36 +84,10 @@ if (($null -eq $PSCmdlet.MyInvocation) -or ([string]::IsNullOrEmpty($PSCmdlet.My
     return
 }
 
+# Add Helper utility
+. ./Utility/Helper.ps1
+
 $SolutionPath = Join-Path -Path $PSScriptRoot -ChildPath "Kestrun.sln"
-<#
-    .SYNOPSIS
-    Retrieves the version information from the version file.
-    .DESCRIPTION
-    This function reads the version information from a JSON file and returns the version string.
-    It also retrieves the release and iteration information if available.
-    .OUTPUTS
-    [string]
-    Returns the version string, including release and iteration information if available.
-#>
-function Get-Version {
-    [CmdletBinding()]
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$FileVersion
-    )
-    if (-not (Test-Path -Path $FileVersion)) {
-        throw "File version file not found: $FileVersion"
-    }
-    $versionData = Get-Content -Path $FileVersion | ConvertFrom-Json
-    $Version = $versionData.Version
-    $Release = $versionData.Release
-    $ReleaseIteration = ([string]::IsNullOrEmpty($versionData.Iteration))? $Release : "$Release.$($versionData.Iteration)"
-    if ($Release -ne 'Stable') {
-        $Version = "$Version-$ReleaseIteration"
-    }
-    return $Version
-}
 
 # Load the InvokeBuild module
 Add-BuildTask Default Help
@@ -148,7 +122,8 @@ Add-BuildTask Help {
     Write-Host '- Update-Module: Updates the Kestrun module.'
     Write-Host '- Format: Formats the codebase.'
     Write-Host '- Coverage: Generates code coverage reports.'
-    Write-Host '- Report: Generates code coverage report webpage.'
+    Write-Host '- Report-Coverage: Generates code coverage report webpage.'
+    Write-Host '- Clean-Coverage: Cleans the code coverage reports.'
 }
 
 Add-BuildTask 'Clean' 'Clean-CodeAnalysis', 'CleanHelp', {
@@ -334,13 +309,29 @@ Add-BuildTask 'Clean_CSharp_Help' {
 Add-BuildTask 'Coverage' {
     Write-Host 'Creating coverage report...'
     & .\Utility\Generate-Coverage.ps1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Coverage generation failed" -ForegroundColor Red
+        throw "Coverage generation failed"
+    }
 }
 
-Add-BuildTask 'Report' {
+# Report coverage
+Add-BuildTask 'Report-Coverage' {
     Write-Host 'Creating coverage report webpage...'
     & .\Utility\Generate-Coverage.ps1 -ReportGenerator
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Coverage Report generation failed" -ForegroundColor Red
+        throw "Coverage Report generation failed"
+    }
 }
 
+# Clean coverage reports
+Add-BuildTask 'Clean-Coverage' {
+    Write-Host 'Cleaning coverage report...'
+    & .\Utility\Generate-Coverage.ps1 -Clean
+}
+
+# Update the module manifest
 Add-BuildTask 'Manifest' {
     Write-Host 'Updating Kestrun.psd1 manifest...'
     pwsh -NoProfile -File .\Utility\Update-Manifest.ps1

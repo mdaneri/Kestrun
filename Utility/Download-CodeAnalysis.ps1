@@ -4,6 +4,9 @@ param(
     [switch]$Force
 )
 
+# Add Helper utility
+. ./Utility/Helper.ps1
+
 # Where to put the final DLLs
 $BaseOut = Join-Path -Path $OutputDir -ChildPath 'Microsoft.CodeAnalysis'
 
@@ -26,68 +29,6 @@ $Tmp = Join-Path $tmpDir '__nuget_tmp_roslyn'
 
 New-Item -ItemType Directory -Path $Tmp -Force | Out-Null
 New-Item -ItemType Directory -Path $BaseOut -Force | Out-Null
-<#
-  .SYNOPSIS
-    Chooses the best TFM (Target Framework Moniker) folder from a library folder.
-    This is useful for multi-targeted libraries that may have different versions of the same assembly for different frameworks.
-  .DESCRIPTION
-    Returns the path to the best TFM folder, or null if none is found.
-    This is useful for multi-targeted libraries that may have different versions of the same assembly for different frameworks.
-#>
-function Get-BestTfmFolder([string]$LibFolder) {
-    if (-not (Test-Path $LibFolder)) { return $null }
-    $tfms = Get-ChildItem -Path $LibFolder -Directory | Select-Object -ExpandProperty Name
-    $preference = @(
-        'net9.0', 'net9.0-windows',
-        'net8.0', 'net8.0-windows',
-        'net7.0', 'net7.0-windows',
-        'net6.0', 'net6.0-windows',
-        'netstandard2.1', 'netstandard2.0',
-        'net472', 'net471', 'net48', 'net47'
-    )
-    foreach ($p in $preference) { if ($tfms -contains $p) { return Join-Path $LibFolder $p } }
-    if ($tfms.Count -gt 0) { return Join-Path $LibFolder $tfms[0] }
-    return $null
-}
-
-<#
-  .SYNOPSIS
-      Downloads and extracts a NuGet package.
-  .DESCRIPTION
-      Downloads a NuGet package and extracts it to a specified folder.
-      This function is designed to work cross-platform without relying on nuget.exe.
-  .PARAMETER Id
-      The ID of the NuGet package to download.
-  .PARAMETER Version
-      The version of the NuGet package to download.
-  .PARAMETER WorkRoot
-      The root directory where the package will be downloaded.
-  .PARAMETER Force
-      Whether to force re-download the package if it already exists.
-  .OUTPUTS
-      The path to the extracted package folder.
-#>
-function Get-PackageFolder([string]$Id, [string]$Version, [string]$WorkRoot, [switch]$Force) {
-    $idLower = $Id.ToLowerInvariant()
-    $pkgRoot = Join-Path $WorkRoot "$Id.$Version"
-    if (-not $Force -and (Test-Path $pkgRoot)) { return $pkgRoot }
-
-    # fresh folder
-    if (Test-Path $pkgRoot) { Remove-Item -Recurse -Force $pkgRoot }
-    New-Item -ItemType Directory -Path $pkgRoot -Force | Out-Null
-
-    $nupkgName = "$idLower.$Version.nupkg"
-    $nupkgUrl = "https://api.nuget.org/v3-flatcontainer/$idLower/$Version/$nupkgName"
-    $nupkgPath = Join-Path $pkgRoot $nupkgName
-
-    Write-Host "Downloading $Id $Version..."
-    Invoke-WebRequest -Uri $nupkgUrl -OutFile $nupkgPath
-    # Extract .nupkg (zip)
-    Expand-Archive -Path $nupkgPath -DestinationPath $pkgRoot -Force
-    Remove-Item $nupkgPath -Force
-
-    return $pkgRoot
-}
 
 $missing = @{}
 

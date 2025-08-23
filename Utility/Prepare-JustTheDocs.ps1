@@ -24,40 +24,9 @@ permalink: /cs/
 "@ | Set-Content $topIndex -NoNewline
 }
 
-<#
-    .SYNOPSIS
-        Extracts the title from the content.
-    .DESCRIPTION
-        Gets the title from the first H1 in the content, or falls back to a default title.
-    .PARAMETER content
-        The content to extract the title from.
-    .PARAMETER fallback
-        The fallback title to use if no H1 is found.
-    .OUTPUTS
-        The extracted or fallback title.
-#>
-function Get-TitleFromContent([string]$content, [string]$fallback) {
-    $t = if ($content -match '(?m)^\s*#\s+(.+?)\s*$') { $Matches[1].Trim() } else { $fallback }
-    return $t -replace '"', '\"'
-}
-
 # Helper: make a path relative to ApiRoot
 $apiRootFull = (Resolve-Path $ApiRoot).Path.TrimEnd('\', '/')
 
-<#
-    .SYNOPSIS
-        Gets the relative path from the API root.
-    .DESCRIPTION
-        Returns the relative path from the API root to the specified full path.
-    .PARAMETER full
-        The full path to resolve.
-    .OUTPUTS
-        The relative path from the API root.
-#>
-function RelFromApi([string]$full) {
-    $p = (Resolve-Path $full).Path
-    return $p.Substring($apiRootFull.Length).TrimStart('\', '/')
-}
 
 # 1) Create index.md for each top-level namespace folder (e.g., global/)
 $displayName = @{ 'global' = 'Global namespace' }
@@ -103,10 +72,17 @@ parent: "C#"
         return
     }
 
-    $title = Get-TitleFromContent $content $_.BaseName
+    $t = if ($content -match '(?m)^\s*#\s+(.+?)\s*$') { $Matches[1].Trim() } else { $_.BaseName }
+    $title = $t -replace '"', '\"'
+
+
+    #$title = Get-TitleFromContent $content $_.BaseName
 
     # Determine namespace (first directory under api/)
-    $relPath = RelFromApi $file
+    # Helper: make a path relative to ApiRoot
+    
+    $p = (Resolve-Path $file).Path
+    $relPath = $p.Substring($apiRootFull.Length).TrimStart('\', '/')
     $parts = $relPath -split '[\\/]+'
     $isInNamespace = ($parts.Length -ge 2)
     $namespace = if ($isInNamespace) { $parts[0] } else { $null }

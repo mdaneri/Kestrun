@@ -7,50 +7,30 @@ param(
     [switch]$Remove
 )
 
-<#
-    .SYNOPSIS
-        Gets the version from the specified file.
-    .DESCRIPTION
-        Reads the version information from a JSON file.
-    .PARAMETER FileVersion
-        The path to the version file.
-    .OUTPUTS
-        The version string.
-#>
-function Get-Version {
-    [CmdletBinding()]
-    [OutputType([string])]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$FileVersion
-    )
-    if (-not (Test-Path -Path $FileVersion)) {
-        throw "File version file not found: $FileVersion"
-    }
-    $versionData = Get-Content -Path $FileVersion | ConvertFrom-Json
-    $Version = $versionData.Version
-    return $Version
-}
+# Add Helper utility
+. ./Utility/Helper.ps1
 
 $PSPaths = if ($IsWindows) {
     $env:PSModulePath -split ';'
 } else {
     $env:PSModulePath -split ':'
 }
-$Version = Get-Version -FileVersion $FileVersion
+$Version = Get-Version -FileVersion $FileVersion -VersionOnly
 
 $dest = Join-Path -Path $PSPaths[0] -ChildPath 'Kestrun' -AdditionalChildPath $Version
+
+# Remove the module if requested
 if ($Remove) {
-    if (!(Test-Path $dest)) {
+    if (Test-Path -Path $dest) {
+        Write-Host "Deleting module from $dest"
+        Remove-Item -Path $dest -Recurse -Force | Out-Null
+    } else {
         Write-Warning "Directory $dest doesn't exist"
     }
-
-    Write-Host "Deleting module from $dest"
-    Remove-Item -Path $dest -Recurse -Force | Out-Null
     return
 }
 
-if (Test-Path $dest) {
+if (Test-Path -Path $dest) {
     if ($Force) {
         Remove-Item -Path $dest -Recurse -Force | Out-Null
     } else {

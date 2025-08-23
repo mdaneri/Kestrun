@@ -7,6 +7,9 @@ param(
     [switch]$Clean
 )
 
+# Add Helper utility
+. ./Utility/Helper.ps1
+
 if ($Clean) {
     Write-Host 'Cleaning up...'
     Remove-Item -Path $StageDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -26,41 +29,6 @@ New-Item -ItemType Directory -Force -Path $ApiOut | Out-Null
 
 # 1) Copy your build output (includes NuGet deps thanks to CopyLocalLockFileAssemblies=true)
 Copy-Item "$bin/*" $StageDir -Recurse -Force | Out-Null
-
-<#
-    .SYNOPSIS
-        Gets the path to the shared framework for a given family and major version.
-    .DESCRIPTION
-        Returns the path to the shared framework, or throws an error if not found.
-    .PARAMETER family
-        The family name of the shared framework (e.g. Microsoft.AspNetCore.App).
-    .PARAMETER major
-        The major version of the shared framework (e.g. 8 or 9).
-    .OUTPUTS
-        The path to the shared framework, or throws an error if not found.
-#>
-function Get-SharedFrameworkPath {
-    param(
-        [string]$family,
-        [int]$major
-    )
-
-    $escapedFamily = [Regex]::Escape($family)
-
-    $rts = (& dotnet --list-runtimes) -split "`n" |
-        Where-Object { $_ -match "^$escapedFamily\s+$major\.\d+\.\d+\s+\[(.+)\]" } |
-        ForEach-Object {
-            [PSCustomObject]@{
-                Version = [Version]($_ -replace "^$escapedFamily\s+([0-9\.]+)\s+\[.+\]$", '$1')
-                Root = ($_ -replace '^.*\[(.+)\]$', '$1')
-            }
-        } | Sort-Object Version -Descending
-
-    if (-not $rts) { throw "No $family $major.x runtime found." }
-
-    return Join-Path $($rts[0].Root) $($rts[0].Version)
-}
-
 
 $aspnet = Get-SharedFrameworkPath 'Microsoft.AspNetCore.App' $major
 Copy-Item "$aspnet/*.dll" $StageDir -Force

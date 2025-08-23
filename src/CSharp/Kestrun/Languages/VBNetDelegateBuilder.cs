@@ -239,8 +239,15 @@ internal static class VBNetDelegateBuilder
     /// <returns>An enumerable of metadata references.</returns>
     private static IEnumerable<MetadataReference> BuildMetadataReferences(Assembly[]? extraRefs)
     {
+        // NOTE: Some tests create throwaway assemblies in temp folders and then delete the folder.
+        // On Windows the delete often fails (file still locked) so Assembly.Location continues to exist.
+        // On Linux the delete succeeds; the Assembly remains loaded but its Location now points to a
+        // non-existent path.  Roslyn's MetadataReference.CreateFromFile will throw FileNotFoundException
+        // in that scenario.  We therefore skip any loaded assemblies whose Location no longer exists.
         var baseRefs = AppDomain.CurrentDomain.GetAssemblies()
-            .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+            .Where(a =>
+                !a.IsDynamic &&
+                SafeHasLocation(a))
             .Select(a => MetadataReference.CreateFromFile(a.Location));
 
         var extras = extraRefs?.Select(r => MetadataReference.CreateFromFile(r.Location))
@@ -255,6 +262,18 @@ internal static class VBNetDelegateBuilder
             .Append(MetadataReference.CreateFromFile(typeof(Console).Assembly.Location))          // System.Console
             .Append(MetadataReference.CreateFromFile(typeof(Serilog.Log).Assembly.Location))       // Serilog
             .Append(MetadataReference.CreateFromFile(typeof(ClaimsPrincipal).Assembly.Location));   // System.Security.Claims
+    }
+    private static bool SafeHasLocation(Assembly a)
+    {
+        try
+        {
+            var loc = a.Location; // may throw for some dynamic contexts
+            return !string.IsNullOrEmpty(loc) && File.Exists(loc);
+        }
+        catch
+        {
+            return false;
+        }
     }
     /// <summary>
     /// Logs any warnings from the compilation process.
