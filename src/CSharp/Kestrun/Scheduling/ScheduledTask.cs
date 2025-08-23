@@ -38,4 +38,10 @@ internal sealed record ScheduledTask(
     /// A suspended task will not run until resumed.
     /// </summary>
     public volatile bool IsSuspended;
+
+    /// <summary>
+    /// The background runner task handling the scheduling loop. Used to allow
+    /// graceful cancellation (tests assert no further executions after Cancel()).
+    /// </summary>
+    public Task? Runner { get; set; }
 }

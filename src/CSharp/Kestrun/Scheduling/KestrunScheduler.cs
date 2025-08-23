@@ -217,6 +217,16 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
         if (_tasks.TryRemove(name, out var task))
         {
             task.TokenSource.Cancel();
+            // Wait briefly for the loop to observe cancellation to avoid a race
+            // where a final run completes after Cancel() returns and causes test flakiness.
+            try
+            {
+                if (task.Runner is { } r && !r.IsCompleted)
+                {
+                    _ = r.Wait(TimeSpan.FromMilliseconds(250));
+                }
+            }
+            catch (Exception) { /* swallow */ }
             _log.Information("Scheduler job {Name} cancelled", name);
             return true;
         }
@@ -443,7 +453,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
         {
             NextRunAt = interval != null
                 ? DateTimeOffset.UtcNow + interval.Value
-                : (DateTimeOffset.UtcNow + NextCronDelay(cron!, _tz)).ToUniversalTime()
+                : (DateTimeOffset.UtcNow + NextCronDelay(cron!, _tz)).ToUniversalTime(),
         };
 
         if (!_tasks.TryAdd(name, task))
@@ -451,7 +461,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
             throw new InvalidOperationException($"A task named '{name}' already exists.");
         }
 
-        _ = Task.Run(() => LoopAsync(task), cts.Token);
+        task.Runner = Task.Run(() => LoopAsync(task), cts.Token);
         _log.Debug("Scheduled job '{Name}' (cron: {Cron}, interval: {Interval})", name, cron?.ToString(), interval);
     }
 
@@ -485,10 +495,21 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                 continue;
             }
 
-            var delay = task.Interval ?? NextCronDelay(task.Cron!, _tz);
-            if (delay < TimeSpan.Zero)
+            TimeSpan delay;
+            if (task.Interval is not null)
             {
-                delay = TimeSpan.Zero;
+                // Align to the intended NextRunAt rather than drifting by fixed interval;
+                // this reduces flakiness when scheduling overhead is high.
+                var until = task.NextRunAt - DateTimeOffset.UtcNow;
+                delay = until > TimeSpan.Zero ? until : TimeSpan.Zero;
+            }
+            else
+            {
+                delay = NextCronDelay(task.Cron!, _tz);
+                if (delay < TimeSpan.Zero)
+                {
+                    delay = TimeSpan.Zero;
+                }
             }
 
             try { await Task.Delay(delay, ct); }

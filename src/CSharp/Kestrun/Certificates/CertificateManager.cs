@@ -883,18 +883,49 @@ public static class CertificateManager
         var raw = ms.ToArray();
 
 #if NET9_0_OR_GREATER
-        return X509CertificateLoader.LoadPkcs12(
-            raw,
-            password: default,
-            keyStorageFlags: flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0),
-            loaderLimits: Pkcs12LoaderLimits.Defaults
-        );
+        try
+        {
+            return X509CertificateLoader.LoadPkcs12(
+                raw,
+                password: default,
+                keyStorageFlags: flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0),
+                loaderLimits: Pkcs12LoaderLimits.Defaults
+            );
+        }
+        catch (PlatformNotSupportedException) when (ephemeral)
+        {
+            // Some platforms (e.g. certain Linux/macOS runners) don't yet support
+            // EphemeralKeySet with the new X509CertificateLoader API. In that case
+            // we fall back to re-loading without the EphemeralKeySet flag. The
+            // intent of Ephemeral in our API is simply "do not persist in a store" –
+            // loading without the flag here still keeps the cert in-memory only.
+            Log.Debug("EphemeralKeySet not supported on this platform for X509CertificateLoader; falling back without the flag.");
+            return X509CertificateLoader.LoadPkcs12(
+                raw,
+                password: default,
+                keyStorageFlags: flags, // omit EphemeralKeySet
+                loaderLimits: Pkcs12LoaderLimits.Defaults
+            );
+        }
 #else
-        return new X509Certificate2(
-            raw,
-            (string?)null,
-            flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0)
-        );
+        try
+        {
+            return new X509Certificate2(
+                raw,
+                (string?)null,
+                flags | (ephemeral ? X509KeyStorageFlags.EphemeralKeySet : 0)
+            );
+        }
+        catch (PlatformNotSupportedException) when (ephemeral)
+        {
+            // macOS (and some Linux distros) under net8 may not support EphemeralKeySet here.
+            Log.Debug("EphemeralKeySet not supported on this platform (net8); falling back without the flag.");
+            return new X509Certificate2(
+                raw,
+                (string?)null,
+                flags // omit EphemeralKeySet
+            );
+        }
 
 #endif
     }
