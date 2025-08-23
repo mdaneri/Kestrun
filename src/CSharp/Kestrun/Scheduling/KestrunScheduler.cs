@@ -223,7 +223,18 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
             {
                 if (task.Runner is { } r && !r.IsCompleted)
                 {
-                    _ = r.Wait(TimeSpan.FromMilliseconds(250));
+                    // First quick wait
+                    if (!r.Wait(TimeSpan.FromMilliseconds(250)))
+                    {
+                        // Allow additional time (slower net8 CI, PowerShell warm-up) up to ~1s total.
+                        var remaining = TimeSpan.FromMilliseconds(750);
+                        var sw = System.Diagnostics.Stopwatch.StartNew();
+                        while (!r.IsCompleted && sw.Elapsed < remaining)
+                        {
+                            // small sleep; runner work is CPU-light
+                            Thread.Sleep(25);
+                        }
+                    }
                 }
             }
             catch (Exception) { /* swallow */ }
@@ -562,6 +573,11 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
     {
         try
         {
+            // If cancellation was requested after the loop's check and before entering here, bail out.
+            if (ct.IsCancellationRequested)
+            {
+                return;
+            }
             var lastRunAt = DateTimeOffset.UtcNow;
             task.LastRunAt = lastRunAt;
             await work(ct);
