@@ -28,11 +28,6 @@ internal static class JScriptDelegateBuilder
 
         return async context =>
         {
-            if (logger.IsEnabled(LogEventLevel.Debug))
-            {
-                logger.Debug("JS delegate invoked for {Path}", context.Request.Path);
-            }
-
             var krRequest = await KestrunRequest.NewRequest(context);
             var krResponse = new KestrunResponse(krRequest);
             engine.Script.handle(context, krResponse);

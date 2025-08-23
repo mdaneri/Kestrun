@@ -310,7 +310,7 @@ jobs:
       - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
         shell: pwsh
         run: |
-          Invoke-Build Report
+          Invoke-Build Report-Coverage
 
           if (-not (Test-Path "./coverage/report/index.html")) {
             throw "coverage/report/index.html not found — ensure Invoke-Build Report writes there."

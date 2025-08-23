@@ -70,7 +70,7 @@ internal static class CSharpDelegateBuilder
             {
                 if (log.IsEnabled(LogEventLevel.Debug))
                 {
-                    log.Debug("Preparing execution for C# script at {Path}", ctx.Request.Path);
+                    log.DebugSanitized("Preparing execution for C# script at {Path}", ctx.Request.Path);
                 }
 
                 var (Globals, Response, Context) = await DelegateBuilder.PrepareExecutionAsync(ctx, log, args).ConfigureAwait(false);
