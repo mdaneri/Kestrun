@@ -44,4 +44,14 @@ internal sealed record ScheduledTask(
     /// graceful cancellation (tests assert no further executions after Cancel()).
     /// </summary>
     public Task? Runner { get; set; }
+
+    /// <summary>
+    /// Fixed anchor timestamp captured at schedule time for interval jobs to enable fixed-rate scheduling.
+    /// </summary>
+    public DateTimeOffset AnchorAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// Number of successful executions completed (for interval jobs) to compute deterministic next slot.
+    /// </summary>
+    public int RunIteration { get; set; }
 }

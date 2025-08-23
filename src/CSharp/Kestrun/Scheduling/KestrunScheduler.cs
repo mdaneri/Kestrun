@@ -584,7 +584,20 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
             // compute next run (only if still scheduled)
             if (task.Interval != null)
             {
-                task.NextRunAt = lastRunAt + task.Interval.Value;
+                // Fixed-rate based on AnchorAt to avoid drift; increment iteration first.
+                task.RunIteration++;
+                var interval = task.Interval.Value;
+                // Next theoretical slot (iteration index is zero-based for first run after schedule)
+                var next = task.AnchorAt + ((task.RunIteration + 1) * interval);
+                var now = DateTimeOffset.UtcNow;
+                // If we're behind schedule (execution took longer), advance to next future slot.
+                while (next - now <= TimeSpan.Zero)
+                {
+                    task.RunIteration++;
+                    next = task.AnchorAt + ((task.RunIteration + 1) * interval);
+                    if (task.RunIteration > 10_000) { break; }
+                }
+                task.NextRunAt = next;
             }
             else if (task.Cron is not null)
             {
