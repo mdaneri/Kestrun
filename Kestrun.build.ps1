@@ -228,13 +228,13 @@ Add-BuildTask 'Test-Pester' {
     $cfg.Filter.ExcludeTag = $excludeTag
 
     if ($RunPesterInProcess) {
-        $result = Invoke-Pester -Configuration $cfg
-        if ($null -eq $result) {
-            throw 'Invoke-Pester did not return a result object.'
-        }
-        if ($result.FailedCount -gt 0) {
-            Write-Host "Pester tests failed: $($result.FailedCount) failed." -ForegroundColor Red
-            throw "Pester tests failed."
+        Invoke-Pester -Configuration $cfg
+        # Check exit code
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Some tests failed"
+            exit $LASTEXITCODE
+        } else {
+            Write-Host "✅ All tests passed"
         }
     } else {
         $json = $cfg | ConvertTo-Json -Depth 10
