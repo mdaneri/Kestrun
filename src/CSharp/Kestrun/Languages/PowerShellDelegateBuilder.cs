@@ -1,5 +1,6 @@
 using System.Management.Automation;
 using Kestrun.Hosting;
+using Kestrun.Logging;
 using Kestrun.Utilities;
 using Serilog.Events;
 
@@ -186,7 +187,7 @@ internal static class PowerShellDelegateBuilder
         catch (InvalidOperationException ioex)
         {
             // This can happen if the response has already been completed
-            log.Debug(ioex, "Response already completed for {Path}", context.Request.Path);
+            log.DebugSanitized(ioex, "Response already completed for {Path}", context.Request.Path);
             // No action needed, as the response is already completed
         }
     }

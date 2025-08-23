@@ -1,0 +1,4 @@
+src/PowerShell/Kestrun/lib/**
+**/bin/**
+**/obj/**
+**/.out/**
