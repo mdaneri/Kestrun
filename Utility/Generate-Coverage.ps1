@@ -1,24 +1,24 @@
 ﻿[CmdletBinding(DefaultParameterSetName = 'Default')]
 param(
-    [Parameter()] [string]$Framework     = "net9.0",
+    [Parameter()] [string]$Framework = "net9.0",
     [Parameter()] [string]$Configuration = "Release",
-    [Parameter()] [string]$TestProject   = ".\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj",
-    [Parameter()] [string]$CoverageDir   = ".\coverage",
+    [Parameter()] [string]$TestProject = ".\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj",
+    [Parameter()] [string]$CoverageDir = ".\coverage",
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Report')]
     [switch]$ReportGenerator,
 
     [Parameter(ParameterSetName = 'Report')]
-    [string]$ReportDir    = "./coverage/report", # where HTML lands
+    [string]$ReportDir = "./coverage/report", # where HTML lands
 
     [Parameter(ParameterSetName = 'Report')]
-    [string]$ReportTypes  = "Html;TextSummary;Cobertura;Badges",
+    [string]$ReportTypes = "Html;TextSummary;Cobertura;Badges",
 
     [Parameter(ParameterSetName = 'Report')]
     [string]$AssemblyFilters = "+Kestrun*;-*.Tests",
 
     [Parameter(ParameterSetName = 'Report')]
-    [string]$FileFilters  = "-**/Generated/**;-**/*.g.cs",
+    [string]$FileFilters = "-**/Generated/**;-**/*.g.cs",
 
     [Parameter(ParameterSetName = 'Report')]
     [switch]$OpenWhenDone
@@ -54,12 +54,14 @@ Write-Host "📂 Copying ASP.NET runtime assemblies..."
 Copy-Item -Path (Join-Path $aspnet '*') -Destination $binDir -Recurse -Force
 
 # Prepare coverage folders
+if (-not (Test-Path -Path $CoverageDir)) {
+    New-Item -ItemType Directory -Force -Path $CoverageDir | Out-Null
+}
 $CoverageDir = Resolve-Path -Path $CoverageDir
 if ($CoverageDir -is [System.Management.Automation.PathInfo]) { $CoverageDir = $CoverageDir.Path }
-New-Item -ItemType Directory -Force -Path $CoverageDir | Out-Null
 
 # Raw results by TFM (so multi-target runs can live side-by-side)
-$resultsDir   = Join-Path $CoverageDir "raw\$Framework"
+$resultsDir = Join-Path $CoverageDir "raw\$Framework"
 New-Item -ItemType Directory -Force -Path $resultsDir | Out-Null
 $coverageFile = Join-Path $CoverageDir "csharp.$Framework.cobertura.xml"
 
@@ -68,15 +70,15 @@ dotnet clean $TestProject --configuration $Configuration | Out-Host
 
 Write-Host "🧪 Running tests with XPlat DataCollector..."
 dotnet test $TestProject `
-  --configuration $Configuration `
-  --framework $Framework `
-  --collect:"XPlat Code Coverage" `
-  --logger "trx;LogFileName=test-results.trx" `
-  --results-directory "$resultsDir" | Out-Host
+    --configuration $Configuration `
+    --framework $Framework `
+    --collect:"XPlat Code Coverage" `
+    --logger "trx;LogFileName=test-results.trx" `
+    --results-directory "$resultsDir" | Out-Host
 
 Write-Host "🗂️  Scanning for Cobertura files in $resultsDir..."
 $found = Get-ChildItem "$resultsDir" -Recurse -Filter 'coverage.cobertura.xml' -File |
-         Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
 if (-not $found) { throw "❌ No 'coverage.cobertura.xml' found under $resultsDir" }
 
@@ -92,8 +94,8 @@ if ($ReportGenerator) {
     if (-not (Get-Command reportgenerator -ErrorAction SilentlyContinue)) {
         Write-Host "⬇️  Installing ReportGenerator (dotnet global tool)..."
         dotnet tool install -g dotnet-reportgenerator-globaltool | Out-Host
-        $env:PATH = [Environment]::GetEnvironmentVariable('PATH','User') + ';' +
-                    [Environment]::GetEnvironmentVariable('PATH','Machine')
+        $env:PATH = [Environment]::GetEnvironmentVariable('PATH', 'User') + ';' +
+        [Environment]::GetEnvironmentVariable('PATH', 'Machine')
     }
 
     New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
