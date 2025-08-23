@@ -562,9 +562,9 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
     {
         try
         {
-            await work(ct);
             var lastRunAt = DateTimeOffset.UtcNow;
             task.LastRunAt = lastRunAt;
+            await work(ct);
             // compute next run (only if still scheduled)
             if (task.Interval != null)
             {

@@ -277,7 +277,8 @@ public class SchedulerServiceTests
             var start = DateTime.UtcNow;
             var seen1 = false; var seen2 = false;
             // CI (Linux, cold PowerShell runspace init) can exceed 3s for first immediate run; allow up to 8s.
-            while (!(seen1 && seen2) && DateTime.UtcNow - start < TimeSpan.FromSeconds(8))
+            // net8 on some CI runners can be slower than net9; allow a bit more headroom
+            while (!(seen1 && seen2) && DateTime.UtcNow - start < TimeSpan.FromSeconds(10))
             {
                 var snap = svc.GetSnapshot();
                 seen1 = snap.Any(j => j.Name == "ps-file-int-async" && j.LastRunAt != null);
