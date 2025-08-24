@@ -232,6 +232,10 @@ jobs:
       - name: 🔧 Build
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🧰 Install Module
+        shell: pwsh
+        run: Invoke-Build Install-Module
         
       - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
         shell: pwsh
@@ -306,6 +310,10 @@ jobs:
       - name: 🔧 Build
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🧰 Install Module
+        shell: pwsh
+        run: Invoke-Build Install-Module
 
       - name: 📥 Checkout coverage site repo (for in-place output + history)
         uses: actions/checkout@v5

@@ -28,7 +28,10 @@ param(
     [switch]$OpenWhenDone,
 
     [Parameter(ParameterSetName = 'Report')]
-    [string]$HistoryDir
+    [string]$HistoryDir,
+
+    [Parameter(ParameterSetName = 'Report')]
+    [switch]$SkipPowershell
 )
 
 # Add Helper utility
@@ -93,29 +96,34 @@ if ((Get-Item $coverageFile).Length -lt 400) {
     Write-Host "📊 Coverage (Cobertura) saved: $coverageFile"
 }
 
-# Pester coverage
-$pesterCoverageDir = Join-Path -Path $CoverageDir -ChildPath 'pester'
-$pesterCoverageFile = Join-Path -Path $pesterCoverageDir -ChildPath 'coverage.cobertura.xml'
-New-Item -Force -ItemType Directory -Path $pesterCoverageDir | Out-Null
-
-$cfg = New-PesterConfiguration
-$cfg.Run.Path = @($PesterPath)
-$cfg.Output.Verbosity = 'Detailed'
-$cfg.TestResult.Enabled = $true
-$cfg.Run.Exit = $true
-$cfg.CodeCoverage.Enabled = $true
-$cfg.CodeCoverage.Path = @('src/PowerShell/Kestrun/**/*.ps1')  # ← your module/scripts
-$cfg.CodeCoverage.OutputFormat = 'Cobertura'
-$cfg.CodeCoverage.OutputPath = $pesterCoverageFile
-
-Invoke-Pester -Configuration $cfg
-if (-not (Test-Path $pesterCoverageFile)) {
-    throw '⚠️Pester coverage output not found.'
-} else {
-    Write-Host "📊 Pester Coverage (Cobertura) saved: $pesterCoverageFile"
-}
-
+# ReportGenerator
 if ($ReportGenerator) {
+
+    # PowerShell coverage
+    if (-not $SkipPowershell) {
+        # Pester coverage
+        $pesterCoverageDir = Join-Path -Path $CoverageDir -ChildPath 'pester'
+        $pesterCoverageFile = Join-Path -Path $pesterCoverageDir -ChildPath 'coverage.cobertura.xml'
+        New-Item -Force -ItemType Directory -Path $pesterCoverageDir | Out-Null
+
+        $cfg = New-PesterConfiguration
+        $cfg.Run.Path = @($PesterPath)
+        $cfg.Output.Verbosity = 'Detailed'
+        $cfg.TestResult.Enabled = $true
+        $cfg.Run.Exit = $true
+        $cfg.CodeCoverage.Enabled = $true
+        $cfg.CodeCoverage.Path = @('src/PowerShell/Kestrun/**/*.ps1')  # ← your module/scripts
+        $cfg.CodeCoverage.OutputFormat = 'Cobertura'
+        $cfg.CodeCoverage.OutputPath = $pesterCoverageFile
+
+        Invoke-Pester -Configuration $cfg
+        if (-not (Test-Path $pesterCoverageFile)) {
+            throw '⚠️Pester coverage output not found.'
+        } else {
+            Write-Host "📊 Pester Coverage (Cobertura) saved: $pesterCoverageFile"
+        }
+    }
+ 
     $rg = Install-ReportGenerator
 
     # Resolve report & history dirs
@@ -126,16 +134,44 @@ if ($ReportGenerator) {
 
     New-Item -ItemType Directory -Force -Path $HistoryDir | Out-Null
 
-    $reportsArg = '"{0};{1}"' -f $coverageFile, $pesterCoverageFile
+    if ($Powershell) {
+        $reportsArg = '"{0};{1}"' -f $coverageFile, $pesterCoverageFile
+        $title = "Kestrun — Combined Coverage" 
+    } else {
+        $reportsArg = '"{0}"' -f $coverageFile
+        $title = "Kestrun — C# Coverage" 
+    }
+
+    # Build a friendly tag that works on Actions AND locally
+    $repo = $env:GITHUB_REPOSITORY
+    $sha = $env:GITHUB_SHA
+
+    if ([string]::IsNullOrWhiteSpace($repo)) {
+        try {
+            $repo = (git config --get remote.origin.url) -replace '^.*[:/]', '' -replace '\.git$', ''
+        } catch {
+            Write-Warning "Could not determine repository name: $_"
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($sha)) {
+        try {
+            $sha = (git rev-parse --short HEAD)
+        } catch {
+            Write-Warning "Could not determine commit SHA: $_"
+        }
+    }
+
+    $tag = if ($repo -and $sha) { "$repo@$sha" } else { "$(Get-Date -Format s)Z" }
+
 
     Write-Host "📈 Generating coverage report → $ReportDir (history: $HistoryDir)"
     & $rg `
         -reports:$reportsArg `
         -targetdir:$ReportDir `
         -historydir:$HistoryDir `
-        -title:"Kestrun — Combined Coverage" `
+        -title:$title `
         -reporttypes:$ReportTypes `
-        -tag:"${GITHUB_REPOSITORY}@${GITHUB_SHA}" `
+        -tag:$tag `
         -assemblyfilters:$AssemblyFilters `
         -filefilters:$FileFilters
 
