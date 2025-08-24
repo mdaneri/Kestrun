@@ -82,6 +82,7 @@ public class SchedulerServiceTests
         Assert.True(ran > 0);
 
         Assert.True(svc.Cancel("c"));
+        await Task.Delay(250);
         var afterCancel = ran;
         await Task.Delay(250);
         Assert.Equal(afterCancel, ran);
