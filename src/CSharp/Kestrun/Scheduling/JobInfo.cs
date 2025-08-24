@@ -7,6 +7,7 @@ namespace Kestrun.Scheduling;
 /// <param name="LastRunAt">The last time the task was run.</param>
 /// <param name="NextRunAt">The next scheduled run time for the task.</param>
 /// <param name="IsSuspended">Indicates whether the task is currently suspended.</param>
+/// <param name="IsCompleted">Indicates whether the scheduling loop has exited (task fully cancelled).</param>
 /// <remarks>
 /// This class encapsulates the details of a scheduled task, including its name, last run time,
 /// next run time, and whether it is currently suspended. It is used internally by the scheduler
@@ -15,4 +16,5 @@ namespace Kestrun.Scheduling;
 public sealed record JobInfo(string Name,
                              DateTimeOffset? LastRunAt,
                              DateTimeOffset NextRunAt,
-                             bool IsSuspended);
+                             bool IsSuspended,
+                             bool IsCompleted = false);

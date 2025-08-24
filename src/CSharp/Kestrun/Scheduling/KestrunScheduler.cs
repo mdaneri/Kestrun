@@ -245,6 +245,45 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
     }
 
     /// <summary>
+    /// Asynchronously cancels a scheduled job and optionally waits for its runner to complete.
+    /// </summary>
+    /// <param name="name">Job name.</param>
+    /// <param name="timeout">Optional timeout (default 2s) to wait for completion after signalling cancellation.</param>
+    public async Task<bool> CancelAsync(string name, TimeSpan? timeout = null)
+    {
+        timeout ??= TimeSpan.FromSeconds(2);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Task name cannot be null or empty.", nameof(name));
+        }
+        if (!_tasks.TryRemove(name, out var task))
+        {
+            return false;
+        }
+        _log.Information("Cancelling scheduler job (async) {Name}", name);
+        task.TokenSource.Cancel();
+        var runner = task.Runner;
+        if (runner is null)
+        {
+            return true;
+        }
+        try
+        {
+            using var cts = new CancellationTokenSource(timeout.Value);
+            var completed = await Task.WhenAny(runner, Task.Delay(Timeout.InfiniteTimeSpan, cts.Token)) == runner;
+            if (!completed)
+            {
+                _log.Warning("Timeout waiting for scheduler job {Name} to cancel", name);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Debug(ex, "Error while awaiting cancellation for job {Name}", name);
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Cancels all scheduled jobs.
     /// </summary>
     public void CancelAll()
@@ -296,7 +335,8 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                 ["Name"] = j.Name,
                 ["LastRunAt"] = j.LastRunAt,
                 ["NextRunAt"] = j.NextRunAt,
-                ["IsSuspended"] = j.IsSuspended
+                ["IsSuspended"] = j.IsSuspended,
+                ["IsCompleted"] = j.IsCompleted
             })
             .ToArray();                       // powershell likes [] not IList<>
 
@@ -313,7 +353,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
     /// </summary>
     /// <returns>An <see cref="IReadOnlyCollection{JobInfo}"/> containing job information for all scheduled jobs.</returns>
     public IReadOnlyCollection<JobInfo> GetSnapshot()
-        => [.. _tasks.Values.Select(t => new JobInfo(t.Name, t.LastRunAt, t.NextRunAt, t.IsSuspended))];
+        => [.. _tasks.Values.Select(t => new JobInfo(t.Name, t.LastRunAt, t.NextRunAt, t.IsSuspended, t.IsCompleted))];
 
 
     /// <summary>
@@ -354,7 +394,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
         // fast path: no filter, utc, typed objects
         if (nameFilter.Length == 0 && tz.Equals(TimeZoneInfo.Utc) && !asHashtable)
         {
-            return [.. _tasks.Values.Select(t => (object)new JobInfo(t.Name, t.LastRunAt, t.NextRunAt, t.IsSuspended))];
+            return [.. _tasks.Values.Select(t => (object)new JobInfo(t.Name, t.LastRunAt, t.NextRunAt, t.IsSuspended, t.IsCompleted))];
         }
 
         var jobs = _tasks.Values
@@ -363,7 +403,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                          {
                              var last = t.LastRunAt?.ToOffset(tz.GetUtcOffset(t.LastRunAt ?? DateTimeOffset.UtcNow));
                              var next = t.NextRunAt.ToOffset(tz.GetUtcOffset(t.NextRunAt));
-                             return new JobInfo(t.Name, last, next, t.IsSuspended);
+                             return new JobInfo(t.Name, last, next, t.IsSuspended, t.IsCompleted);
                          })
                          .OrderBy(j => j.NextRunAt)
                          .ToArray();
@@ -379,7 +419,8 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                     ["Name"]        = j.Name,
                     ["LastRunAt"]   = j.LastRunAt,
                     ["NextRunAt"]   = j.NextRunAt,
-                    ["IsSuspended"] = j.IsSuspended
+                    ["IsSuspended"] = j.IsSuspended,
+                    ["IsCompleted"] = j.IsCompleted
                 })];
     }
 
@@ -531,6 +572,7 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                 await SafeRun(task.Work, task, ct);
             }
         }
+        task.IsCompleted = true;
     }
 
     /// <summary>

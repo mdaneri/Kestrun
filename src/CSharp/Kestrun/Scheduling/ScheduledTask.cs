@@ -54,4 +54,9 @@ internal sealed record ScheduledTask(
     /// Number of successful executions completed (for interval jobs) to compute deterministic next slot.
     /// </summary>
     public int RunIteration { get; set; }
+
+    /// <summary>
+    /// True when the scheduling loop has exited.
+    /// </summary>
+    public volatile bool IsCompleted;
 }
