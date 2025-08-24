@@ -6,6 +6,7 @@ namespace KestrunTests.Jwt;
 public class JwtInspectorTests
 {
     [Fact]
+    [Trait("Category", "Jwt")]
     public void ReadAllParameters_ExtractsHeaderPayloadAndClaims()
     {
         // Create a simple HS256 token

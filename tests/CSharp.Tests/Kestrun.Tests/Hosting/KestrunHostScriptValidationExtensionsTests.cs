@@ -10,6 +10,7 @@ public class KestrunHostScriptValidationExtensionsTests
     private KestrunHost CreateHost() => new("TestApp", AppContext.BaseDirectory);
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_ReturnsNoErrors_ForValidCode()
     {
         var host = CreateHost();
@@ -19,6 +20,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_ReturnsErrors_ForInvalidCode()
     {
         var host = CreateHost();
@@ -28,6 +30,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void IsCSharpScriptValid_ReturnsTrue_ForValidCode()
     {
         var host = CreateHost();
@@ -36,6 +39,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void IsCSharpScriptValid_ReturnsFalse_ForInvalidCode()
     {
         var host = CreateHost();
@@ -44,6 +48,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void GetCSharpScriptErrors_ReturnsNull_ForValidCode()
     {
         var host = CreateHost();
@@ -52,6 +57,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void GetCSharpScriptErrors_ReturnsErrorMessage_ForInvalidCode()
     {
         var host = CreateHost();
@@ -62,6 +68,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_ReturnsError_ForNullCode()
     {
         var host = CreateHost();
@@ -70,6 +77,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_NoError_ForEmptyCode()
     {
         var host = CreateHost();
@@ -79,6 +87,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_ExtraImports_AllowsOtherwiseInvalidCode()
     {
         var host = CreateHost();
@@ -95,6 +104,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_RespectsLanguageVersion()
     {
         var host = CreateHost();
@@ -108,6 +118,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_WarningOnly_IsValid()
     {
         var host = CreateHost();
@@ -119,6 +130,7 @@ public class KestrunHostScriptValidationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ValidateCSharpScript_ExceptionHandling_ReturnsSyntheticDiagnostic()
     {
         var host = CreateHost();

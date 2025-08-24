@@ -21,6 +21,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_Code_DefaultsToGet_WhenNoVerbsSpecified()
     {
         SanitizeSharedGlobals();
@@ -45,6 +46,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_Duplicate_WithThrowOnDuplicate_Throws()
     {
         SanitizeSharedGlobals();
@@ -65,6 +67,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_Duplicate_WithoutThrow_ReturnsNull()
     {
         SanitizeSharedGlobals();
@@ -87,6 +90,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void MapExists_MultiVerb_Works()
     {
         SanitizeSharedGlobals();
@@ -111,6 +115,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_RequireSchemes_Unregistered_Throws()
     {
         SanitizeSharedGlobals();
@@ -132,6 +137,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_RequireSchemes_Registered_Ok()
     {
         SanitizeSharedGlobals();
@@ -156,6 +162,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_RequirePolicies_Unregistered_Throws()
     {
         SanitizeSharedGlobals();
@@ -177,6 +184,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_RequirePolicies_Registered_Ok()
     {
         SanitizeSharedGlobals();
@@ -220,6 +228,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddHtmlTemplateRoute_MapsGet_WhenFileExists()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -245,6 +254,7 @@ public class KestrunHostMapExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticOverride_Code_RegistersMapping_AfterBuild()
     {
         SanitizeSharedGlobals();

@@ -11,6 +11,7 @@ namespace KestrunTests.Hosting;
 public class ClaimPolicyHostingIntegrationTests
 {
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task BasicAuth_Adds_Policies_Via_PostConfigurer()
     {
         var host = new KestrunHost("TestApp");
@@ -49,6 +50,7 @@ public class ClaimPolicyHostingIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task ApiKeyAuth_Adds_Policies_Via_PostConfigurer()
     {
         var host = new KestrunHost("TestApp");

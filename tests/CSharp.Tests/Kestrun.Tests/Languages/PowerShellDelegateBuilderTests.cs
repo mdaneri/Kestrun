@@ -27,6 +27,7 @@ public class PowerShellDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task Build_ExecutesScript_AndAppliesDefaultResponse()
     {
         var log = new Mock<ILogger>(MockBehavior.Loose).Object;

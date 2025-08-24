@@ -7,6 +7,7 @@ namespace KestrunTests.Hosting;
 public class KestrelOptionsExtensionsTest
 {
     [Fact]
+    [Trait("Category", "Hosting")]
     public void CopyFromTemplate_CopiesWritableProperties()
     {
         var src = new KestrelServerOptions
@@ -39,6 +40,7 @@ public class KestrelOptionsExtensionsTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void CopyFromTemplate_ThrowsOnNullArguments()
     {
         var src = new KestrelServerOptions();
@@ -52,6 +54,7 @@ public class KestrelOptionsExtensionsTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void CopyFromTemplate_SkipsApplicationServices()
     {
         // ApplicationServices is in the skip list

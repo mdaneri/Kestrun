@@ -27,6 +27,7 @@ public class KestrunRequestTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task NewRequest_Reads_Body_And_Headers_And_Query()
     {
         var ctx = MakeContext();
@@ -41,6 +42,7 @@ public class KestrunRequestTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task NewRequest_Reads_Form_When_HasFormContentType()
     {
         var ctx = MakeContext(body: null);
@@ -60,6 +62,7 @@ public class KestrunRequestTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task NewRequest_Populates_All_Metadata_And_Collections()
     {
         var ctx = new DefaultHttpContext();
@@ -102,6 +105,7 @@ public class KestrunRequestTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task NewRequest_CanBeCalledTwice_With_Body_ReReadable()
     {
         var ctx = MakeContext(method: "POST", path: "/twice", body: "repeat");
@@ -112,6 +116,7 @@ public class KestrunRequestTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task NewRequest_NoBody_Returns_Empty_String_And_ContentLength_Null()
     {
         var ctx = new DefaultHttpContext();

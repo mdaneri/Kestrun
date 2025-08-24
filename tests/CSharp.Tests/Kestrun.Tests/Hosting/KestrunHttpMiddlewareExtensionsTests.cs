@@ -22,6 +22,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddResponseCompression_WithNullOptions_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -30,6 +31,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddResponseCompression_WithOptions_RegistersMiddleware()
     {
         var host = CreateHost(out var middleware);
@@ -39,6 +41,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRateLimiter_WithNullOptions_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -47,6 +50,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRateLimiter_WithOptions_RegistersMiddleware()
     {
         var host = CreateHost(out var middleware);
@@ -56,6 +60,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddAntiforgery_WithNullOptions_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -64,6 +69,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddAntiforgery_WithOptions_RegistersMiddleware()
     {
         var host = CreateHost(out var middleware);
@@ -73,6 +79,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCorsAllowAll_RegistersAllowAllPolicy()
     {
         var host = CreateHost(out var middleware);
@@ -81,6 +88,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithPolicyBuilder_RegistersPolicy()
     {
         var host = CreateHost(out var middleware);
@@ -90,6 +98,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithPolicyAction_RegistersPolicy()
     {
         var host = CreateHost(out var middleware);
@@ -98,6 +107,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddResponseCompression_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);
@@ -106,6 +116,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRateLimiter_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);
@@ -114,6 +125,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddAntiforgery_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);
@@ -122,6 +134,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithNullPolicyName_Throws()
     {
         var host = CreateHost(out _);
@@ -129,6 +142,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithEmptyPolicyName_Throws()
     {
         var host = CreateHost(out _);
@@ -136,6 +150,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithNullBuilder_Throws()
     {
         var host = CreateHost(out _);
@@ -143,6 +158,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddCors_WithNullBuildPolicy_Throws()
     {
         var host = CreateHost(out _);
@@ -150,6 +166,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddResponseCompression_WithCustomMimeTypes_SetsMimeTypes()
     {
         var host = CreateHost(out var middleware);
@@ -158,6 +175,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRateLimiter_WithCustomDelegate_Registers()
     {
         var host = CreateHost(out var middleware);
@@ -166,6 +184,7 @@ public class KestrunHttpMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddAntiforgery_WithCustomDelegate_Registers()
     {
         var host = CreateHost(out var middleware);

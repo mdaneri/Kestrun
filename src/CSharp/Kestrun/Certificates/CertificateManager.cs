@@ -29,6 +29,20 @@ namespace Kestrun.Certificates;
 /// </summary>
 public static class CertificateManager
 {
+    /// <summary>
+    /// Controls whether the private key is appended to the certificate PEM file in addition to
+    /// writing a separate .key file. Appending was initially added to work around platform
+    /// inconsistencies when importing encrypted PEM pairs on some Linux runners. However, having
+    /// both a combined (cert+key) file and a separate key file can itself introduce ambiguity in
+    /// which API path <see cref="X509Certificate2"/> chooses (single-file vs dual-file), which was
+    /// observed to contribute to rare flakiness (private key occasionally not attached after
+    /// import). To make behavior deterministic we now disable appending by default and allow it to
+    /// be re-enabled explicitly via the environment variable KESTRUN_APPEND_KEY_TO_PEM.
+    /// Set KESTRUN_APPEND_KEY_TO_PEM=1 (or "true") to re-enable.
+    /// </summary>
+    private static bool ShouldAppendKeyToPem =>
+        string.Equals(Environment.GetEnvironmentVariable("KESTRUN_APPEND_KEY_TO_PEM"), "1", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(Environment.GetEnvironmentVariable("KESTRUN_APPEND_KEY_TO_PEM"), "true", StringComparison.OrdinalIgnoreCase);
     #region  enums / option records
     /// <summary>
     /// Specifies the type of cryptographic key to use for certificate operations.
@@ -330,12 +344,29 @@ public static class CertificateManager
                 }
                 else if (!password.IsEmpty)
                 {
-                    // Encrypted private key in the PEM (same file or separate)
-                    var loaded = X509Certificate2.CreateFromEncryptedPemFile(
+                    // Encrypted private key in the PEM (same file or separate). Some platforms are
+                    // more reliable when the encrypted key is embedded in the cert file. Because we
+                    // export both (combined + separate .key), attempt single-file first.
+                    X509Certificate2 loaded;
+                    try
+                    {
+                        loaded = X509Certificate2.CreateFromEncryptedPemFile(certPath, password);
+                        if (loaded.HasPrivateKey)
+                        {
+                            Log.Debug("Imported encrypted PEM using single-file path (combined cert+key) for {CertPath}", certPath);
+                            return loaded;
+                        }
+                    }
+                    catch (Exception exSingle)
+                    {
+                        Log.Debug(exSingle, "Single-file encrypted PEM import failed, falling back to separate key file {KeyFile}", privateKeyPath);
+                    }
+
+                    loaded = X509Certificate2.CreateFromEncryptedPemFile(
                         certPath,
                         password,
                         privateKeyPath
-                    );  // :contentReference[oaicite:0]{index=0}
+                    );
 
                     // Fallback: some platforms (.NET 8 arm64) may return a cert lacking the private key
                     // when using CreateFromEncryptedPemFile with separate files. If so, manually pair.
@@ -732,9 +763,11 @@ public static class CertificateManager
 
         try
         {
-            // Also append the key to the main certificate PEM to improve cross-platform import reliability
-            // (some platforms handle combined cert+encrypted key in a single file more consistently)
-            File.AppendAllText(certFilePath, Environment.NewLine + keyPem);
+            if (ShouldAppendKeyToPem)
+            {
+                // Optional: append the key to the main certificate PEM when explicitly enabled.
+                File.AppendAllText(certFilePath, Environment.NewLine + keyPem);
+            }
         }
         catch (Exception ex)
         {

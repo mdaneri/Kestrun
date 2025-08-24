@@ -23,6 +23,7 @@ public class HttpVerbParsingTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void FromMethodString_ThrowsOnUnknown()
     {
         _ = Assert.Throws<ArgumentException>(() => HttpVerbExtensions.FromMethodString("NOPE"));

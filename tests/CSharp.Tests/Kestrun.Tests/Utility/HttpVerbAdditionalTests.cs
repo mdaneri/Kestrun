@@ -24,5 +24,6 @@ public class HttpVerbAdditionalTests
     public void FromMethodString_Throws_OnEmpty(string method) => Assert.Throws<ArgumentException>(() => HttpVerbExtensions.FromMethodString(method));
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void TryFromMethodString_ReturnsFalse_OnUnknown() => Assert.False(HttpVerbExtensions.TryFromMethodString("NOPE", out _));
 }

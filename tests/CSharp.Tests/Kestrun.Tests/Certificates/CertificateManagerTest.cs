@@ -21,6 +21,7 @@ public class CertificateManagerTest
                Exportable: true);
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void NewSelfSigned_GeneratesValidCert_WithSAN_EKU()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -47,6 +48,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void NewCertificateRequest_ReturnsPemAndPrivateKey_WithSAN()
     {
         var csr = CertificateManager.NewCertificateRequest(
@@ -86,6 +88,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void ExportImport_Pfx_RoundTrip_WithPassword()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -105,6 +108,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void ExportImport_Pem_RoundTrip_WithEncryptedKey()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -220,6 +224,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void ExportImport_Pem_PublicOnly()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -235,6 +240,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Validate_SelfSigned_And_WeakRsa()
     {
         var good = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -250,6 +256,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void GetPurposes_ReturnsAtLeastServerClientAuth()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -265,12 +272,15 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Import_Throws_OnMissingFile() => _ = Assert.Throws<FileNotFoundException>(() => CertificateManager.Import(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cer")));
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Import_Throws_OnEmptyPath() => _ = Assert.Throws<ArgumentException>(() => CertificateManager.Import(""));
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Import_Pfx_With_SecureString_Password_Succeeds()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -293,6 +303,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Import_Pem_With_Unencrypted_SeparateKey_Manual()
     {
         // Generate a non-ephemeral exportable self-signed cert for key extraction
@@ -322,6 +333,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void Validate_Purposes_Strict_Mismatch_Fails_But_NonStrict_Subset_Passes()
     {
         var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
@@ -340,6 +352,7 @@ public class CertificateManagerTest
     }
 
     [Fact]
+    [Trait("Category", "Certificates")]
     public void NewCertificateRequest_Ecdsa_Uses_ECDSA_KeyPair()
     {
         var csr = CertificateManager.NewCertificateRequest(new CertificateManager.CsrOptions([

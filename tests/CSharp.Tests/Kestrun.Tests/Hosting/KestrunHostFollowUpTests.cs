@@ -40,6 +40,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StopAllAsync_With_Canceled_Token_Completes()
     {
         Reset();
@@ -51,6 +52,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Destroy_Default_Reassigns_To_Existing_Instance()
     {
         Reset();
@@ -71,6 +73,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Create_WithLogger_Throws_When_KestrunRoot_Unset()
     {
         // Save current private _kestrunRoot and then set it to null via reflection
@@ -106,6 +109,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_Downgrades_Http3_When_PreviewDisabled()
     {
         Reset();
@@ -118,6 +122,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_Keeps_Http3_When_PreviewEnabled()
     {
         Reset();
@@ -130,6 +135,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StopAsync_On_Disposed_Host_Does_Not_Throw()
     {
         Reset();
@@ -143,6 +149,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Duplicate_Create_Throws()
     {
         Reset();
@@ -151,6 +158,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Stop_Synchronous_On_Unknown_Name_NoThrow()
     {
         Reset();
@@ -159,6 +167,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void SetDefault_On_Missing_Name_Throws()
     {
         Reset();
@@ -166,6 +175,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void SetDefault_Changes_Default_Instance()
     {
         Reset();
@@ -178,6 +188,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Contains_Reflects_Lifecycle()
     {
         Reset();
@@ -189,6 +200,7 @@ public class KestrunHostFollowUpTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void TryGet_Returns_Host_When_Exists_And_Null_When_Missing()
     {
         Reset();

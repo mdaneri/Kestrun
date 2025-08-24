@@ -11,6 +11,7 @@ public class JobFactoryTests
     private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void PowerShell_Create_Throws_WhenPoolMissing()
     {
         var cfg = new JobFactory.JobConfig(
@@ -25,6 +26,7 @@ public class JobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task PowerShell_Job_Executes_Successfully()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -40,6 +42,7 @@ public class JobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task PowerShell_Job_Honors_Cancellation()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -56,6 +59,7 @@ public class JobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CreateAsync_Reads_Code_From_File()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);

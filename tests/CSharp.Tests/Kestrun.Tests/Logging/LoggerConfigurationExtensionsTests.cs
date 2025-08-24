@@ -18,6 +18,7 @@ public class LoggerConfigurationExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void Register_Creates_Registers_And_OptionallySetsDefault()
     {
         var previous = Log.Logger;

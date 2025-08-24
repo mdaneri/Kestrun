@@ -14,6 +14,7 @@ public class SchedulerServiceTests
     private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_Interval_Runs_And_Updates_Timestamps()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -36,6 +37,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Pause_And_Resume_Work()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -70,6 +72,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Cancel_Removes_And_Stops()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -89,6 +92,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void GetReport_And_Hashtable_Shape()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -113,6 +117,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_PowerShell_Code_And_File()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -139,6 +144,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_RunImmediately_CSharp_Interval_Fires()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -159,6 +165,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_Cron_CSharp_RunImmediately()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -179,6 +186,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_Cron_PowerShell_ScriptBlock()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -207,6 +215,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_Cron_PowerShell_Code_String()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -229,6 +238,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task Schedule_File_Cron_PowerShell()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -260,6 +270,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task ScheduleAsync_File_Interval_And_Cron()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -300,6 +311,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void CancelAll_Removes_All_Tasks()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -314,6 +326,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void Duplicate_Name_Throws()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -326,6 +339,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void Invalid_Name_Operations_Throw()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);
@@ -338,6 +352,7 @@ public class SchedulerServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void Snapshot_Filtering_And_Hashtable_Output()
     {
         using var pool = new KestrunRunspacePoolManager(1, 1);

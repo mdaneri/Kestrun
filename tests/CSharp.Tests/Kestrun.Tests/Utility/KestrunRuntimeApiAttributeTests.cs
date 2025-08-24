@@ -5,6 +5,7 @@ namespace KestrunTests.Utility;
 public class KestrunRuntimeApiAttributeTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void Attribute_StoresContexts_And_Properties()
     {
         var attr = new KestrunRuntimeApiAttribute(KestrunApiContext.Definition | KestrunApiContext.Route)
@@ -20,6 +21,7 @@ public class KestrunRuntimeApiAttributeTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ApiContext_ComposedFlags_Work()
     {
         Assert.Equal(KestrunApiContext.Schedule | KestrunApiContext.Definition, KestrunApiContext.ScheduleAndDefinition);

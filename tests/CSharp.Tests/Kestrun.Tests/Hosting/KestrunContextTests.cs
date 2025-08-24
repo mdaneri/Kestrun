@@ -17,6 +17,7 @@ public class KestrunContextTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Session_absent_returns_null_and_flags_false()
     {
         var http = new DefaultHttpContext();
@@ -30,6 +31,7 @@ public class KestrunContextTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Session_present_returns_instance_and_flags_true()
     {
         var http = new DefaultHttpContext();
@@ -46,6 +48,7 @@ public class KestrunContextTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Items_pass_through_dictionary()
     {
         var http = new DefaultHttpContext();
@@ -58,6 +61,7 @@ public class KestrunContextTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void User_pass_through_and_ToString_includes_path_user_and_session_flag()
     {
         var http = new DefaultHttpContext();
@@ -81,6 +85,7 @@ public class KestrunContextTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void CancellationToken_pass_through()
     {
         var http = new DefaultHttpContext();

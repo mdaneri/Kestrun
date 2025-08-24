@@ -16,6 +16,7 @@ public class JwtRenewalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void RenewJwt_PreservesClaimsAndUpdatesTimes()
     {
         var secret = NewSecretB64u(32); // 256-bit key (HS256)

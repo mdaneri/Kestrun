@@ -7,6 +7,7 @@ namespace KestrunTests.Logging;
 public class InvocationInfoWrapperTests
 {
     [Fact]
+    [Trait("Category", "Logging")]
     public void Wraps_InvocationInfo_Basic_Properties_And_ToString()
     {
         // Produce a real ErrorRecord with InvocationInfo by executing a non-terminating error

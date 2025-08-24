@@ -8,6 +8,7 @@ namespace KestrunTests.Utility;
 public class XmlUtilTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToXml_Null_ReturnsNilElement()
     {
         var elem = XmlUtil.ToXml("Value", null);
@@ -16,6 +17,7 @@ public class XmlUtilTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToXml_Primitive_ReturnsElementWithValue()
     {
         var elem = XmlUtil.ToXml("Number", 42);
@@ -23,6 +25,7 @@ public class XmlUtilTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToXml_Dictionary_ReturnsNestedElements()
     {
         var dict = new Hashtable { { "A", 1 }, { "B", 2 } };
@@ -32,6 +35,7 @@ public class XmlUtilTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToXml_List_ReturnsItemElements()
     {
         var list = new List<int> { 1, 2 };
@@ -45,6 +49,7 @@ public class XmlUtilTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToXml_Object_UsesProperties()
     {
         var sample = new Sample();

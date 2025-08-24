@@ -7,5 +7,6 @@ namespace KestrunTests.Utility;
 public class HostingExtensionsTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void Placeholder() => Assert.True(true);
 }

@@ -9,6 +9,7 @@ namespace KestrunTests.Languages;
 public class VBNetDelegateBuilderTests
 {
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task Build_ExecutesWrappedScript_AndAppliesDefaultResponse()
     {
         var log = new Mock<ILogger>(MockBehavior.Loose).Object;

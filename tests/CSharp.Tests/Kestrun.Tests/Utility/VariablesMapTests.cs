@@ -32,6 +32,7 @@ public class VariablesMapTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void GetCommonProperties_PopulatesExpectedKeys()
     {
         var (ctx, _) = MakeContext();
@@ -46,6 +47,7 @@ public class VariablesMapTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void GetVariablesMap_AddsSharedState_And_Common()
     {
         var (ctx, _) = MakeContext();

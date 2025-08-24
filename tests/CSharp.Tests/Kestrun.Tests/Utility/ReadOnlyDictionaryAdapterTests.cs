@@ -7,6 +7,7 @@ namespace KestrunTests.Utility;
 public class ReadOnlyDictionaryAdapterTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void Indexer_ReturnsValueOrNull()
     {
         IDictionary inner = new Hashtable
@@ -22,6 +23,7 @@ public class ReadOnlyDictionaryAdapterTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void Keys_And_Values_Enumerate()
     {
         IDictionary inner = new Hashtable
@@ -38,6 +40,7 @@ public class ReadOnlyDictionaryAdapterTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void Contains_TryGet_And_Count_Work()
     {
         IDictionary inner = new Hashtable
@@ -55,6 +58,7 @@ public class ReadOnlyDictionaryAdapterTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void GetEnumerator_YieldsStringKeys()
     {
         IDictionary inner = new Hashtable

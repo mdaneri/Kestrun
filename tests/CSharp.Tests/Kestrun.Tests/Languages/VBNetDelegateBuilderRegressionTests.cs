@@ -12,6 +12,7 @@ namespace KestrunTests.Languages;
 public class VBNetDelegateBuilderRegressionTests
 {
     [Fact]
+    [Trait("Category", "Languages")]
     public void Compile_Succeeds_When_Transient_Files_Are_Deleted()
     {
         // Arrange: This regression test ensures that calling Compile does not throw even if

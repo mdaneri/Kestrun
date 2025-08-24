@@ -9,6 +9,7 @@ namespace KestrunTests.Languages;
 public class CsGlobalsTests
 {
     [Fact]
+    [Trait("Category", "Languages")]
     public void Ctor_WithGlobals_SetsProperties()
     {
         var g = new Dictionary<string, object?> { ["a"] = "b" };
@@ -19,6 +20,7 @@ public class CsGlobalsTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void Ctor_WithGlobalsAndContext_SetsContext()
     {
         var g = new Dictionary<string, object?>();
@@ -32,6 +34,7 @@ public class CsGlobalsTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void Ctor_WithGlobalsContextAndLocals_SetsAll()
     {
         var g = new Dictionary<string, object?>();

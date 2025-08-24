@@ -10,6 +10,7 @@ namespace KestrunTests.Languages;
 public class VBNetAndPowerShellDelegateBuilderTests
 {
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task VB_Build_Executes_Text_Write()
     {
         var code = "Response.WriteTextResponse(\"vb-ok\")";
@@ -29,6 +30,7 @@ public class VBNetAndPowerShellDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task PowerShell_Build_Missing_Runspace_Throws_InvalidOperation()
     {
         var code = "Write-Host 'hi'";
@@ -38,6 +40,7 @@ public class VBNetAndPowerShellDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task PowerShell_ErrorStream_Triggers_Error_Response()
     {
         // Arrange: build trivial PS delegate and inject a PS instance with an error
@@ -66,6 +69,7 @@ public class VBNetAndPowerShellDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void VB_Build_Throws_On_Whitespace()
     {
         var ex = Assert.Throws<ArgumentNullException>(() =>

@@ -42,6 +42,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void KestrunRoot_Set_Validates_And_Sets_Cwd_When_Different()
     {
         var cwd = Directory.GetCurrentDirectory();
@@ -62,6 +63,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Create_WithFactory_And_Default_Selection_Works()
     {
         Reset();
@@ -76,6 +78,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Create_WithLogger_Requires_Root_And_Allows_SetDefault()
     {
         Reset();
@@ -87,6 +90,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void SetDefault_And_TryGet_Get_Behavior()
     {
         Reset();
@@ -106,6 +110,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task IsRunning_And_Stop_On_Missing_Do_Not_Throw()
     {
         Reset();
@@ -121,6 +126,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StopAllAsync_Does_Not_Throw_For_Unstarted_Hosts()
     {
         Reset();
@@ -130,6 +136,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Destroy_And_DestroyAll_Update_Default()
     {
         Reset();
@@ -147,6 +154,7 @@ public class KestrunHostManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void VariableBaseline_Can_Be_Set_And_Reset()
     {
         KestrunHostManager.VariableBaseline = [1, "two"];

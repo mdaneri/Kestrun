@@ -8,6 +8,7 @@ public class SharedStateTests
 {
     // ── happy‑path basics ────────────────────────────────────────────
     [Fact]
+    [Trait("Category", "SharedState")]
     public void Set_And_TryGet_Work()
     {
         _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -19,6 +20,7 @@ public class SharedStateTests
 
     // ── case sensitivity ────────────────────────────────────────────
     [Fact]
+    [Trait("Category", "SharedState")]
     public void CaseInsensitive_Access_Works()
     {
         _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -32,6 +34,7 @@ public class SharedStateTests
 
     // ── snapshot helpers ────────────────────────────────────────────
     [Fact]
+    [Trait("Category", "SharedState")]
     public void Snapshot_And_KeySnapshot_Work()
     {
         _ = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -47,6 +50,7 @@ public class SharedStateTests
 
     // ── defensive guards ────────────────────────────────────────────
     [Fact]
+    [Trait("Category", "SharedState")]
     public void Invalid_Name_Throws()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -55,6 +59,7 @@ public class SharedStateTests
     }
 
     [Fact]
+    [Trait("Category", "SharedState")]
     public void ValueType_Throws()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);

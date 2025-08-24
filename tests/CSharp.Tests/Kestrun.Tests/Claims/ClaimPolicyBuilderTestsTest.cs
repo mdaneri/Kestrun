@@ -10,6 +10,7 @@ public class ClaimPolicyBuilderTestsTest
     private static readonly string[] ManagerAllowed = ["Manager"];
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_WithEnum_Uses_ToClaimUri_Mapping_UsesStaticArray()
     {
         var builder = new ClaimPolicyBuilder()

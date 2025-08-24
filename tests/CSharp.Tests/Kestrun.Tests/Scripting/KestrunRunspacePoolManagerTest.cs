@@ -7,6 +7,7 @@ namespace KestrunTests.Scripting;
 public class KestrunRunspacePoolManagerTest
 {
     [Fact]
+    [Trait("Category", "Scripting")]
     public void MaxRunspaces_ReturnsConfiguredMax()
     {
         // Arrange

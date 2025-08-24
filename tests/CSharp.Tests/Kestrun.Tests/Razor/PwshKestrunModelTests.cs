@@ -19,6 +19,7 @@ public class PwshKestrunModelTests
     }
 
     [Fact]
+    [Trait("Category", "Razor")]
     public void Data_Returns_Item_From_HttpContext()
     {
         var ctx = new DefaultHttpContext();
@@ -30,6 +31,7 @@ public class PwshKestrunModelTests
     }
 
     [Fact]
+    [Trait("Category", "Razor")]
     public void Query_Returns_Value_And_Null_When_Missing()
     {
         var ctx = new DefaultHttpContext();
@@ -44,6 +46,7 @@ public class PwshKestrunModelTests
     }
 
     [Fact]
+    [Trait("Category", "Razor")]
     public void Config_Is_Resolved_From_RequestServices()
     {
         var mem = new Dictionary<string, string?> { ["App:Name"] = "Kestrun" };

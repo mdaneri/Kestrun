@@ -16,6 +16,7 @@ public class JwtBuilderResultRsaCertTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public async Task SignWithRsaPem_ValidateAsync_Succeeds_AndNoValidAlgorithmsEnforced()
     {
         using var rsa = RSA.Create(2048);
@@ -47,6 +48,7 @@ public class JwtBuilderResultRsaCertTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithCertificate_TVPReflects_NoSigningKey_AndEmptyAlgorithms()
     {
         using var cert = CreateSelfSignedRsaCert();

@@ -17,6 +17,7 @@ public class LoggerManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void Add_Creates_And_Can_Set_Default()
     {
         var previous = Log.Logger;
@@ -40,6 +41,7 @@ public class LoggerManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void Register_Replaces_Existing_And_Disposes_Old()
     {
         var previous = Log.Logger;
@@ -69,6 +71,7 @@ public class LoggerManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void New_Builds_Config_With_Name_Property()
     {
         LoggerManager.Clear();
@@ -78,6 +81,7 @@ public class LoggerManagerTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void Remove_And_Clear_Dispose_Loggers()
     {
         LoggerManager.Clear();

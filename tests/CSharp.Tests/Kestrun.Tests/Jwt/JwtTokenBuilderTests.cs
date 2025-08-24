@@ -21,6 +21,7 @@ public class JwtTokenBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void AddHeader_Appears_In_Token_Header()
     {
         var secret = B64Url([.. Enumerable.Repeat((byte)0x02, 32)]);
@@ -38,6 +39,7 @@ public class JwtTokenBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void EncryptWithSecret_dir_CBC_Builds_Token()
     {
         var sign = B64Url([.. Enumerable.Repeat((byte)0x03, 32)]); // HS256 signing
@@ -56,6 +58,7 @@ public class JwtTokenBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void EncryptWithSecret_dir_GCM_Builds_Token_IfSupported()
     {
         var sign = B64Url([.. Enumerable.Repeat((byte)0x0A, 32)]); // HS256 signing
@@ -101,6 +104,7 @@ public class JwtTokenBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void EncryptWithSecret_KeyWrapWrongSize_Throws()
     {
         var sign = B64Url([.. Enumerable.Repeat((byte)0x05, 32)]);
@@ -120,6 +124,7 @@ public class JwtTokenBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithCertificate_ECDSA_ES256_Algorithm()
     {
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);

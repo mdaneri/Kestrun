@@ -15,6 +15,7 @@ public class LoggerExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void DebugSanitized_Strips_Control_Characters()
     {
         var sink = new CaptureSink();
@@ -33,6 +34,7 @@ public class LoggerExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void DebugSanitized_WithException_Strips_Control_Characters()
     {
         var sink = new CaptureSink();
@@ -50,6 +52,7 @@ public class LoggerExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void DebugSanitized_NoLog_When_Debug_Disabled()
     {
         var sink = new CaptureSink();

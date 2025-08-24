@@ -7,6 +7,7 @@ namespace KestrunTests.Utility;
 public class YamlHelperTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToYaml_SerializesObject()
     {
         var ht = new Hashtable { { "name", "foo" }, { "value", 1 } };
@@ -16,6 +17,7 @@ public class YamlHelperTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void FromYamlToHashtable_RoundTrip()
     {
         var yaml = "name: foo\nvalue: 1";
@@ -26,6 +28,7 @@ public class YamlHelperTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void FromYamlToPSCustomObject_RoundTrip()
     {
         var yaml = "name: foo\nvalue: 1";

@@ -29,6 +29,7 @@ public class ClaimPolicyPostConfigurerTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void PostConfigure_AppliesPolicies_From_MonitoredOptions()
     {
         var scheme = "BasicX";
@@ -63,6 +64,7 @@ public class ClaimPolicyPostConfigurerTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void PostConfigure_NoClaimPolicyConfig_DoesNothing()
     {
         var scheme = "BasicY";

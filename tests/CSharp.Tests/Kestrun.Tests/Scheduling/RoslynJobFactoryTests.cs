@@ -27,6 +27,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CSharp_Build_Runs_Trivial_Code()
     {
         var (log, sink) = MakeLogger();
@@ -36,6 +37,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CSharp_Build_With_ExtraImports_Runs()
     {
         var (log, _) = MakeLogger();
@@ -46,6 +48,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task VB_Build_Runs_Trivial_Code()
     {
         var (log, _) = MakeLogger();
@@ -54,6 +57,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CSharp_Build_With_Locals_Injection_Works()
     {
         var (log, _) = MakeLogger();
@@ -63,6 +67,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CSharp_Build_With_Global_Injection_Works()
     {
         var (log, _) = MakeLogger();
@@ -72,6 +77,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public void CSharp_Build_Invalid_Code_Throws_With_Diagnostics()
     {
         var (log, sink) = MakeLogger();
@@ -82,6 +88,7 @@ public class RoslynJobFactoryTests
     }
 
     [Fact]
+    [Trait("Category", "Scheduling")]
     public async Task CSharp_Build_With_Generic_Global_Type_Compiles()
     {
         var (log, _) = MakeLogger();

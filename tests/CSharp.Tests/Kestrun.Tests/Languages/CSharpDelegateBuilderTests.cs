@@ -10,6 +10,7 @@ namespace KestrunTests.Languages;
 public class CSharpDelegateBuilderTests
 {
     [Fact]
+    [Trait("Category", "Languages")]
     public void CSharp_Build_Throws_On_Empty_Code()
     {
         var ex = Assert.Throws<ArgumentNullException>(() =>
@@ -20,6 +21,7 @@ public class CSharpDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task CSharp_Build_Executes_Text_Write()
     {
         var code = "await Context.Response.WriteTextResponseAsync(\"ok\");";
@@ -39,6 +41,7 @@ public class CSharpDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task CSharp_Build_Executes_Redirect()
     {
         var code = "Context.Response.WriteRedirectResponse(\"/next\");";
@@ -52,6 +55,7 @@ public class CSharpDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void FSharp_Build_NotImplemented()
     {
         var ex = Assert.Throws<NotImplementedException>(() =>
@@ -62,6 +66,7 @@ public class CSharpDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void JScript_Build_NotImplemented_When_Flag_False()
     {
         JScriptDelegateBuilder.Implemented = false;
@@ -73,6 +78,7 @@ public class CSharpDelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public void Python_Build_NotImplemented_When_Flag_False()
     {
         PyDelegateBuilder.Implemented = false;

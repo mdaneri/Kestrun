@@ -21,6 +21,7 @@ public class JwtAlgorithmTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Hmac_Mappings_Are_Correct()
     {
         Assert.Equal(SecurityAlgorithms.HmacSha256, JwtAlgorithm.HS256.ToJwtString());
@@ -29,6 +30,7 @@ public class JwtAlgorithmTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Rsa_Mappings_Are_Correct()
     {
         Assert.Equal(SecurityAlgorithms.RsaSha256, JwtAlgorithm.RS256.ToJwtString());
@@ -37,6 +39,7 @@ public class JwtAlgorithmTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void RsaPss_Mappings_Are_Correct()
     {
         Assert.Equal(SecurityAlgorithms.RsaSsaPssSha256, JwtAlgorithm.PS256.ToJwtString());
@@ -45,6 +48,7 @@ public class JwtAlgorithmTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Ecdsa_Mappings_Are_Correct()
     {
         Assert.Equal(SecurityAlgorithms.EcdsaSha256, JwtAlgorithm.ES256.ToJwtString());
@@ -53,6 +57,7 @@ public class JwtAlgorithmTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Unknown_Enum_Value_Throws()
     {
         var invalid = (JwtAlgorithm)9999;

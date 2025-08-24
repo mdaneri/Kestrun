@@ -7,6 +7,7 @@ namespace KestrunTests.Logging;
 public class ErrorRecordWrapperTests
 {
     [Fact]
+    [Trait("Category", "Logging")]
     public void Wraps_ErrorRecord_Properties_And_ToString()
     {
         // Arrange: create a real ErrorRecord with InvocationInfo via PowerShell

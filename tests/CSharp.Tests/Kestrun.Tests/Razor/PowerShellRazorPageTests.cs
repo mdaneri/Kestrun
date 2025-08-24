@@ -21,6 +21,7 @@ public class PowerShellRazorPageTests
     }
 
     [Fact]
+    [Trait("Category", "Razor")]
     public async Task UsePowerShellRazorPages_ExecutesSiblingScript_AndSetsModel()
     {
         var tmpRoot = Directory.CreateTempSubdirectory("kestrun_pages_");
@@ -97,6 +98,7 @@ public class PowerShellRazorPageTests
     }
 
     [Fact]
+    [Trait("Category", "Razor")]
     public async Task UsePowerShellRazorPages_LogsErrorAndContinues_OnScriptFailure()
     {
         var tmpRoot = Directory.CreateTempSubdirectory("kestrun_pages_");

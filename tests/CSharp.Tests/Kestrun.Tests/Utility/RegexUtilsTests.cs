@@ -22,6 +22,7 @@ public class RegexUtilsTests
     public void IsGlobMatch_Works(string input, string pattern, bool expected) => Assert.Equal(expected, InvokeIsGlobMatch(input, pattern));
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void IsGlobMatch_CaseSensitive_Works()
     {
         Assert.True(InvokeIsGlobMatch(input: "abc", pattern: "ABC"));

@@ -8,6 +8,7 @@ namespace KestrunTests.Utility;
 public class BuildErrorTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void Text_ReturnsFormattedErrors()
     {
         using var ps = PowerShell.Create();
@@ -18,6 +19,7 @@ public class BuildErrorTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public async Task ResponseAsync_WritesToContext()
     {
         using var ps = PowerShell.Create();
@@ -32,6 +34,7 @@ public class BuildErrorTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void Result_ReturnsIResult()
     {
         using var ps = PowerShell.Create();

@@ -18,6 +18,7 @@ public class UserIdentityClaimTests
     public void ToClaimUri_ReturnsExpected_ForCoreMappings(UserIdentityClaim input, string expected) => Assert.Equal(expected, input.ToClaimUri());
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void Email_And_EmailAddress_AreDifferent_AsDocumented()
     {
         var email = UserIdentityClaim.Email.ToClaimUri();
@@ -29,6 +30,7 @@ public class UserIdentityClaimTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void All_Enum_Values_Have_Mappings()
     {
         foreach (UserIdentityClaim v in Enum.GetValues(typeof(UserIdentityClaim)))

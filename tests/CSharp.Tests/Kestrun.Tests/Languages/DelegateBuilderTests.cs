@@ -18,6 +18,7 @@ public class DelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task PrepareExecutionAsync_IncludesArgsAndSharedState()
     {
         var (http, log) = MakeCtx();
@@ -33,6 +34,7 @@ public class DelegateBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Languages")]
     public async Task ApplyResponseAsync_UsesRedirect_WhenSet()
     {
         var (http, log) = MakeCtx();

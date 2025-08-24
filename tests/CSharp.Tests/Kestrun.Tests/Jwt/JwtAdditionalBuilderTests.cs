@@ -11,6 +11,7 @@ namespace KestrunTests.Jwt;
 public class JwtAdditionalBuilderTests
 {
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithSecretPassphrase_32Bytes_Uses_HS256()
     {
         using var pass = new SecureString();
@@ -33,6 +34,7 @@ public class JwtAdditionalBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void EncryptWithPemPublic_RSAOAEP_CBC_Builds_Token()
     {
         using var rsa = RSA.Create(2048);
@@ -60,6 +62,7 @@ public class JwtAdditionalBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public async Task RenewJwt_FromContext_ParsesBearerAndRenews()
     {
         var sign = B64Url([.. Enumerable.Repeat((byte)0x22, 32)]);
@@ -87,6 +90,7 @@ public class JwtAdditionalBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public async Task RenewJwt_FromContext_NoBearer_ReturnsEmpty()
     {
         var sign = B64Url([.. Enumerable.Repeat((byte)0x33, 32)]);

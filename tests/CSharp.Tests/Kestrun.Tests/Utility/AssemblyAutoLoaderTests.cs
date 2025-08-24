@@ -6,6 +6,7 @@ namespace KestrunTests.Utility;
 public class AssemblyAutoLoaderTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void PreloadAll_IgnoresMissingDirs_AndCanClear()
     {
         // Create a temporary empty directory to register

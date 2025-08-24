@@ -9,6 +9,7 @@ namespace KestrunTests.Middleware;
 public class FaviconMiddlewareExtensionsTests
 {
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task UseFavicon_ServesEmbeddedIcon_OnDefaultPath()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -35,6 +36,7 @@ public class FaviconMiddlewareExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task UseFavicon_ServesCustomIcon_WhenPathProvided()
     {
         var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".ico");

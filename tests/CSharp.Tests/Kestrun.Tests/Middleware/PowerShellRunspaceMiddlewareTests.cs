@@ -16,6 +16,7 @@ namespace KestrunTests.Middleware;
 public class PowerShellRunspaceMiddlewareTests
 {
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task Middleware_InsertsPowerShellAndKestrunContext_AndCleansUp()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -60,6 +61,7 @@ public class PowerShellRunspaceMiddlewareTests
     }
 
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task Middleware_Then_PSDelegate_WritesResponse()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -89,6 +91,7 @@ public class PowerShellRunspaceMiddlewareTests
     }
 
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task Middleware_Then_PSDelegate_CanRedirect()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -113,6 +116,7 @@ public class PowerShellRunspaceMiddlewareTests
     }
 
     [Fact]
+    [Trait("Category", "Middleware")]
     public async Task Middleware_LogsAndDoesNotThrow_WhenPoolMisconfigured()
     {
         // capture Serilog output

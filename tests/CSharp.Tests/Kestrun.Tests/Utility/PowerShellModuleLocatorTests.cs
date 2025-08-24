@@ -7,6 +7,7 @@ namespace KestrunTests.Utility;
 public class PowerShellModuleLocatorTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void FindFileUpwards_FindsFile()
     {
         var root = Directory.CreateTempSubdirectory();

@@ -27,6 +27,7 @@ public class KestrunHostAuthExtensionsTests
         }
     }
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task JwtBearer_Adds_Scheme_And_Policies()
     {
         var host = new KestrunHost("TestApp");
@@ -63,6 +64,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void JwtBearer_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
@@ -86,6 +88,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task Cookie_Adds_Scheme_And_Policies()
     {
         var host = new KestrunHost("TestApp");
@@ -111,6 +114,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Cookie_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
@@ -122,6 +126,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Windows_Negotiate_Adds_Scheme()
     {
         var host = new KestrunHost("TestApp");
@@ -132,6 +137,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void OpenIdConnect_Adds_Scheme()
     {
         var host = new KestrunHost("TestApp");
@@ -142,6 +148,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void OpenIdConnect_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
@@ -153,6 +160,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task BasicAuth_ObjectOverload_Copies_Options_And_Adds_Policies()
     {
         var host = new KestrunHost("TestApp");
@@ -187,6 +195,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void BasicAuth_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
@@ -199,6 +208,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task BasicAuth_CSharp_Validator_And_IssueClaims_Wiring_Works()
     {
         SanitizeSharedGlobals();
@@ -234,6 +244,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task ApiKey_ObjectOverload_Copies_Options_And_Adds_Policies()
     {
         var host = new KestrunHost("TestApp");
@@ -268,6 +279,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ApiKey_Omitted_ClaimPolicies_Registers_No_Custom_Policy()
     {
         var host = new KestrunHost("TestApp");
@@ -280,6 +292,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task ApiKey_CSharp_Validator_And_IssueClaims_Wiring_Works()
     {
         SanitizeSharedGlobals();
@@ -315,6 +328,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task BasicAuth_PowerShell_Validator_And_IssueClaims_Wiring_Works()
     {
         var host = new KestrunHost("TestApp");
@@ -356,6 +370,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task ApiKey_PowerShell_Validator_And_IssueClaims_Wiring_Works()
     {
         var host = new KestrunHost("TestApp");
@@ -397,6 +412,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task BasicAuth_VBNet_Validator_And_IssueClaims_Wiring_Works()
     {
         var host = new KestrunHost("TestApp");
@@ -431,6 +447,7 @@ public class KestrunHostAuthExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task ApiKey_VBNet_Validator_And_IssueClaims_Wiring_Works()
     {
         var host = new KestrunHost("TestApp");

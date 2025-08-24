@@ -7,6 +7,7 @@ namespace KestrunTests.Utility;
 public class YamlHelperExtraTests
 {
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToYaml_SerializesHashtableAndList()
     {
         var ht = new Hashtable
@@ -20,6 +21,7 @@ public class YamlHelperExtraTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void FromYaml_Deserializes_ToHashtable_And_PSCustomObject()
     {
         var yaml = "a: 1\nb:\n - x\n - 2\n";

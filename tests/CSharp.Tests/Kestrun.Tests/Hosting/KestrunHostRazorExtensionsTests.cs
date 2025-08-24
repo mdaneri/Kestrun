@@ -8,6 +8,7 @@ namespace KestrunTests.Hosting;
 public class KestrunHostRazorExtensionsTests
 {
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRazorPages_RegistersService()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -18,6 +19,7 @@ public class KestrunHostRazorExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRazorPages_WithConfig_RegistersService()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -28,6 +30,7 @@ public class KestrunHostRazorExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddRazorPages_WithOptionsObject_RegistersService()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -39,6 +42,7 @@ public class KestrunHostRazorExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddPowerShellRazorPages_Default_DoesNotThrow()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -49,6 +53,7 @@ public class KestrunHostRazorExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddPowerShellRazorPages_WithPrefix_DoesNotThrow()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -57,6 +62,7 @@ public class KestrunHostRazorExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddPowerShellRazorPages_WithOptionsObject_DoesNotThrow()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);

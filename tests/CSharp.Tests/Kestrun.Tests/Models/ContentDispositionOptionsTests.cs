@@ -6,6 +6,7 @@ namespace KestrunTests.Models;
 public class ContentDispositionOptionsTests
 {
     [Fact]
+    [Trait("Category", "Models")]
     public void Defaults_To_NoContentDisposition()
     {
         var opts = new ContentDispositionOptions();
@@ -24,6 +25,7 @@ public class ContentDispositionOptionsTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void With_FileName_Encodes_And_Quotes()
     {
         var opts = new ContentDispositionOptions

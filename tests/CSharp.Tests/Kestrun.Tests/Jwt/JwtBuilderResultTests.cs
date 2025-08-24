@@ -18,6 +18,7 @@ public class JwtBuilderResultTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public async Task BuildWithSymmetricKey_GeneratesValidToken_AndValidateAsyncPasses()
     {
         var b64 = NewB64Url(64); // 512-bit key ⇒ HS512 with Auto
@@ -61,6 +62,7 @@ public class JwtBuilderResultTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void GetValidationParameters_Respects_CustomClockSkew()
     {
         var b64 = NewB64Url(48); // 384-bit key ⇒ HS384 with Auto
@@ -78,6 +80,7 @@ public class JwtBuilderResultTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public async Task ValidateAsync_Throws_When_Key_Is_Null()
     {
         // Construct a result with a null key (e.g., as produced by RSA signing)

@@ -7,6 +7,7 @@ namespace KestrunTests.Claims;
 public class ClaimPolicyBuilderTests
 {
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_WithString_AddsPolicy_WithValues()
     {
         var builder = new ClaimPolicyBuilder()
@@ -21,6 +22,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_WithEnum_Uses_ToClaimUri_Mapping()
     {
         var builder = new ClaimPolicyBuilder()
@@ -32,6 +34,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_WithRule_AddsPolicy()
     {
         var rule = new ClaimRule(ClaimTypes.NameIdentifier, "42");
@@ -42,6 +45,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_Throws_On_NullOrWhitespace_PolicyName()
     {
         var builder = new ClaimPolicyBuilder();
@@ -56,6 +60,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_Throws_On_NullOrWhitespace_ClaimType()
     {
         var builder = new ClaimPolicyBuilder();
@@ -66,6 +71,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_Throws_On_EmptyOrNull_AllowedValues_For_StringOverload()
     {
         var builder = new ClaimPolicyBuilder();
@@ -76,6 +82,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_Throws_On_EmptyOrNull_AllowedValues_For_EnumOverload()
     {
         var builder = new ClaimPolicyBuilder();
@@ -84,6 +91,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void AddPolicy_Throws_On_Null_Rule()
     {
         var builder = new ClaimPolicyBuilder();
@@ -91,6 +99,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void Policies_AreCaseInsensitive_And_LastWriteWins()
     {
         var builder = new ClaimPolicyBuilder()
@@ -104,6 +113,7 @@ public class ClaimPolicyBuilderTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void Build_Returns_Independent_CaseInsensitive_Dictionary()
     {
         var builder = new ClaimPolicyBuilder()

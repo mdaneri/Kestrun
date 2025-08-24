@@ -8,6 +8,7 @@ public class SecureStringUtilsTests
 {
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToSecureString_RoundTrip_Works()
     {
         var text = "s3cr3t!".AsSpan();
@@ -18,6 +19,7 @@ public class SecureStringUtilsTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToSecureSpan_ThrowsOnEmpty()
     {
         var empty = new SecureString();
@@ -26,5 +28,6 @@ public class SecureStringUtilsTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void ToSecureString_ThrowsOnEmpty() => _ = Assert.Throws<ArgumentException>(() => ReadOnlySpan<char>.Empty.ToSecureString());
 }

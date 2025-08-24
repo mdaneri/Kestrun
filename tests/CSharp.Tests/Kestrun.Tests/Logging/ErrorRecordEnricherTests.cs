@@ -12,6 +12,7 @@ namespace KestrunTests.Logging;
 public class ErrorRecordEnricherTests
 {
     [Fact]
+    [Trait("Category", "Logging")]
     public void WithErrorRecord_enriches_properties_when_Exception_is_WrapperException_destructured()
     {
         // Arrange
@@ -44,6 +45,7 @@ public class ErrorRecordEnricherTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void WithErrorRecord_does_nothing_for_non_wrapper_exception()
     {
         // Arrange
@@ -65,6 +67,7 @@ public class ErrorRecordEnricherTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void WithErrorRecord_enriches_properties_when_Exception_is_WrapperException_scalar()
     {
         // Arrange

@@ -19,6 +19,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddDefaultFiles_WithNullConfig_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -27,6 +28,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddDefaultFiles_WithConfig_InvokesDelegate()
     {
         var host = CreateHost(out var middleware);
@@ -36,6 +38,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFavicon_RegistersFaviconMiddleware()
     {
         var host = CreateHost(out var middleware);
@@ -44,6 +47,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFileServer_WithNullConfig_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -52,6 +56,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFileServer_WithConfig_InvokesDelegate()
     {
         var host = CreateHost(out var middleware);
@@ -61,6 +66,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticFiles_WithNullConfig_UsesDefaults()
     {
         var host = CreateHost(out var middleware);
@@ -69,6 +75,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticFiles_WithConfig_InvokesDelegate()
     {
         var host = CreateHost(out var middleware);
@@ -78,6 +85,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticFiles_WithCustomFileProvider_SetsProvider()
     {
         var host = CreateHost(out var middleware);
@@ -87,6 +95,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticFiles_WithCustomRequestPath_SetsPath()
     {
         var host = CreateHost(out var middleware);
@@ -95,6 +104,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddDefaultFiles_WithCustomDefaultFileNames_SetsNames()
     {
         var host = CreateHost(out var middleware);
@@ -103,6 +113,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFileServer_WithDirectoryBrowsing_EnablesBrowsing()
     {
         var host = CreateHost(out var middleware);
@@ -111,6 +122,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFileServer_WithCustomRequestPath_SetsPath()
     {
         var host = CreateHost(out var middleware);
@@ -119,6 +131,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFavicon_WithNullPath_UsesDefault()
     {
         var host = CreateHost(out var middleware);
@@ -127,6 +140,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddDefaultFiles_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);
@@ -135,6 +149,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddStaticFiles_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);
@@ -143,6 +158,7 @@ public class KestrunHostStaticFilesExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddFileServer_WithNullAction_DoesNotThrow()
     {
         var host = CreateHost(out var middleware);

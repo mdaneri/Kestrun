@@ -14,6 +14,7 @@ public class CompilationErrorExceptionTests
     }
 
     [Fact]
+    [Trait("Category", "Scripting")]
     public void GetErrorsAndWarnings_Work()
     {
         var diags = ImmutableArray.Create(

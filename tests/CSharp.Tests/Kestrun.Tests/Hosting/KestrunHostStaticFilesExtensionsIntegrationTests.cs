@@ -25,6 +25,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task Favicon_Default_Embedded_Served()
     {
         var host = CreateBuiltHost(h => h.AddFavicon());
@@ -46,6 +47,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task Favicon_Custom_Ico_ServedWithContentType()
     {
         // Create a tiny dummy favicon file (not a real ICO but sufficient for byte length test)
@@ -77,6 +79,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task FileServer_ServesStaticFile()
     {
         var tmpDir = Directory.CreateTempSubdirectory();
@@ -106,6 +109,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StaticFiles_CustomContentTypeProvider_Used()
     {
         var tmpDir = Directory.CreateTempSubdirectory();
@@ -138,6 +142,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task DefaultFiles_CustomName_Served()
     {
         var tmpDir = Directory.CreateTempSubdirectory();
@@ -176,6 +181,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task FileServer_DirectoryBrowsing_ListsFile()
     {
         var tmpDir = Directory.CreateTempSubdirectory();
@@ -206,6 +212,7 @@ public class KestrunHostStaticFilesExtensionsIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StaticFiles_UnknownExtension_DefaultContentTypeApplied()
     {
         var tmpDir = Directory.CreateTempSubdirectory();

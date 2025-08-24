@@ -13,6 +13,7 @@ namespace KestrunTests.Logging;
 public class PowerShellSinkTests
 {
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Emits_Formatted_Message_To_Callback()
     {
         // Arrange
@@ -33,6 +34,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_NullOrWhitespace_Template_Defaults()
     {
         // Arrange
@@ -54,10 +56,12 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Throws_On_Null_Callback()
         => Assert.Throws<ArgumentNullException>(() => new PowerShellSink(null!));
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void TableExtensions_AddPropertyRow_Skips_Null_And_Empty_String_And_Clamps_Long()
     {
         var t = new Table(new Padding(0));
@@ -81,6 +85,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Explicit_Template_DirectSink_Renders_Level_Message_And_Property()
     {
         // Arrange
@@ -106,6 +111,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Explicit_Template_ViaLogger_Renders_Level_Message_And_Property()
     {
         // Arrange
@@ -127,6 +133,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Explicit_Template_Handles_NonString_Scalar()
     {
         // Arrange
@@ -148,6 +155,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Explicit_Template_Handles_Structured_Sequence()
     {
         // Arrange
@@ -179,6 +187,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Explicit_Template_Handles_Structured_Object_ViaLogger()
     {
         // Arrange
@@ -206,6 +215,7 @@ public class PowerShellSinkTests
     }
 
     [Fact]
+    [Trait("Category", "Logging")]
     public void PowerShellSink_Uses_InvariantCulture_For_Numeric_Formatting()
     {
         // Arrange

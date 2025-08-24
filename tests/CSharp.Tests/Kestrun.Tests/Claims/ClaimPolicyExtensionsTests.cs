@@ -9,6 +9,7 @@ namespace KestrunTests.Claims;
 public class ClaimPolicyExtensionsTests
 {
     [Fact]
+    [Trait("Category", "Claims")]
     public void ToAuthzDelegate_Adds_All_Policies_With_Correct_Requirements()
     {
         var cfg = new ClaimPolicyConfig
@@ -43,6 +44,7 @@ public class ClaimPolicyExtensionsTests
     }
 
     [Fact]
+    [Trait("Category", "Claims")]
     public void ToAuthzDelegate_With_Empty_Config_Adds_No_Policies()
     {
         var cfg = new ClaimPolicyConfig();

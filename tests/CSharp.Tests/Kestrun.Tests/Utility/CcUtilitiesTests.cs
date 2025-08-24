@@ -27,6 +27,7 @@ public class CcUtilitiesTests
     }
 
     [Fact]
+    [Trait("Category", "Utility")]
     public void PreviewFeaturesEnabled_ReflectsAppContextSwitch()
     {
         // Ensure default is false when switch not set

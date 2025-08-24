@@ -8,6 +8,7 @@ namespace KestrunTests.Jwt;
 public class JwtParametersIntegrationTests
 {
     [Fact]
+    [Trait("Category", "Jwt")]
     public void HS256_Parameters_RoundTrip_WithHeaders()
     {
         var secret = B64Url([.. Enumerable.Repeat((byte)0xA5, 32)]);
@@ -37,6 +38,7 @@ public class JwtParametersIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void RSA_Parameters_RoundTrip_WithHeaders()
     {
         using var rsa = RSA.Create(2048);
@@ -65,6 +67,7 @@ public class JwtParametersIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Cert_Parameters_RoundTrip_WithHeaders()
     {
         using var cert = CreateSelfSignedRsaCert();
@@ -90,6 +93,7 @@ public class JwtParametersIntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void Ecdsa_Parameters_RoundTrip_ES256()
     {
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);

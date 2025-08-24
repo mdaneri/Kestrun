@@ -8,6 +8,7 @@ namespace KestrunTests.Scripting;
 public class LanguageRuntimeExtensionsTest
 {
     [Fact]
+    [Trait("Category", "Scripting")]
     public void ScriptLanguageAttribute_SetsLanguageProperty()
     {
         var attr = new ScriptLanguageAttribute(ScriptLanguage.CSharp);

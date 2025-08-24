@@ -16,6 +16,7 @@ namespace KestrunTests.Hosting;
 public class KestrunHostTest
 {
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Constructor_SetsApplicationName_WhenProvided()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -25,6 +26,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Constructor_UsesDefaultApplicationName_WhenNotProvided()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -34,6 +36,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void Constructor_SetsKestrunRoot_WhenProvided()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -44,6 +47,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_AddsListenerOptions()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -55,6 +59,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_UsesDefaultIPAddress_WhenNotProvided()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -66,6 +71,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddNativeRoute_ThrowsIfAppNotInitialized()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -77,6 +83,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddMapRoute_ThrowsIfAppNotInitialized()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -96,6 +103,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddHtmlTemplateRoute_ThrowsIfFileNotFound()
     {
         var logger = new LoggerConfiguration().CreateLogger();
@@ -113,6 +121,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void IsCSharpScriptValid_ReturnsTrueForValid()
     {
         var host = new KestrunHost("TestHost", AppContext.BaseDirectory);
@@ -120,6 +129,7 @@ public class KestrunHostTest
         Assert.True(valid);
     }
     [Fact]
+    [Trait("Category", "Hosting")]
     public void IsCSharpScriptValid_ReturnsFalseForInvalid()
     {
         KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
@@ -128,6 +138,7 @@ public class KestrunHostTest
         Assert.False(valid);
     }
     [Fact]
+    [Trait("Category", "Hosting")]
     public void GetCSharpScriptErrors_ReturnsMessage()
     {
         KestrunHostManager.KestrunRoot = AppContext.BaseDirectory;
@@ -137,6 +148,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_DowngradesHttp3_WhenPreviewDisabled()
     {
         AppContext.SetSwitch("System.Runtime.EnablePreviewFeatures", false);
@@ -152,6 +164,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_AllowsHttp3_WhenPreviewEnabled()
     {
         AppContext.SetSwitch("System.Runtime.EnablePreviewFeatures", true);
@@ -164,6 +177,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void ConfigureListener_WithCertificate_SetsHttps()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -191,6 +205,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddScheduling_ConfiguresScheduler_AndHonorsFirstMax()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -204,6 +219,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void IsRunning_TogglesAfterStop()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -215,6 +231,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void GetMapRouteOptions_ReturnsOptionsForAddedRoute()
     {
         // Sanitize globals so dynamic C# prelude uses 'object' for casts
@@ -244,6 +261,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddHtmlTemplateRoute_OnlyAllowsGet()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -264,6 +282,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public async Task StartAsync_Then_StopAsync_Completes()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);
@@ -296,6 +315,7 @@ public class KestrunHostTest
     }
 
     [Fact]
+    [Trait("Category", "Hosting")]
     public void AddPowerShellRuntime_BeforeEnableConfiguration_DoesNotThrow_And_Configures()
     {
         var host = new KestrunHost("TestApp", AppContext.BaseDirectory);

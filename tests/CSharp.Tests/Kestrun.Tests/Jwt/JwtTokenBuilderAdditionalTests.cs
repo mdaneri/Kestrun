@@ -14,6 +14,7 @@ public class JwtTokenBuilderAdditionalTests
         => Convert.ToHexString([.. Enumerable.Repeat(value, bytes).Select(b => b)]);
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithSecretHex_Produces_Expected_Hmac_Size()
     {
         // 64 bytes (128 hex chars) ⇒ HS512 when Auto
@@ -31,6 +32,7 @@ public class JwtTokenBuilderAdditionalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithSecret_Empty_Throws()
     {
         var builder = JwtTokenBuilder.New();
@@ -39,6 +41,7 @@ public class JwtTokenBuilderAdditionalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void NotBefore_In_Past_Is_Clamped_On_Build()
     {
         var hex = MakeHex(32); // 256-bit ⇒ HS256
@@ -58,6 +61,7 @@ public class JwtTokenBuilderAdditionalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithCertificate_Auto_Picks_RS256_For_Rsa()
     {
         using var rsa = RSA.Create(2048);
@@ -74,6 +78,7 @@ public class JwtTokenBuilderAdditionalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithCertificate_NoPrivateKey_Throws()
     {
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -90,6 +95,7 @@ public class JwtTokenBuilderAdditionalTests
     }
 
     [Fact]
+    [Trait("Category", "Jwt")]
     public void SignWithRsaPem_Auto_Uses_RS256()
     {
         using var rsa = RSA.Create(2048);

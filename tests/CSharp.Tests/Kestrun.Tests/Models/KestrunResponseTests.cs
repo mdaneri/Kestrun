@@ -25,6 +25,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteResponse_Chooses_Json_For_Accept()
     {
         var req = MakeReq("application/json");
@@ -39,6 +40,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Sets_ContentDisposition_With_FileName()
     {
         var req = MakeReq();
@@ -61,6 +63,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Writes_String_Body()
     {
         var req = MakeReq();
@@ -80,6 +83,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Writes_Bytes_Body()
     {
         var req = MakeReq();
@@ -103,6 +107,7 @@ public partial class KestrunResponseTests
     private static KestrunResponse NewRes() => new(TestRequestFactory.Create());
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteTextResponse_SetsFields()
     {
         var res = NewRes();
@@ -113,6 +118,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteJsonResponse_SetsFields()
     {
         var res = NewRes();
@@ -122,6 +128,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteYamlResponse_SetsFields()
     {
         var res = NewRes();
@@ -131,6 +138,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteXmlResponse_SetsFields()
     {
         var res = NewRes();
@@ -140,6 +148,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteBinaryResponse_SetsFields()
     {
         var res = NewRes();
@@ -149,6 +158,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteStreamResponse_SetsFields()
     {
         var res = NewRes();
@@ -159,6 +169,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteRedirectResponse_SetsHeaders()
     {
         var res = NewRes();
@@ -169,6 +180,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteErrorResponse_FromMessage()
     {
         var res = NewRes();
@@ -178,6 +190,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteErrorResponse_FromException()
     {
         var res = NewRes();
@@ -187,6 +200,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_WritesHttpResponse()
     {
         var res = NewRes();
@@ -210,6 +224,7 @@ public partial class KestrunResponseTests
 public partial class KestrunResponseTests
 {
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteCsvResponse_Respects_Config_NoHeader_And_Semicolon()
     {
         var res = NewRes();
@@ -229,6 +244,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteCsvResponseAsync_Tweak_NewLine_Uses_Custom()
     {
         var res = NewRes();
@@ -242,6 +258,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_Text_Includes_Details()
     {
         var req = MakeReq("text/plain");
@@ -256,6 +273,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_Json_Includes_Details_Field()
     {
         var req = MakeReq("application/json");
@@ -268,6 +286,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_Yaml_Includes_Details_Field()
     {
         var req = MakeReq("application/yaml");
@@ -280,6 +299,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_Xml_Includes_Details_Field()
     {
         var req = MakeReq("application/xml");
@@ -292,6 +312,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteRedirectResponse_NoBody_Sets_302_And_Location_Only()
     {
         var res = NewRes();
@@ -330,6 +351,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Sends_File_With_Length_LastModified_And_Disposition_Filename()
     {
         var temp = Path.Combine(Path.GetTempPath(), $"kestr_file_{Guid.NewGuid():N}.txt");
@@ -375,6 +397,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteFileResponse_NotFound_Sets_404_And_TextBody()
     {
         var res = NewRes();
@@ -394,6 +417,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Writes_Seekable_Stream_With_ContentLength()
     {
         var data = Encoding.UTF8.GetBytes("stream-data");
@@ -414,6 +438,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Writes_NonSeekable_Stream_Without_ContentLength()
     {
         var data = Encoding.UTF8.GetBytes("chunked-data");
@@ -450,6 +475,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_Text_Fallback_When_Accept_TextPlain()
     {
         var req = MakeReq("text/plain");
@@ -464,6 +490,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteErrorResponse_FromException_Includes_Or_Omits_Stack_Based_On_Flag()
     {
         var req = MakeReq("text/plain");
@@ -479,6 +506,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Uses_AcceptCharset_For_String_Body_Bytes()
     {
         var ctx = new DefaultHttpContext();
@@ -501,6 +529,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task ApplyTo_Charset_Matches_When_Encoding_Set_To_Header()
     {
         var ctx = new DefaultHttpContext();
@@ -536,6 +565,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public void WriteCsvResponse_Writes_Header_And_Row()
     {
         var res = NewRes();
@@ -548,6 +578,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteCborResponseAsync_Sets_Bytes_And_ContentType()
     {
         var res = NewRes();
@@ -563,6 +594,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteBsonResponseAsync_Sets_Bytes_And_ContentType()
     {
         var res = NewRes();
@@ -573,6 +605,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteHtmlResponseAsync_Renders_Template_With_Vars()
     {
         var res = NewRes();
@@ -588,6 +621,7 @@ public partial class KestrunResponseTests
     }
 
     [Fact]
+    [Trait("Category", "Models")]
     public async Task WriteHtmlResponseFromFileAsync_Renders_Template_From_File()
     {
         var temp = Path.Combine(Path.GetTempPath(), $"kestr_{Guid.NewGuid():N}.html");
