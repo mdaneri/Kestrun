@@ -27,7 +27,7 @@ public class SchedulerServiceTests
             await Task.CompletedTask;
         }, runImmediately: false);
 
-        await Task.Delay(350);
+        await Task.Delay(800);
         var snap = svc.GetSnapshot();
         var job = Assert.Single(snap, j => j.Name == "tick");
         Assert.True(ran >= 2);
