@@ -729,6 +729,17 @@ public static class CertificateManager
         var keyPem = PemEncoding.WriteString(pemLabel, keyDer);
         var keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
         File.WriteAllText(keyFilePath, keyPem);
+
+        try
+        {
+            // Also append the key to the main certificate PEM to improve cross-platform import reliability
+            // (some platforms handle combined cert+encrypted key in a single file more consistently)
+            File.AppendAllText(certFilePath, Environment.NewLine + keyPem);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug(ex, "Failed to append private key to certificate PEM file {CertFilePath}; continuing with separate key file only", certFilePath);
+        }
     }
 
     /// <summary>
