@@ -280,9 +280,22 @@ public class SchedulerServiceTests
     [Trait("Category", "Scheduling")]
     public async Task ScheduleAsync_File_Interval_And_Cron()
     {
-        using var pool = new KestrunRunspacePoolManager(1, 1);
+        // Allow two concurrent runspaces to avoid contention causing the second immediate
+        // job to queue behind the first on slow CI (net8 arm64), which occasionally exceeded
+        // the previous 10s deadline.
+        using var pool = new KestrunRunspacePoolManager(1, 2);
         var log = CreateLogger();
         using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        // Warm-up: a tiny immediate PowerShell interval job to initialize the runspace before timing.
+        svc.Schedule("warm", TimeSpan.FromMinutes(5), "$null | Out-Null", ScriptLanguage.PowerShell, runImmediately: true);
+        var warmStart = DateTime.UtcNow;
+        var warmed = false;
+        while (!warmed && DateTime.UtcNow - warmStart < TimeSpan.FromSeconds(5))
+        {
+            warmed = svc.GetSnapshot().Any(j => j.Name == "warm" && j.LastRunAt != null);
+            if (!warmed) { await Task.Delay(50); }
+        }
 
         var tmp1 = Path.GetTempFileName();
         var tmp2 = Path.GetTempFileName();
@@ -295,20 +308,25 @@ public class SchedulerServiceTests
 
             var start = DateTime.UtcNow;
             var seen1 = false; var seen2 = false;
-            // CI (Linux, cold PowerShell runspace init) can exceed 3s for first immediate run; allow up to 8s.
-            // net8 on some CI runners can be slower than net9; allow a bit more headroom
-            while (!(seen1 && seen2) && DateTime.UtcNow - start < TimeSpan.FromSeconds(10))
+            // Extended to 20s total (rare path: slow single-core / throttled runners + initial module load)
+            while (!(seen1 && seen2) && DateTime.UtcNow - start < TimeSpan.FromSeconds(20))
             {
                 var snap = svc.GetSnapshot();
-                seen1 = snap.Any(j => j.Name == "ps-file-int-async" && j.LastRunAt != null);
-                seen2 = snap.Any(j => j.Name == "ps-file-cron-async" && j.LastRunAt != null);
+                if (!seen1)
+                {
+                    seen1 = snap.Any(j => j.Name == "ps-file-int-async" && j.LastRunAt != null);
+                }
+                if (!seen2)
+                {
+                    seen2 = snap.Any(j => j.Name == "ps-file-cron-async" && j.LastRunAt != null);
+                }
                 if (!(seen1 && seen2))
                 {
-                    await Task.Delay(50);
+                    await Task.Delay(100); // slightly larger interval reduces snapshot churn
                 }
             }
-            Assert.True(seen1);
-            Assert.True(seen2);
+            Assert.True(seen1, "Interval file job did not execute its immediate run within 20s");
+            Assert.True(seen2, "Cron file job did not execute its immediate run within 20s");
         }
         finally
         {
