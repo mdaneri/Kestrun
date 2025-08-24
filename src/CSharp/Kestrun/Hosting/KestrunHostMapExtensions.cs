@@ -183,7 +183,7 @@ public static class KestrunHostMapExtensions
         }
 
         var routeOptions = options;
-        if (!options.HttpVerbs.Any())
+        if (options.HttpVerbs.Count == 0)
         {
             // Create a new RouteOptions with HttpVerbs set to [HttpVerb.Get]
             routeOptions = options with { HttpVerbs = [HttpVerb.Get] };

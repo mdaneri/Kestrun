@@ -83,7 +83,6 @@ internal static class PyDelegateBuilder
         // ---------- return a RequestDelegate ----------
         return async context =>
         {
-
             try
             {
                 using var _ = Py.GIL();       // enter GIL for *this* request
