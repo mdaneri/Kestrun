@@ -379,4 +379,39 @@ public class SchedulerServiceTests
         var h = Assert.IsType<Hashtable>(entry);
         Assert.Equal("other", h["Name"]);
     }
+
+    [Fact]
+    [Trait("Category", "Scheduling")]
+    public async Task Timestamp_Invariant_NextRunAt_After_LastRunAt()
+    {
+        using var pool = new KestrunRunspacePoolManager(1, 1);
+        var log = CreateLogger();
+        using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
+
+        // Interval job (immediate) + cron job (immediate) to exercise both paths.
+        var intervalRuns = 0;
+        svc.Schedule("int", TimeSpan.FromMilliseconds(120), async ct => { _ = Interlocked.Increment(ref intervalRuns); await Task.CompletedTask; }, runImmediately: true);
+        svc.Schedule("cron", "* * * * * *", async ct => await Task.CompletedTask, runImmediately: true);
+
+        var start = DateTime.UtcNow;
+        // Wait until at least 2 interval executions (immediate + one scheduled) or timeout.
+        while (intervalRuns < 2 && DateTime.UtcNow - start < TimeSpan.FromSeconds(5))
+        {
+            await Task.Delay(50);
+        }
+
+        // Take several snapshots over a short window to look for transient ordering issues.
+        for (var i = 0; i < 5; i++)
+        {
+            var snap = svc.GetSnapshot();
+            foreach (var job in snap)
+            {
+                if (job.LastRunAt is not null)
+                {
+                    Assert.True(job.NextRunAt >= job.LastRunAt, $"Invariant violated for {job.Name}: NextRunAt {job.NextRunAt:o} < LastRunAt {job.LastRunAt:o}");
+                }
+            }
+            await Task.Delay(50);
+        }
+    }
 }

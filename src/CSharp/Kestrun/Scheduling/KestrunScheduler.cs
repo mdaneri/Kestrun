@@ -640,13 +640,9 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
                 }
                 nextRun = next;
             }
-            else if (task.Cron is not null)
-            {
-                nextRun = task.Cron.GetNextOccurrence(runStartedAt, _tz) ?? DateTimeOffset.MaxValue;
-            }
             else
             {
-                nextRun = DateTimeOffset.MaxValue;
+                nextRun = task.Cron is not null ? task.Cron.GetNextOccurrence(runStartedAt, _tz) ?? DateTimeOffset.MaxValue : DateTimeOffset.MaxValue;
             }
 
             // Publish timestamps together to avoid inconsistent snapshot (race seen in CI where
