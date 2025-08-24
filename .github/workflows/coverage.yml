@@ -306,33 +306,47 @@ jobs:
       - name: 🔧 Build
         shell: pwsh
         run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
-        
-      - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
-        shell: pwsh
-        run: |
-          Invoke-Build Report-Coverage
 
-          if (-not (Test-Path "./coverage/report/index.html")) {
-            throw "coverage/report/index.html not found — ensure Invoke-Build Report writes there."
-          }
-
-      - name: 📥 Checkout destination coverage repo
+      - name: 📥 Checkout coverage site repo (for in-place output + history)
         uses: actions/checkout@v5
         with:
           repository: ${{ env.DEST_REPO }}
-          token: ${{ secrets.COVERAGE_REPO_PAT }}  # PAT with 'repo' write access
-          path: coverage-publish
+          token: ${{ secrets.COVERAGE_REPO_PAT }}
+          path: coverage-site
           persist-credentials: true
           fetch-depth: 0
 
-      - name: 🔁 Sync report → destination/report
+      - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
+        shell: pwsh
+        env:
+          SITE_DIR: ${{ github.workspace }}/coverage-site/${{ env.DEST_PATH }}
+          HISTORY_DIR: ${{ github.workspace }}/coverage-site/${{ env.DEST_PATH }}/history
+    
         run: |
-          set -euo pipefail
-          rm -rf "coverage-publish/${{ env.DEST_PATH }}"
-          mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
-          cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
-          # Optional (helps GitHub Pages):
-          touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path $env:SITE_DIR,$env:HISTORY_DIR | Out-Null
+
+          ./Utility/Build-Coverage.ps1 `
+            -Framework "net9.0" `
+            -Configuration "Release" `
+            -TestProject ".\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj" `
+            -CoverageDir ".\coverage" `
+            -PesterPath ".\tests\PowerShell.Tests\Kestrun.Tests" `
+            -ReportGenerator `
+            -ReportDir $env:SITE_DIR `
+            -HistoryDir $env:HISTORY_DIR
+
+          New-Item -ItemType File -Path (Join-Path $env:SITE_DIR '.nojekyll') -Force | Out-Null
+
+
+#   - name: 🔁 Sync report → destination/report
+#    run: |
+#     set -euo pipefail
+#     rm -rf "coverage-publish/${{ env.DEST_PATH }}"
+#     mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
+#     cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
+#     Optional (helps GitHub Pages):
+#     touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
 
       - name: ✅ Commit & push if changed
         run: |

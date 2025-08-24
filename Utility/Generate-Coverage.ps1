@@ -4,6 +4,7 @@ param(
     [Parameter()] [string]$Configuration = "Release",
     [Parameter()] [string]$TestProject = ".\tests\CSharp.Tests\Kestrun.Tests\KestrunTests.csproj",
     [Parameter()] [string]$CoverageDir = ".\coverage",
+    [Parameter()] [string]$PesterPath = ".\tests\PowerShell.Tests\Kestrun.Tests",
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Clean')]
     [switch]$Clean,
@@ -24,7 +25,10 @@ param(
     [string]$FileFilters = "-**/Generated/**;-**/*.g.cs",
 
     [Parameter(ParameterSetName = 'Report')]
-    [switch]$OpenWhenDone
+    [switch]$OpenWhenDone,
+
+    [Parameter(ParameterSetName = 'Report')]
+    [string]$HistoryDir
 )
 
 # Add Helper utility
@@ -89,16 +93,49 @@ if ((Get-Item $coverageFile).Length -lt 400) {
     Write-Host "📊 Coverage (Cobertura) saved: $coverageFile"
 }
 
+# Pester coverage
+$pesterCoverageDir = Join-Path -Path $CoverageDir -ChildPath 'pester'
+$pesterCoverageFile = Join-Path -Path $pesterCoverageDir -ChildPath 'coverage.cobertura.xml'
+New-Item -Force -ItemType Directory -Path $pesterCoverageDir | Out-Null
+
+$cfg = New-PesterConfiguration
+$cfg.Run.Path = @($PesterPath)
+$cfg.Output.Verbosity = 'Detailed'
+$cfg.TestResult.Enabled = $true
+$cfg.Run.Exit = $true
+$cfg.CodeCoverage.Enabled = $true
+$cfg.CodeCoverage.Path = @('src/PowerShell/Kestrun/**/*.ps1')  # ← your module/scripts
+$cfg.CodeCoverage.OutputFormat = 'Cobertura'
+$cfg.CodeCoverage.OutputPath = $pesterCoverageFile
+
+Invoke-Pester -Configuration $cfg
+if (-not (Test-Path $pesterCoverageFile)) {
+    throw '⚠️Pester coverage output not found.'
+} else {
+    Write-Host "📊 Pester Coverage (Cobertura) saved: $pesterCoverageFile"
+}
+
 if ($ReportGenerator) {
     $rg = Install-ReportGenerator
-    New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
-    $reportsArg = '"{0}"' -f $coverageFile
 
-    Write-Host "📈 Generating coverage report → $ReportDir"
+    # Resolve report & history dirs
+    $ReportDir = Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ReportDir)
+    $HistoryDir = $HistoryDir
+    if (-not $HistoryDir -and $env:HISTORY_DIR) { $HistoryDir = $env:HISTORY_DIR }
+    if (-not $HistoryDir) { $HistoryDir = Join-Path $CoverageDir 'history' }
+
+    New-Item -ItemType Directory -Force -Path $HistoryDir | Out-Null
+
+    $reportsArg = '"{0};{1}"' -f $coverageFile, $pesterCoverageFile
+
+    Write-Host "📈 Generating coverage report → $ReportDir (history: $HistoryDir)"
     & $rg `
         -reports:$reportsArg `
         -targetdir:$ReportDir `
+        -historydir:$HistoryDir `
+        -title:"Kestrun — Combined Coverage" `
         -reporttypes:$ReportTypes `
+        -tag:"${GITHUB_REPOSITORY}@${GITHUB_SHA}" `
         -assemblyfilters:$AssemblyFilters `
         -filefilters:$FileFilters
 
@@ -110,5 +147,7 @@ if ($ReportGenerator) {
             else { & xdg-open $index }
         }
     }
-    Write-Host "`nAll done. Coverage is glowing in $ReportDir ✨" -ForegroundColor Magenta
+    $index = Join-Path $ReportDir "index.html"
+    if (Test-Path $index) { Write-Host "`nAll done. Coverage is glowing in $index ✨" -ForegroundColor Magenta }
+
 }
