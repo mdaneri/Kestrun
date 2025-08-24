@@ -620,31 +620,39 @@ public sealed class SchedulerService(KestrunRunspacePoolManager pool, Serilog.IL
             {
                 return;
             }
-            var lastRunAt = DateTimeOffset.UtcNow;
-            task.LastRunAt = lastRunAt;
+            var runStartedAt = DateTimeOffset.UtcNow; // capture start time
             await work(ct);
-            // compute next run (only if still scheduled)
+
+            // compute next run (only if still scheduled). We compute fully *before* publishing
+            // any timestamp changes so snapshots never see LastRunAt > NextRunAt.
+            DateTimeOffset nextRun;
             if (task.Interval != null)
             {
-                // Fixed-rate based on AnchorAt to avoid drift; increment iteration first.
-                task.RunIteration++;
+                task.RunIteration++; // increment completed count
                 var interval = task.Interval.Value;
-                // Next theoretical slot (iteration index is zero-based for first run after schedule)
                 var next = task.AnchorAt + ((task.RunIteration + 1) * interval);
                 var now = DateTimeOffset.UtcNow;
-                // If we're behind schedule (execution took longer), advance to next future slot.
                 while (next - now <= TimeSpan.Zero)
                 {
                     task.RunIteration++;
                     next = task.AnchorAt + ((task.RunIteration + 1) * interval);
                     if (task.RunIteration > 10_000) { break; }
                 }
-                task.NextRunAt = next;
+                nextRun = next;
             }
             else if (task.Cron is not null)
             {
-                task.NextRunAt = task.Cron.GetNextOccurrence(lastRunAt, _tz) ?? DateTimeOffset.MaxValue;
+                nextRun = task.Cron.GetNextOccurrence(runStartedAt, _tz) ?? DateTimeOffset.MaxValue;
             }
+            else
+            {
+                nextRun = DateTimeOffset.MaxValue;
+            }
+
+            // Publish timestamps together to avoid inconsistent snapshot (race seen in CI where
+            // LastRunAt advanced but NextRunAt still pointed to prior slot).
+            task.LastRunAt = runStartedAt;
+            task.NextRunAt = nextRun;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { /* ignore */ }
         catch (Exception ex)

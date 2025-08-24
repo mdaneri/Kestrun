@@ -112,7 +112,7 @@ Add-BuildTask Help {
     Write-Host '- Kestrun.Tests: Runs Kestrun DLL tests.'
     Write-Host '- Package: Packages the solution.'
     Write-Host '- Manifest: Updates the Kestrun.psd1 manifest.'
-    Write-Host '- Generate-LargeFile: Generates a large test file.'
+    Write-Host '- New-LargeFile: Generates a large test file.'
     Write-Host '- Clean-LargeFile: Cleans the generated large test files.'
     Write-Host '- ThirdPartyNotices: Generates third-party notices.'
     Write-Host '- BuildHelp: Generates PowerShell help documentation.'
@@ -267,7 +267,7 @@ Add-BuildTask 'Package' 'Build', {
 
 Add-BuildTask 'Build_Powershell_Help' {
     Write-Host 'Generate Powershell Help...'
-    pwsh -NoProfile -File .\Utility\Generate-Help.ps1
+    pwsh -NoProfile -File .\Utility\Build-Help.ps1
 }
 
 Add-BuildTask 'Build_CSharp_Help' {
@@ -279,8 +279,8 @@ Add-BuildTask 'Build_CSharp_Help' {
     } else {
         Write-Host '✅ xmldocmd already installed'
     }
-    & .\Utility\Prepare-DocRefs.ps1
-    & .\Utility\Prepare-JustTheDocs.ps1 -ApiRoot 'docs/cs/api' -TopParent 'C# API'
+    & .\Utility\Build-DocRefs.ps1
+    & .\Utility\Update-JustTheDocs.ps1 -ApiRoot 'docs/cs/api' -TopParent 'C# API'
 }
 
 # Build Help will call Build_Powershell_Help and Build_CSharp_Help
@@ -296,19 +296,19 @@ Add-BuildTask 'CleanHelp' {
 # Clean PowerShell Help
 Add-BuildTask 'Clean_Powershell_Help' {
     Write-Host 'Cleaning Powershell Help...'
-    & .\Utility\Generate-Help.ps1 -Clean
+    & .\Utility\Build-Help.ps1 -Clean
 }
 
 # Clean CSharp Help
 Add-BuildTask 'Clean_CSharp_Help' {
     Write-Host 'Cleaning C# Help...'
-    & .\Utility\Prepare-DocRefs.ps1 -Clean
+    & .\Utility\Build-DocRefs.ps1 -Clean
 }
 
 # Code Coverage
 Add-BuildTask 'Coverage' {
     Write-Host 'Creating coverage report...'
-    & .\Utility\Generate-Coverage.ps1
+    & .\Utility\Build-Coverage.ps1
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Coverage generation failed" -ForegroundColor Red
         throw "Coverage generation failed"
@@ -318,7 +318,7 @@ Add-BuildTask 'Coverage' {
 # Report coverage
 Add-BuildTask 'Report-Coverage' {
     Write-Host 'Creating coverage report webpage...'
-    & .\Utility\Generate-Coverage.ps1 -ReportGenerator
+    & .\Utility\Build-Coverage.ps1 -ReportGenerator
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Coverage Report generation failed" -ForegroundColor Red
         throw "Coverage Report generation failed"
@@ -328,7 +328,7 @@ Add-BuildTask 'Report-Coverage' {
 # Clean coverage reports
 Add-BuildTask 'Clean-Coverage' {
     Write-Host 'Cleaning coverage report...'
-    & .\Utility\Generate-Coverage.ps1 -Clean
+    & .\Utility\Build-Coverage.ps1 -Clean
 }
 
 # Update the module manifest
@@ -337,15 +337,15 @@ Add-BuildTask 'Manifest' {
     pwsh -NoProfile -File .\Utility\Update-Manifest.ps1
 }
 
-Add-BuildTask 'Generate-LargeFile' 'Clean-LargeFile', {
+Add-BuildTask 'New-LargeFile' 'Clean-LargeFile', {
     Write-Host 'Generating large file...'
     if (-not (Test-Path -Path '.\examples\files\LargeFiles')) {
         New-Item -ItemType Directory -Path '.\examples\files\LargeFiles' -Force | Out-Null
     }
     (10, 100, 1000, 3000) | ForEach-Object {
         $sizeMB = $_
-        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.bin" -Mode 'Binary' -SizeMB $sizeMB
-        & .\Utility\Generate-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.txt" -Mode 'Text' -SizeMB $sizeMB
+        & .\Utility\New-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.bin" -Mode 'Binary' -SizeMB $sizeMB
+        & .\Utility\New-LargeFile.ps1 -Path ".\examples\files\LargeFiles\file-$sizeMB-MB.txt" -Mode 'Text' -SizeMB $sizeMB
     }
 }
 Add-BuildTask 'Clean-LargeFile' {
@@ -354,7 +354,7 @@ Add-BuildTask 'Clean-LargeFile' {
 }
 
 Add-BuildTask 'ThirdPartyNotices' {
-    & .\Utility\Generate-ThirdPartyNotices.ps1 -Project '.\src\CSharp\Kestrun\Kestrun.csproj' -Path '.\THIRD-PARTY-NOTICES.md' -Version (Get-Version -FileVersion $FileVersion)
+    & .\Utility\Update-ThirdPartyNotices.ps1 -Project '.\src\CSharp\Kestrun\Kestrun.csproj' -Path '.\THIRD-PARTY-NOTICES.md' -Version (Get-Version -FileVersion $FileVersion)
 }
 
 Add-BuildTask All 'Clean', 'Restore', 'Build', 'Test'
