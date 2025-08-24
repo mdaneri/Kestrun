@@ -27,13 +27,20 @@ public class SchedulerServiceTests
             _ = Interlocked.Increment(ref ran);
             await Task.CompletedTask;
         }, runImmediately: false);
+        // Previous fixed delay (800ms) was occasionally insufficient on slower / contended CI
+        // (notably net8 arm64) leading to rare flakes where only 1 run occurred. Poll up to 3s
+        // for at least 2 executions to make the test robust while still validating interval logic.
+        var start = DateTime.UtcNow;
+        while (ran < 2 && DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
+        {
+            await Task.Delay(50);
+        }
 
-        await Task.Delay(800);
         var snap = svc.GetSnapshot();
         var job = Assert.Single(snap, j => j.Name == "tick");
-        Assert.True(ran >= 2);
+        Assert.True(ran >= 2, $"Expected at least 2 runs, observed {ran}");
         _ = Assert.NotNull(job.LastRunAt);
-        Assert.True(job.NextRunAt > job.LastRunAt);
+        Assert.True(job.NextRunAt > job.LastRunAt, $"Expected NextRunAt ({job.NextRunAt:o}) to be after LastRunAt ({job.LastRunAt:o})");
     }
 
     [Fact]

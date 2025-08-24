@@ -255,7 +255,7 @@ jobs:
 
   report-generator:
     runs-on: ubuntu-latest
-    name: codacy-coverage-reporter
+    name: report-generator-csharp
     env:
       POWERSHELL_DISTRIBUTION_CHANNEL: GitHub-Actions
       DOTNET_VERBOSITY: minimal 
