@@ -375,64 +375,82 @@ public static class CertificateManager
                         try
                         {
                             var certOnly = LoadCertOnlyPem(certPath);
-                            var keyPem = File.ReadAllText(privateKeyPath!);
                             const string encBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
                             const string encEnd = "-----END ENCRYPTED PRIVATE KEY-----";
-                            var start = keyPem.IndexOf(encBegin, StringComparison.Ordinal);
-                            var end = keyPem.IndexOf(encEnd, StringComparison.Ordinal);
-                            if (start >= 0 && end > start)
+
+                            byte[]? encDer = null;
+                            for (var attempt = 0; attempt < 5 && encDer is null; attempt++)
                             {
-                                start += encBegin.Length;
-                                var b64 = keyPem[start..end].Replace("\r", "").Replace("\n", "").Trim();
-                                var encDer = Convert.FromBase64String(b64);
-
-                                // Try RSA first; if it fails, try ECDSA. Do NOT rely on GetKeyAlgorithm() textual match
-                                // because some platforms return only the numeric OID (e.g. 1.2.840.113549.1.1.1) which
-                                // doesn't contain the substring "rsa".
-                                Exception? lastErr = null;
-
-                                // RSA attempt
-                                try
+                                var keyPem = File.ReadAllText(privateKeyPath!);
+                                var start = keyPem.IndexOf(encBegin, StringComparison.Ordinal);
+                                var end = keyPem.IndexOf(encEnd, StringComparison.Ordinal);
+                                if (start >= 0 && end > start)
                                 {
-                                    using var rsa = RSA.Create();
-                                    rsa.ImportEncryptedPkcs8PrivateKey(password, encDer, out _);
-                                    var withKey = certOnly.CopyWithPrivateKey(rsa);
-                                    if (withKey.HasPrivateKey)
+                                    start += encBegin.Length;
+                                    var b64 = keyPem[start..end].Replace("\r", "").Replace("\n", "").Trim();
+                                    try
                                     {
-                                        Log.Debug("Encrypted PEM manual pairing succeeded with RSA private key.");
-                                        return withKey;
+                                        encDer = Convert.FromBase64String(b64);
+                                    }
+                                    catch (FormatException fe)
+                                    {
+                                        Log.Debug(fe, "Base64 decode failed on attempt {Attempt} reading encrypted key; retrying", attempt + 1);
                                     }
                                 }
-                                catch (Exception exRsa)
+                                if (encDer is null)
                                 {
-                                    lastErr = exRsa;
+                                    Thread.Sleep(40 * (attempt + 1)); // small backoff in case of partial write
                                 }
+                            }
 
-                                // ECDSA attempt
-                                try
-                                {
-                                    using var ecdsa = ECDsa.Create();
-                                    ecdsa.ImportEncryptedPkcs8PrivateKey(password, encDer, out _);
-                                    var withKey = certOnly.CopyWithPrivateKey(ecdsa);
-                                    if (withKey.HasPrivateKey)
-                                    {
-                                        Log.Debug("Encrypted PEM manual pairing succeeded with ECDSA private key.");
-                                        return withKey;
-                                    }
-                                }
-                                catch (Exception exEc)
-                                {
-                                    lastErr = lastErr is null ? exEc : new AggregateException(lastErr, exEc);
-                                }
-
-                                if (lastErr != null)
-                                {
-                                    Log.Debug(lastErr, "Encrypted PEM manual pairing attempts (RSA/ECDSA) failed; returning original loaded certificate without private key");
-                                }
+                            if (encDer is null)
+                            {
+                                Log.Debug("Encrypted PEM manual pairing fallback skipped: markers not found in key file {KeyFile}", privateKeyPath);
                             }
                             else
                             {
-                                Log.Debug("Encrypted PEM manual pairing fallback skipped: markers not found in key file {KeyFile}", privateKeyPath);
+                                Exception? lastErr = null;
+                                for (var round = 0; round < 2; round++)
+                                {
+                                    // Try RSA
+                                    try
+                                    {
+                                        using var rsa = RSA.Create();
+                                        rsa.ImportEncryptedPkcs8PrivateKey(password, encDer, out _);
+                                        var withKey = certOnly.CopyWithPrivateKey(rsa);
+                                        if (withKey.HasPrivateKey)
+                                        {
+                                            Log.Debug("Encrypted PEM manual pairing succeeded with RSA private key (round {Round}).", round + 1);
+                                            return withKey;
+                                        }
+                                    }
+                                    catch (Exception exRsa)
+                                    {
+                                        lastErr = lastErr is null ? exRsa : new AggregateException(lastErr, exRsa);
+                                    }
+
+                                    // Try ECDSA
+                                    try
+                                    {
+                                        using var ecdsa = ECDsa.Create();
+                                        ecdsa.ImportEncryptedPkcs8PrivateKey(password, encDer, out _);
+                                        var withKey = certOnly.CopyWithPrivateKey(ecdsa);
+                                        if (withKey.HasPrivateKey)
+                                        {
+                                            Log.Debug("Encrypted PEM manual pairing succeeded with ECDSA private key (round {Round}).", round + 1);
+                                            return withKey;
+                                        }
+                                    }
+                                    catch (Exception exEc)
+                                    {
+                                        lastErr = lastErr is null ? exEc : new AggregateException(lastErr, exEc);
+                                    }
+                                    Thread.Sleep(25 * (round + 1));
+                                }
+                                if (lastErr != null)
+                                {
+                                    Log.Debug(lastErr, "Encrypted PEM manual pairing attempts failed (all rounds); returning original loaded certificate without private key");
+                                }
                             }
                         }
                         catch (Exception ex)

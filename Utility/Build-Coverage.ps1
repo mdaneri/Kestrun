@@ -98,7 +98,7 @@ if ((Get-Item $coverageFile).Length -lt 400) {
 
 # ReportGenerator
 if ($ReportGenerator) {
-
+    Invoke-Build Build -Configuration $Configuration
     # PowerShell coverage
     if (-not $SkipPowershell) {
         # Pester coverage
