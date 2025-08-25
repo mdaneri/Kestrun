@@ -258,7 +258,7 @@
   </Target>
   <Target Name="CustomClean" AfterTargets="Clean">
     <!-- Clean PowerShell lib directory -->
-    <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib\$(TargetFramework)" />
+    <!--   <RemoveDir Directories="$(ProjectRoot)src\PowerShell\Kestrun\lib\$(TargetFramework)" /> -->
     <!-- Clean publish directory -->
     <RemoveDir Directories="$(ProjectRoot)\publish" />
   </Target>

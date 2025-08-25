@@ -134,19 +134,40 @@ public class CertificateManagerTest
             var keyPath = Path.Combine(dir, "cert.key");
             Assert.True(File.Exists(keyPath));
 
-            var keyText = File.ReadAllText(keyPath);
+            // Wait for key file to be fully flushed & non-trivial length (encrypted PKCS#8 typically > 500 bytes)
+            var keyText = "";
+            var swStart = DateTime.UtcNow;
+            long keyLen = 0;
+            for (var spin = 0; spin < 10; spin++)
+            {
+                if (File.Exists(keyPath))
+                {
+                    keyLen = new FileInfo(keyPath).Length;
+                    if (keyLen > 200)
+                    {
+                        keyText = File.ReadAllText(keyPath);
+                        if (keyText.Contains("ENCRYPTED PRIVATE KEY", StringComparison.Ordinal))
+                        {
+                            break;
+                        }
+                    }
+                }
+                Thread.Sleep(25 * (spin + 1));
+            }
+            Assert.True(keyLen > 0, "Key file length was zero");
             Assert.Contains("ENCRYPTED PRIVATE KEY", keyText);
 
-            // Import with encrypted key, retry up to 3 times if HasPrivateKey is false (to mitigate flakiness)
+            // Import with encrypted key, retry with exponential backoff if HasPrivateKey is false
             X509Certificate2? imported = null;
             var hasPrivateKey = false;
             Exception? lastEx = null;
-            for (var attempt = 1; attempt <= 3; attempt++)
+            for (var attempt = 1; attempt <= 6; attempt++)
             {
                 try
                 {
+                    imported?.Dispose(); // dispose previous attempt
                     imported = CertificateManager.Import(pemPath, pwd, keyPath);
-                    hasPrivateKey = imported != null && imported.HasPrivateKey;
+                    hasPrivateKey = imported.HasPrivateKey;
                     if (hasPrivateKey)
                     {
                         break;
@@ -156,41 +177,43 @@ public class CertificateManagerTest
                 {
                     lastEx = ex;
                 }
-                // Small delay to avoid timing issues
-                Thread.Sleep(100);
+                Thread.Sleep(50 * attempt); // backoff: 50,100,...300ms
             }
             Assert.NotNull(imported);
+
             if (!hasPrivateKey)
             {
-                // Manual fallback: try to pair the key ourselves
+                // Manual fallback: try to pair the key ourselves (mirrors library logic)
                 try
                 {
                     var certOnly = CertificateManager.Import(pemPath); // public only
-                    var keyPem = File.ReadAllText(keyPath);
                     const string encBegin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
                     const string encEnd = "-----END ENCRYPTED PRIVATE KEY-----";
-                    var start = keyPem.IndexOf(encBegin, StringComparison.Ordinal);
-                    var end = keyPem.IndexOf(encEnd, StringComparison.Ordinal);
+                    var start = keyText.IndexOf(encBegin, StringComparison.Ordinal);
+                    var end = keyText.IndexOf(encEnd, StringComparison.Ordinal);
                     if (start >= 0 && end > start)
                     {
                         start += encBegin.Length;
-                        var b64 = keyPem[start..end].Replace("\r", "").Replace("\n", "").Trim();
+                        var b64 = keyText[start..end].Replace("\r", "").Replace("\n", "").Trim();
                         var encDer = Convert.FromBase64String(b64);
-                        // Try RSA first, then ECDSA
                         Exception? lastErr = null;
-                        try
+                        for (var round = 0; round < 2 && !hasPrivateKey; round++)
                         {
-                            using var rsa = RSA.Create();
-                            rsa.ImportEncryptedPkcs8PrivateKey(System.Text.Encoding.UTF8.GetBytes(pwd), encDer, out _);
-                            imported = certOnly.CopyWithPrivateKey(rsa);
-                            hasPrivateKey = imported.HasPrivateKey;
-                        }
-                        catch (Exception exRsa)
-                        {
-                            lastErr = exRsa;
-                        }
-                        if (!hasPrivateKey)
-                        {
+                            try
+                            {
+                                using var rsa = RSA.Create();
+                                rsa.ImportEncryptedPkcs8PrivateKey(System.Text.Encoding.UTF8.GetBytes(pwd), encDer, out _);
+                                imported = certOnly.CopyWithPrivateKey(rsa);
+                                hasPrivateKey = imported.HasPrivateKey;
+                                if (hasPrivateKey)
+                                {
+                                    break;
+                                }
+                            }
+                            catch (Exception exRsa)
+                            {
+                                lastErr = lastErr is null ? exRsa : new AggregateException(lastErr, exRsa);
+                            }
                             try
                             {
                                 using var ecdsa = ECDsa.Create();
@@ -202,6 +225,7 @@ public class CertificateManagerTest
                             {
                                 lastErr = lastErr is null ? exEc : new AggregateException(lastErr, exEc);
                             }
+                            Thread.Sleep(25 * (round + 1));
                         }
                     }
                 }
@@ -210,11 +234,18 @@ public class CertificateManagerTest
                     lastEx = ex;
                 }
             }
+
             if (!hasPrivateKey)
             {
                 var platform = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
                 var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
-                Assert.Fail($"Imported certificate did not have a private key after all attempts. Platform: {platform}, Framework: {framework}, Last exception: {lastEx}\nKey file contents: {keyText}");
+                var elapsedMs = (DateTime.UtcNow - swStart).TotalMilliseconds;
+                Assert.True(hasPrivateKey, $"Imported certificate did not have a private key after retries. Attempts=6 Elapsed={elapsedMs:F0}ms Platform={platform} Framework={framework} KeyLen={keyLen} LastEx={lastEx}");
+            }
+            else
+            {
+                Assert.True(imported!.HasPrivateKey);
+                Assert.Contains("CN=localhost", imported.Subject, StringComparison.OrdinalIgnoreCase);
             }
         }
         finally
