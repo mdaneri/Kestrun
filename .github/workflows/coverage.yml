@@ -303,18 +303,6 @@ jobs:
           Install-PSResource -Repository PSGallery -TrustRepository -Scope CurrentUser -Name 'InvokeBuild','Pester'
           Get-Module Pester -ListAvailable | Select Name,Version,Path
 
-      - name: 📦 Restore
-        shell: pwsh
-        run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
-
-      - name: 🔧 Build
-        shell: pwsh
-        run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
-
-      - name: 🧰 Install Module
-        shell: pwsh
-        run: Invoke-Build Install-Module
-
       - name: 📥 Checkout coverage site repo (for in-place output + history)
         uses: actions/checkout@v5
         with:
@@ -323,6 +311,14 @@ jobs:
           path: coverage-site
           persist-credentials: true
           fetch-depth: 0
+
+      - name: 📦 Restore
+        shell: pwsh
+        run: Invoke-Build Restore -DotNetVerbosity $Env:DOTNET_VERBOSITY
+
+      - name: 🔧 Build
+        shell: pwsh
+        run: Invoke-Build Build -DotNetVerbosity $Env:DOTNET_VERBOSITY
 
       - name: 🧪 Test (.NET) with coverage (Cobertura, Debug)
         shell: pwsh
