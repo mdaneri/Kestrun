@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using Kestrun.Scheduling;
 using Kestrun.Scripting;
 using Serilog;
@@ -26,7 +24,7 @@ public sealed class SchedulerWarmupFixture : IDisposable
             using var svc = new SchedulerService(pool, log, TimeZoneInfo.Utc);
 
             var ran = 0;
-            svc.Schedule("__warm", TimeSpan.FromMinutes(10), async ct => { Interlocked.Increment(ref ran); await Task.CompletedTask; }, runImmediately: true);
+            svc.Schedule("__warm", TimeSpan.FromMinutes(10), async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; }, runImmediately: true);
             var start = DateTime.UtcNow;
             while (ran == 0 && DateTime.UtcNow - start < TimeSpan.FromSeconds(2))
             {
