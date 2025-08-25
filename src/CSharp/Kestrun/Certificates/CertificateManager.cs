@@ -776,7 +776,11 @@ public static class CertificateManager
         }
 
         var keyPem = PemEncoding.WriteString(pemLabel, keyDer);
-        var keyFilePath = Path.GetFileNameWithoutExtension(certFilePath) + ".key";
+        var certDir = Path.GetDirectoryName(certFilePath);
+        var baseName = Path.GetFileNameWithoutExtension(certFilePath);
+        var keyFilePath = string.IsNullOrEmpty(certDir)
+            ? baseName + ".key"
+            : Path.Combine(certDir!, baseName + ".key");
         File.WriteAllText(keyFilePath, keyPem);
 
         try

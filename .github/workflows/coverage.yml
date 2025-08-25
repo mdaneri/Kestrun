@@ -351,7 +351,7 @@ jobs:
           set -euo pipefail
           rm -rf "coverage-publish/${{ env.DEST_PATH }}"
           mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
-          cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
+          cp -a coverage-site/report/. "coverage-publish/${{ env.DEST_PATH }}/"
           Optional (helps GitHub Pages):
           touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
 
