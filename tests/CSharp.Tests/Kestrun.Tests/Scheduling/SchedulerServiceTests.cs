@@ -188,8 +188,16 @@ public class SchedulerServiceTests
             while (!(seenInline && seenFile) && DateTime.UtcNow - start < TimeSpan.FromSeconds(5))
             {
                 var snap = svc.GetSnapshot();
-                if (!seenInline) seenInline = snap.Any(j => j.Name == "ps-inline");
-                if (!seenFile) seenFile = snap.Any(j => j.Name == "ps-file");
+                if (!seenInline)
+                {
+                    seenInline = snap.Any(j => j.Name == "ps-inline");
+                }
+
+                if (!seenFile)
+                {
+                    seenFile = snap.Any(j => j.Name == "ps-file");
+                }
+
                 if (!(seenInline && seenFile))
                 {
                     await Task.Delay(50);

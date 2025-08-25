@@ -169,15 +169,35 @@ Add-BuildTask 'SyncPowerShellDll' {
     $dest = ".\src\PowerShell\Kestrun\lib"
     $src = ".\src\CSharp\Kestrun\bin\$Configuration"
     Write-Host "Preparing to copy files from $src to $dest"
+    if (-not (Test-Path -Path $dest)) {
+        New-Item -Path $dest -ItemType Directory -Force | Out-Null
+    }
+    if (-not (Test-Path -Path (Join-Path -Path $dest -ChildPath "Microsoft.CodeAnalysis"))) {
+        Write-Host 'Missing CodeAnalysis...'
+        & .\Utility\Download-CodeAnalysis.ps1
+    }
     foreach ($framework in $Frameworks) {
         $destFramework = Join-Path -Path $dest -ChildPath $framework
-        $srcFramework = Join-Path -Path $src -ChildPath $framework
-        Write-Host "Copy dll from $srcFramework to $destFramework"
         if (Test-Path -Path $destFramework) {
             Remove-Item -Path $destFramework -Recurse -Force | Out-Null
         }
-        New-Item -Path $destFramework -ItemType Directory -Force | Out-Null
-        Copy-Item -Path "$srcFramework\*" -Destination $destFramework -Recurse -Force
+        $destFramework = Resolve-Path -Path $destFramework
+        $srcFramework = Resolve-Path (Join-Path -Path $src -ChildPath $framework)
+        Write-Host "Copy dll from $srcFramework to $destFramework"
+
+        # Copy files except ones starting with Microsoft.CodeAnalysis
+        Get-ChildItem -Path $srcFramework -Recurse -File |
+            Where-Object { -not ($_.Name -like 'Microsoft.CodeAnalysis*') } |
+            ForEach-Object {
+                $targetPath = $_.FullName.Replace($srcFramework, $destFramework)
+                $targetDir = Split-Path $targetPath -Parent
+
+                if (-not (Test-Path $targetDir)) {
+                    New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+                }
+
+                Copy-Item -Path $_.FullName -Destination $targetPath -Force
+            }
     }
 }
 

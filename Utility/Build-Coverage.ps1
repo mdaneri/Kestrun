@@ -123,7 +123,7 @@ if ($ReportGenerator) {
             Write-Host "📊 Pester Coverage (Cobertura) saved: $pesterCoverageFile"
         }
     }
- 
+
     $rg = Install-ReportGenerator
 
     # Resolve report & history dirs

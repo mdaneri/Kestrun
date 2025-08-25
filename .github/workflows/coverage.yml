@@ -329,7 +329,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path $env:SITE_DIR,$env:HISTORY_DIR | Out-Null
-
+          # Sync PowerShell DLLs
+          Invoke-Build SyncPowerShellDll
+          
+          # Build coverage report
           ./Utility/Build-Coverage.ps1 `
             -Framework "net9.0" `
             -Configuration "Release" `
