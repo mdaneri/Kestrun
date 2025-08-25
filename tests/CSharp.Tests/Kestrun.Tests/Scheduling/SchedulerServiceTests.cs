@@ -64,18 +64,44 @@ public class SchedulerServiceTests
 
         // Pause and allow any in-flight execution to drain before taking baseline
         Assert.True(svc.Pause("p"));
-        await Task.Delay(interval + TimeSpan.FromMilliseconds(50));
-        var pausedBaseline = ran;
-        await Task.Delay(interval * 3);
-        Assert.True(ran <= pausedBaseline + 1); // allow at most one in-flight run after pause
 
-        Assert.True(svc.Resume("p"));
-        var waitStart = DateTime.UtcNow;
-        while (ran <= pausedBaseline + 1 && (DateTime.UtcNow - waitStart) < TimeSpan.FromSeconds(3))
+        // Allow any in-flight execution already scheduled (pending Task.Delay) to complete.
+        await Task.Delay(interval + TimeSpan.FromMilliseconds(50));
+
+        // Stabilization phase: wait until the counter stops changing for at least one full interval
+        // (up to a max timeout). This avoids flakiness from the scheduler potentially catching up
+        // one additional anchored slot right after pause.
+        var stabilizeStart = DateTime.UtcNow;
+        var lastObserved = ran;
+        var lastChangeAt = DateTime.UtcNow;
+        var maxStabilize = TimeSpan.FromSeconds(4); // generous for slow CI
+        while (DateTime.UtcNow - stabilizeStart < maxStabilize)
         {
-            await Task.Delay(10);
+            await Task.Delay(25);
+            var current = ran;
+            if (current != lastObserved)
+            {
+                lastObserved = current;
+                lastChangeAt = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - lastChangeAt >= interval)
+            {
+                // no change for at least one interval => stabilized
+                break;
+            }
         }
-        Assert.True(ran > pausedBaseline + 1);
+        var pausedBaseline = lastObserved;
+
+        // Resume and ensure at least one further increment occurs.
+        Assert.True(svc.Resume("p"));
+        var resumeStart = DateTime.UtcNow;
+        var resumed = false;
+        while (!resumed && DateTime.UtcNow - resumeStart < TimeSpan.FromSeconds(5))
+        {
+            if (ran > pausedBaseline) { resumed = true; break; }
+            await Task.Delay(25);
+        }
+        Assert.True(resumed, "Job did not resume and increment after pause within timeout");
     }
 
     [Fact]

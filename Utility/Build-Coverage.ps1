@@ -185,5 +185,4 @@ if ($ReportGenerator) {
     }
     $index = Join-Path $ReportDir "index.html"
     if (Test-Path $index) { Write-Host "`nAll done. Coverage is glowing in $index ✨" -ForegroundColor Magenta }
-
 }

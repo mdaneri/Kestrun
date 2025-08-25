@@ -369,5 +369,9 @@ jobs:
             git commit -m "Update coverage report from ${GITHUB_REPOSITORY}@${GITHUB_SHA} on $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             git push
           fi
-    
+      - name: 🧑‍💻 Live SSH (only if failed and debug enabled)
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
           
