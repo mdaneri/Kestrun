@@ -9,6 +9,7 @@ using JobInfo = Kestrun.Scheduling.JobInfo;
 
 namespace KestrunTests.Scheduling;
 
+[Collection("SchedulerTests")]
 public class SchedulerServiceTests
 {
     private static Logger CreateLogger() => new LoggerConfiguration().MinimumLevel.Debug().CreateLogger();
