@@ -181,6 +181,7 @@ Add-BuildTask 'SyncPowerShellDll' {
         if (Test-Path -Path $destFramework) {
             Remove-Item -Path $destFramework -Recurse -Force | Out-Null
         }
+        New-Item -Path $destFramework -ItemType Directory -Force | Out-Null
         $destFramework = Resolve-Path -Path $destFramework
         $srcFramework = Resolve-Path (Join-Path -Path $src -ChildPath $framework)
         Write-Host "Copy dll from $srcFramework to $destFramework"
