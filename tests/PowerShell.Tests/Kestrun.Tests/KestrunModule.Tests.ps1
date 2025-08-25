@@ -18,7 +18,7 @@ BeforeAll {
             exit 1
         }
     } else {
-        Load-Module -Name Kestrun
+        Import-Module -Name Kestrun
     }
 }
 
