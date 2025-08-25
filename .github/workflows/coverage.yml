@@ -330,7 +330,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force -Path $env:SITE_DIR,$env:HISTORY_DIR | Out-Null
           # Sync PowerShell DLLs
-          Invoke-Build Build
+          # Invoke-Build Build
 
           # Build coverage report
           ./Utility/Build-Coverage.ps1 `

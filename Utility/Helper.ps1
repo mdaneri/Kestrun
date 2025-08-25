@@ -158,43 +158,113 @@ function Get-BestTfmFolder([string]$LibFolder) {
 }
 
 <#
-  .SYNOPSIS
-      Downloads and extracts a NuGet package.
-  .DESCRIPTION
-      Downloads a NuGet package and extracts it to a specified folder.
-      This function is designed to work cross-platform without relying on nuget.exe.
-  .PARAMETER Id
-      The ID of the NuGet package to download.
-  .PARAMETER Version
-      The version of the NuGet package to download.
-  .PARAMETER WorkRoot
-      The root directory where the package will be downloaded.
-  .PARAMETER Force
-      Whether to force re-download the package if it already exists.
-  .OUTPUTS
-      The path to the extracted package folder.
+    .SYNOPSIS
+        Downloads and extracts a NuGet package.
+    .DESCRIPTION
+        Downloads a NuGet package and extracts it to a specified folder.
+        This function is designed to work cross-platform without relying on nuget.exe.
+    .PARAMETER Id
+        The ID of the NuGet package to download.
+    .PARAMETER Version
+        The version of the NuGet package to download.
+    .PARAMETER WorkRoot
+        The root directory where the package will be downloaded.
+    .PARAMETER Force
+        Whether to force re-download the package if it already exists.
+    .PARAMETER Retries
+        The number of times to retry downloading the package if it fails.
+    .PARAMETER DelaySeconds
+        The number of seconds to wait before retrying the download.
+    .PARAMETER MaxDelaySeconds
+        The maximum number of seconds to wait before retrying the download.
+    .PARAMETER TimeoutSec
+        The number of seconds to wait before timing out the download.
+    .EXAMPLE
+        Get-PackageFolder -Id 'MyPackage' -Version '1.0.0' -WorkRoot 'C:\Packages' -Force
+        This will download and extract the specified NuGet package to the specified work root.
+    .EXAMPLE
+        Get-PackageFolder -Id 'MyPackage' -Version '1.0.0' -WorkRoot 'C:\Packages' -Force -Retries 5
+        This will download and extract the specified NuGet package to the specified work root, with 5 retries on failure.
+
+    .OUTPUTS
+        The path to the extracted package folder.
 #>
-function Get-PackageFolder([string]$Id, [string]$Version, [string]$WorkRoot, [switch]$Force) {
+function Get-PackageFolder {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Id,
+        [Parameter(Mandatory)][string]$Version,
+        [Parameter(Mandatory)][string]$WorkRoot,
+        [switch]$Force,
+
+        # --- Retry knobs ---
+        [Parameter()]
+        [int]$Retries = 3,            # number of retries after the first attempt (total attempts = Retries + 1)
+        [int]$DelaySeconds = 2,       # initial backoff delay
+        [int]$MaxDelaySeconds = 30,   # backoff cap
+        [int]$TimeoutSec = 120        # web request timeout per attempt
+    )
+
     $idLower = $Id.ToLowerInvariant()
     $pkgRoot = Join-Path $WorkRoot "$Id.$Version"
-    if (-not $Force -and (Test-Path $pkgRoot)) { return $pkgRoot }
 
-    # fresh folder
-    if (Test-Path $pkgRoot) { Remove-Item -Recurse -Force $pkgRoot }
-    New-Item -ItemType Directory -Path $pkgRoot -Force | Out-Null
+    if (-not $Force -and (Test-Path $pkgRoot)) {
+        return (Resolve-Path $pkgRoot).Path
+    }
 
-    $nupkgName = "$idLower.$Version.nupkg"
-    $nupkgUrl = "https://api.nuget.org/v3-flatcontainer/$idLower/$Version/$nupkgName"
-    $nupkgPath = Join-Path $pkgRoot $nupkgName
+    $attempt = 0
+    while ($attempt -le $Retries) {
+        $attempt++
 
-    Write-Host "Downloading $Id $Version..."
-    Invoke-WebRequest -Uri $nupkgUrl -OutFile $nupkgPath
-    # Extract .nupkg (zip)
-    Expand-Archive -Path $nupkgPath -DestinationPath $pkgRoot -Force
-    Remove-Item $nupkgPath -Force
+        try {
+            # fresh folder every attempt
+            if (Test-Path $pkgRoot) {
+                Remove-Item -Recurse -Force $pkgRoot -ErrorAction SilentlyContinue
+            }
+            New-Item -ItemType Directory -Path $pkgRoot -Force | Out-Null
 
-    return $pkgRoot
+            $nupkgName = "$idLower.$Version.nupkg"
+            $nupkgUrl  = "https://api.nuget.org/v3-flatcontainer/$idLower/$Version/$nupkgName"
+            $nupkgPath = Join-Path $pkgRoot $nupkgName
+
+            Write-Host "Downloading $Id $Version (attempt $attempt of $($Retries + 1))..."
+            Invoke-WebRequest `
+                -Uri $nupkgUrl `
+                -OutFile $nupkgPath `
+                -MaximumRedirection 5 `
+                -TimeoutSec $TimeoutSec `
+                -Headers @{ 'User-Agent' = "Get-PackageFolder/1.0 (+PowerShell $($PSVersionTable.PSVersion))" } `
+                -ErrorAction Stop
+
+            try {
+                Expand-Archive -Path $nupkgPath -DestinationPath $pkgRoot -Force -ErrorAction Stop
+            }
+            finally {
+                if (Test-Path $nupkgPath) { Remove-Item $nupkgPath -Force -ErrorAction SilentlyContinue }
+            }
+
+            return (Resolve-Path $pkgRoot).Path
+        }
+        catch {
+            if ($attempt -gt $Retries) { throw }
+
+            # Exponential backoff with jitter
+            $base = [Math]::Min($MaxDelaySeconds, $DelaySeconds * [Math]::Pow(2, $attempt - 1))
+            $jitter = 1 + (Get-Random -Minimum -0.2 -Maximum 0.2) # ±20%
+            $sleep = [int][Math]::Max(1, [Math]::Round($base * $jitter))
+
+            Write-Warning ("Get-PackageFolder failed (attempt {0}/{1}): {2}`nRetrying in {3}s..." -f $attempt, ($Retries + 1), $_.Exception.Message, $sleep)
+
+            # Clean up any partial extraction before the next try
+            if (Test-Path $pkgRoot) {
+                Remove-Item -Recurse -Force $pkgRoot -ErrorAction SilentlyContinue
+            }
+
+            Start-Sleep -Seconds $sleep
+        }
+    }
 }
+
 
 <#
     .SYNOPSIS

@@ -125,15 +125,18 @@ if ($ReportGenerator) {
     }
 
     $rg = Install-ReportGenerator
-
+    if (-not $rg) { throw "❌ ReportGenerator not found." }
+    if (-not (Test-Path $ReportDir)) {
+        New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
+    }
     # Resolve report & history dirs
-    $ReportDir = Resolve-Path -Path (New-Item -ItemType Directory -Force -Path $ReportDir)
+    $ReportDir = Resolve-Path -Path $ReportDir
     $HistoryDir = $HistoryDir
     if (-not $HistoryDir -and $env:HISTORY_DIR) { $HistoryDir = $env:HISTORY_DIR }
     if (-not $HistoryDir) { $HistoryDir = Join-Path $CoverageDir 'history' }
 
     New-Item -ItemType Directory -Force -Path $HistoryDir | Out-Null
-
+    $HistoryDir = Resolve-Path -Path $HistoryDir
     if ($Powershell) {
         $reportsArg = '"{0};{1}"' -f $coverageFile, $pesterCoverageFile
         $title = "Kestrun — Combined Coverage"
