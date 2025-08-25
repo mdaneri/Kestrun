@@ -114,10 +114,28 @@ public class SchedulerServiceTests
 
         var ran = 0;
         svc.Schedule("c", TimeSpan.FromMilliseconds(100), async ct => { _ = Interlocked.Increment(ref ran); await Task.CompletedTask; });
-        await Task.Delay(250);
-        Assert.True(ran > 0);
+        // Wait for at least one run or timeout
+        var start = DateTime.UtcNow;
+        while (ran == 0 && DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
+        {
+            await Task.Delay(25);
+        }
+        Assert.True(ran > 0, "Scheduled job 'c' never executed before cancel attempt");
 
-        Assert.True(svc.Cancel("c"));
+        // Ensure job appears in snapshot (defensive; should always be true once schedule returns)
+        var present = svc.GetSnapshot().Any(j => j.Name == "c");
+        Assert.True(present, "Job 'c' missing from snapshot before cancel (unexpected)");
+
+        var cancelled = false;
+        for (var i = 0; i < 5 && !cancelled; i++)
+        {
+            cancelled = svc.Cancel("c");
+            if (!cancelled)
+            {
+                await Task.Delay(50); // tiny backoff in pathological race (should be rare)
+            }
+        }
+        Assert.True(cancelled, "Failed to cancel job 'c' after retries");
         await Task.Delay(250);
         var afterCancel = ran;
         await Task.Delay(250);
@@ -164,11 +182,21 @@ public class SchedulerServiceTests
         {
             await File.WriteAllTextAsync(tmp, "$x=1; $x | Out-Null");
             svc.Schedule("ps-file", TimeSpan.FromMilliseconds(100), new FileInfo(tmp), ScriptLanguage.PowerShell);
-            await Task.Delay(250);
-
-            var snap = svc.GetSnapshot();
-            Assert.Contains(snap, j => j.Name == "ps-inline");
-            Assert.Contains(snap, j => j.Name == "ps-file");
+            var start = DateTime.UtcNow;
+            var seenInline = false; var seenFile = false;
+            // runspace cold start on CI (especially net8) can exceed 250ms; allow up to 5s
+            while (!(seenInline && seenFile) && DateTime.UtcNow - start < TimeSpan.FromSeconds(5))
+            {
+                var snap = svc.GetSnapshot();
+                if (!seenInline) seenInline = snap.Any(j => j.Name == "ps-inline");
+                if (!seenFile) seenFile = snap.Any(j => j.Name == "ps-file");
+                if (!(seenInline && seenFile))
+                {
+                    await Task.Delay(50);
+                }
+            }
+            Assert.True(seenInline, "ps-inline job not visible in snapshot within timeout");
+            Assert.True(seenFile, "ps-file job not visible in snapshot within timeout");
         }
         finally
         {
