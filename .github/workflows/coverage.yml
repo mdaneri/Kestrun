@@ -343,22 +343,22 @@ jobs:
             -ReportDir $env:SITE_DIR `
             -HistoryDir $env:HISTORY_DIR
 
-          New-Item -ItemType File -Path (Join-Path $env:SITE_DIR '.nojekyll') -Force | Out-Null
+          # New-Item -ItemType File -Path (Join-Path $env:SITE_DIR '.nojekyll') -Force | Out-Null
 
 
-#   - name: 🔁 Sync report → destination/report
-#    run: |
-#     set -euo pipefail
-#     rm -rf "coverage-publish/${{ env.DEST_PATH }}"
-#     mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
-#     cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
-#     Optional (helps GitHub Pages):
-#     touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
+      - name: 🔁 Sync report → destination/report
+        run: |
+          set -euo pipefail
+          rm -rf "coverage-publish/${{ env.DEST_PATH }}"
+          mkdir -p "coverage-publish/${{ env.DEST_PATH }}"
+          cp -a coverage/report/. "coverage-publish/${{ env.DEST_PATH }}/"
+          Optional (helps GitHub Pages):
+          touch "coverage-publish/${{ env.DEST_PATH }}/.nojekyll"
 
       - name: ✅ Commit & push if changed
         run: |
           set -euo pipefail
-          cd report
+          cd coverage-publish
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A

@@ -136,10 +136,10 @@ if ($ReportGenerator) {
 
     if ($Powershell) {
         $reportsArg = '"{0};{1}"' -f $coverageFile, $pesterCoverageFile
-        $title = "Kestrun — Combined Coverage" 
+        $title = "Kestrun — Combined Coverage"
     } else {
         $reportsArg = '"{0}"' -f $coverageFile
-        $title = "Kestrun — C# Coverage" 
+        $title = "Kestrun — C# Coverage"
     }
 
     # Build a friendly tag that works on Actions AND locally

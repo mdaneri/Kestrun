@@ -111,7 +111,11 @@ public class CertificateManagerTest
     [Trait("Category", "Certificates")]
     public void ExportImport_Pem_RoundTrip_WithEncryptedKey()
     {
-        var cert = CertificateManager.NewSelfSigned(DefaultSelfSignedOptions());
+        // Use non-ephemeral key to avoid platform-specific issues exporting encrypted PKCS#8 on some Linux runners (.NET 8)
+        var options = new CertificateManager.SelfSignedOptions([
+            "localhost", "127.0.0.1"
+        ], KeyType: CertificateManager.KeyType.Rsa, KeyLength: 2048, ValidDays: 30, Ephemeral: false, Exportable: true);
+        var cert = CertificateManager.NewSelfSigned(options);
 
         var dir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "KestrunTests", Guid.NewGuid().ToString("N"))).FullName;
         var pemPath = Path.Combine(dir, "cert.pem");
